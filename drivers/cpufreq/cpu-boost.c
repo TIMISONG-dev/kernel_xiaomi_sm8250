@@ -143,11 +143,22 @@ static int boost_adjust_notify(struct notifier_block *nb, unsigned long val,
 	unsigned int cpu = policy->cpu;
 	struct cpu_sync *s = &per_cpu(sync_info, cpu);
 	unsigned int ib_min = s->input_boost_min;
+	int index;
 
 	switch (val) {
 	case CPUFREQ_ADJUST:
 		if (!ib_min)
 			break;
+
+		/* Do not turn an off-table ceiling into an impossible floor. */
+		if (policy->freq_table) {
+			index = cpufreq_frequency_table_target(policy, policy->max,
+							       CPUFREQ_RELATION_H);
+			if (index >= 0)
+				ib_min = min(ib_min,
+					     policy->freq_table[index].frequency);
+		}
+		ib_min = min(ib_min, policy->max);
 
 		pr_debug("CPU%u policy min before boost: %u kHz\n",
 			 cpu, policy->min);
