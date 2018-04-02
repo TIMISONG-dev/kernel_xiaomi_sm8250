@@ -2273,6 +2273,7 @@ extern void set_dma_reserve(unsigned long new_dma_reserve);
 extern void memmap_init_zone(unsigned long, int, unsigned long, unsigned long,
 		enum meminit_context, struct vmem_altmap *);
 extern void setup_per_zone_wmarks(void);
+extern void update_kswapd_threads(void);
 extern int __meminit init_per_zone_wmark_min(void);
 extern void mem_init(void);
 extern void __init mmap_init(void);
@@ -2293,6 +2294,7 @@ extern void zone_pcp_update(struct zone *zone);
 extern void zone_pcp_reset(struct zone *zone);
 
 /* page_alloc.c */
+extern int kswapd_threads;
 extern int min_free_kbytes;
 extern int watermark_boost_factor;
 extern int watermark_scale_factor;
@@ -2964,5 +2966,12 @@ extern int proc_reclaim_notifier_register(struct notifier_block *nb);
 extern int proc_reclaim_notifier_unregister(struct notifier_block *nb);
 #endif
 
+#ifndef CONFIG_MULTIPLE_KSWAPD
+static inline void update_kswapd_threads_node(int nid) {}
+static inline int multi_kswapd_run(int nid) { return 0; }
+static inline void multi_kswapd_stop(int nid) {}
+static inline void multi_kswapd_cpu_online(pg_data_t *pgdat,
+					const struct cpumask *mask) {}
+#endif /* CONFIG_MULTIPLE_KSWAPD */
 #endif /* __KERNEL__ */
 #endif /* _LINUX_MM_H */
