@@ -821,3 +821,15 @@ config MEMFD_ASHMEM_SHIM
 	  now memfds passed to them.
 
 	  Unless you are running Android, say N.
+	 
+config MULTIPLE_KSWAPD
+	bool "Spawn multiple kswapd threads"
+	default y
+	help
+	 kswapd_threads allows you to control the number of kswapd threads
+	 per node running on the system. The default value is 1 and the
+	 range of acceptible values are 1-16. The number of threads can
+	 be controlled by below command:
+	 (echo <num> > /proc/sys/vm/kswapd_threads)
+
+	 Values not in the range of 1..16 are ignored.
