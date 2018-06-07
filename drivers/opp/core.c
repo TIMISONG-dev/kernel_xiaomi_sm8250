@@ -977,6 +977,7 @@ static void _opp_kref_release(struct dev_pm_opp *opp,
 	 * frequency/voltage list.
 	 */
 	blocking_notifier_call_chain(&opp_table->head, OPP_EVENT_REMOVE, opp);
+	_of_opp_free_required_opps(opp_table, opp);
 	opp_debug_remove_one(opp);
 	list_del(&opp->node);
 	kfree(opp);
