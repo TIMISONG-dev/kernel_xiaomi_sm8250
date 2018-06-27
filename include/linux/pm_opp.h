@@ -322,6 +322,7 @@ struct dev_pm_opp *of_dev_pm_opp_find_required_opp(struct device *dev, struct de
 struct device_node *dev_pm_opp_get_of_node(struct dev_pm_opp *opp);
 int of_dev_pm_opp_get_cpu_power(unsigned long *mW, unsigned long *KHz, int cpu);
 void dev_pm_opp_of_register_em(struct cpumask *cpus);
+unsigned int of_get_required_opp_performance_state(struct device_node *np, int index);
 #else
 static inline int dev_pm_opp_of_add_table(struct device *dev)
 {
@@ -372,6 +373,11 @@ static inline void dev_pm_opp_of_register_em(struct cpumask *cpus)
 static inline int of_dev_pm_opp_get_cpu_power(unsigned long *mW, unsigned long *KHz, int cpu)
 {
 	return -ENOTSUPP;
+}
+
+static inline unsigned int of_get_required_opp_performance_state(struct device_node *np, int index)
+{
+	return 0;
 }
 #endif
 
