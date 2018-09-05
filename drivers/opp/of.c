@@ -53,7 +53,8 @@ static struct opp_table *_managed_opp(const struct device_node *np)
 	return managed_table;
 }
 
-void _of_init_opp_table(struct opp_table *opp_table, struct device *dev)
+void _of_init_opp_table(struct opp_table *opp_table, struct device *dev,
+			int index)
 {
 	struct device_node *np;
 
@@ -391,7 +392,8 @@ free_opp:
 }
 
 /* Initializes OPP tables based on new bindings */
-static int _of_add_opp_table_v2(struct device *dev, struct device_node *opp_np)
+static int _of_add_opp_table_v2(struct device *dev, struct device_node *opp_np,
+				int index)
 {
 	struct device_node *np;
 	struct opp_table *opp_table;
@@ -406,7 +408,7 @@ static int _of_add_opp_table_v2(struct device *dev, struct device_node *opp_np)
 		goto put_opp_table;
 	}
 
-	opp_table = dev_pm_opp_get_opp_table(dev);
+	opp_table = dev_pm_opp_get_opp_table_indexed(dev, index);
 	if (!opp_table)
 		return -ENOMEM;
 
@@ -540,7 +542,7 @@ int dev_pm_opp_of_add_table(struct device *dev)
 		return _of_add_opp_table_v1(dev);
 	}
 
-	ret = _of_add_opp_table_v2(dev, opp_np);
+	ret = _of_add_opp_table_v2(dev, opp_np, 0);
 	of_node_put(opp_np);
 
 	return ret;
@@ -588,7 +590,7 @@ again:
 		return -ENODEV;
 	}
 
-	ret = _of_add_opp_table_v2(dev, opp_np);
+	ret = _of_add_opp_table_v2(dev, opp_np, index);
 	of_node_put(opp_np);
 
 	return ret;
