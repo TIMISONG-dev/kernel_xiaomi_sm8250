@@ -424,6 +424,8 @@ static int _of_add_opp_table_v2(struct device *dev, struct device_node *opp_np,
 			ret = -ENOMEM;
 		else if (!opp_table->parsed_static_opps)
 			goto initialize_static_opps;
+		else
+			kref_get(&opp_table->list_kref);
 
 		goto put_opp_table;
 	}
@@ -433,6 +435,8 @@ static int _of_add_opp_table_v2(struct device *dev, struct device_node *opp_np,
 		return -ENOMEM;
 
 initialize_static_opps:
+	kref_init(&opp_table->list_kref);
+
 	/* We have opp-table node now, iterate over it and add OPPs */
 	for_each_available_child_of_node(opp_np, np) {
 		count++;
@@ -451,6 +455,7 @@ initialize_static_opps:
 	if (!count) {
 		dev_err(dev, "%s: no supported OPPs", __func__);
 		ret = -ENOENT;
+		_put_opp_list_kref(opp_table);
 		goto put_opp_table;
 	}
 
@@ -504,6 +509,8 @@ static int _of_add_opp_table_v1(struct device *dev)
 	opp_table = dev_pm_opp_get_opp_table(dev);
 	if (!opp_table)
 		return -ENOMEM;
+
+	kref_init(&opp_table->list_kref);
 
 	val = prop->value;
 	while (nr) {
