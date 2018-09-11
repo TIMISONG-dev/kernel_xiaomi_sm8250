@@ -895,6 +895,33 @@ static void _opp_table_kref_release(struct kref *kref)
 	mutex_unlock(&opp_table_lock);
 }
 
+void _opp_remove_all_static(struct opp_table *opp_table)
+{
+	struct dev_pm_opp *opp, *tmp;
+
+	list_for_each_entry_safe(opp, tmp, &opp_table->opp_list, node) {
+		if (!opp->dynamic)
+			dev_pm_opp_put(opp);
+	}
+
+	opp_table->parsed_static_opps = false;
+}
+
+static void _opp_table_list_kref_release(struct kref *kref)
+{
+	struct opp_table *opp_table = container_of(kref, struct opp_table,
+						   list_kref);
+
+	_opp_remove_all_static(opp_table);
+	mutex_unlock(&opp_table_lock);
+}
+
+void _put_opp_list_kref(struct opp_table *opp_table)
+{
+	kref_put_mutex(&opp_table->list_kref, _opp_table_list_kref_release,
+		       &opp_table_lock);
+}
+
 void dev_pm_opp_put_opp_table(struct opp_table *opp_table)
 {
 	kref_put_mutex(&opp_table->kref, _opp_table_kref_release,
@@ -1808,8 +1835,11 @@ void _dev_pm_opp_remove_table(struct opp_table *opp_table, struct device *dev,
 	/* Find if opp_table manages a single device */
 	if (list_is_singular(&opp_table->dev_list)) {
 		/* Free static OPPs */
+		_put_opp_list_kref(opp_table);
+
+		/* Free dynamic OPPs */
 		list_for_each_entry_safe(opp, tmp, &opp_table->opp_list, node) {
-			if (remove_all || !opp->dynamic)
+			if (remove_all)
 				dev_pm_opp_put(opp);
 		}
 
@@ -1820,6 +1850,7 @@ void _dev_pm_opp_remove_table(struct opp_table *opp_table, struct device *dev,
 		if (opp_table->genpd_performance_state)
 			dev_pm_genpd_set_performance_state(dev, 0);
 	} else {
+		_put_opp_list_kref(opp_table);
 		_remove_opp_dev(_find_opp_dev(dev, opp_table), opp_table);
 	}
 
