@@ -798,9 +798,9 @@ static u64 blk_trace_bio_get_cgid(struct request_queue *q, struct bio *bio)
 	if (!bt || !(blk_tracer_flags.val & TRACE_BLK_OPT_CGROUP))
 		return 0;
 
-	if (!bio->bi_css)
+	if (!bio->bi_blkg)
 		return 0;
-	return cgroup_id(bio->bi_css->cgroup);
+	return cgroup_get_kernfs_id(bio_blkcg(bio)->css.cgroup);
 }
 #else
 u64 blk_trace_bio_get_cgid(struct request_queue *q, struct bio *bio)
