@@ -1752,6 +1752,7 @@ void __blk_put_request(struct request_queue *q, struct request *req)
 
 	blk_req_zone_write_unlock(req);
 	blk_pm_put_request(req);
+	blk_pm_mark_last_busy(req);
 
 	elv_completed_request(q, req);
 
