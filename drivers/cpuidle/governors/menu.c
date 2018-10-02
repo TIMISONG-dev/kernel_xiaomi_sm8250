@@ -300,6 +300,18 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
 	nr_iowaiters = nr_iowait_cpu(dev->cpu);
 	data->bucket = which_bucket(data->next_timer_us, nr_iowaiters);
 
+	if (unlikely(drv->state_count <= 1) ||
+	    ((data->next_timer_us < drv->states[1].target_residency ||
+	      latency_req < drv->states[1].exit_latency) &&
+	     !drv->states[0].disabled && !dev->states_usage[0].disable)) {
+		/*
+		 * In this case state[0] will be used no matter what, so return
+		 * it right away and keep the tick running.
+		 */
+		*stop_tick = false;
+		return 0;
+	}
+
 	/*
 	 * Force the result of multiplication to be 64 bits even if both
 	 * operands are 32 bits.
