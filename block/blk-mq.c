@@ -1942,8 +1942,6 @@ static blk_qc_t blk_mq_make_request(struct request_queue *q, struct bio *bio)
 
 	rq_qos_throttle(q, bio, NULL);
 
-	trace_block_getrq(q, bio, bio->bi_opf);
-
 	rq = blk_mq_get_request(q, bio, bio->bi_opf, &data);
 	if (unlikely(!rq)) {
 		rq_qos_cleanup(q, bio);
@@ -1951,6 +1949,8 @@ static blk_qc_t blk_mq_make_request(struct request_queue *q, struct bio *bio)
 			bio_wouldblock_error(bio);
 		return BLK_QC_T_NONE;
 	}
+
+	trace_block_getrq(q, bio, bio->bi_opf);
 
 	rq_qos_track(q, rq, bio);
 
