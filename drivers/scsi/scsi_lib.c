@@ -1685,6 +1685,11 @@ static int scsi_lld_busy(struct request_queue *q)
 	return 0;
 }
 
+static bool scsi_mq_lld_busy(struct request_queue *q)
+{
+	return scsi_lld_busy(q);
+}
+
 /*
  * Kill a request for a dead device
  */
@@ -2341,6 +2346,7 @@ static const struct blk_mq_ops scsi_mq_ops = {
 	.init_request	= scsi_mq_init_request,
 	.exit_request	= scsi_mq_exit_request,
 	.initialize_rq_fn = scsi_initialize_rq,
+	.busy		= scsi_mq_lld_busy,
 	.map_queues	= scsi_map_queues,
 };
 
