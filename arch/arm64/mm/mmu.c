@@ -496,7 +496,7 @@ static void __init map_mem(pgd_t *pgdp)
 	 * KFENCE requires linear map to be mapped at page granularity, so that
 	 * it is possible to protect/unprotect single pages in the KFENCE pool.
 	 */
-	if (debug_pagealloc_enabled() ||
+	if (rodata_full || debug_pagealloc_enabled() ||
 		IS_ENABLED(CONFIG_KFENCE))
 		flags = NO_BLOCK_MAPPINGS | NO_CONT_MAPPINGS;
 
@@ -598,7 +598,19 @@ static void __init map_kernel_segment(pgd_t *pgdp, void *va_start, void *va_end,
 
 static int __init parse_rodata(char *arg)
 {
-	return strtobool(arg, &rodata_enabled);
+	int ret = strtobool(arg, &rodata_enabled);
+	if (!ret) {
+		rodata_full = false;
+		return 0;
+	}
+
+	/* permit 'full' in addition to boolean options */
+	if (strcmp(arg, "full"))
+		return -EINVAL;
+
+	rodata_enabled = true;
+	rodata_full = true;
+	return 0;
 }
 early_param("rodata", parse_rodata);
 
