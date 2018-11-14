@@ -1223,7 +1223,6 @@ static int omap_aes_probe(struct platform_device *pdev)
 				algp = &dd->pdata->algs_info[i].algs_list[j];
 
 				pr_debug("reg alg: %s\n", algp->cra_name);
-				INIT_LIST_HEAD(&algp->cra_list);
 
 				err = crypto_register_alg(algp);
 				if (err)
@@ -1241,7 +1240,6 @@ static int omap_aes_probe(struct platform_device *pdev)
 			algp = &aalg->base;
 
 			pr_debug("reg alg: %s\n", algp->cra_name);
-			INIT_LIST_HEAD(&algp->cra_list);
 
 			err = crypto_register_aead(aalg);
 			if (err)
