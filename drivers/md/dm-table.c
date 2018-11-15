@@ -936,7 +936,7 @@ static int device_is_rq_based(struct dm_target *ti, struct dm_dev *dev,
 {
 	struct request_queue *q = bdev_get_queue(dev->bdev);
 
-	return queue_is_rq_based(q);
+	return queue_is_mq(q);
 }
 
 static int dm_table_determine_type(struct dm_table *t)
