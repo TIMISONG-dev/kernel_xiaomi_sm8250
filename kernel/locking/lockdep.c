@@ -174,6 +174,9 @@ static struct lock_list list_entries[MAX_LOCKDEP_ENTRIES];
 #define KEYHASH_SIZE		(1UL << KEYHASH_BITS)
 static struct hlist_head lock_keys_hash[KEYHASH_SIZE];
 unsigned long nr_lock_classes;
+#ifndef CONFIG_DEBUG_LOCKDEP
+static
+#endif
 struct lock_class lock_classes[MAX_LOCKDEP_KEYS];
 
 static inline struct lock_class *hlock_class(struct held_lock *hlock)
