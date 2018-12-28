@@ -275,7 +275,7 @@ static int htable_create(struct net *net, struct hashlimit_cfg3 *cfg,
 	struct xt_hashlimit_htable *hinfo;
 	const struct seq_operations *ops;
 	unsigned int size, i;
-	unsigned long nr_pages = totalram_pages;
+	unsigned long nr_pages = totalram_pages();
 	int ret;
 
 	if (cfg->size) {
