@@ -551,9 +551,8 @@ static int _set_opp_voltage(struct device *dev, struct regulator *reg,
 	return ret;
 }
 
-static inline int
-_generic_set_opp_clk_only(struct device *dev, struct clk *clk,
-			  unsigned long old_freq, unsigned long freq)
+static inline int _generic_set_opp_clk_only(struct device *dev, struct clk *clk,
+					    unsigned long freq)
 {
 	int ret;
 
@@ -590,7 +589,7 @@ static int _generic_set_opp_regulator(const struct opp_table *opp_table,
 	}
 
 	/* Change frequency */
-	ret = _generic_set_opp_clk_only(dev, opp_table->clk, old_freq, freq);
+	ret = _generic_set_opp_clk_only(dev, opp_table->clk, freq);
 	if (ret)
 		goto restore_voltage;
 
@@ -604,7 +603,7 @@ static int _generic_set_opp_regulator(const struct opp_table *opp_table,
 	return 0;
 
 restore_freq:
-	if (_generic_set_opp_clk_only(dev, opp_table->clk, freq, old_freq))
+	if (_generic_set_opp_clk_only(dev, opp_table->clk, old_freq))
 		dev_err(dev, "%s: failed to restore old-freq (%lu Hz)\n",
 			__func__, old_freq);
 restore_voltage:
@@ -777,7 +776,7 @@ int dev_pm_opp_set_rate(struct device *dev, unsigned long target_freq)
 						 opp->supplies);
 	} else {
 		/* Only frequency scaling */
-		ret = _generic_set_opp_clk_only(dev, clk, old_freq, freq);
+		ret = _generic_set_opp_clk_only(dev, clk, freq);
 	}
 
 	/* Scaling down? Configure required OPPs after frequency */
