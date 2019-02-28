@@ -825,6 +825,7 @@ struct task_struct {
 	int				nr_cpus_allowed;
 	const cpumask_t			*cpus_ptr;
 	cpumask_t			cpus_mask;
+	cpumask_t			cpus_requested;
 	void				*migration_pending;
 #ifdef CONFIG_SMP
 	unsigned short			migration_disabled;
