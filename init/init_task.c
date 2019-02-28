@@ -76,6 +76,7 @@ struct task_struct init_task
 	.cpus_mask	= CPU_MASK_ALL,
 	.max_allowed_capacity	= SCHED_CAPACITY_SCALE,
 	.nr_cpus_allowed= NR_CPUS,
+	.cpus_requested	= CPU_MASK_ALL,
 	.mm		= NULL,
 	.active_mm	= &init_mm,
 	.restart_block	= {
