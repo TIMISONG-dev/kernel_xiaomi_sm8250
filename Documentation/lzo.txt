@@ -169,8 +169,8 @@ Byte sequences
            In this case, it is followed by a fourth byte, X.
            run length = ((X << 3) | (0 0 0 0 0 L L L)) + 4
 
-        In version 1, this instruction is also used to encode a run of zeros if
-        distance = 0xbfff, i.e. H = 1 and the D bits are all 1.
+        In version 1 only, this instruction is also used to encode a run of
+        zeros if distance = 0xbfff, i.e. H = 1 and the D bits are all 1.
            In this case, it is followed by a fourth byte, X.
            run length = ((X << 3) | (0 0 0 0 0 L L L)) + 4.
 
