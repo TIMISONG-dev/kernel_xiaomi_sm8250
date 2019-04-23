@@ -1967,7 +1967,7 @@ static void task_numa_compare(struct task_numa_env *env,
 	 * be incurred if the tasks were swapped.
 	 */
 	/* Skip this swap candidate if cannot move to the source cpu */
-	if (!cpumask_test_cpu(env->src_cpu, &cur->cpus_allowed))
+	if (!cpumask_test_cpu(env->src_cpu, cur->cpus_ptr))
 		goto unlock;
 
 	/*
@@ -2088,7 +2088,7 @@ static void task_numa_find_cpu(struct task_numa_env *env,
 
 	for_each_cpu(cpu, cpumask_of_node(env->dst_nid)) {
 		/* Skip this CPU if the source task cannot migrate */
-		if (!cpumask_test_cpu(cpu, &env->p->cpus_allowed))
+		if (!cpumask_test_cpu(cpu, env->p->cpus_ptr))
 			continue;
 
 		env->dst_cpu = cpu;
@@ -6263,7 +6263,7 @@ find_idlest_group_cpu(struct sched_group *group, struct task_struct *p, int this
 		return cpumask_first(sched_group_span(group));
 
 	/* Traverse only the allowed CPUs */
-	for_each_cpu_and(i, sched_group_span(group), &p->cpus_allowed) {
+	for_each_cpu_and(i, sched_group_span(group), p->cpus_ptr) {
 		if (sched_idle_cpu(i))
 			return i;
 
@@ -6306,7 +6306,7 @@ static inline int find_idlest_cpu(struct sched_domain *sd, struct task_struct *p
 {
 	int new_cpu = cpu;
 
-	if (!cpumask_intersects(sched_domain_span(sd), &p->cpus_allowed))
+	if (!cpumask_intersects(sched_domain_span(sd), p->cpus_ptr))
 		return prev_cpu;
 
 	/*
@@ -6433,7 +6433,7 @@ static int select_idle_core(struct task_struct *p, int core, struct cpumask *cpu
 			idle = false;
 			if (*idle_cpu == -1) {
 				if (sched_idle_cpu(cpu) &&
-				    cpumask_test_cpu(cpu, &p->cpus_allowed)) {
+				    cpumask_test_cpu(cpu, p->cpus_ptr)) {
 					*idle_cpu = cpu;
 					break;
 				}
@@ -6441,7 +6441,7 @@ static int select_idle_core(struct task_struct *p, int core, struct cpumask *cpu
 			}
 			break;
 		}
-		if (*idle_cpu == -1 && cpumask_test_cpu(cpu, &p->cpus_allowed))
+		if (*idle_cpu == -1 && cpumask_test_cpu(cpu, p->cpus_ptr))
 			*idle_cpu = cpu;
 	}
 
@@ -6504,7 +6504,7 @@ static int select_idle_cpu(struct task_struct *p, struct sched_domain *sd, bool 
 	int i, cpu, idle_cpu = -1, nr = INT_MAX;
 	struct sched_domain_shared *sd_share;
 
-	cpumask_and(cpus, sched_domain_span(sd), &p->cpus_allowed);
+	cpumask_and(cpus, sched_domain_span(sd), p->cpus_ptr);
 
 	if (sched_feat(SIS_UTIL)) {
 		sd_share = rcu_dereference(per_cpu(sd_llc_shared, target));
@@ -6553,7 +6553,7 @@ select_idle_capacity(struct task_struct *p, struct sched_domain *sd, int target)
 	struct cpumask *cpus;
 
 	cpus = this_cpu_cpumask_var_ptr(select_rq_mask);
-	cpumask_and(cpus, sched_domain_span(sd), &p->cpus_allowed);
+	cpumask_and(cpus, sched_domain_span(sd), p->cpus_ptr);
 
 	task_util = task_util_est(p);
 	util_min = uclamp_eff_value(p, UCLAMP_MIN);
@@ -6643,8 +6643,8 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
 	    recent_used_cpu != target &&
 	    cpus_share_cache(recent_used_cpu, target) &&
 	    (available_idle_cpu(recent_used_cpu) || sched_idle_cpu(recent_used_cpu)) &&
-	    cpumask_test_cpu(p->recent_used_cpu, &p->cpus_allowed) &&
-	    cpumask_test_cpu(recent_used_cpu, &p->cpus_allowed) &&
+	    cpumask_test_cpu(p->recent_used_cpu, p->cpus_ptr) &&
+	    cpumask_test_cpu(recent_used_cpu, p->cpus_ptr) &&
 	    asym_fits_cpu(task_util, util_min, util_max, recent_used_cpu)) {
 		return recent_used_cpu;
 	}
@@ -7042,7 +7042,7 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 
 	cpu = smp_processor_id();
 	if (sync && cpu_rq(cpu)->nr_running == 1 &&
-	    cpumask_test_cpu(cpu, &p->cpus_allowed) &&
+	    cpumask_test_cpu(cpu, p->cpus_ptr) &&
 	    task_fits_cpu(p, cpu)) {
 		rcu_read_unlock();
 		return cpu;
@@ -7099,7 +7099,7 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 			if (!cpumask_test_cpu(cpu, sched_domain_span(sd)))
 				continue;
 
-			if (!cpumask_test_cpu(cpu, &p->cpus_allowed))
+			if (!cpumask_test_cpu(cpu, p->cpus_ptr))
 				continue;
 
 			util = cpu_util(cpu, p, cpu, 0);
@@ -7248,7 +7248,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			new_cpu = prev_cpu;
 		}
 
-		want_affine = !wake_wide(p) && cpumask_test_cpu(cpu, &p->cpus_allowed);
+		want_affine = !wake_wide(p) && cpumask_test_cpu(cpu, p->cpus_ptr);
 	}
 
 	rcu_read_lock();
@@ -7378,7 +7378,7 @@ static void set_task_max_allowed_capacity(struct task_struct *p)
 		cpumask_t *cpumask;
 
 		cpumask = cpu_capacity_span(entry);
-		if (!cpumask_intersects(&p->cpus_allowed, cpumask))
+		if (!cpumask_intersects(p->cpus_ptr, cpumask))
 			continue;
 
 		p->max_allowed_capacity = entry->capacity;
@@ -7983,7 +7983,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 			!is_min_capacity_cpu(env->src_cpu))
 		return 0;
 
-	if (!cpumask_test_cpu(env->dst_cpu, &p->cpus_allowed)) {
+	if (!cpumask_test_cpu(env->dst_cpu, p->cpus_ptr)) {
 		int cpu;
 
 		schedstat_inc(p->se.statistics.nr_failed_migrations_affine);
@@ -8003,7 +8003,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 
 		/* Prevent to re-select dst_cpu via env's CPUs: */
 		for_each_cpu_and(cpu, env->dst_grpmask, env->cpus) {
-			if (cpumask_test_cpu(cpu, &p->cpus_allowed)) {
+			if (cpumask_test_cpu(cpu, p->cpus_ptr)) {
 				env->flags |= LBF_DST_PINNED;
 				env->new_dst_cpu = cpu;
 				break;
@@ -9291,7 +9291,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p, int this_cpu)
 
 		/* Skip over this group if it has no CPUs allowed */
 		if (!cpumask_intersects(sched_group_span(group),
-					&p->cpus_allowed))
+					p->cpus_ptr))
 			continue;
 
 		local_group = cpumask_test_cpu(this_cpu,
@@ -9728,7 +9728,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	/*
 	 * If the busiest group is imbalanced the below checks don't
 	 * work because they assume all things are equal, which typically
-	 * isn't true due to cpus_allowed constraints and the like.
+	 * isn't true due to cpus_ptr constraints and the like.
 	 */
 	if (busiest->group_type == group_imbalanced)
 		goto force_balance;
@@ -10254,8 +10254,7 @@ more_balance:
 			 * if the curr task on busiest CPU can't be
 			 * moved to this_cpu:
 			 */
-			if (!cpumask_test_cpu(this_cpu,
-						&busiest->curr->cpus_allowed)) {
+			if (!cpumask_test_cpu(this_cpu, busiest->curr->cpus_ptr)) {
 				raw_spin_unlock_irqrestore(&busiest->lock,
 							    flags);
 				goto out_one_pinned;
