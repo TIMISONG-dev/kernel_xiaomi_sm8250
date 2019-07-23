@@ -1211,6 +1211,9 @@ static void cpufreq_policy_free(struct cpufreq_policy *policy)
 		per_cpu(cpufreq_cpu_data, cpu) = NULL;
 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
+	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+				     CPUFREQ_REMOVE_POLICY, policy);
+
 	cpufreq_policy_put_kobj(policy);
 	free_cpumask_var(policy->real_cpus);
 	free_cpumask_var(policy->related_cpus);
@@ -1296,6 +1299,9 @@ static int cpufreq_online(unsigned int cpu)
 			goto out_destroy_policy;
 		}
 	}
+
+	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+				CPUFREQ_CREATE_POLICY, policy);
 
 	/*
 	 * Sometimes boot loaders set CPU frequency to a value outside of
