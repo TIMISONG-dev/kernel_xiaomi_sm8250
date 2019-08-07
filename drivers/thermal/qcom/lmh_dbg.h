@@ -8,6 +8,13 @@
 
 #include <linux/platform_device.h>
 
+#ifdef CONFIG_DEBUG_KERNEL
 int lmh_debug_register(struct platform_device *pdev);
+#else
+static inline int lmh_debug_register(struct platform_device *pdev)
+{
+	return 0;
+}
+#endif
 
 #endif /* __QTI_LMH_H__ */
