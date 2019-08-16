@@ -4349,7 +4349,7 @@ void __noreturn do_task_dead(void)
 
 static inline void sched_submit_work(struct task_struct *tsk)
 {
-	if (!tsk->state || tsk_is_pi_blocked(tsk))
+	if (!tsk->state)
 		return;
 
 	/*
@@ -4358,6 +4358,9 @@ static inline void sched_submit_work(struct task_struct *tsk)
 	 */
 	if (tsk->flags & PF_WQ_WORKER)
 		wq_worker_sleeping(tsk);
+
+	if (tsk_is_pi_blocked(tsk))
+		return;
 
 	/*
 	 * If we are going to sleep and we have plugged IO queued,
