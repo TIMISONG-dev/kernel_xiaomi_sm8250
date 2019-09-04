@@ -8,8 +8,8 @@
 
 #include <linux/dma-buf.h>
 #include <linux/bitmap.h>
-#include "../uapi/ion.h"
-#include "../uapi/msm_ion.h"
+#include <uapi/linux/ion.h>
+#include <uapi/linux/msm_ion.h>
 
 #ifdef CONFIG_ION
 
