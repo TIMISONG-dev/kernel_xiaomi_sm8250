@@ -89,13 +89,7 @@ static int scsi_dev_type_resume(struct device *dev,
 		if (!err && scsi_is_sdev_device(dev)) {
 			struct scsi_device *sdev = to_scsi_device(dev);
 
-			/*
-			 * If scsi device runtime PM is managed by block layer
-			 * then we should update request queue's runtime status
-			 * as well.
-			 */
-			if (sdev->request_queue->dev)
-				blk_post_runtime_resume(sdev->request_queue, 0);
+			blk_post_runtime_resume(sdev->request_queue, 0);
 		}
 	}
 
