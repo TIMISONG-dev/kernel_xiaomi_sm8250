@@ -1379,7 +1379,7 @@ static unsigned long scan_movable_pages(unsigned long start, unsigned long end)
 		if (hugepage_migration_supported(page_hstate(head)) &&
 		    page_huge_active(head))
 			return pfn;
-		skip = (1 << compound_order(head)) - (page - head);
+		skip = compound_nr(head) - (page - head);
 		pfn += skip - 1;
 	}
 	return 0;
@@ -1420,13 +1420,13 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
 
 		if (PageHuge(page)) {
 			struct page *head = compound_head(page);
-			pfn = page_to_pfn(head) + (1<<compound_order(head)) - 1;
+			pfn = page_to_pfn(head) + compound_nr(head) - 1;
 			if (compound_order(head) > PFN_SECTION_SHIFT) {
 				ret = -EBUSY;
 				break;
 			}
 			if (isolate_huge_page(page, &source))
-				move_pages -= 1 << compound_order(head);
+				move_pages -= compound_nr(head);
 			continue;
 		} else if (PageTransHuge(page))
 			pfn = page_to_pfn(compound_head(page))
