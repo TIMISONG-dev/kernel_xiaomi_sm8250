@@ -114,14 +114,7 @@
 #endif
 		.endm
 
-		.macro	be32tocpu, val, tmp
-#ifndef __ARMEB__
-		/* convert to little endian */
-		rev_l	\val, \tmp
-#endif
-		.endm
-
-		.section ".start", #alloc, #execinstr
+		.section ".start", "ax"
 /*
  * sort out different calling conventions
  */
