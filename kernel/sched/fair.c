@@ -7638,6 +7638,11 @@ idle:
 	return NULL;
 }
 
+static struct task_struct *__pick_next_task_fair(struct rq *rq)
+{
+	return pick_next_task_fair(rq, NULL, NULL);
+}
+
 /*
  * Account for a descheduled task:
  */
@@ -11692,7 +11697,7 @@ const struct sched_class fair_sched_class = {
 
 	.wakeup_preempt		= check_preempt_wakeup_fair,
 
-	.pick_next_task		= pick_next_task_fair,
+	.pick_next_task		= __pick_next_task_fair,
 	.put_prev_task		= put_prev_task_fair,
 	.set_next_task          = set_next_task_fair,
 
