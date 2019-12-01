@@ -1163,7 +1163,7 @@ static int xol_add_vma(struct mm_struct *mm, struct xol_area *area)
 
 	if (!area->vaddr) {
 		area->vaddr = arch_uprobe_get_xol_area();
-		if (area->vaddr & ~PAGE_MASK) {
+		if (IS_ERR_VALUE(area->vaddr)) {
 			ret = area->vaddr;
 			goto fail;
 		}
