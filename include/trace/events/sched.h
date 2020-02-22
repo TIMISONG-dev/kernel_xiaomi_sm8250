@@ -1248,6 +1248,10 @@ TRACE_EVENT(sched_isolate,
 		__entry->time, __entry->isolate)
 );
 
+DECLARE_TRACE(pelt_thermal_tp,
+	TP_PROTO(struct rq *rq),
+	TP_ARGS(rq));
+
 #endif /* CONFIG_SMP */
 #endif /* _TRACE_SCHED_H */
 
