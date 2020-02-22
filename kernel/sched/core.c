@@ -4074,6 +4074,7 @@ void scheduler_tick(void)
 	struct rq_flags rf;
 	u64 wallclock;
 	unsigned int flag = 0;
+	unsigned long thermal_pressure;
 
 	sched_clock_tick();
 
@@ -4081,6 +4082,8 @@ void scheduler_tick(void)
 
 	wallclock = sched_ktime_clock();
 	update_rq_clock(rq);
+	thermal_pressure = arch_scale_thermal_pressure(cpu_of(rq));
+	update_thermal_load_avg(rq_clock_task(rq), rq, thermal_pressure);
 	curr->sched_class->task_tick(rq, curr, 0);
 	calc_global_load_tick(rq);
 	psi_task_tick(rq);
