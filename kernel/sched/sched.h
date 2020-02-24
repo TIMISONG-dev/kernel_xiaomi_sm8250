@@ -555,7 +555,6 @@ do {									\
 /* CFS-related fields in a runqueue */
 struct cfs_rq {
 	struct load_weight	load;
-	unsigned long		runnable_weight;
 	unsigned int		nr_running;
 	unsigned int		h_nr_running;
 	/* h_nr_running for SCHED_IDLE tasks */
@@ -759,8 +758,10 @@ struct dl_rq {
 #ifdef CONFIG_FAIR_GROUP_SCHED
 /* An entity is a task if it doesn't "own" a runqueue */
 #define entity_is_task(se)	(!se->my_q)
+
 #else
 #define entity_is_task(se)	1
+
 #endif
 
 #ifdef CONFIG_SMP
@@ -770,11 +771,6 @@ struct dl_rq {
 static inline long se_weight(struct sched_entity *se)
 {
 	return scale_load_down(se->load.weight);
-}
-
-static inline long se_runnable(struct sched_entity *se)
-{
-	return scale_load_down(se->runnable_weight);
 }
 
 static inline bool sched_asym_prefer(int a, int b)
