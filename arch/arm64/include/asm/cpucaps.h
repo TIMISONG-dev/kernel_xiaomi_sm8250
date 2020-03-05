@@ -64,6 +64,8 @@
 
 #define ARM64_HAS_32BIT_EL1			43
 
+#define ARM64_HAS_AMU_EXTN			44
+
 /* kabi: reserve 44 - 62 for future cpu capabilities */
 #define ARM64_NCAPS				62
 
