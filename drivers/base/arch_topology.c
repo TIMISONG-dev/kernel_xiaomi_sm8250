@@ -63,15 +63,6 @@ void arch_set_max_freq_scale(const struct cpumask *cpus,
 		per_cpu(max_freq_scale, cpu) = scale;
 }
 
-void arch_set_thermal_pressure(struct cpumask *cpus,
-			       unsigned long th_pressure)
-{
-	int cpu;
-
-	for_each_cpu(cpu, cpus)
-		per_cpu(thermal_pressure, cpu) = th_pressure;
-}
-
 static DEFINE_MUTEX(cpu_scale_mutex);
 DEFINE_PER_CPU(unsigned long, cpu_scale) = SCHED_CAPACITY_SCALE;
 
