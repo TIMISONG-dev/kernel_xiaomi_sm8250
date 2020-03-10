@@ -147,6 +147,9 @@ struct task_struct init_task
 #endif
 #ifdef CONFIG_TASKS_TRACE_RCU
 	.trc_reader_nesting = 0,
+	.trc_reader_need_end = false,
+	.trc_reader_checked = false,
+	.trc_ipi_to_cpu = -1,
 	.trc_holdout_list = LIST_HEAD_INIT(init_task.trc_holdout_list),
 #endif
 #ifdef CONFIG_CPUSETS
