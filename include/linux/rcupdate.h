@@ -172,16 +172,21 @@ static inline void rcu_init_nohz(void) { }
 	} while (0)
 void call_rcu_tasks(struct rcu_head *head, rcu_callback_t func);
 void synchronize_rcu_tasks(void);
-void exit_tasks_rcu_start(void);
-void exit_tasks_rcu_finish(void);
 #else /* #ifdef CONFIG_TASKS_RCU */
 #define rcu_tasks_qs(t)	do { } while (0)
 #define rcu_note_voluntary_context_switch(t)		rcu_all_qs()
 #define call_rcu_tasks call_rcu_sched
 #define synchronize_rcu_tasks synchronize_sched
+#endif /* #else #ifdef CONFIG_TASKS_RCU */
+
+#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)
+void exit_tasks_rcu_start(void);
+void exit_tasks_rcu_finish(void);
+#else
 static inline void exit_tasks_rcu_start(void) { }
 static inline void exit_tasks_rcu_finish(void) { }
-#endif /* #else #ifdef CONFIG_TASKS_RCU */
+#endif
+
 
 /**
  * cond_resched_tasks_rcu_qs - Report potential quiescent states to RCU
