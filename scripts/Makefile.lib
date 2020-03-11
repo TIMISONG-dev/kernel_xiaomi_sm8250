@@ -327,7 +327,7 @@ MKDTBO = $(srctree)/scripts/ufdt/libufdt/utils/src/mkdtboimg.py
 endif
 
 quiet_cmd_mkdtimg = DTBOIMG $@
-cmd_mkdtimg = python2 $(MKDTBO) create $@ --page_size=4096 $(filter-out FORCE,$^)
+cmd_mkdtimg = $(PYTHON) $(srctree)/scripts/mkdtboimg.py create $@ --page_size=4096 $(filter-out FORCE,$^)
 
 # cat
 # ---------------------------------------------------------------------------
