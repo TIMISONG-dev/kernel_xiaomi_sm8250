@@ -355,6 +355,9 @@ sched_core_dequeue(struct rq *rq, struct task_struct *p, int flags) { }
  */
 int sysctl_sched_rt_runtime = 950000;
 
+/* record the min capacity cpus */
+struct cpumask min_cap_cpu_mask;
+
 void raw_spin_rq_lock_nested(struct rq *rq, int subclass)
 {
 	raw_spinlock_t *lock;
@@ -8964,6 +8967,8 @@ void __init sched_init(void)
 	init_uclamp();
 
 	scheduler_running = 1;
+
+	cpumask_clear(&min_cap_cpu_mask);
 }
 
 #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
