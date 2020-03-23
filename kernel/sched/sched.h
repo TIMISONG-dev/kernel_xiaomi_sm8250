@@ -2578,6 +2578,7 @@ static inline bool uclamp_rq_is_idle(struct rq *rq)
 }
 #endif /* CONFIG_UCLAMP_TASK */
 
+extern struct cpumask min_cap_cpu_mask;
 #ifdef CONFIG_HAVE_SCHED_AVG_IRQ
 static inline unsigned long cpu_util_irq(struct rq *rq)
 {
