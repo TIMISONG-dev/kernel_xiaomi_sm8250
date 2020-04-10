@@ -5003,14 +5003,13 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
 	/*
 	 * This check is repeated as we release cfs_b->lock while we unthrottle.
 	 */
-	while (throttled && cfs_b->runtime > 0 && !cfs_b->distribute_running) {
+	while (throttled && cfs_b->runtime > 0) {
 		cfs_b->distribute_running = 1;
 		raw_spin_unlock(&cfs_b->lock);
 		/* we can't nest cfs_b->lock while distributing bandwidth */
 		distribute_cfs_runtime(cfs_b);
 		raw_spin_lock(&cfs_b->lock);
 
-		cfs_b->distribute_running = 0;
 		throttled = !list_empty(&cfs_b->throttled_cfs_rq);
 	}
 
@@ -5117,10 +5116,6 @@ static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b)
 
 	/* confirm we're still not at a refresh boundary */
 	raw_spin_lock(&cfs_b->lock);
-	if (cfs_b->distribute_running) {
-		raw_spin_unlock(&cfs_b->lock);
-		return;
-	}
 
 	if (runtime_refresh_within(cfs_b, min_bandwidth_expiration)) {
 		raw_spin_unlock(&cfs_b->lock);
@@ -5130,19 +5125,12 @@ static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b)
 	if (cfs_b->quota != RUNTIME_INF && cfs_b->runtime > slice)
 		runtime = cfs_b->runtime;
 
-	if (runtime)
-		cfs_b->distribute_running = 1;
-
 	raw_spin_unlock(&cfs_b->lock);
 
 	if (!runtime)
 		return;
 
 	distribute_cfs_runtime(cfs_b);
-
-	raw_spin_lock(&cfs_b->lock);
-	cfs_b->distribute_running = 0;
-	raw_spin_unlock(&cfs_b->lock);
 }
 
 /*
@@ -5282,7 +5270,6 @@ void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
 	cfs_b->period_timer.function = sched_cfs_period_timer;
 	hrtimer_init(&cfs_b->slack_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	cfs_b->slack_timer.function = sched_cfs_slack_timer;
-	cfs_b->distribute_running = 0;
 }
 
 static void init_cfs_rq_runtime(struct cfs_rq *cfs_rq)
