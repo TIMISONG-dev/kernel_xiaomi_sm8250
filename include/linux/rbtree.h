@@ -87,6 +87,8 @@ extern struct rb_node *rb_last(const struct rb_root *);
 extern void rb_insert_color_cached(struct rb_node *,
 				   struct rb_root_cached *, bool);
 extern void rb_erase_cached(struct rb_node *node, struct rb_root_cached *);
+extern void rb_add_cached(struct rb_node *node, struct rb_root_cached *tree,
+			  bool (*less)(struct rb_node *, const struct rb_node *));
 /* Same as rb_first(), but O(1) */
 #define rb_first_cached(root) (root)->rb_leftmost
 
