@@ -471,6 +471,27 @@ void rb_insert_color_cached(struct rb_node *node,
 }
 EXPORT_SYMBOL(rb_insert_color_cached);
 
+void rb_add_cached(struct rb_node *node, struct rb_root_cached *tree,
+	      bool (*less)(struct rb_node *, const struct rb_node *))
+{
+	struct rb_node **link = &tree->rb_root.rb_node;
+	struct rb_node *parent = NULL;
+	bool leftmost = true;
+
+	while (*link) {
+		parent = *link;
+		if (less(node, parent)) {
+			link = &parent->rb_left;
+		} else {
+			link = &parent->rb_right;
+			leftmost = false;
+		}
+	}
+
+	rb_link_node(node, parent, link);
+	rb_insert_color_cached(node, tree, leftmost);
+}
+
 void rb_erase_cached(struct rb_node *node, struct rb_root_cached *root)
 {
 	struct rb_node *rebalance;
