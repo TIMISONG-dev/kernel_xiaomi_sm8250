@@ -112,12 +112,6 @@ prio_changed_stop(struct rq *rq, struct task_struct *p, int oldprio)
 	BUG(); /* how!?, what priority? */
 }
 
-static unsigned int
-get_rr_interval_stop(struct rq *rq, struct task_struct *task)
-{
-	return 0;
-}
-
 static void update_curr_stop(struct rq *rq)
 {
 }
@@ -146,8 +140,6 @@ const struct sched_class stop_sched_class = {
 #endif
 
 	.task_tick		= task_tick_stop,
-
-	.get_rr_interval	= get_rr_interval_stop,
 
 	.prio_changed		= prio_changed_stop,
 	.switched_to		= switched_to_stop,
