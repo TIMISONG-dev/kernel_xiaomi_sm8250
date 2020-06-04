@@ -920,7 +920,7 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
 	}
 out:
 	if (offset_in_page(ret))
-		locked = 0;
+		locked = false;
 	mmap_write_unlock(current->mm);
 	if (locked && new_len > old_len)
 		mm_populate(new_addr + old_len, new_len - old_len);
