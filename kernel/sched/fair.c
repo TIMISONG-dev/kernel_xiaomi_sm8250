@@ -5583,17 +5583,15 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 			goto dequeue_throttle;
 	}
 
-dequeue_throttle:
-	if (!se) {
-		sub_nr_running(rq, 1);
-	}
-
-	util_est_update(&rq->cfs, p, task_sleep);
+	/* At this point se is NULL and we are at root level*/
+	sub_nr_running(rq, 1);
 
 	/* balance early to pull high priority tasks */
 	if (unlikely(!was_sched_idle && sched_idle_rq(rq)))
 		rq->next_balance = jiffies;
 
+dequeue_throttle:
+	util_est_update(&rq->cfs, p, task_sleep);
 	hrtick_update(rq);
 }
 
