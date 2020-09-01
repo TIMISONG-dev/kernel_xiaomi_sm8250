@@ -25,6 +25,8 @@ unsigned long topology_get_cpu_scale(int cpu)
 
 void topology_set_cpu_scale(unsigned int cpu, unsigned long capacity);
 
+bool topology_scale_freq_invariant(void);
+
 DECLARE_PER_CPU(unsigned long, thermal_pressure);
 
 static inline
