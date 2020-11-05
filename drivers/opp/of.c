@@ -942,6 +942,6 @@ void dev_pm_opp_of_register_em(struct cpumask *cpus)
 	if (ret || !cap)
 		return;
 
-	em_dev_register_perf_domain(cpu_dev, nr_opp, &em_cb, cpus);
+	em_dev_register_perf_domain(cpu_dev, nr_opp, &em_cb, cpus, true);
 }
 EXPORT_SYMBOL_GPL(dev_pm_opp_of_register_em);
