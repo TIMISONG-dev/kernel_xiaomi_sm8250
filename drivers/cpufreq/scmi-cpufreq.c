@@ -198,7 +198,8 @@ static int scmi_cpufreq_init(struct cpufreq_policy *policy)
 
 	policy->fast_switch_possible = true;
 
-	em_dev_register_perf_domain(cpu_dev, nr_opp, &em_cb, policy->cpus);
+	em_dev_register_perf_domain(cpu_dev, nr_opp, &em_cb, policy->cpus,
+				    false);
 
 	return 0;
 
