@@ -620,6 +620,11 @@ static inline bool cpu_has_hw_af(void)
 #ifdef CONFIG_ARM64_AMU_EXTN
 /* Check whether the cpu supports the Activity Monitors Unit (AMU) */
 extern bool cpu_has_amu_feat(int cpu);
+#else
+static inline bool cpu_has_amu_feat(int cpu)
+{
+	return false;
+}
 #endif
 
 #endif /* __ASSEMBLY__ */
