@@ -58,3 +58,8 @@ endchoice
 
 config PREEMPT_COUNT
        bool
+
+config SCHED_CORE
+	bool "Core Scheduling for SMT"
+	default y
+	depends on SCHED_SMT
