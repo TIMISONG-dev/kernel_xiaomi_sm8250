@@ -582,6 +582,10 @@ struct cfs_rq {
 
 	u64			exec_clock;
 	u64			min_vruntime;
+#ifdef CONFIG_SCHED_CORE
+	unsigned int		forceidle_seq;
+	u64			min_vruntime_fi;
+#endif
 
 	struct rb_root_cached	tasks_timeline;
 
@@ -1153,6 +1157,7 @@ struct rq {
 	unsigned int		core_pick_seq;
 	unsigned long		core_cookie;
 	unsigned char		core_forceidle;
+	unsigned int		core_forceidle_seq;
 #endif
 };
 
@@ -1225,6 +1230,8 @@ static inline raw_spinlock_t *__rq_lockp(struct rq *rq)
 
 	return &rq->__lock;
 }
+
+bool cfs_prio_less(struct task_struct *a, struct task_struct *b, bool fi);
 
 #else /* !CONFIG_SCHED_CORE */
 
