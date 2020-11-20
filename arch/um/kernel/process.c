@@ -207,7 +207,7 @@ void arch_cpu_idle(void)
 {
 	cpu_tasks[current_thread_info()->cpu].pid = os_getpid();
 	os_idle_sleep(UM_NSEC_PER_SEC);
-	local_irq_enable();
+	raw_local_irq_enable();
 }
 
 int __uml_cant_sleep(void) {
