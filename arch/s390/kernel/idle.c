@@ -126,7 +126,7 @@ void arch_cpu_idle(void)
 	if (!test_cpu_flag(CIF_MCCK_PENDING))
 		/* Halt the cpu and keep track of cpu time accounting. */
 		enabled_wait();
-	local_irq_enable();
+	raw_local_irq_enable();
 }
 
 void arch_cpu_idle_exit(void)
