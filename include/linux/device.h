@@ -1126,6 +1126,9 @@ struct device {
 	bool			dma_coherent:1;
 #endif
 
+	struct list_head	iommu_map_list;
+	struct mutex		iommu_map_lock;
+
 	ANDROID_KABI_RESERVE(1);
 	ANDROID_KABI_RESERVE(2);
 	ANDROID_KABI_RESERVE(3);
