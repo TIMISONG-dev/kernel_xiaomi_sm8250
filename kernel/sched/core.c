@@ -4028,15 +4028,20 @@ static void do_balance_callbacks(struct rq *rq, struct callback_head *head)
 	}
 }
 
+static void balance_push(struct rq *rq);
+
+struct callback_head balance_push_callback = {
+	.next = NULL,
+	.func = (void (*)(struct callback_head *))balance_push,
+};
+
 static inline struct callback_head *splice_balance_callbacks(struct rq *rq)
 {
 	struct callback_head *head = rq->balance_callback;
 
 	lockdep_assert_held(&rq->lock);
-	if (head) {
+	if (head)
 		rq->balance_callback = NULL;
-		rq->balance_flags &= ~BALANCE_WORK;
-	}
 
 	return head;
 }
@@ -4057,21 +4062,6 @@ static inline void balance_callbacks(struct rq *rq, struct callback_head *head)
 	}
 }
 
-static void balance_push(struct rq *rq);
-
-static inline void balance_switch(struct rq *rq)
-{
-	if (likely(!rq->balance_flags))
-		return;
-
-	if (rq->balance_flags & BALANCE_PUSH) {
-		balance_push(rq);
-		return;
-	}
-
-	__balance_callbacks(rq);
-}
-
 #else
 
 static inline void __balance_callbacks(struct rq *rq)
@@ -4084,10 +4074,6 @@ static inline struct callback_head *splice_balance_callbacks(struct rq *rq)
 }
 
 static inline void balance_callbacks(struct rq *rq, struct callback_head *head)
-{
-}
-
-static inline void balance_switch(struct rq *rq)
 {
 }
 
@@ -4118,7 +4104,7 @@ static inline void finish_lock_switch(struct rq *rq)
 	 * prev into current:
 	 */
 	spin_acquire(&rq->lock.dep_map, 0, 0, _THIS_IP_);
-	balance_switch(rq);
+	__balance_callbacks(rq);
 	raw_spin_unlock_irq(&rq->lock);
 }
 
@@ -7430,6 +7416,10 @@ static void balance_push(struct rq *rq)
 
 	lockdep_assert_held(&rq->lock);
 	SCHED_WARN_ON(rq->cpu != smp_processor_id());
+	/*
+	 * Ensure the thing is persistent until balance_push_set(.on = false);
+	 */
+	rq->balance_callback = &balance_push_callback;
 
 	/*
 	 * Both the cpu-hotplug and stop task are in this case and are
@@ -7479,9 +7469,9 @@ static void balance_push_set(int cpu, bool on)
 
 	rq_lock_irqsave(rq, &rf);
 	if (on)
-		rq->balance_flags |= BALANCE_PUSH;
+		rq->balance_callback = &balance_push_callback;
 	else
-		rq->balance_flags &= ~BALANCE_PUSH;
+		rq->balance_callback = NULL;
 	rq_unlock_irqrestore(rq, &rf);
 }
 
