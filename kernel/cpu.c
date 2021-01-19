@@ -166,6 +166,9 @@ static int cpuhp_invoke_callback(unsigned int cpu, enum cpuhp_state state,
 	int (*cb)(unsigned int cpu);
 	int ret, cnt, rollback_ret;
 
+	if (cpu_dying(cpu) != !bringup)
+		set_cpu_dying(cpu, !bringup);
+
 	if (st->fail == state) {
 		st->fail = CPUHP_INVALID;
 
@@ -2474,6 +2477,9 @@ EXPORT_SYMBOL(__cpu_present_mask);
 
 struct cpumask __cpu_active_mask __read_mostly;
 EXPORT_SYMBOL(__cpu_active_mask);
+
+struct cpumask __cpu_dying_mask __read_mostly;
+EXPORT_SYMBOL(__cpu_dying_mask);
 
 void init_cpu_present(const struct cpumask *src)
 {
