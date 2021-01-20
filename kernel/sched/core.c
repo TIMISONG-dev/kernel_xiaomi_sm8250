@@ -7468,6 +7468,7 @@ static void balance_push_set(int cpu, bool on)
 	struct rq_flags rf;
 
 	rq_lock_irqsave(rq, &rf);
+	rq->balance_push = on;
 	if (on) {
 		WARN_ON_ONCE(rq->balance_callback);
 		rq->balance_callback = &balance_push_callback;
@@ -7645,10 +7646,12 @@ int sched_cpu_deactivate(unsigned int cpu)
 	nohz_balance_exit_idle(rq);
 
 	set_cpu_active(cpu, false);
+	balance_push_set(cpu, true);
+
 	/*
-	 * We've cleared cpu_active_mask, wait for all preempt-disabled and RCU
-	 * users of this state to go away such that all new such users will
-	 * observe it.
+	 * We've cleared cpu_active_mask / set balance_push, wait for all
+	 * preempt-disabled and RCU users of this state to go away such that
+	 * all new such users will observe it.
 	 *
 	 * Do sync before park smpboot threads to take care the rcu boost case.
 	 */
@@ -7657,8 +7660,6 @@ int sched_cpu_deactivate(unsigned int cpu)
 	synchronize_sched();
 #endif
 	synchronize_rcu();
-
-	balance_push_set(cpu, true);
 
 	rq_lock_irqsave(rq, &rf);
 	if (rq->rd) {
