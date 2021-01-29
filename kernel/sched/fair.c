@@ -26,10 +26,6 @@
 
 #include "walt.h"
 
-#ifdef CONFIG_SMP
-static inline bool task_fits_max(struct task_struct *p, int cpu);
-#endif /* CONFIG_SMP */
-
 #ifdef CONFIG_SCHED_WALT
 static void walt_fixup_sched_stats_fair(struct rq *rq, struct task_struct *p,
 					u16 updated_demand_scaled,
@@ -4095,6 +4091,29 @@ static inline int task_fits_cpu(struct task_struct *p, int cpu)
 	return util_fits_cpu(util, uclamp_min, uclamp_max, cpu);
 }
 
+static inline void update_misfit_status(struct task_struct *p, struct rq *rq)
+{
+	if (!static_branch_unlikely(&sched_asym_cpucapacity))
+		return;
+
+	if (!p || p->nr_cpus_allowed == 1) {
+		rq->misfit_task_load = 0;
+		return;
+	}
+
+	if (task_fits_cpu(p, cpu_of(rq))) {
+		rq->misfit_task_load = 0;
+		return;
+	}
+
+	/*
+	 * Make sure that misfit_task_load will not be null even if
+	 * task_h_load() returns 0.
+	 */
+	rq->misfit_task_load = max_t(unsigned long, task_h_load(p), 1);
+}
+
+#ifdef CONFIG_SCHED_WALT
 static inline bool task_fits_max(struct task_struct *p, int cpu)
 {
 	unsigned long capacity = capacity_orig_of(cpu);
@@ -4118,29 +4137,6 @@ static inline bool task_fits_max(struct task_struct *p, int cpu)
 	return task_fits_cpu(p, cpu);
 }
 
-static inline void update_misfit_status(struct task_struct *p, struct rq *rq)
-{
-	if (!static_branch_unlikely(&sched_asym_cpucapacity))
-		return;
-
-	if (!p || p->nr_cpus_allowed == 1) {
-		rq->misfit_task_load = 0;
-		return;
-	}
-
-	if (task_fits_max(p, cpu_of(rq))) {
-		rq->misfit_task_load = 0;
-		return;
-	}
-
-	/*
-	 * Make sure that misfit_task_load will not be null even if
-	 * task_h_load() returns 0.
-	 */
-	rq->misfit_task_load = max_t(unsigned long, task_h_load(p), 1);
-}
-
-#ifdef CONFIG_SCHED_WALT
 static inline bool task_demand_fits(struct task_struct *p, int cpu)
 {
 	unsigned long capacity = capacity_orig_of(cpu);
