@@ -7748,7 +7748,7 @@ redo:
 			 */
 			if (((cpu_rq(env->src_cpu)->nr_running > 2) ||
 			     (env->flags & LBF_IGNORE_BIG_TASKS)) &&
-			    (load >> env->sd->nr_balance_failed) > env->imbalance)
+			    shr_bound(load, env->sd->nr_balance_failed) > env->imbalance)
 				goto next;
 
 			env->imbalance -= load;
