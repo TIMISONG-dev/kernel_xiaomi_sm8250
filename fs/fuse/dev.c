@@ -489,8 +489,8 @@ static void request_wait_answer(struct fuse_conn *fc, struct fuse_req *req)
 	 * Wait half of freeze_timeout_msecs to avoid getting stuck.
 	 */
 	while (!test_bit(FR_FINISHED, &req->flags))
-		wait_event_freezable(req->waitq,
-				test_bit(FR_FINISHED, &req->flags));
+		wait_event_freezable_timeout(req->waitq,
+			test_bit(FR_FINISHED, &req->flags), freeze_timeout_msecs / 2);
 }
 
 static void __fuse_request_send(struct fuse_conn *fc, struct fuse_req *req)
