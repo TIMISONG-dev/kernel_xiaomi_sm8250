@@ -38,12 +38,12 @@ void topology_set_thermal_pressure(const struct cpumask *cpus, unsigned long th_
 void topology_update_thermal_pressure(const struct cpumask *cpus,
 				      unsigned long capped_freq);
 					  
-DECLARE_PER_CPU(unsigned long, freq_scale);
+DECLARE_PER_CPU(unsigned long, arch_freq_scale);
 
 static inline
 unsigned long topology_get_freq_scale(int cpu)
 {
-	return per_cpu(freq_scale, cpu);
+	return per_cpu(arch_freq_scale, cpu);
 }
 
 DECLARE_PER_CPU(unsigned long, max_freq_scale);
