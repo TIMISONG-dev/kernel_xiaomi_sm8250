@@ -1657,8 +1657,6 @@ irqreturn_t mhi_intvec_threaded_handlr(int irq_number, void *dev)
 	enum MHI_PM_STATE pm_state = 0;
 	enum mhi_ee ee = 0;
 
-	MHI_VERB("Enter\n");
-
 	write_lock_irq(&mhi_cntrl->pm_lock);
 	if (!MHI_REG_ACCESS_VALID(mhi_cntrl->pm_state)) {
 		write_unlock_irq(&mhi_cntrl->pm_lock);
@@ -1720,8 +1718,6 @@ irqreturn_t mhi_intvec_threaded_handlr(int irq_number, void *dev)
 	}
 
 exit_intvec:
-	MHI_VERB("Exit\n");
-
 	return IRQ_HANDLED;
 }
 
