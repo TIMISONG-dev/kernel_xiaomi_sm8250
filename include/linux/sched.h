@@ -2200,4 +2200,10 @@ static inline void set_wake_up_idle(bool enabled)
 		current->flags &= ~PF_WAKE_UP_IDLE;
 }
 
+#ifdef CONFIG_SCHED_CORE
+extern void sched_core_free(struct task_struct *tsk);
+#else
+static inline void sched_core_free(struct task_struct *tsk) { }
+#endif
+
 #endif
