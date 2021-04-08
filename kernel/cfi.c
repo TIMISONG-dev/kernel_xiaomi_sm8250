@@ -190,17 +190,19 @@ static void update_shadow(struct module *mod, unsigned long min_addr,
 	struct cfi_shadow *next = (struct cfi_shadow *)
 		__get_free_pages(GFP_KERNEL, SHADOW_ORDER);
 
-	next->r.mod_min_addr = min_addr;
-	next->r.mod_max_addr = max_addr;
-	next->r.min_page = min_addr >> PAGE_SHIFT;
-	next->r.max_page = max_addr >> PAGE_SHIFT;
-
 	mutex_lock(&shadow_update_lock);
 	prev = rcu_dereference_protected(cfi_shadow, 1);
-	prepare_next_shadow(prev, next);
 
-	fn(next, mod);
-	set_memory_ro((unsigned long)next, SHADOW_PAGES);
+	if (next) {
+		next->r.mod_min_addr = min_addr;
+		next->r.mod_max_addr = max_addr;
+		next->r.min_page = min_addr >> PAGE_SHIFT;
+		next->r.max_page = max_addr >> PAGE_SHIFT;
+		prepare_next_shadow(prev, next);
+
+		fn(next, mod);
+		set_memory_ro((unsigned long)next, SHADOW_PAGES);
+	}
 	rcu_assign_pointer(cfi_shadow, next);
 
 	mutex_unlock(&shadow_update_lock);
