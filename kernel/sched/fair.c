@@ -8472,7 +8472,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 		return 0;
 
 	/* Disregard percpu kthreads; they are where they need to be. */
-        if ((p->flags & PF_KTHREAD) && kthread_is_per_cpu(p))
+    if (kthread_is_per_cpu(p))
 		return 0;
 
 	if ((p->in_iowait || uclamp_boosted(p)) &&
