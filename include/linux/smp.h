@@ -14,6 +14,8 @@
 #include <linux/init.h>
 #include <linux/llist.h>
 
+struct pt_regs;
+
 typedef void (*smp_call_func_t)(void *info);
 struct __call_single_data {
 	struct llist_node llist;
@@ -54,6 +56,14 @@ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
 		gfp_t gfp_flags);
 
 int smp_call_function_single_async(int cpu, struct __call_single_data *csd);
+
+/*
+ * Cpus stopping functions in panic. All have default weak definitions.
+ * Architecture-dependent code may override them.
+ */
+void panic_smp_self_stop(void);
+void nmi_panic_self_stop(struct pt_regs *regs);
+void crash_smp_send_stop(void);
 
 #ifdef CONFIG_SMP
 
