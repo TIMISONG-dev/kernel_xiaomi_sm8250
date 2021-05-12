@@ -211,7 +211,6 @@ asmlinkage notrace void secondary_start_kernel(void)
 	cpu_uninstall_idmap();
 
 	rcu_cpu_starting(cpu);
-	preempt_disable();
 	trace_hardirqs_off();
 
 	/*
