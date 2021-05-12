@@ -244,7 +244,6 @@ static void notrace start_secondary(void *unused)
 	cpu_init();
 	fpu__init_cpu();
 	x86_cpuinit.early_percpu_clock_init();
-	preempt_disable();
 	smp_callin();
 
 	enable_start_cpu0 = 0;
