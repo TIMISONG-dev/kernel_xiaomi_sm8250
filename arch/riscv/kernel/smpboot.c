@@ -108,6 +108,5 @@ asmlinkage void __init smp_callin(void)
 	set_cpu_online(smp_processor_id(), 1);
 	local_flush_tlb_all();
 	local_irq_enable();
-	preempt_disable();
 	cpu_startup_entry(CPUHP_AP_ONLINE_IDLE);
 }
