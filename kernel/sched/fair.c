@@ -11101,18 +11101,18 @@ static inline int on_null_domain(struct rq *rq)
  */
 static inline int find_new_ilb(void)
 {
+	int ilb;
 	const struct cpumask *hk_mask;
-	int ilb_cpu;
 
 	hk_mask = housekeeping_cpumask(HK_FLAG_MISC);
 
-	for_each_cpu_and(ilb_cpu, nohz.idle_cpus_mask, hk_mask) {
+	for_each_cpu_and(ilb, nohz.idle_cpus_mask, hk_mask) {
 
-		if (ilb_cpu == smp_processor_id())
+		if (ilb == smp_processor_id())
 			continue;
 
-		if (idle_cpu(ilb_cpu))
-			return ilb_cpu;
+		if (idle_cpu(ilb))
+			return ilb;
 	}
 
 	return -1;
