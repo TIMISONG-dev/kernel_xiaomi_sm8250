@@ -3252,7 +3252,7 @@ static bool __blk_mq_poll(struct blk_mq_hw_ctx *hctx, struct request *rq)
 		if (signal_pending_state(state, current))
 			set_current_state(TASK_RUNNING);
 
-		if (current->state == TASK_RUNNING)
+		if (task_is_running(current))
 			return true;
 		if (ret < 0)
 			break;
