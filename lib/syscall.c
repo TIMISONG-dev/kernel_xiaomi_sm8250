@@ -65,8 +65,8 @@ int task_current_syscall(struct task_struct *target, long *callno,
 			 unsigned long args[6], unsigned int maxargs,
 			 unsigned long *sp, unsigned long *pc)
 {
-	long state;
 	unsigned long ncsw;
+	unsigned int state;
 
 	if (unlikely(maxargs > 6))
 		return -EINVAL;
@@ -74,7 +74,7 @@ int task_current_syscall(struct task_struct *target, long *callno,
 	if (target == current)
 		return collect_syscall(target, callno, args, maxargs, sp, pc);
 
-	state = target->state;
+	state = READ_ONCE(target->__state);
 	if (unlikely(!state))
 		return -EAGAIN;
 
