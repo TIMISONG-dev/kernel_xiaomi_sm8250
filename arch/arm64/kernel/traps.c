@@ -131,7 +131,7 @@ void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 		 */
 		frame.fp = thread_saved_fp(tsk);
 		frame.pc = thread_saved_pc(tsk);
-		cur_state = tsk->state;
+		cur_state = READ_ONCE(tsk->__state);
 		cur_sp = thread_saved_sp(tsk);
 		cur_fp = frame.fp;
 	}
@@ -141,7 +141,7 @@ void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 
 	printk("Call trace:\n");
 	do {
-		if (tsk != current && (cur_state != tsk->state
+		if (tsk != current && (cur_state != READ_ONCE(tsk->__state)
 			/*
 			 * We would not be printing backtrace for the task
 			 * that has changed state from uninterruptible to

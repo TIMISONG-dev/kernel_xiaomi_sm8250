@@ -1151,7 +1151,7 @@ void rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
  * Must be called with lock->wait_lock held and interrupts disabled
  */
 static int __sched
-__rt_mutex_slowlock(struct rt_mutex *lock, int state,
+__rt_mutex_slowlock(struct rt_mutex *lock, unsigned int state,
 		    struct hrtimer_sleeper *timeout,
 		    struct rt_mutex_waiter *waiter)
 {
@@ -1216,7 +1216,7 @@ static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
  * Slow path lock function:
  */
 static int __sched
-rt_mutex_slowlock(struct rt_mutex *lock, int state,
+rt_mutex_slowlock(struct rt_mutex *lock, unsigned int state,
 		  struct hrtimer_sleeper *timeout,
 		  enum rtmutex_chainwalk chwalk)
 {
@@ -1392,8 +1392,8 @@ static bool __sched rt_mutex_slowunlock(struct rt_mutex *lock,
  * architecture does not support cmpxchg or when debugging is enabled.
  */
 static inline int
-rt_mutex_fastlock(struct rt_mutex *lock, int state,
-		  int (*slowfn)(struct rt_mutex *lock, int state,
+rt_mutex_fastlock(struct rt_mutex *lock, unsigned int state,
+		  int (*slowfn)(struct rt_mutex *lock, unsigned int state,
 				struct hrtimer_sleeper *timeout,
 				enum rtmutex_chainwalk chwalk))
 {
@@ -1404,10 +1404,10 @@ rt_mutex_fastlock(struct rt_mutex *lock, int state,
 }
 
 static inline int
-rt_mutex_timed_fastlock(struct rt_mutex *lock, int state,
+rt_mutex_timed_fastlock(struct rt_mutex *lock, unsigned int state,
 			struct hrtimer_sleeper *timeout,
 			enum rtmutex_chainwalk chwalk,
-			int (*slowfn)(struct rt_mutex *lock, int state,
+			int (*slowfn)(struct rt_mutex *lock, unsigned int state,
 				      struct hrtimer_sleeper *timeout,
 				      enum rtmutex_chainwalk chwalk))
 {
