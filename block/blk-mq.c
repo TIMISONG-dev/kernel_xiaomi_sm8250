@@ -3236,7 +3236,7 @@ static bool __blk_mq_poll(struct blk_mq_hw_ctx *hctx, struct request *rq)
 
 	hctx->poll_considered++;
 
-	state = current->state;
+	state = get_current_state();
 	while (!need_resched()) {
 		int ret;
 
