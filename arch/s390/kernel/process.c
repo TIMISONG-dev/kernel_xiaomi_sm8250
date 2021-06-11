@@ -191,7 +191,7 @@ unsigned long get_wchan(struct task_struct *p)
 	unsigned long return_address;
 	int count;
 
-	if (!p || p == current || p->state == TASK_RUNNING || !task_stack_page(p))
+	if (!p || p == current || task_is_running(p) || !task_stack_page(p))
 		return 0;
 
 	if (!try_get_task_stack(p))
