@@ -201,7 +201,7 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
 			last_break = jiffies;
 		}
 		/* use "==" to skip the TASK_KILLABLE tasks waiting on NFS */
-		if (t->state == TASK_UNINTERRUPTIBLE)
+		if (READ_ONCE(t->__state) == TASK_UNINTERRUPTIBLE)
 			/* Check for selective monitoring */
 			if (!sysctl_hung_task_selective_monitoring ||
 			    t->hang_detection_enabled)
