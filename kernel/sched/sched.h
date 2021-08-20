@@ -568,6 +568,7 @@ struct cfs_rq {
 	unsigned int		nr_running;
 	unsigned int		h_nr_running;
 	/* h_nr_running for SCHED_IDLE tasks */
+	unsigned int		idle_nr_running;   /* SCHED_IDLE */
 	unsigned int		idle_h_nr_running;
 	unsigned int		h_nr_delayed;
 
