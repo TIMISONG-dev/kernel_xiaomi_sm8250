@@ -2,7 +2,7 @@
 /*
  * Energy Model of CPUs
  *
- * Copyright (c) 2018, Arm ltd.
+ * Copyright (c) 2018-2021, Arm ltd.
  * Written by: Quentin Perret, Arm ltd.
  */
 
@@ -39,6 +39,7 @@ static void em_debug_create_cs(struct em_cap_state *cs, struct dentry *pd)
 	debugfs_create_ulong("frequency", 0444, d, &cs->frequency);
 	debugfs_create_ulong("power", 0444, d, &cs->power);
 	debugfs_create_ulong("cost", 0444, d, &cs->cost);
+	debugfs_create_ulong("inefficient", 0444, d, &cs->flags);
 }
 
 static int em_debug_cpus_show(struct seq_file *s, void *unused)
@@ -146,6 +147,7 @@ static struct em_perf_domain *em_create_pd(cpumask_t *span, int nr_states,
 		}
 
 		if (table[i].cost >= prev_cost) {
+			table[i].flags = EM_PERF_STATE_INEFFICIENT;
 			pr_debug("pd%d: EM: OPP:%lu is inefficient\n",
 				cpu, table[i].frequency);
 		} else {
