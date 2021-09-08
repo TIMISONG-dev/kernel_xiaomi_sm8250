@@ -2280,6 +2280,18 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
 	if (ret)
 		return ret;
 
+	/* Resolve scratch bounds before notifying or publishing the new policy. */
+	if (cpufreq_driver->target_index && new_policy->freq_table) {
+		int index;
+
+		index = cpufreq_frequency_table_target(new_policy, new_policy->min,
+						       CPUFREQ_RELATION_L);
+		new_policy->min = new_policy->freq_table[index].frequency;
+		index = cpufreq_frequency_table_target(new_policy, new_policy->max,
+						       CPUFREQ_RELATION_H);
+		new_policy->max = new_policy->freq_table[index].frequency;
+	}
+
 	/* notification of the new policy */
 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
 			CPUFREQ_NOTIFY, new_policy);
