@@ -1021,6 +1021,7 @@ struct rq {
 	/* Ensure that all clocks are in the same cache line */
 	u64			clock_task ____cacheline_aligned;
 	u64			clock_pelt;
+	u64			clock_pelt_mult;
 	unsigned long		lost_idle_time;
 
 	atomic_t		nr_iowait;
@@ -1217,6 +1218,14 @@ static inline u64 rq_clock_task(struct rq *rq)
 	assert_clock_updated(rq);
 
 	return rq->clock_task;
+}
+
+static inline u64 rq_clock_pelt_mult(struct rq *rq)
+{
+	lockdep_assert_held(&rq->lock);
+	assert_clock_updated(rq);
+
+	return rq->clock_pelt_mult;
 }
 
 static inline void rq_clock_skip_update(struct rq *rq)
