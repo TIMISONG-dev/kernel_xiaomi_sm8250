@@ -117,6 +117,13 @@ extern int sysctl_sched_lib_name_handler(struct ctl_table *table, int write,
 					 loff_t *ppos);
 extern bool is_sched_lib_based_app(pid_t pid);
 
+#ifdef CONFIG_SMP
+extern unsigned int sysctl_sched_pelt_multiplier;
+
+int sched_pelt_multiplier(struct ctl_table *table, int write, void *buffer,
+		size_t *lenp, loff_t *ppos);
+#endif
+
 #if defined(CONFIG_ENERGY_MODEL) && defined(CONFIG_CPU_FREQ_GOV_SCHEDUTIL)
 extern unsigned int sysctl_sched_energy_aware;
 int sched_energy_aware_handler(struct ctl_table *table, int write,
