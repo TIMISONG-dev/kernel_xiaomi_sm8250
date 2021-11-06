@@ -136,18 +136,15 @@ typedef int (*msm_queue_func)(void *d1, void *d2);
 	unsigned long flags;					\
 	struct msm_queue_head *__q = (queue);			\
 	type *node = NULL; \
-	typeof(node) __ret = NULL; \
 	msm_queue_func __f = (func); \
 	spin_lock_irqsave(&__q->lock, flags);			\
 	if (!list_empty(&__q->list)) { \
 		list_for_each_entry(node, &__q->list, member) \
 			if ((__f) && __f(node, data)) { \
-				__ret = node; \
 				break; \
 			} \
 	} \
 	spin_unlock_irqrestore(&__q->lock, flags);			\
-	__ret; \
 } while (0)
 
 typedef int (*msm_queue_find_func)(void *d1, void *d2);
