@@ -43,6 +43,7 @@ const struct cpumask *cpu_coregroup_mask(int cpu);
 /* Replace task scheduler's default thermal pressure API */
 #define arch_scale_thermal_pressure topology_get_thermal_pressure
 #define arch_set_thermal_pressure   topology_set_thermal_pressure
+#define arch_update_thermal_pressure	topology_update_thermal_pressure
 
 #else
 
