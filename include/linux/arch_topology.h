@@ -37,6 +37,9 @@ unsigned long topology_get_thermal_pressure(int cpu)
 
 void topology_set_thermal_pressure(const struct cpumask *cpus, unsigned long th_pressure);
 
+void topology_update_thermal_pressure(const struct cpumask *cpus,
+				      unsigned long capped_freq);
+					  
 DECLARE_PER_CPU(unsigned long, freq_scale);
 
 static inline
