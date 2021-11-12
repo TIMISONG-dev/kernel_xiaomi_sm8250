@@ -44,9 +44,8 @@ unsigned int rmnet_wq_frequency __read_mostly = 1000;
 #define PS_WORK_ACTIVE_BIT 0
 #define PS_INTERVAL (((!rmnet_wq_frequency) ?                             \
 					1 : rmnet_wq_frequency/10) * (HZ/100))
+#define PS_INTERVAL_JF (msecs_to_jiffies(PS_INTERVAL))
 #define NO_DELAY (0x0000 * HZ)
-#define PS_INTERVAL_MS (1000)
-#define PS_INTERVAL_KT (ms_to_ktime(PS_INTERVAL_MS))
 #define WATCHDOG_EXPIRE_JF (msecs_to_jiffies(50))
 
 #ifdef CONFIG_QCOM_QMI_DFC
@@ -1231,7 +1230,7 @@ end:
 	rcu_read_lock();
 	if (!rmnet_work_quit)
 		queue_delayed_work(rmnet_ps_wq, &real_work->work,
-				   PS_INTERVAL);
+				   PS_INTERVAL_JF);
 	rcu_read_unlock();
 }
 
