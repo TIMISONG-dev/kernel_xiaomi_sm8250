@@ -3148,7 +3148,7 @@ static inline void cfs_rq_util_change(struct cfs_rq *cfs_rq, int flags)
 		 * As is, the util number is not freq-invariant (we'd have to
 		 * implement arch_scale_freq_capacity() for that).
 		 *
-		 * See cpu_util().
+		 * See cpu_util_cfs().
 		 */
 		cpufreq_update_util(rq, flags);
 	}
@@ -5411,7 +5411,7 @@ bool cpu_overutilized(int cpu)
 	unsigned long rq_util_min = uclamp_rq_get(cpu_rq(cpu), UCLAMP_MIN);
 	unsigned long rq_util_max = uclamp_rq_get(cpu_rq(cpu), UCLAMP_MAX);
 
-	return !util_fits_cpu(cpu_util(cpu), rq_util_min, rq_util_max, cpu);
+	return !util_fits_cpu(cpu_util_cfs(cpu), rq_util_min, rq_util_max, cpu);
 }
 
 static inline void update_overutilized_status(struct rq *rq)
@@ -6383,7 +6383,7 @@ static unsigned long cpu_util_without(int cpu, struct task_struct *p)
 
 	/* Task has no contribution or is new */
 	if (cpu != task_cpu(p) || !READ_ONCE(p->se.avg.last_update_time))
-		return cpu_util(cpu);
+		return cpu_util_cfs(cpu);
 
 	cfs_rq = &cpu_rq(cpu)->cfs;
 	util = READ_ONCE(cfs_rq->avg.util_avg);
@@ -6447,7 +6447,7 @@ static unsigned long cpu_util_without(int cpu, struct task_struct *p)
 	/*
 	 * Utilization (estimated) can exceed the CPU capacity, thus let's
 	 * clamp to the maximum CPU capacity to ensure consistency with
-	 * the cpu_util call.
+	 * cpu_util.
 	 */
 	return min_t(unsigned long, util, capacity_orig_of(cpu));
 }
@@ -6491,7 +6491,7 @@ static unsigned long cpu_util_next(int cpu, struct task_struct *p, int dst_cpu)
 		 * During wake-up, the task isn't enqueued yet and doesn't
 		 * appear in the cfs_rq->avg.util_est of any rq,
 		 * so just add it (if needed) to "simulate" what will be
-		 * cpu_util() after the task has been enqueued.
+		 * cpu_util after the task has been enqueued.
 		 */
 		if (dst_cpu == cpu)
 			util_est += _task_util_est(p);
@@ -8415,7 +8415,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 			env->flags |= LBF_NOHZ_AGAIN;
 
 		sgs->group_load += cpu_runnable_load(rq);
-		sgs->group_util += cpu_util(i);
+		sgs->group_util += cpu_util_cfs(i);
 
 		nr_running = rq->nr_running;
 		sgs->sum_nr_running += nr_running;
