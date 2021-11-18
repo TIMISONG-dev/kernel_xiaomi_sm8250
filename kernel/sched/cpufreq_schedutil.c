@@ -208,14 +208,12 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 static unsigned long sugov_get_util(struct sugov_cpu *sg_cpu)
 {
 	struct rq *rq = cpu_rq(sg_cpu->cpu);
-
-	unsigned long util_cfs = cpu_util_cfs(rq);
 	unsigned long max = arch_scale_cpu_capacity(sg_cpu->cpu);
 
 	sg_cpu->max = max;
 	sg_cpu->bw_dl = cpu_bw_dl(rq);
 
-	return effective_cpu_util(sg_cpu->cpu, util_cfs, max,
+	return effective_cpu_util(sg_cpu->cpu, cpu_util_cfs(sg_cpu->cpu), max,
 				  FREQUENCY_UTIL, NULL);
 }
 
