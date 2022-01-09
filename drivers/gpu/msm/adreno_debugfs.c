@@ -146,13 +146,12 @@ static void sync_event_print(struct seq_file *s,
 				sync_event->context->id, sync_event->timestamp);
 		break;
 	}
-	case KGSL_CMD_SYNCPOINT_TYPE_TIMELINE: {
-		struct event_timeline_info *info = sync_event->priv;
-		int j;
+	case KGSL_CMD_SYNCPOINT_TYPE_FENCE: {
+		int i;
 
-		for (j = 0; info && info[j].timeline; j++)
-			seq_printf(s, "timeline: %d seqno: %d",
-				info[j].timeline, info[j].seqno);
+		for (i = 0; i < sync_event->info.num_fences; i++)
+			seq_printf(s, "sync: %s",
+				sync_event->info.fences[i].name);
 		break;
 	}
 	default:
