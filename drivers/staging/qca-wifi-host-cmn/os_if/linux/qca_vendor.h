@@ -4463,6 +4463,11 @@ enum qca_wlan_vendor_attr_config {
 	 * 1-Enable (is the primary STA), 0-Disable (is not the primary STA)
 	 */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_CONCURRENT_STA_PRIMARY = 79,
+	
+	/* 8-bit unsigned value to set nss and ant mode.
+	 * 1-1x1, 2-2x2
+	 */
+	QCA_WLAN_VENDOR_ATTR_CONFIG_SET_NSS_ANT = 82,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_AFTER_LAST,
