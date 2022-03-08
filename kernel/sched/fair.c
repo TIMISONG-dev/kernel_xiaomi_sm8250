@@ -3482,6 +3482,22 @@ static inline void add_tg_cfs_propagate(struct cfs_rq *cfs_rq, long runnable_sum
 
 #endif /* CONFIG_FAIR_GROUP_SCHED */
 
+#ifdef CONFIG_NO_HZ_COMMON
+static inline void update_cfs_rq_lag(struct cfs_rq *cfs_rq)
+{
+	struct rq *rq = rq_of(cfs_rq);
+
+	u64_u32_store(cfs_rq->last_update_lag,
+#ifdef CONFIG_CFS_BANDWIDTH
+		      /* Timer stopped by throttling */
+		      unlikely(cfs_rq->throttle_count) ? U64_MAX :
+#endif
+		      rq->clock - rq->clock_task + rq->clock_pelt);
+}
+#else
+static void update_cfs_rq_lag(struct cfs_rq *cfs_rq) {}
+#endif
+
 /**
  * update_cfs_rq_load_avg - update the cfs_rq's load/util averages
  * @now: current time, as per cfs_rq_clock_pelt()
@@ -3536,6 +3552,7 @@ update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq)
 			   cfs_rq->last_update_time_copy,
 			   sa->last_update_time);
 #endif
+	update_cfs_rq_lag(cfs_rq);
 
 	return decayed;
 }
@@ -6810,6 +6827,44 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 
 static void detach_entity_cfs_rq(struct sched_entity *se);
 
+#ifdef CONFIG_NO_HZ_COMMON
+static inline void migrate_se_pelt_lag(struct sched_entity *se)
+{
+	u64 now, last_update_lag;
+	struct cfs_rq *cfs_rq;
+	struct rq *rq;
+	bool is_idle;
+
+	cfs_rq = cfs_rq_of(se);
+	rq = rq_of(cfs_rq);
+
+	rcu_read_lock();
+	is_idle = is_idle_task(rcu_dereference(rq->curr));
+	rcu_read_unlock();
+
+	/*
+	 * The lag estimation comes with a cost we don't want to pay all the
+	 * time. Hence, limiting to the case where the source CPU is idle and
+	 * we know we are at the greatest risk to have an outdated clock.
+	 */
+	if (!is_idle)
+		return;
+
+	last_update_lag = u64_u32_load(cfs_rq->last_update_lag);
+
+	/* The clock has been stopped for throttling */
+	if (last_update_lag == U64_MAX)
+		return;
+
+	now = se->avg.last_update_time - last_update_lag +
+	      sched_clock_cpu(cpu_of(rq));
+
+	__update_load_avg_blocked_se(now, se);
+}
+#else
+static void migrate_se_pelt_lag(struct sched_entity *se) {}
+#endif
+
 /*
  * Called immediately before a task is migrated to a new CPU; task_cpu(p) and
  * cfs_rq_of(p) references at time of call are still valid and identify the
@@ -6817,18 +6872,17 @@ static void detach_entity_cfs_rq(struct sched_entity *se);
  */
 static void migrate_task_rq_fair(struct task_struct *p, int new_cpu)
 {
+	struct sched_entity *se = &p->se;
+	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+
 	/*
 	 * As blocked tasks retain absolute vruntime the migration needs to
 	 * deal with this by subtracting the old and adding the new
 	 * min_vruntime -- the latter is done by enqueue_entity() when placing
 	 * the task on the new runqueue.
 	 */
-	if (p->state == TASK_WAKING) {
-		struct sched_entity *se = &p->se;
-		struct cfs_rq *cfs_rq = cfs_rq_of(se);
-
+	if (p->state == TASK_WAKING)
 		se->vruntime -= u64_u32_load(cfs_rq->min_vruntime);
-	}
 
 	if (p->on_rq == TASK_ON_RQ_MIGRATING) {
 		/*
@@ -6836,22 +6890,28 @@ static void migrate_task_rq_fair(struct task_struct *p, int new_cpu)
 		 * rq->lock and can modify state directly.
 		 */
 		lockdep_assert_held(&task_rq(p)->lock);
-		detach_entity_cfs_rq(&p->se);
+		detach_entity_cfs_rq(se);
 
 	} else {
+		remove_entity_load_avg(se);
+
 		/*
-		 * We are supposed to update the task to "current" time, then
-		 * its up to date and ready to go to new CPU/cfs_rq. But we
-		 * have difficulty in getting what current time is, so simply
-		 * throw away the out-of-date time. This will result in the
-		 * wakee task is less decayed, but giving the wakee more load
-		 * sounds not bad.
+		 * Here, the task's PELT values have been updated according to
+		 * the current rq's clock. But if that clock hasn't been
+		 * updated in a while, a substantial idle time will be missed,
+		 * leading to an inflation after wake-up on the new rq.
+		 *
+		 * Estimate the missing time from the rq clock and update
+		 * sched_avg to improve the PELT continuity after migration.
 		 */
-		remove_entity_load_avg(&p->se);
+		migrate_se_pelt_lag(se);
 	}
 
 	/* Tell new CPU we are migrated */
-	p->se.avg.last_update_time = 0;
+	se->avg.last_update_time = 0;
+
+	/* We have migrated, no longer consider this task hot */
+	se->exec_start = 0;
 
 	update_scan_period(p, new_cpu);
 }
