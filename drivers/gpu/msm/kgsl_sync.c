@@ -446,7 +446,7 @@ static void kgsl_get_fence_names(struct dma_fence *fence,
 	}
 
 	info_ptr->fences = kcalloc(num_fences, sizeof(struct fence_info),
-			GFP_ATOMIC);
+			GFP_KERNEL);
 	if (info_ptr->fences == NULL)
 		return;
 
