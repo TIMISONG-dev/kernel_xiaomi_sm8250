@@ -737,13 +737,11 @@ static bool psci_enter_sleep(struct lpm_cpu *cpu, int idx, bool from_idle,
 	 */
 
 	if (!idx) {
-		stop_critical_timings();
 		if (rcu_idle)
 			rcu_idle_enter();
 		cpu_do_idle();
 		if (rcu_idle)
 			rcu_idle_exit();
-		start_critical_timings();
 		return true;
 	}
 
@@ -759,7 +757,6 @@ static bool psci_enter_sleep(struct lpm_cpu *cpu, int idx, bool from_idle,
 
 	update_debug_pc_event(CPU_ENTER, state_id,
 			0xdeaffeed, 0xdeaffeed, from_idle);
-	stop_critical_timings();
 
 	if (rcu_idle)
 		rcu_idle_enter();
@@ -767,7 +764,6 @@ static bool psci_enter_sleep(struct lpm_cpu *cpu, int idx, bool from_idle,
 	if (rcu_idle)
 		rcu_idle_exit();
 
-	start_critical_timings();
 	update_debug_pc_event(CPU_EXIT, state_id,
 			success, 0xdeaffeed, from_idle);
 
@@ -814,9 +810,7 @@ exit:
 
 	cluster_unprepare(cpu->parent, cpumask, idx, true, end_time, success);
 	cpu_unprepare(cpu, idx, true);
-	dev->last_residency = ktime_us_delta(ktime_get(), start);
 	RCU_NONIDLE(trace_cpu_idle_exit(idx, success));
-	local_irq_enable();
 	return idx;
 }
 
