@@ -7312,12 +7312,6 @@ static void find_best_target(struct sched_domain *sd, cpumask_t *cpus,
 					continue;
 
 				/*
-				 * Skip searching for active CPU for tasks have
-				 * high priority & prefer_high_cap.
-				 */
-				if (prioritized_task)
-					continue;
-				/*
 				 * Case A.2: Target ACTIVE CPU
 				 * Favor CPUs with max spare capacity.
 				 */
