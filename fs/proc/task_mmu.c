@@ -1823,7 +1823,7 @@ cont:
 			break;
 	}
 	pte_unmap_unlock(pte - 1, ptl);
-	reclaimed = reclaim_pages_from_list(&page_list, vma);
+	reclaimed = reclaim_pages_from_list(&page_list);
 	rp->nr_reclaimed += reclaimed;
 	rp->nr_to_reclaim -= reclaimed;
 	if (rp->nr_to_reclaim < 0)
