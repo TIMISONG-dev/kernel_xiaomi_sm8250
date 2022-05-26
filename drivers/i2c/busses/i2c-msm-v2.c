@@ -2253,7 +2253,7 @@ static int i2c_msm_pm_xfer_start(struct i2c_msm_ctrl *ctrl)
 	 * and systme-pm are in transition concurrently)
 	 */
 	if (ctrl->pwr_state != I2C_MSM_PM_RT_ACTIVE) {
-		dev_info(ctrl->dev, "Runtime PM-callback was not invoked\n");
+		dev_dbg(ctrl->dev, "Runtime PM-callback was not invoked\n");
 		i2c_msm_pm_resume(ctrl->dev);
 	}
 
