@@ -5750,7 +5750,7 @@ dequeue_throttle:
 
 /* Working cpumask for: load_balance, load_balance_newidle. */
 DEFINE_PER_CPU(cpumask_var_t, load_balance_mask);
-DEFINE_PER_CPU(cpumask_var_t, select_idle_mask);
+DEFINE_PER_CPU(cpumask_var_t, select_rq_mask);
 
 #ifdef CONFIG_NO_HZ_COMMON
 
@@ -6227,7 +6227,7 @@ static inline int select_idle_smt(struct task_struct *p, struct sched_domain *sd
  */
 static int select_idle_cpu(struct task_struct *p, struct sched_domain *sd, bool has_idle_core, int target)
 {
-	struct cpumask *cpus = this_cpu_cpumask_var_ptr(select_idle_mask);
+	struct cpumask *cpus = this_cpu_cpumask_var_ptr(select_rq_mask);
 	int i, cpu, idle_cpu = -1, nr = INT_MAX;
 	struct sched_domain_shared *sd_share;
 
@@ -6279,7 +6279,7 @@ select_idle_capacity(struct task_struct *p, struct sched_domain *sd, int target)
 	int cpu, best_cpu = -1;
 	struct cpumask *cpus;
 
-	cpus = this_cpu_cpumask_var_ptr(select_idle_mask);
+	cpus = this_cpu_cpumask_var_ptr(select_rq_mask);
 	cpumask_and(cpus, sched_domain_span(sd), &p->cpus_allowed);
 
 	task_util = task_util_est(p);
@@ -6551,43 +6551,95 @@ unsigned long capacity_curr_of(int cpu)
 }
 
 /*
- * compute_energy(): Estimates the energy that @pd would consume if @p was
- * migrated to @dst_cpu. compute_energy() predicts what will be the utilization
- * landscape of @pd's CPUs after the task migration, and uses the Energy Model
- * to compute what would be the energy if we decided to actually migrate that
- * task.
+ * energy_env - Utilization landscape for energy estimation.
+ * @task_busy_time: Utilization contribution by the task for which we test the
+ *                  placement. Given by eenv_task_busy_time().
+ * @pd_busy_time:   Utilization of the whole perf domain without the task
+ *                  contribution. Given by eenv_pd_busy_time().
+ * @cpu_cap:        Maximum CPU capacity for the perf domain.
+ * @pd_cap:         Entire perf domain capacity. (pd->nr_cpus * cpu_cap).
  */
-static long
-compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
+struct energy_env {
+	unsigned long task_busy_time;
+	unsigned long pd_busy_time;
+	unsigned long cpu_cap;
+	unsigned long pd_cap;
+};
+
+/*
+ * Compute the task busy time for compute_energy(). This time cannot be
+ * injected directly into effective_cpu_util() because of the IRQ scaling.
+ * The latter only makes sense with the most recent CPUs where the task has
+ * run.
+ */
+static inline void eenv_task_busy_time(struct energy_env *eenv,
+				       struct task_struct *p, int prev_cpu)
 {
-	struct cpumask *pd_mask = perf_domain_span(pd);
-	unsigned long cpu_cap = arch_scale_cpu_capacity(cpumask_first(pd_mask));
-	unsigned long max_util = 0, sum_util = 0;
+	unsigned long busy_time, max_cap = arch_scale_cpu_capacity(prev_cpu);
+	unsigned long irq = cpu_util_irq(cpu_rq(prev_cpu));
+
+	if (unlikely(irq >= max_cap))
+		busy_time = max_cap;
+	else
+		busy_time = scale_irq_capacity(task_util_est(p), irq, max_cap);
+
+	eenv->task_busy_time = busy_time;
+}
+
+/*
+ * Compute the perf_domain (PD) busy time for compute_energy(). Based on the
+ * utilization for each @pd_cpus, it however doesn't take into account
+ * clamping since the ratio (utilization / cpu_capacity) is already enough to
+ * scale the EM reported power consumption at the (eventually clamped)
+ * cpu_capacity.
+ *
+ * The contribution of the task @p for which we want to estimate the
+ * energy cost is removed (by cpu_util_next()) and must be calculated
+ * separately (see eenv_task_busy_time). This ensures:
+ *
+ *   - A stable PD utilization, no matter which CPU of that PD we want to place
+ *     the task on.
+ *
+ *   - A fair comparison between CPUs as the task contribution (task_util())
+ *     will always be the same no matter which CPU utilization we rely on
+ *     (util_avg or util_est).
+ *
+ * Set @eenv busy time for the PD that spans @pd_cpus. This busy time can't
+ * exceed @eenv->pd_cap.
+ */
+static inline void eenv_pd_busy_time(struct energy_env *eenv,
+				     struct cpumask *pd_cpus,
+				     struct task_struct *p)
+{
+	unsigned long busy_time = 0;
 	int cpu;
-	unsigned long eff_util;
 
-	/*
-	 * The capacity state of CPUs of the current rd can be driven by CPUs
-	 * of another rd if they belong to the same pd. So, account for the
-	 * utilization of these CPUs too by masking pd with cpu_online_mask
-	 * instead of the rd span.
-	 *
-	 * If an entire pd is outside of the current rd, it will not appear in
-	 * its pd list and will not be accounted by compute_energy().
-	 */
-	for_each_cpu_and(cpu, pd_mask, cpu_online_mask) {
-		unsigned long util_cfs;
-		struct task_struct *tsk = cpu == dst_cpu ? p : NULL;
+	for_each_cpu(cpu, pd_cpus) {
+		unsigned long util = cpu_util(cpu, p, -1, 0);
+		busy_time += effective_cpu_util(cpu, util, ENERGY_UTIL, NULL);
+	}
 
-		/*
-		 * Busy time computation: utilization clamping is not
-		 * required since the ratio (sum_util / cpu_capacity)
-		 * is already enough to scale the EM reported power
-		 * consumption at the (eventually clamped) cpu_capacity.
-		 */
-		util_cfs = cpu_util(cpu, p, -1, 0);
-		sum_util += effective_cpu_util(cpu, util_cfs, cpu_cap,
-					       ENERGY_UTIL, NULL);
+	eenv->pd_busy_time = min(eenv->pd_cap, busy_time);
+}
+
+/*
+ * Compute the maximum utilization for compute_energy() when the task @p
+ * is placed on the cpu @dst_cpu.
+ *
+ * Returns the maximum utilization among @eenv->cpus. This utilization can't
+ * exceed @eenv->cpu_cap.
+ */
+static inline unsigned long
+eenv_pd_max_util(struct energy_env *eenv, struct cpumask *pd_cpus,
+		 struct task_struct *p, int dst_cpu)
+{
+	unsigned long max_util = 0;
+	int cpu;
+
+	for_each_cpu(cpu, pd_cpus) {
+		struct task_struct *tsk = (cpu == dst_cpu) ? p : NULL;
+		unsigned long util = cpu_util(cpu, p, dst_cpu, 1);
+		unsigned long eff_util;
 
 		/*
 		 * Performance domain frequency: utilization clamping
@@ -6596,14 +6648,29 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 		 * NOTE: in case RT tasks are running, by default the
 		 * FREQUENCY_UTIL's utilization can be max OPP.
 		 */
-		util_cfs = cpu_util(cpu, p, dst_cpu, 1);
-		eff_util = effective_cpu_util(cpu, util_cfs, cpu_cap,
-					      FREQUENCY_UTIL, tsk);
-
+		eff_util = effective_cpu_util(cpu, util, FREQUENCY_UTIL, tsk);
 		max_util = max(max_util, eff_util);
 	}
 
-	return em_cpu_energy(pd->em_pd, max_util, sum_util);
+	return min(max_util, eenv->cpu_cap);
+}
+
+/*
+ * compute_energy(): Use the Energy Model to estimate the energy that @pd would
+ * consume for a given utilization landscape @eenv. When @dst_cpu < 0, the task
+ * contribution is ignored.
+ */
+static inline unsigned long
+compute_energy(struct energy_env *eenv, struct perf_domain *pd,
+	       struct cpumask *pd_cpus, struct task_struct *p, int dst_cpu)
+{
+	unsigned long max_util = eenv_pd_max_util(eenv, pd_cpus, p, dst_cpu);
+	unsigned long busy_time = eenv->pd_busy_time;
+
+	if (dst_cpu >= 0)
+		busy_time = min(eenv->pd_cap, busy_time + eenv->task_busy_time);
+
+	return em_cpu_energy(pd->em_pd, max_util, busy_time);
 }
 
 /*
@@ -6645,21 +6712,18 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
  * other use-cases too. So, until someone finds a better way to solve this,
  * let's keep things simple by re-using the existing slow path.
  */
-int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sync)
+static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sync)
 {
+	struct cpumask *cpus = this_cpu_cpumask_var_ptr(select_rq_mask);
 	unsigned long prev_delta = ULONG_MAX, best_delta = ULONG_MAX;
 	unsigned long p_util_min = uclamp_is_used() ? uclamp_eff_value(p, UCLAMP_MIN) : 0;
 	unsigned long p_util_max = uclamp_is_used() ? uclamp_eff_value(p, UCLAMP_MAX) : 1024;
-	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
-	int max_spare_cap_cpu_ls = prev_cpu, best_idle_cpu = -1;
 	int cpu, best_energy_cpu = prev_cpu, target = -1;
-	unsigned long max_spare_cap_ls = 0, target_cap;
-	unsigned long cpu_cap, util, base_energy = 0;
-	bool boosted, latency_sensitive = false;
-	unsigned int min_exit_lat = UINT_MAX;
-	struct cpuidle_state *idle;
+	struct root_domain *rd = this_rq()->rd;
+	unsigned long base_energy = 0;
 	struct sched_domain *sd;
 	struct perf_domain *pd;
+	struct energy_env eenv;
 
 	rcu_read_lock();
 	pd = rcu_dereference(rd->pd);
@@ -6690,28 +6754,43 @@ int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sync)
 	if (!task_util_est(p) && p_util_min == 0)
 		goto unlock;
 
-	latency_sensitive = uclamp_latency_sensitive(p);
-	boosted = uclamp_boosted(p);
-	target_cap = boosted ? 0 : ULONG_MAX;
+	eenv_task_busy_time(&eenv, p, prev_cpu);
 
 	for (; pd; pd = pd->next) {
 		unsigned long util_min = p_util_min, util_max = p_util_max;
-		unsigned long cur_delta, spare_cap, max_spare_cap = 0;
+		unsigned long cpu_cap, cpu_thermal_cap, util;
+		unsigned long cur_delta, max_spare_cap = 0;
 		unsigned long rq_util_min, rq_util_max;
 		bool compute_prev_delta = false;
 		unsigned long base_energy_pd;
 		int max_spare_cap_cpu = -1;
 
-		for_each_cpu_and(cpu, perf_domain_span(pd), sched_domain_span(sd)) {
+		cpumask_and(cpus, perf_domain_span(pd), cpu_online_mask);
+
+		if (cpumask_empty(cpus))
+			continue;
+
+		/* Account thermal pressure for the energy estimation */
+		cpu = cpumask_first(cpus);
+		cpu_thermal_cap = arch_scale_cpu_capacity(cpu);
+		cpu_thermal_cap -= 0; // FIXME: arch_scale_thermal_pressure(cpu);
+
+		eenv.cpu_cap = cpu_thermal_cap;
+		eenv.pd_cap = 0;
+
+		for_each_cpu(cpu, cpus) {
 			struct rq *rq = cpu_rq(cpu);
+
+			eenv.pd_cap += cpu_thermal_cap;
+
+			if (!cpumask_test_cpu(cpu, sched_domain_span(sd)))
+				continue;
 
 			if (!cpumask_test_cpu(cpu, &p->cpus_allowed))
 				continue;
 
 			util = cpu_util(cpu, p, cpu, 0);
 			cpu_cap = capacity_of(cpu);
-			spare_cap = cpu_cap;
-			lsub_positive(&spare_cap, util);
 
 			/*
 			 * Skip CPUs that cannot satisfy the capacity request.
@@ -6734,55 +6813,38 @@ int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sync)
 				util_min = max(rq_util_min, p_util_min);
 				util_max = max(rq_util_max, p_util_max);
 			}
+
 			if (!util_fits_cpu(util, util_min, util_max, cpu))
 				continue;
 
-			if (!latency_sensitive && cpu == prev_cpu) {
+			lsub_positive(&cpu_cap, util);
+
+			if (cpu == prev_cpu) {
 				/* Always use prev_cpu as a candidate. */
 				compute_prev_delta = true;
-			} else if (spare_cap > max_spare_cap) {
+			} else if (cpu_cap > max_spare_cap) {
 				/*
 				 * Find the CPU with the maximum spare capacity
 				 * in the performance domain.
 				 */
-				max_spare_cap = spare_cap;
+				max_spare_cap = cpu_cap;
 				max_spare_cap_cpu = cpu;
-			}
-
-			if (!latency_sensitive)
-				continue;
-
-			if (idle_cpu(cpu)) {
-				cpu_cap = capacity_orig_of(cpu);
-				if (boosted && cpu_cap < target_cap)
-					continue;
-				if (!boosted && cpu_cap > target_cap)
-					continue;
-				idle = idle_get_state(cpu_rq(cpu));
-				if (idle && idle->exit_latency > min_exit_lat &&
-						cpu_cap == target_cap)
-					continue;
-
-				if (idle)
-					min_exit_lat = idle->exit_latency;
-				target_cap = cpu_cap;
-				best_idle_cpu = cpu;
-			} else if (spare_cap > max_spare_cap_ls) {
-				max_spare_cap_ls = spare_cap;
-				max_spare_cap_cpu_ls = cpu;
 			}
 		}
 
-		if (!latency_sensitive && max_spare_cap_cpu < 0 && !compute_prev_delta)
+		if (max_spare_cap_cpu < 0 && !compute_prev_delta)
 			continue;
 
+		eenv_pd_busy_time(&eenv, cpus, p);
 		/* Compute the 'base' energy of the pd, without @p */
-		base_energy_pd = compute_energy(p, -1, pd);
+		base_energy = compute_energy(&eenv, pd, cpus, p, -1);
 		base_energy += base_energy_pd;
 
 		/* Evaluate the energy impact of using prev_cpu. */
 		if (compute_prev_delta) {
-			prev_delta = compute_energy(p, prev_cpu, pd);
+			prev_delta = compute_energy(&eenv, pd, cpus, p,
+						    prev_cpu);
+			/* CPU utilization has changed */
 			if (prev_delta < base_energy_pd)
 				goto unlock;
 			prev_delta -= base_energy_pd;
@@ -6790,8 +6852,10 @@ int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sync)
 		}
 
 		/* Evaluate the energy impact of using max_spare_cap_cpu. */
-		if (max_spare_cap_cpu >= 0 && max_spare_cap_cpu != prev_cpu) {
-			cur_delta = compute_energy(p, max_spare_cap_cpu, pd);
+		if (max_spare_cap_cpu >= 0) {
+			cur_delta = compute_energy(&eenv, pd, cpus, p,
+						   max_spare_cap_cpu);
+			/* CPU utilization has changed */
 			if (cur_delta < base_energy_pd)
 				goto unlock;
 			cur_delta -= base_energy_pd;
@@ -6802,9 +6866,6 @@ int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sync)
 		}
 	}
 	rcu_read_unlock();
-
-	if (latency_sensitive)
-		return best_idle_cpu >= 0 ?  best_idle_cpu : max_spare_cap_cpu_ls;
 
 	/*
 	 * Pick the best CPU if prev_cpu cannot be used, or if it saves at
