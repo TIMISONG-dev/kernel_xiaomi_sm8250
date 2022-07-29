@@ -460,7 +460,7 @@ static inline bool rt_task_fits_capacity(struct task_struct *p, int cpu)
 	unsigned int cpu_cap;
 
 	/* Only heterogeneous systems can benefit from this check */
-	if (!static_branch_unlikely(&sched_asym_cpucapacity))
+	if (!sched_asym_cpucap_active())
 		return true;
 
 	min_cap = uclamp_eff_value(p, UCLAMP_MIN);
@@ -1794,7 +1794,7 @@ static int find_lowest_rq(struct task_struct *task)
 	 * lowest_mask.
 	 */
 	if (IS_ENABLED(CONFIG_RT_SOFTIRQ_AWARE_SCHED) ||
-	    static_branch_unlikely(&sched_asym_cpucapacity)) {
+	    sched_asym_cpucap_active()) {
 
 		ret = cpupri_find_fitness(&task_rq(task)->rd->cpupri,
 					  task, lowest_mask,
