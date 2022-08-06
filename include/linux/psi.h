@@ -29,7 +29,7 @@ void psi_emergency_trigger(void);
 bool psi_is_trigger_active(void);
 
 struct psi_trigger *psi_trigger_create(struct psi_group *group,
-			char *buf, size_t nbytes, enum psi_res res);
+			char *buf, enum psi_res res);
 void psi_trigger_destroy(struct psi_trigger *t);
 
 __poll_t psi_trigger_poll(void **trigger_ptr, struct file *file,
