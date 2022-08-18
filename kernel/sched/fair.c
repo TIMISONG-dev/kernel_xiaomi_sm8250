@@ -11516,6 +11516,13 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
 #ifdef CONFIG_FAIR_GROUP_SCHED
 static void task_change_group_fair(struct task_struct *p)
 {
+	/*
+	 * We couldn't detach or attach a forked task which
+	 * hasn't been woken up by wake_up_new_task().
+	 */
+	if (p->state == TASK_NEW)
+		return;
+
 	detach_task_cfs_rq(p);
 
 #ifdef CONFIG_SMP
