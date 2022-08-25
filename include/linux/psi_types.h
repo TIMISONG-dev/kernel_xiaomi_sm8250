@@ -14,13 +14,6 @@ enum psi_task_count {
 	NR_IOWAIT,
 	NR_MEMSTALL,
 	NR_RUNNING,
-	/*
-	 * This can't have values other than 0 or 1 and could be
-	 * implemented as a bit flag. But for now we still have room
-	 * in the first cacheline of psi_group_cpu, and this way we
-	 * don't have to special case any state tracking for it.
-	 */
-	NR_ONCPU,
 	NR_PSI_TASK_COUNTS = 4,
 };
 
@@ -28,7 +21,9 @@ enum psi_task_count {
 #define TSK_IOWAIT	(1 << NR_IOWAIT)
 #define TSK_MEMSTALL	(1 << NR_MEMSTALL)
 #define TSK_RUNNING	(1 << NR_RUNNING)
-#define TSK_ONCPU	(1 << NR_ONCPU)
+
+/* Only one task can be scheduled, no corresponding task count */
+#define TSK_ONCPU	(1 << NR_PSI_TASK_COUNTS)
 
 /* Resources that workloads could be stalled on */
 enum psi_res {
@@ -55,6 +50,9 @@ enum psi_states {
 	PSI_NONIDLE,
 	NR_PSI_STATES = 7,
 };
+
+/* Use one bit in the state mask to track TSK_ONCPU */
+#define PSI_ONCPU	(1 << NR_PSI_STATES)
 
 enum psi_aggregators {
 	PSI_AVGS = 0,
@@ -130,8 +128,6 @@ struct psi_trigger {
 	 */
 	u64 last_event_time;
 
-	/* Deferred event(s) from previous ratelimit window */
-	bool pending_event;
 };
 
 struct psi_group {
@@ -154,10 +150,9 @@ struct psi_group {
 	unsigned long avg[NR_PSI_STATES - 1][3];
 
 	/* Monitor work control */
-	struct task_struct __rcu *poll_task;
-	struct timer_list poll_timer;
-	wait_queue_head_t poll_wait;
-	atomic_t poll_wakeup;
+	atomic_t poll_scheduled;
+	struct kthread_worker __rcu *poll_kworker;
+	struct kthread_delayed_work poll_work;
 
 	/* Protects data used by the monitor */
 	struct mutex trigger_lock;
