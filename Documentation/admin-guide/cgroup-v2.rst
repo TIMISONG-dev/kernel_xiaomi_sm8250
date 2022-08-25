@@ -924,6 +924,12 @@ All cgroup core files are prefixed with "cgroup."
 		limits, which were active at the moment of cgroup deletion.
 
 
+  irq.pressure
+	A read-write nested-keyed file.
+
+	Shows pressure stall information for IRQ/SOFTIRQ. See
+	:ref:`Documentation/accounting/psi.rst <psi>` for details.
+
 Controllers
 ===========
 
