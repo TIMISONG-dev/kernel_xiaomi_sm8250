@@ -2491,6 +2491,8 @@ extern void activate_task(struct rq *rq, struct task_struct *p, int flags);
 extern void deactivate_task(struct rq *rq, struct task_struct *p, int flags);
 extern void wakeup_preempt(struct rq *rq, struct task_struct *p, int flags);
 
+#define SCHED_NR_MIGRATE_BREAK 32
+
 extern const_debug unsigned int sysctl_sched_nr_migrate;
 extern const_debug unsigned int sysctl_sched_migration_cost;
 
