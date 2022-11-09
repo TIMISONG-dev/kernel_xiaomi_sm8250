@@ -8061,29 +8061,25 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int want_affine = 0;
 	int sync = (wake_flags & WF_SYNC) && !(current->flags & PF_EXITING);
 
-	if (static_branch_unlikely(&sched_energy_present)) {
-		rcu_read_lock();
-		new_cpu = find_energy_efficient_cpu(p, prev_cpu, sync,
-						    sibling_count_hint);
-		if (unlikely(new_cpu < 0))
-			new_cpu = prev_cpu;
-		rcu_read_unlock();
-		return new_cpu;
-	}
+	rcu_read_lock();
+	new_cpu = find_energy_efficient_cpu(p, prev_cpu, sync,
+					    sibling_count_hint);
+	if (unlikely(new_cpu < 0))
+		new_cpu = prev_cpu;
+	rcu_read_unlock();
+	return new_cpu;
 
 	if (sd_flag & SD_BALANCE_WAKE) {
 		record_wakee(p);
 
-		if (static_branch_unlikely(&sched_energy_present)) {
-			if (uclamp_latency_sensitive(p) && !sched_feat(EAS_PREFER_IDLE) && !sync)
-				goto sd_loop;
+		if (uclamp_latency_sensitive(p) && !sched_feat(EAS_PREFER_IDLE) && !sync)
+			goto sd_loop;
 
-			new_cpu = find_energy_efficient_cpu(p, prev_cpu, sync,
-							    sibling_count_hint);
-			if (new_cpu >= 0)
-				return new_cpu;
-			new_cpu = prev_cpu;
-		}
+		new_cpu = find_energy_efficient_cpu(p, prev_cpu, sync,
+						    sibling_count_hint);
+		if (new_cpu >= 0)
+			return new_cpu;
+		new_cpu = prev_cpu;
 
 		want_affine = !wake_wide(p, sibling_count_hint) &&
 			      !wake_cap(p, cpu, prev_cpu) &&
@@ -8905,22 +8901,20 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 	/* Record that we found atleast one task that could run on dst_cpu */
 	env->flags &= ~LBF_ALL_PINNED;
 
-	if (static_branch_unlikely(&sched_energy_present)) {
-		struct root_domain *rd = env->dst_rq->rd;
+	struct root_domain *rd = env->dst_rq->rd;
 
-		if ((rcu_dereference(rd->pd) && !sd_overutilized(env->sd)) &&
-		    env->idle == CPU_NEWLY_IDLE && !env->prefer_spread &&
-		    !task_in_related_thread_group(p)) {
-			long util_cum_dst, util_cum_src;
-			unsigned long demand;
+	if ((rcu_dereference(rd->pd) && !sd_overutilized(env->sd)) &&
+	    env->idle == CPU_NEWLY_IDLE && !env->prefer_spread &&
+	    !task_in_related_thread_group(p)) {
+		long util_cum_dst, util_cum_src;
+		unsigned long demand;
 
-			demand = task_util(p);
-			util_cum_dst = cpu_util_cum(env->dst_cpu, 0) + demand;
-			util_cum_src = cpu_util_cum(env->src_cpu, 0) - demand;
+		demand = task_util(p);
+		util_cum_dst = cpu_util_cum(env->dst_cpu, 0) + demand;
+		util_cum_src = cpu_util_cum(env->src_cpu, 0) - demand;
 
-			if (util_cum_dst > util_cum_src)
-				return 0;
-		}
+		if (util_cum_dst > util_cum_src)
+			return 0;
 	}
 
 #ifdef CONFIG_SCHED_WALT
@@ -10455,33 +10449,31 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	 */
 	update_sd_lb_stats(env, &sds);
 
-	if (static_branch_unlikely(&sched_energy_present)) {
-		struct root_domain *rd = env->dst_rq->rd;
+	struct root_domain *rd = env->dst_rq->rd;
 
-		if (rcu_dereference(rd->pd) && !sd_overutilized(env->sd)) {
-			int cpu_local, cpu_busiest;
-			unsigned long capacity_local, capacity_busiest;
+	if (rcu_dereference(rd->pd) && !sd_overutilized(env->sd)) {
+		int cpu_local, cpu_busiest;
+		unsigned long capacity_local, capacity_busiest;
 
-			if (env->idle != CPU_NEWLY_IDLE && !env->prefer_spread)
+		if (env->idle != CPU_NEWLY_IDLE && !env->prefer_spread)
+			goto out_balanced;
+
+		if (!sds.local || !sds.busiest)
+			goto out_balanced;
+
+		cpu_local = group_first_cpu(sds.local);
+		cpu_busiest = group_first_cpu(sds.busiest);
+
+		/* TODO:don't assume same cap cpus are in same domain */
+		capacity_local = capacity_orig_of(cpu_local);
+		capacity_busiest = capacity_orig_of(cpu_busiest);
+		if ((sds.busiest->group_weight > 1) &&
+			capacity_local > capacity_busiest) {
+			goto out_balanced;
+		} else if (capacity_local == capacity_busiest ||
+			asym_cap_siblings(cpu_local, cpu_busiest)) {
+			if (cpu_rq(cpu_busiest)->nr_running < 2)
 				goto out_balanced;
-
-			if (!sds.local || !sds.busiest)
-				goto out_balanced;
-
-			cpu_local = group_first_cpu(sds.local);
-			cpu_busiest = group_first_cpu(sds.busiest);
-
-			/* TODO:don't assume same cap cpus are in same domain */
-			capacity_local = capacity_orig_of(cpu_local);
-			capacity_busiest = capacity_orig_of(cpu_busiest);
-			if ((sds.busiest->group_weight > 1) &&
-				capacity_local > capacity_busiest) {
-				goto out_balanced;
-			} else if (capacity_local == capacity_busiest ||
-				   asym_cap_siblings(cpu_local, cpu_busiest)) {
-				if (cpu_rq(cpu_busiest)->nr_running < 2)
-					goto out_balanced;
-			}
 		}
 	}
 
@@ -11517,18 +11509,7 @@ out:
 
 static inline int find_new_ilb(void)
 {
-	int ilb;
-
-	if (static_branch_likely(&sched_energy_present))
-		return find_energy_aware_new_ilb();
-
-	for_each_cpu_and(ilb, nohz.idle_cpus_mask,
-			      housekeeping_cpumask(HK_FLAG_MISC)) {
-		if (idle_cpu(ilb))
-			return ilb;
-	}
-
-	return nr_cpu_ids;
+	return find_energy_aware_new_ilb();
 }
 
 /*
@@ -11614,12 +11595,10 @@ static void nohz_balancer_kick(struct rq *rq)
 	 * is overutilized and has 2 tasks. The misfit task migration
 	 * happens from the tickpath.
 	 */
-	if (static_branch_likely(&sched_energy_present)) {
-		if (rq->nr_running >= 2 && (cpu_overutilized(cpu) ||
-			prefer_spread_on_idle(cpu, false)))
-			flags = NOHZ_KICK_MASK;
-		goto out;
-	}
+	if (rq->nr_running >= 2 && (cpu_overutilized(cpu) ||
+		prefer_spread_on_idle(cpu, false)))
+		flags = NOHZ_KICK_MASK;
+	goto out;
 
 	if (rq->nr_running >= 2) {
 		flags = NOHZ_KICK_MASK;
