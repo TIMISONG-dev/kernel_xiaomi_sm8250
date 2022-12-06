@@ -823,6 +823,13 @@ config LEDS_AW2015
 	  this option enables support for the AW2015 RGB LED connected
 	  through I2C. Say Y to enable support for the AW2015 LED.
 
+config LEDS_AW22XXX
+	tristate "LED Support for AW22XXX"
+	depends on LEDS_CLASS && I2C
+	help
+	  this option enables support for the AW 22XXX RGB LED connected
+	  through I2C. Say Y to enable support for the AW 22XXX LED
+
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"
 
