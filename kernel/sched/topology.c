@@ -2380,7 +2380,7 @@ void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms)
  * For now this just excludes isolated CPUs, but could be used to
  * exclude other special cases in the future.
  */
-int sched_init_domains(const struct cpumask *cpu_map)
+int __init sched_init_domains(const struct cpumask *cpu_map)
 {
 	int err;
 
