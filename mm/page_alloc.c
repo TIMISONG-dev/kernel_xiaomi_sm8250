@@ -2737,6 +2737,8 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
 			int migratetype, unsigned int alloc_flags)
 {
 	int i, alloced = 0;
+	struct list_head *prev_tail = list->prev;
+	struct page *pos, *n;
 
 	spin_lock(&zone->lock);
 	for (i = 0; i < count; ++i) {
@@ -2755,9 +2757,6 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
 		if (unlikely(page == NULL))
 			break;
 
-		if (unlikely(check_pcp_refill(page)))
-			continue;
-
 		/*
 		 * Split buddy pages returned by expand() are received here in
 		 * physical page order. The page is added to the tail of
@@ -2769,7 +2768,6 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
 		 * pages are ordered properly.
 		 */
 		list_add_tail(&page->lru, list);
-		alloced++;
 		if (is_migrate_cma(get_pcppage_migratetype(page)))
 			__mod_zone_page_state(zone, NR_FREE_CMA_PAGES,
 					      -(1 << order));
@@ -2783,6 +2781,22 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
 	 */
 	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
 	spin_unlock(&zone->lock);
+
+	/*
+	 * Pages are appended to the pcp list without checking to reduce the
+	 * time holding the zone lock. Checking the appended pages happens right
+	 * after the critical section while still holding the pcp lock.
+	 */
+	pos = list_first_entry(prev_tail, struct page, lru);
+	list_for_each_entry_safe_from(pos, n, list, lru) {
+		if (unlikely(check_pcp_refill(pos))) {
+			list_del(&pos->lru);
+			continue;
+		}
+
+		alloced++;
+	}
+
 	return alloced;
 }
 
