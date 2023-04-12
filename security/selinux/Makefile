@@ -24,12 +24,5 @@ quiet_cmd_flask = GEN     $(obj)/flask.h $(obj)/av_permissions.h
       cmd_flask = $< $(obj)/flask.h $(obj)/av_permissions.h
 
 targets += flask.h av_permissions.h
-<<<<<<< HEAD
-# once make >= 4.3 is required, we can use grouped targets in the rule below,
-# which basically involves adding both headers and a '&' before the colon, see
-# the example below:
-#   $(obj)/flask.h $(obj)/av_permissions.h &: scripts/selinux/...
-=======
->>>>>>> 8a3f6a71abc1 (selinux: fix Makefile dependencies of flask.h)
-$(obj)/flask.h: scripts/selinux/genheaders/genheaders FORCE
+$(obj)/flask.h $(obj)/av_permissions.h &: scripts/selinux/genheaders/genheaders FORCE
 	$(call if_changed,flask)
