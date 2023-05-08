@@ -55,6 +55,7 @@
 #include <linux/nsproxy.h>
 #include <linux/file.h>
 #include <linux/sched/cputime.h>
+#include <linux/sched/deadline.h>
 #include <linux/psi.h>
 #include <linux/cpu.h>
 #include <net/sock.h>
@@ -6165,6 +6166,9 @@ void cgroup_exit(struct task_struct *tsk)
 		css_set_move_task(tsk, cset, NULL, false);
 		list_add_tail(&tsk->cg_list, &cset->dying_tasks);
 		cset->nr_tasks--;
+
+		if (dl_task(tsk))
+			dec_dl_tasks_cs(tsk);
 
 		WARN_ON_ONCE(cgroup_task_frozen(tsk));
 		if (unlikely(cgroup_task_freeze(tsk)))
