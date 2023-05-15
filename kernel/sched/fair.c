@@ -6371,6 +6371,7 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
  * @cpu: the CPU to get the utilization for
  * @p: task for which the CPU utilization should be predicted or NULL
  * @dst_cpu: CPU @p migrates to, -1 if @p moves from @cpu or @p == NULL
+ * @boost: 1 to enable boosting, otherwise 0
  *
  * The unit of the return value must be the same as the one of CPU capacity
  * so that CPU utilization can be compared with CPU capacity.
@@ -6388,6 +6389,12 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
  * be when a long-sleeping task wakes up. The contribution to CPU utilization
  * of such a task would be significantly decayed at this point of time.
  *
+ * Boosted CPU utilization is defined as max(CPU runnable, CPU utilization).
+ * CPU contention for CFS tasks can be detected by CPU runnable > CPU
+ * utilization. Boosting is implemented in cpu_util() so that internal
+ * users (e.g. EAS) can use it next to external users (e.g. schedutil),
+ * latter via cpu_util_cfs_boost().
+ *
  * CPU utilization can be higher than the current CPU capacity
  * (f_curr/f_max * max CPU capacity) or even the max CPU capacity because
  * of rounding errors as well as task migrations or wakeups of new tasks.
@@ -6398,12 +6405,20 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
  * though since this is useful for predicting the CPU capacity required
  * after task migrations (scheduler-driven DVFS).
  *
- * Return: (Estimated) utilization for the specified CPU.
+ * Return: (Boosted) (Estimated) utilization for the specified CPU.
  */
-static unsigned long cpu_util(int cpu, struct task_struct *p, int dst_cpu)
+static unsigned long
+cpu_util(int cpu, struct task_struct *p, int dst_cpu, int boost)
 {
 	struct cfs_rq *cfs_rq = &cpu_rq(cpu)->cfs;
 	unsigned long util = READ_ONCE(cfs_rq->avg.util_avg);
+	unsigned long runnable;
+
+	if (boost) {
+		runnable = READ_ONCE(cfs_rq->avg.runnable_load_avg);
+		util = max(util, runnable);
+	}
+
 	/*
 	 * If @dst_cpu is -1 or @p migrates from @cpu to @dst_cpu remove its
 	 * contribution. If @p migrates from another CPU to @cpu add its
@@ -6418,6 +6433,9 @@ static unsigned long cpu_util(int cpu, struct task_struct *p, int dst_cpu)
 	if (sched_feat(UTIL_EST)) {
 		unsigned long util_est;
 		util_est = READ_ONCE(cfs_rq->avg.util_est);
+
+		if (boost)
+			util_est = max(util_est, runnable);
 
 		/*
 		 * During wake-up @p isn't enqueued yet and doesn't contribute
@@ -6452,12 +6470,18 @@ static unsigned long cpu_util(int cpu, struct task_struct *p, int dst_cpu)
 
 		util = max(util, util_est);
 	}
+
 	return min(util, capacity_orig_of(cpu));
 }
 
 unsigned long cpu_util_cfs(int cpu)
 {
-	return cpu_util(cpu, NULL, -1);
+	return cpu_util(cpu, NULL, -1, 0);
+}
+
+unsigned long cpu_util_cfs_boost(int cpu)
+{
+	return cpu_util(cpu, NULL, -1, 1);
 }
 
 /*
@@ -6479,7 +6503,7 @@ static unsigned long cpu_util_without(int cpu, struct task_struct *p)
 	if (cpu != task_cpu(p) || !READ_ONCE(p->se.avg.last_update_time))
 		p = NULL;
 
-	return cpu_util(cpu, p, -1);
+	return cpu_util(cpu, p, -1, 0);
 }
 
 /*
@@ -6508,7 +6532,7 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 	unsigned long cpu_cap = arch_scale_cpu_capacity(cpumask_first(pd_mask));
 	unsigned long max_util = 0, sum_util = 0;
 	int cpu;
-	unsigned long cpu_util;
+	unsigned long eff_util;
 
 	/*
 	 * The capacity state of CPUs of the current rd can be driven by CPUs
@@ -6520,7 +6544,7 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 	 * its pd list and will not be accounted by compute_energy().
 	 */
 	for_each_cpu_and(cpu, pd_mask, cpu_online_mask) {
-		unsigned long util_cfs = cpu_util(cpu, p, dst_cpu);
+		unsigned long util_cfs;
 		struct task_struct *tsk = cpu == dst_cpu ? p : NULL;
 
 		/*
@@ -6529,6 +6553,7 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 		 * is already enough to scale the EM reported power
 		 * consumption at the (eventually clamped) cpu_capacity.
 		 */
+		util_cfs = cpu_util(cpu, p, -1, 0);
 		sum_util += effective_cpu_util(cpu, util_cfs, cpu_cap,
 					       ENERGY_UTIL, NULL);
 
@@ -6539,10 +6564,11 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 		 * NOTE: in case RT tasks are running, by default the
 		 * FREQUENCY_UTIL's utilization can be max OPP.
 		 */
-		cpu_util = effective_cpu_util(cpu, util_cfs, cpu_cap,
+		util_cfs = cpu_util(cpu, p, dst_cpu, 1);
+		eff_util = effective_cpu_util(cpu, util_cfs, cpu_cap,
 					      FREQUENCY_UTIL, tsk);
 
-		max_util = max(max_util, cpu_util);
+		max_util = max(max_util, eff_util);
 	}
 
 	return em_cpu_energy(pd->em_pd, max_util, sum_util);
@@ -6650,7 +6676,7 @@ int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sync)
 			if (!cpumask_test_cpu(cpu, &p->cpus_allowed))
 				continue;
 
-			util = cpu_util(cpu, p, cpu);
+			util = cpu_util(cpu, p, cpu, 0);
 			cpu_cap = capacity_of(cpu);
 			spare_cap = cpu_cap;
 			lsub_positive(&spare_cap, util);
