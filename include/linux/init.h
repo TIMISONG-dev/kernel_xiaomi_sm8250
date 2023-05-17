@@ -162,6 +162,7 @@ void mark_rodata_ro(void);
 
 extern void (*late_time_init)(void);
 
+void __init arch_task_cache_init(void);
 void init_IRQ(void);
 void time_init(void);
 
