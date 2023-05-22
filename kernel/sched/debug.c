@@ -463,6 +463,7 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
 		p->comm, task_pid_nr(p),
 		SPLIT_NS(p->se.vruntime),
 		SPLIT_NS(p->se.deadline),
+		p->se.custom_slice ? 'S' : ' ',
 		SPLIT_NS(p->se.slice),
 		SPLIT_NS(p->se.sum_exec_runtime),
 		(long long)(p->nvcsw + p->nivcsw),
