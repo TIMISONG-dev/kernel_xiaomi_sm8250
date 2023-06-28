@@ -1121,11 +1121,30 @@ static void request_events(void *send_info)
 	 * event checking still happens.
 	 */
 	ssif_info->req_events = true;
-	if (SSIF_IDLE(ssif_info))
-		start_flag_fetch(ssif_info, flags);
-	else {
-		ssif_info->req_flags = true;
-		ipmi_ssif_unlock_cond(ssif_info, flags);
+	ipmi_ssif_unlock_cond(ssif_info, flags);
+}
+
+/*
+ * Upper layer is changing the flag saying whether we need to request
+ * flags periodically or not.
+ */
+static void ssif_set_need_watch(void *send_info, unsigned int watch_mask)
+{
+	struct ssif_info *ssif_info = (struct ssif_info *) send_info;
+	unsigned long oflags, *flags;
+	long timeout = 0;
+
+	if (watch_mask & IPMI_WATCH_MASK_CHECK_MESSAGES)
+		timeout = SSIF_WATCH_MSG_TIMEOUT;
+	else if (watch_mask)
+		timeout = SSIF_WATCH_WATCHDOG_TIMEOUT;
+
+	flags = ipmi_ssif_lock_cond(ssif_info, &oflags);
+	if (timeout != ssif_info->watch_timeout) {
+		ssif_info->watch_timeout = timeout;
+		if (ssif_info->watch_timeout)
+			mod_timer(&ssif_info->watch_timer,
+				  jiffies + ssif_info->watch_timeout);
 	}
 }
 

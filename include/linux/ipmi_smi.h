@@ -31,6 +31,14 @@ struct device;
 typedef struct ipmi_smi *ipmi_smi_t;
 
 /*
+ * Flags for set_check_watch() below.  Tells if the SMI should be
+ * waiting for watchdog timeouts, commands and/or messages.
+ */
+#define IPMI_WATCH_MASK_CHECK_MESSAGES	(1 << 0)
+#define IPMI_WATCH_MASK_CHECK_WATCHDOG	(1 << 1)
+#define IPMI_WATCH_MASK_CHECK_COMMANDS	(1 << 2)
+
+/*
  * Messages to/from the lower layer.  The smi interface will take one
  * of these to send. After the send has occurred and a response has
  * been received, it will report this same data structure back up to
@@ -55,8 +63,10 @@ struct ipmi_smi_msg {
 	int           rsp_size;
 	unsigned char rsp[IPMI_MAX_MSG_LENGTH];
 
-	/* Will be called when the system is done with the message
-	   (presumably to free it). */
+	/*
+	 * Will be called when the system is done with the message
+	 * (presumably to free it).
+	 */
 	void (*done)(struct ipmi_smi_msg *msg);
 };
 
