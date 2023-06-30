@@ -24,8 +24,9 @@ int psi_show(struct seq_file *s, struct psi_group *group, enum psi_res res);
 void psi_emergency_trigger(void);
 bool psi_is_trigger_active(void);
 
-struct psi_trigger *psi_trigger_create(struct psi_group *group,
-			char *buf, enum psi_res res, struct file *file);
+struct psi_trigger *psi_trigger_create(struct psi_group *group, char *buf,
+				       enum psi_res res, struct file *file,
+				       struct kernfs_open_file *of);
 void psi_trigger_destroy(struct psi_trigger *t);
 
 __poll_t psi_trigger_poll(void **trigger_ptr, struct file *file,
