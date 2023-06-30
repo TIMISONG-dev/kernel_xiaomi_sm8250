@@ -3629,7 +3629,7 @@ static ssize_t cgroup_pressure_write(struct kernfs_open_file *of, char *buf,
 	}
 
 	psi = cgroup_ino(cgrp) == 1 ? &psi_system : cgrp->psi;
-	new = psi_trigger_create(psi, buf, res, of->file);
+	new = psi_trigger_create(psi, buf, res, of->file, of);
 	if (IS_ERR(new)) {
 		cgroup_put(cgrp);
 		return PTR_ERR(new);
