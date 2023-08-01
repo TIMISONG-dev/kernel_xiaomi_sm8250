@@ -89,11 +89,6 @@ struct kgsl_clk_stats {
 struct kgsl_pwr_constraint {
 	unsigned int type;
 	unsigned int sub_type;
-	union {
-		struct {
-			unsigned int level;
-		} pwrlevel;
-	} hint;
 	unsigned long expires;
 	uint32_t owner_id;
 };

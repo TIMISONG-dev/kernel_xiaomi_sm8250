@@ -729,17 +729,16 @@ void kgsl_pwrctrl_set_constraint(struct kgsl_device *device,
 	 * as the current one, update ownership and timestamp.
 	 */
 	if ((pwrc_old->type == KGSL_CONSTRAINT_NONE) ||
-		(constraint < pwrc_old->hint.pwrlevel.level)) {
+		(pwrc_old->sub_type == KGSL_CONSTRAINT_PWR_MIN &&
+		 pwrc->sub_type == KGSL_CONSTRAINT_PWR_MAX)) {
 		pwrc_old->type = pwrc->type;
 		pwrc_old->sub_type = pwrc->sub_type;
-		pwrc_old->hint.pwrlevel.level = constraint;
 		pwrc_old->owner_id = id;
 		pwrc_old->expires = jiffies + device->pwrctrl.interval_timeout;
 		kgsl_pwrctrl_pwrlevel_change(device, constraint);
 		/* Trace the constraint being set by the driver */
 		trace_kgsl_constraint(device, pwrc_old->type, constraint, 1);
-	} else if ((pwrc_old->type == pwrc->type) &&
-		(pwrc_old->hint.pwrlevel.level == constraint)) {
+	} else if (pwrc_old->type == pwrc->type) {
 		pwrc_old->owner_id = id;
 		pwrc_old->expires = jiffies + device->pwrctrl.interval_timeout;
 	}
