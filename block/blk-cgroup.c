@@ -78,7 +78,7 @@ static void blkg_free(struct blkcg_gq *blkg)
 			blkcg_policy[i]->pd_free_fn(blkg->pd[i]);
 
 	if (blkg->blkcg != &blkcg_root)
-		blk_exit_rl(blkg->q, &blkg->rl);
+		blk_exit_rl(&blkg->rl);
 
 	blkg_rwstat_exit(&blkg->stat_ios);
 	blkg_rwstat_exit(&blkg->stat_bytes);

@@ -850,7 +850,7 @@ static void __blk_release_queue(struct work_struct *work)
 	if (q->mq_ops)
 		cancel_delayed_work_sync(&q->requeue_work);
 
-	blk_exit_rl(q, &q->root_rl);
+	blk_exit_rl(&q->root_rl);
 
 	blk_queue_free_zone_bitmaps(q);
 
