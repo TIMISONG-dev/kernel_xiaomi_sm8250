@@ -2660,6 +2660,16 @@ static int a6xx_perfcounter_update(struct adreno_device *adreno_dev,
 	u32 *data = ptr + sizeof(*lock);
 	int i, offset = 0;
 	size_t max_dwords;
+	bool select_reg_present = false;
+
+	for (i = 0; i < lock->list_length >> 1; i++) {
+		if (data[offset] == reg->select) {
+			select_reg_present = true;
+			break;
+		}
+
+		offset += 2;
+	}
 
 	if (adreno_dev->pwrup_reglist.size < sizeof(*lock))
 		return -EINVAL;
@@ -2684,13 +2694,9 @@ static int a6xx_perfcounter_update(struct adreno_device *adreno_dev,
 	 * update it, otherwise append the <select register, value> pair to
 	 * the end of the list.
 	 */
-	for (i = 0; i < lock->list_length >> 1; i++) {
-		if (data[offset] == reg->select) {
-			data[offset + 1] = reg->countable;
-			goto update;
-		}
-
-		offset += 2;
+	if (select_reg_present) {
+		data[offset + 1] = reg->countable;
+		goto update;
 	}
 
 	/* Both paths append one pair; A612 also replaces its trailing pair. */
