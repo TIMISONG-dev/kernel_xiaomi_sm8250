@@ -1609,8 +1609,10 @@ static int cluster_cpuidle_register(struct lpm_cluster *cl)
 			strlcpy(st->desc, cpu_level->name, CPUIDLE_DESC_LEN);
 
 			st->flags = CPUIDLE_FLAG_RCU_IDLE;
-			st->exit_latency = cpu_level->pwr.exit_latency;
-			st->target_residency = 0;
+			if (cpu_level->pwr.local_timer_stop)
+				st->flags |= CPUIDLE_FLAG_TIMER_STOP;
+			st->exit_latency = cpu_level->pwr.entry_latency + cpu_level->pwr.exit_latency;
+			st->target_residency = cpu_level->pwr.min_residency;
 			st->enter = lpm_cpuidle_enter;
 			if (i == lpm_cpu->nlevels - 1)
 				st->enter_s2idle = lpm_cpuidle_s2idle;
