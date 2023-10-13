@@ -144,3 +144,6 @@ kernel/configs/android-*.cfg
 #
 /out/
 
+# Error log
+error.log
+
