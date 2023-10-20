@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/debugfs.h>
@@ -296,6 +297,14 @@ int32_t cam_context_config_dev_to_hw(
 		return rc;
 	}
 
+	if ((len < sizeof(struct cam_packet)) ||
+		(cmd->offset >= (len - sizeof(struct cam_packet)))) {
+		CAM_ERR(CAM_CTXT, "Not enough buf, len : %zu offset = %llu",
+			len, cmd->offset);
+		cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
+		return -EINVAL;
+
+	}
 	packet = (struct cam_packet *) ((uint8_t *)packet_addr +
 		(uint32_t)cmd->offset);
 
@@ -314,6 +323,7 @@ int32_t cam_context_config_dev_to_hw(
 		rc = -EFAULT;
 	}
 
+	cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 	return rc;
 }
 
@@ -375,6 +385,7 @@ int32_t cam_context_prepare_dev_to_hw(struct cam_context *ctx,
 	if ((len < sizeof(struct cam_packet)) ||
 		(cmd->offset >= (len - sizeof(struct cam_packet)))) {
 		CAM_ERR(CAM_CTXT, "Not enough buf");
+		cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 		return -EINVAL;
 
 	}
@@ -490,7 +501,7 @@ int32_t cam_context_prepare_dev_to_hw(struct cam_context *ctx,
 				req->in_map_entries[j].sync_id, rc);
 		}
 	}
-
+	cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 	return rc;
 put_ref:
 	for (--i; i >= 0; i--) {
@@ -504,6 +515,7 @@ free_req:
 	req->ctx = NULL;
 	spin_unlock(&ctx->lock);
 
+	cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 	return rc;
 }
 
@@ -1096,6 +1108,7 @@ static int cam_context_dump_context(struct cam_context *ctx,
 	if (dump_args->offset >= buf_len) {
 		CAM_WARN(CAM_CTXT, "dump buffer overshoot offset %zu len %zu",
 			dump_args->offset, buf_len);
+		cam_mem_put_cpu_buf(dump_args->buf_handle);
 		return -ENOSPC;
 	}
 
@@ -1107,6 +1120,7 @@ static int cam_context_dump_context(struct cam_context *ctx,
 	if (remain_len < min_len) {
 		CAM_WARN(CAM_CTXT, "dump buffer exhaust remain %zu min %u",
 			remain_len, min_len);
+		cam_mem_put_cpu_buf(dump_args->buf_handle);
 		return -ENOSPC;
 	}
 	dst = (uint8_t *)cpu_addr + dump_args->offset;
@@ -1131,7 +1145,8 @@ static int cam_context_dump_context(struct cam_context *ctx,
 	hdr->size = hdr->word_size * (addr - start);
 	dump_args->offset += hdr->size +
 		sizeof(struct cam_context_dump_header);
-	return rc;
+	cam_mem_put_cpu_buf(dump_args->buf_handle);
+	return 0;
 }
 
 int32_t cam_context_dump_dev_to_hw(struct cam_context *ctx,
