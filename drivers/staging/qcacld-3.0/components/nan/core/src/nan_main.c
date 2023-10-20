@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2016-2020 The Linux Foundation. All rights reserved.
- * Copyright (c) 2021-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -544,13 +543,11 @@ static QDF_STATUS nan_handle_confirm(
 	peer = wlan_objmgr_get_peer_by_mac(psoc,
 					   confirm->peer_ndi_mac_addr.bytes,
 					   WLAN_NAN_ID);
-	if (!peer && confirm->rsp_code == NAN_DATAPATH_RESPONSE_ACCEPT) {
+	if (!peer) {
 		nan_debug("Drop NDP confirm as peer isn't available");
 		return QDF_STATUS_E_NULL_VALUE;
 	}
-
-	if (peer)
-		wlan_objmgr_peer_release_ref(peer, WLAN_NAN_ID);
+	wlan_objmgr_peer_release_ref(peer, WLAN_NAN_ID);
 
 	psoc_nan_obj = nan_get_psoc_priv_obj(psoc);
 	if (!psoc_nan_obj) {
