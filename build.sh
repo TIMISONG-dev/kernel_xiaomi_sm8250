@@ -21,7 +21,7 @@ DTBPATH="/home/timisong/kernel/MagicTime/dtb"
 CLANG_TRIPLE="aarch64-linux-gnu-"
 CROSS_COMPILE="aarch64-linux-gnu-"
 CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
-BUILD_DATE=$(date +"%H:%M")
+MAGIC_BUILD_DATE=$(date '+%Y-%m-%d_%H-%M-%S')
 
 output_dir=out
 make O="$output_dir" \
@@ -46,7 +46,7 @@ find $DTS -name '*.dtb' -exec cat {} + > $DTBPATH
 find $DTS -name 'Image.gz' -exec cat {} + > $IMGPATH
 
 cd ../MagicTime
-7z a -mx9 MagicTime_$BUILD_DATE.zip
+7z a -mx9 MagicTime_$MAGIC_BUILD_DATE.zip
 
 cd ../kernel_xiaomi_sm8250
 rm -rf out
