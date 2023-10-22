@@ -1,19 +1,27 @@
-CLANG=~/void/prebuilts/clang/host/linux-x86/clang-sdclang/bin/
-GCC32=~/void/prebuilts/gcc/linux-x86/arm-linux-androideabi-4.9/bin/
-GCC64=~/void/prebuilts/gcc/linux-x86/aarch64-linux-android-4.9/bin/
+CLANG=/home/timisong/kernel/snapdragon-clang/bin/
+GCC32=/home/timisong/kernel/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9/bin/
+GCC64=/home/timisong/kernel/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/bin/
 
 PATH=$CLANG:$GCC64:$GCC32:$PATH
 
 export PATH
 export ARCH=arm64
+export IMGPATH
+export DTBPATH
 
-export CLANG_TRIPLE
-export CROSS_COMPILE
-export CROSS_COMPILE_ARM32
+export CLANG_TRIPLE="aarch64-linux-gnu-"
+export CROSS_COMPILE="aarch64-linux-gnu-"
+export CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
+export KBUILD_BUILD_USER="TIMISONG"
+export KBUILD_BUILD_HOST="timisong-dev"
+
+IMGPATH="/home/timisong/kernel/MagicTime/Image.gz"
+DTBPATH="/home/timisong/kernel/MagicTime/dtb"
 
 CLANG_TRIPLE="aarch64-linux-gnu-"
 CROSS_COMPILE="aarch64-linux-gnu-"
 CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
+BUILD_DATE=$(date +"%H:%M")
 
 output_dir=out
 make O="$output_dir" \
@@ -31,4 +39,14 @@ make -j $(nproc) \
             OBJDUMP=llvm-objdump \
             STRIP=llvm-strip \
             LLVM=1 \
-            LLVM_IAS=1
+            LLVM_IAS=1 \
+            V=$VERBOSE 2>&1 | tee error.log
+
+find $DTS -name '*.dtb' -exec cat {} + > $DTBPATH
+find $DTS -name 'Image.gz' -exec cat {} + > $IMGPATH
+
+cd ../MagicTime
+7z a -mx9 MagicTime_$BUILD_DATE.zip
+
+cd ../kernel_xiaomi_sm8250
+rm -rf out
