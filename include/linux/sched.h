@@ -1513,6 +1513,7 @@ struct task_struct {
 #else
 	ANDROID_KABI_RESERVE(7);
 #endif
+	ANDROID_KABI_RESERVE(8);
 
 	/*
 	 * New fields for task_struct should be added above here, so that
