@@ -617,6 +617,7 @@
         qcom,mdss-brightness-init-level = <536>;
         qcom,platform-te-gpio = <&tlmm 66 0>;
         qcom,platform-reset-gpio = <&tlmm 12 0>;
+	qcom,ulps-enabled;
 };
 
 &dsi_l11r_38_08_0a_dsc_cmd {
