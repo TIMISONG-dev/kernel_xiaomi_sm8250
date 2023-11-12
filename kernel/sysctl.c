@@ -388,25 +388,6 @@ static int bpf_stats_handler(struct ctl_table *table, int write,
 #endif
 
 static struct ctl_table kern_table[] = {
-#if defined(CONFIG_PREEMPT_TRACER) && defined(CONFIG_PREEMPTIRQ_EVENTS)
-	{
-		.procname       = "preemptoff_tracing_threshold_ns",
-		.data           = &sysctl_preemptoff_tracing_threshold_ns,
-		.maxlen         = sizeof(unsigned int),
-		.mode           = 0644,
-		.proc_handler   = proc_dointvec,
-	},
-#endif
-#if defined(CONFIG_IRQSOFF_TRACER) && defined(CONFIG_PREEMPTIRQ_EVENTS)
-	{
-		.procname       = "irqsoff_tracing_threshold_ns",
-		.data           = &sysctl_irqsoff_tracing_threshold_ns,
-		.maxlen         = sizeof(unsigned int),
-		.mode           = 0644,
-		.proc_handler   = proc_dointvec,
-	},
-#endif
-#ifdef CONFIG_SCHED_DEBUG
 #ifdef CONFIG_PELT_COMPATIBILITY_LAYER
 	{
 		.procname	= "sched_boost",
@@ -469,6 +450,25 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 	},
 #endif /* CONFIG_PELT_COMPATIBILITY_LAYER */
+#if defined(CONFIG_PREEMPT_TRACER) && defined(CONFIG_PREEMPTIRQ_EVENTS)
+	{
+		.procname       = "preemptoff_tracing_threshold_ns",
+		.data           = &sysctl_preemptoff_tracing_threshold_ns,
+		.maxlen         = sizeof(unsigned int),
+		.mode           = 0644,
+		.proc_handler   = proc_dointvec,
+	},
+#endif
+#if defined(CONFIG_IRQSOFF_TRACER) && defined(CONFIG_PREEMPTIRQ_EVENTS)
+	{
+		.procname       = "irqsoff_tracing_threshold_ns",
+		.data           = &sysctl_irqsoff_tracing_threshold_ns,
+		.maxlen         = sizeof(unsigned int),
+		.mode           = 0644,
+		.proc_handler   = proc_dointvec,
+	},
+#endif
+#ifdef CONFIG_SCHED_DEBUG
 #ifdef CONFIG_SMP
 	{
 		.procname	= "sched_tunable_scaling",
