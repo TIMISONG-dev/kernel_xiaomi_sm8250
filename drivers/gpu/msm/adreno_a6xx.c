@@ -2659,8 +2659,15 @@ static int a6xx_perfcounter_update(struct adreno_device *adreno_dev,
 	struct cpu_gpu_lock *lock = ptr;
 	u32 *data = ptr + sizeof(*lock);
 	int i, offset = 0;
+	bool select_reg_present = false;
 	/* No of pairs to add: <reg,val> */
 	u32 pending_pairs = adreno_is_a612(adreno_dev) ? 2 : 1;
+
+	if (select_reg_present) {
+		data[offset + 1] = reg->countable;
+		goto update;
+	}
+
 
 	if (cpu_gpu_lock(lock)) {
 		cpu_gpu_unlock(lock);
