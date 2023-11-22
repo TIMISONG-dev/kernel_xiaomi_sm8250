@@ -3820,6 +3820,11 @@ static inline unsigned long cfs_rq_load_avg(struct cfs_rq *cfs_rq)
 
 static int newidle_balance(struct rq *this_rq, struct rq_flags *rf);
 
+static inline unsigned long task_runnable(struct task_struct *p)
+{
+	return READ_ONCE(p->se.avg.runnable_avg);
+}
+
 static inline unsigned long _task_util_est(struct task_struct *p)
 {
 	return READ_ONCE(p->se.avg.util_est) & ~UTIL_AVG_UNCHANGED;
@@ -3919,6 +3924,13 @@ static inline void util_est_update(struct cfs_rq *cfs_rq,
 	 */
 	if (dequeued > capacity_orig_of(cpu_of(rq_of(cfs_rq))))
 		return;
+
+	/*
+	 * To avoid underestimate of task utilization, skip updates of EWMA if
+	 * we cannot grant that thread got all CPU time it wanted.
+	 */
+	if ((dequeued + UTIL_EST_MARGIN) < task_runnable(p))
+		goto done;
 
 	/*
 	 * Update Task's estimated utilization
@@ -6450,7 +6462,7 @@ cpu_util(int cpu, struct task_struct *p, int dst_cpu, int boost)
 	unsigned long runnable;
 
 	if (boost) {
-		runnable = READ_ONCE(cfs_rq->avg.runnable_load_avg);
+		runnable = READ_ONCE(cfs_rq->avg.runnable_avg);
 		util = max(util, runnable);
 	}
 
