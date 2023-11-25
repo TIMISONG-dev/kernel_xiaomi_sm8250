@@ -45,7 +45,7 @@ enum sched_tunable_scaling sysctl_sched_tunable_scaling = SCHED_TUNABLESCALING_L
 unsigned int sysctl_sched_base_slice			= 750000ULL;
 static unsigned int normalized_sysctl_sched_base_slice	= 750000ULL;
 
-const_debug unsigned int sysctl_sched_migration_cost	= 500000UL;
+const_debug unsigned int sysctl_sched_migration_cost	= 0UL;
 
 #ifdef CONFIG_SMP
 /*
