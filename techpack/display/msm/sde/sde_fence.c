@@ -198,7 +198,7 @@ static int _sde_fence_create_fd(void *fence_ctx, uint32_t val)
 	}
 
 	sde_fence = kmem_cache_zalloc(kmem_fence_pool, GFP_KERNEL);
-	if (unlikely(!sde_fence))
+	if (!sde_fence)
 		return -ENOMEM;
 
 	sde_fence->ctx = fence_ctx;
