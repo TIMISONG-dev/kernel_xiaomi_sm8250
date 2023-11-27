@@ -253,6 +253,8 @@ struct sde_fence_context *sde_fence_init(const char *name, uint32_t drm_id)
 		SDE_ERROR("failed to alloc fence ctx\n");
 		return ERR_PTR(-ENOMEM);
 	}
+	
+	kmem_fence_pool = KMEM_CACHE(sde_fence, SLAB_HWCACHE_ALIGN | SLAB_PANIC);
 
 	strlcpy(ctx->name, name, ARRAY_SIZE(ctx->name));
 	ctx->drm_id = drm_id;
@@ -274,6 +276,8 @@ void sde_fence_deinit(struct sde_fence_context *ctx)
 	}
 
 	kref_put(&ctx->kref, sde_fence_destroy);
+	
+	kmem_cache_destroy(kmem_fence_pool);
 }
 
 void sde_fence_prepare(struct sde_fence_context *ctx)
