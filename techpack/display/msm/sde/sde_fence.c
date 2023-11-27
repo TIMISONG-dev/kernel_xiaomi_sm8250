@@ -12,8 +12,6 @@
 
 #define TIMELINE_VAL_LENGTH		128
 
-static struct kmem_cache *kmem_fence_pool;
-
 void *sde_sync_get(uint64_t fd)
 {
 	/* force signed compare, fdget accepts an int argument */
@@ -146,7 +144,7 @@ static void sde_fence_release(struct dma_fence *fence)
 	if (fence) {
 		f = to_sde_fence(fence);
 		kref_put(&f->ctx->kref, sde_fence_destroy);
-		kmem_cache_free(kmem_fence_pool, f);
+		kfree(f);
 	}
 }
 
