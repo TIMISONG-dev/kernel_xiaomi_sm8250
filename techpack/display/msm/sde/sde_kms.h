@@ -49,7 +49,10 @@
  */
 #define SDE_DEBUG(fmt, ...)                                                \
 	do {                                                               \
-		no_printk(fmt, ##__VA_ARGS__);                      \
+		if (unlikely(drm_debug & DRM_UT_KMS))                      \
+			DRM_DEBUG(fmt, ##__VA_ARGS__); \
+		else                                                       \
+			pr_debug(fmt, ##__VA_ARGS__);                      \
 	} while (0)
 
 /**
@@ -57,7 +60,12 @@
  * @fmt: Pointer to format string
  */
 #define SDE_INFO(fmt, ...)                                                \
-	no_printk(fmt, ##__VA_ARGS__)
+	do {                                                               \
+		if (unlikely(drm_debug & DRM_UT_KMS))                      \
+			DRM_INFO(fmt, ##__VA_ARGS__); \
+		else                                                       \
+			pr_info(fmt, ##__VA_ARGS__);                      \
+	} while (0)
 
 /**
  * SDE_DEBUG_DRIVER - macro for hardware driver logging
@@ -65,7 +73,10 @@
  */
 #define SDE_DEBUG_DRIVER(fmt, ...)                                         \
 	do {                                                               \
-		no_printk(fmt, ##__VA_ARGS__);                       \
+		if (unlikely(drm_debug & DRM_UT_DRIVER))                   \
+			DRM_ERROR(fmt, ##__VA_ARGS__); \
+		else                                                       \
+			pr_debug(fmt, ##__VA_ARGS__);                      \
 	} while (0)
 
 #define SDE_ERROR(fmt, ...) pr_err("[sde error]" fmt, ##__VA_ARGS__)
