@@ -197,13 +197,8 @@ static int _sde_fence_create_fd(void *fence_ctx, uint32_t val)
 		goto exit;
 	}
 
-<<<<<<< HEAD
 	sde_fence = kzalloc(sizeof(*sde_fence), GFP_KERNEL);
 	if (!sde_fence)
-=======
-	sde_fence = kmem_cache_zalloc(kmem_fence_pool, GFP_KERNEL);
-	if (unlikely(!sde_fence))
->>>>>>> parent of fa1ecc267726 (drm/msm/sde: use kmem_cache pool for struct sde_fence)
 		return -ENOMEM;
 
 	sde_fence->ctx = fence_ctx;
