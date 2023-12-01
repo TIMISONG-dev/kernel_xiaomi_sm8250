@@ -1157,8 +1157,7 @@ TRACE_EVENT(sched_util_est_task,
 		__field( pid_t,		pid			)
 		__field( int,		cpu			)
 		__field( unsigned int,	util_avg		)
-		__field( unsigned int,	est_enqueued		)
-		__field( unsigned int,	est_ewma		)
+		__field( unsigned int,	util_est		)
 
 	),
 
@@ -1167,17 +1166,15 @@ TRACE_EVENT(sched_util_est_task,
 		__entry->pid			= tsk->pid;
 		__entry->cpu			= task_cpu(tsk);
 		__entry->util_avg		= avg->util_avg;
-		__entry->est_enqueued		= avg->util_est.enqueued;
-		__entry->est_ewma		= avg->util_est.ewma;
+		__entry->util_est		= avg->util_est;
 	),
 
-	TP_printk("comm=%s pid=%d cpu=%d util_avg=%u util_est_ewma=%u util_est_enqueued=%u",
+	TP_printk("comm=%s pid=%d cpu=%d util_avg=%u util_est=%u",
 		  __entry->comm,
 		  __entry->pid,
 		  __entry->cpu,
 		  __entry->util_avg,
-		  __entry->est_ewma,
-		  __entry->est_enqueued)
+		  __entry->util_est)
 );
 
 /*
@@ -1192,19 +1189,19 @@ TRACE_EVENT(sched_util_est_cpu,
 	TP_STRUCT__entry(
 		__field(int,		cpu)
 		__field(unsigned int,	util_avg)
-		__field(unsigned int,	util_est_enqueued)
+		__field(unsigned int,	util_est)
 	),
 
 	TP_fast_assign(
 		__entry->cpu			= cpu;
 		__entry->util_avg		= cfs_rq->avg.util_avg;
-		__entry->util_est_enqueued	= cfs_rq->avg.util_est.enqueued;
+		__entry->util_est		= cfs_rq->avg.util_est;
 	),
 
-	TP_printk("cpu=%d util_avg=%u util_est_enqueued=%u",
+	TP_printk("cpu=%d util_avg=%u util_est=%u",
 		  __entry->cpu,
 		  __entry->util_avg,
-		  __entry->util_est_enqueued)
+		  __entry->util_est)
 );
 
 TRACE_EVENT(sched_cpu_util,
