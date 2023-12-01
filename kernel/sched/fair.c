@@ -4562,11 +4562,9 @@ static inline void util_est_update(struct sched_entity *se)
 	 * to smooth utilization decreases.
 	 */
 	ue.enqueued = READ_ONCE(se->avg.util_avg);
-	if (sched_feat(UTIL_EST_FASTUP)) {
-		if (ue.ewma < ue.enqueued) {
-			ue.ewma = ue.enqueued;
-			goto done;
-		}
+	if (ue.ewma < ue.enqueued) {
+		ue.ewma = ue.enqueued;
+		goto done;
 	}
 
 	/*
