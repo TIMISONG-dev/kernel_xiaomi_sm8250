@@ -15,7 +15,7 @@ export CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
 export KBUILD_BUILD_USER="TIMISONG"
 export KBUILD_BUILD_HOST="timisong-dev"
 
-IMGPATH="/home/timisong/kernel/MagicTime/Image.gz"
+IMGPATH="/home/timisong/kernel/MagicTime/Image"
 DTBPATH="/home/timisong/kernel/MagicTime/dtb"
 
 CLANG_TRIPLE="aarch64-linux-gnu-"
@@ -45,7 +45,7 @@ make -j $(nproc) \
             V=$VERBOSE 2>&1 | tee error.log
 
 find $DTS -name '*.dtb' -exec cat {} + > $DTBPATH
-find $DTS -name 'Image.gz' -exec cat {} + > $IMGPATH
+find $DTS -name 'Image' -exec cat {} + > $IMGPATH
 
 cd ../MagicTime
 7z a -mx9 MagicTime_$MAGIC_BUILD_DATE.zip
