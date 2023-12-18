@@ -136,6 +136,17 @@ all.config
 kernel/configs/android-*.cfg
 
 #
-#Ignoring Android.bp link file
+# Ignoring Android.bp link file
 #
 Android.bp
+
+# Tech package directories
+#techpack/
+
+#
+# Out dir
+#
+/out/
+
+# Error log
+error.log
