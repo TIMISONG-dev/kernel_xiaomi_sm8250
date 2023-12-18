@@ -1,989 +1,1517 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/module.h>
-#include "cam_csiphy_core.h"
-#include "cam_csiphy_dev.h"
-#include "cam_csiphy_soc.h"
+#include <linux/crc32.h>
+#include <media/cam_sensor.h>
+
+#include "cam_eeprom_core.h"
+#include "cam_eeprom_soc.h"
+#include "cam_debug_util.h"
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
 
-#include <dt-bindings/msm/msm-camera.h>
+#define MAX_READ_SIZE  0x7FFFF
 
-#include <soc/qcom/scm.h>
-#include <cam_mem_mgr.h>
-#include <cam_cpas_api.h>
-
-#define SCM_SVC_CAMERASS 0x18
-#define SECURE_SYSCALL_ID 0x6
-#define SECURE_SYSCALL_ID_2 0x7
-
-#define LANE_MASK_2PH 0x1F
-#define LANE_MASK_3PH 0x7
-
-static int csiphy_dump;
-module_param(csiphy_dump, int, 0644);
-
-static int cam_csiphy_notify_secure_mode(struct csiphy_device *csiphy_dev,
-	bool protect, int32_t offset)
+/**
+ * cam_eeprom_read_memory() - read map data into buffer
+ * @e_ctrl:     eeprom control struct
+ * @block:      block to be read
+ *
+ * This function iterates through blocks stored in block->map, reads each
+ * region and concatenate them into the pre-allocated block->mapdata
+ */
+static int cam_eeprom_read_memory(struct cam_eeprom_ctrl_t *e_ctrl,
+	struct cam_eeprom_memory_block_t *block)
 {
-	struct scm_desc desc = {0};
+	int                                rc = 0;
+	int                                j;
+	struct cam_sensor_i2c_reg_setting  i2c_reg_settings = {0};
+	struct cam_sensor_i2c_reg_array    i2c_reg_array = {0};
+	struct cam_eeprom_memory_map_t    *emap = block->map;
+	struct cam_eeprom_soc_private     *eb_info = NULL;
+	uint8_t                           *memptr = block->mapdata;
 
-	if (offset >= CSIPHY_MAX_INSTANCES) {
-		CAM_ERR(CAM_CSIPHY, "Invalid CSIPHY offset");
+	if (!e_ctrl) {
+		CAM_ERR(CAM_EEPROM, "e_ctrl is NULL");
 		return -EINVAL;
 	}
 
-	desc.arginfo = SCM_ARGS(2, SCM_VAL, SCM_VAL);
-	desc.args[0] = protect;
-	desc.args[1] = csiphy_dev->csiphy_cpas_cp_reg_mask[offset];
+	eb_info = (struct cam_eeprom_soc_private *)e_ctrl->soc_info.soc_private;
 
-	if (scm_call2(SCM_SIP_FNID(SCM_SVC_CAMERASS, SECURE_SYSCALL_ID_2),
-		&desc)) {
-		CAM_ERR(CAM_CSIPHY, "scm call to hypervisor failed");
-		return -EINVAL;
+	for (j = 0; j < block->num_map; j++) {
+		CAM_DBG(CAM_EEPROM, "slave-addr = 0x%X", emap[j].saddr);
+		if (emap[j].saddr) {
+			eb_info->i2c_info.slave_addr = emap[j].saddr;
+			rc = cam_eeprom_update_i2c_info(e_ctrl,
+				&eb_info->i2c_info);
+			if (rc) {
+				CAM_ERR(CAM_EEPROM,
+					"failed: to update i2c info rc %d",
+					rc);
+				return rc;
+			}
+		}
+
+		if (emap[j].page.valid_size) {
+			i2c_reg_settings.addr_type = emap[j].page.addr_type;
+			i2c_reg_settings.data_type = emap[j].page.data_type;
+			i2c_reg_settings.size = 1;
+			i2c_reg_array.reg_addr = emap[j].page.addr;
+			i2c_reg_array.reg_data = emap[j].page.data;
+			i2c_reg_array.delay = emap[j].page.delay;
+			i2c_reg_settings.reg_setting = &i2c_reg_array;
+			rc = camera_io_dev_write(&e_ctrl->io_master_info,
+				&i2c_reg_settings);
+			if (rc) {
+				CAM_ERR(CAM_EEPROM, "page write failed rc %d",
+					rc);
+				return rc;
+			}
+		}
+
+		if (emap[j].pageen.valid_size) {
+			i2c_reg_settings.addr_type = emap[j].pageen.addr_type;
+			i2c_reg_settings.data_type = emap[j].pageen.data_type;
+			i2c_reg_settings.size = 1;
+			i2c_reg_array.reg_addr = emap[j].pageen.addr;
+			i2c_reg_array.reg_data = emap[j].pageen.data;
+			i2c_reg_array.delay = emap[j].pageen.delay;
+			i2c_reg_settings.reg_setting = &i2c_reg_array;
+			rc = camera_io_dev_write(&e_ctrl->io_master_info,
+				&i2c_reg_settings);
+			if (rc) {
+				CAM_ERR(CAM_EEPROM, "page enable failed rc %d",
+					rc);
+				return rc;
+			}
+		}
+
+		if (emap[j].poll.valid_size) {
+			rc = camera_io_dev_poll(&e_ctrl->io_master_info,
+				emap[j].poll.addr, emap[j].poll.data,
+				0, emap[j].poll.addr_type,
+				emap[j].poll.data_type,
+				emap[j].poll.delay);
+			if (rc) {
+				CAM_ERR(CAM_EEPROM, "poll failed rc %d",
+					rc);
+				return rc;
+			}
+		}
+
+		if (emap[j].mem.valid_size) {
+			rc = camera_io_dev_read_seq(&e_ctrl->io_master_info,
+				emap[j].mem.addr, memptr,
+				emap[j].mem.addr_type,
+				emap[j].mem.data_type,
+				emap[j].mem.valid_size);
+			if (rc) {
+				CAM_ERR(CAM_EEPROM, "read failed rc %d",
+					rc);
+				return rc;
+			}
+			memptr += emap[j].mem.valid_size;
+		}
+
+		if (emap[j].pageen.valid_size) {
+			i2c_reg_settings.addr_type = emap[j].pageen.addr_type;
+			i2c_reg_settings.data_type = emap[j].pageen.data_type;
+			i2c_reg_settings.size = 1;
+			i2c_reg_array.reg_addr = emap[j].pageen.addr;
+			i2c_reg_array.reg_data = 0;
+			i2c_reg_array.delay = emap[j].pageen.delay;
+			i2c_reg_settings.reg_setting = &i2c_reg_array;
+			rc = camera_io_dev_write(&e_ctrl->io_master_info,
+				&i2c_reg_settings);
+			if (rc) {
+				CAM_ERR(CAM_EEPROM,
+					"page disable failed rc %d",
+					rc);
+				return rc;
+			}
+		}
 	}
-
-	return 0;
+	return rc;
 }
 
-int32_t cam_csiphy_get_instance_offset(
-	struct csiphy_device *csiphy_dev,
-	int32_t dev_handle)
-{
-	int32_t i;
-
-	if (csiphy_dev->acquire_count >
-		CSIPHY_MAX_INSTANCES) {
-		CAM_ERR(CAM_CSIPHY, "Invalid acquire count");
-		return -EINVAL;
-	}
-
-	for (i = 0; i < csiphy_dev->acquire_count; i++) {
-		if (dev_handle ==
-			csiphy_dev->bridge_intf.device_hdl[i])
-			break;
-	}
-
-	return i;
-}
-
-void cam_csiphy_query_cap(struct csiphy_device *csiphy_dev,
-	struct cam_csiphy_query_cap *csiphy_cap)
-{
-	struct cam_hw_soc_info *soc_info = &csiphy_dev->soc_info;
-
-	csiphy_cap->slot_info = soc_info->index;
-	csiphy_cap->version = csiphy_dev->hw_version;
-	csiphy_cap->clk_lane = csiphy_dev->clk_lane;
-}
-
-void cam_csiphy_reset(struct csiphy_device *csiphy_dev)
-{
-	int32_t  i;
-	void __iomem *base = NULL;
-	uint32_t size =
-		csiphy_dev->ctrl_reg->csiphy_reg.csiphy_reset_array_size;
-	struct cam_hw_soc_info *soc_info = &csiphy_dev->soc_info;
-
-	base = soc_info->reg_map[0].mem_base;
-
-	for (i = 0; i < size; i++) {
-		cam_io_w_mb(
-			csiphy_dev->ctrl_reg->csiphy_reset_reg[i].reg_data,
-			base +
-			csiphy_dev->ctrl_reg->csiphy_reset_reg[i].reg_addr);
-
-		usleep_range(csiphy_dev->ctrl_reg->csiphy_reset_reg[i].delay
-			* 1000,	csiphy_dev->ctrl_reg->csiphy_reset_reg[i].delay
-			* 1000 + 10);
-	}
-}
-
-int32_t cam_csiphy_update_secure_info(
-	struct csiphy_device *csiphy_dev,
-	struct cam_csiphy_info  *cam_cmd_csiphy_info,
-	struct cam_config_dev_cmd *cfg_dev)
-{
-	uint32_t clock_lane, adj_lane_mask, temp;
-	int32_t offset;
-
-	if (csiphy_dev->acquire_count >=
-		CSIPHY_MAX_INSTANCES) {
-		CAM_ERR(CAM_CSIPHY, "Invalid acquire count");
-		return -EINVAL;
-	}
-
-	offset = cam_csiphy_get_instance_offset(csiphy_dev,
-		cfg_dev->dev_handle);
-	if (offset < 0 || offset >= CSIPHY_MAX_INSTANCES) {
-		CAM_ERR(CAM_CSIPHY, "Invalid offset");
-		return -EINVAL;
-	}
-
-	if (cam_cmd_csiphy_info->combo_mode)
-		clock_lane =
-			csiphy_dev->ctrl_reg->csiphy_reg.csiphy_2ph_combo_ck_ln;
-	else
-		clock_lane =
-			csiphy_dev->ctrl_reg->csiphy_reg.csiphy_2ph_clock_lane;
-
-	adj_lane_mask = cam_cmd_csiphy_info->lane_mask & LANE_MASK_2PH &
-		~clock_lane;
-	temp = adj_lane_mask & (clock_lane - 1);
-	adj_lane_mask =
-		((adj_lane_mask & (~(clock_lane - 1))) >> 1) | temp;
-
-	if (cam_cmd_csiphy_info->csiphy_3phase)
-		adj_lane_mask = cam_cmd_csiphy_info->lane_mask & LANE_MASK_3PH;
-
-	csiphy_dev->csiphy_info.secure_mode[offset] = 1;
-
-	csiphy_dev->csiphy_cpas_cp_reg_mask[offset] =
-		adj_lane_mask << (csiphy_dev->soc_info.index *
-		(CAM_CSIPHY_MAX_DPHY_LANES + CAM_CSIPHY_MAX_CPHY_LANES) +
-		(!cam_cmd_csiphy_info->csiphy_3phase) *
-		(CAM_CSIPHY_MAX_CPHY_LANES));
-
-	return 0;
-}
-
-int32_t cam_cmd_buf_parser(struct csiphy_device *csiphy_dev,
-	struct cam_config_dev_cmd *cfg_dev)
+/**
+ * cam_eeprom_power_up - Power up eeprom hardware
+ * @e_ctrl:     ctrl structure
+ * @power_info: power up/down info for eeprom
+ *
+ * Returns success or failure
+ */
+static int cam_eeprom_power_up(struct cam_eeprom_ctrl_t *e_ctrl,
+	struct cam_sensor_power_ctrl_t *power_info)
 {
 	int32_t                 rc = 0;
-	uintptr_t                generic_ptr;
-	uintptr_t                generic_pkt_ptr;
-	struct cam_packet       *csl_packet = NULL;
-	struct cam_cmd_buf_desc *cmd_desc = NULL;
-	uint32_t                *cmd_buf = NULL;
-	struct cam_csiphy_info  *cam_cmd_csiphy_info = NULL;
-	size_t                  len;
-	size_t                  remain_len;
+	struct cam_hw_soc_info *soc_info =
+		&e_ctrl->soc_info;
 
-	if (!cfg_dev || !csiphy_dev) {
-		CAM_ERR(CAM_CSIPHY, "Invalid Args");
-		return -EINVAL;
-	}
-
-	rc = cam_mem_get_cpu_buf((int32_t) cfg_dev->packet_handle,
-		&generic_pkt_ptr, &len);
-	if (rc < 0) {
-		CAM_ERR(CAM_CSIPHY, "Failed to get packet Mem address: %d", rc);
+	/* Parse and fill vreg params for power up settings */
+	rc = msm_camera_fill_vreg_params(
+		&e_ctrl->soc_info,
+		power_info->power_setting,
+		power_info->power_setting_size);
+	if (rc) {
+		CAM_ERR(CAM_EEPROM,
+			"failed to fill power up vreg params rc:%d", rc);
 		return rc;
 	}
 
-	remain_len = len;
-	if ((sizeof(struct cam_packet) > len) ||
-		((size_t)cfg_dev->offset >= len - sizeof(struct cam_packet))) {
-		CAM_ERR(CAM_CSIPHY,
+	/* Parse and fill vreg params for power down settings*/
+	rc = msm_camera_fill_vreg_params(
+		&e_ctrl->soc_info,
+		power_info->power_down_setting,
+		power_info->power_down_setting_size);
+	if (rc) {
+		CAM_ERR(CAM_EEPROM,
+			"failed to fill power down vreg params  rc:%d", rc);
+		return rc;
+	}
+
+	power_info->dev = soc_info->dev;
+
+	rc = cam_sensor_core_power_up(power_info, soc_info);
+	if (rc) {
+		CAM_ERR(CAM_EEPROM, "failed in eeprom power up rc %d", rc);
+		return rc;
+	}
+
+	if (e_ctrl->io_master_info.master_type == CCI_MASTER) {
+		rc = camera_io_init(&(e_ctrl->io_master_info));
+		if (rc) {
+			CAM_ERR(CAM_EEPROM, "cci_init failed");
+			return -EINVAL;
+		}
+	}
+	return rc;
+}
+
+/**
+ * cam_eeprom_power_down - Power down eeprom hardware
+ * @e_ctrl:    ctrl structure
+ *
+ * Returns success or failure
+ */
+static int cam_eeprom_power_down(struct cam_eeprom_ctrl_t *e_ctrl)
+{
+	struct cam_sensor_power_ctrl_t *power_info;
+	struct cam_hw_soc_info         *soc_info;
+	struct cam_eeprom_soc_private  *soc_private;
+	int                             rc = 0;
+
+	if (!e_ctrl) {
+		CAM_ERR(CAM_EEPROM, "failed: e_ctrl %pK", e_ctrl);
+		return -EINVAL;
+	}
+
+	soc_private =
+		(struct cam_eeprom_soc_private *)e_ctrl->soc_info.soc_private;
+	power_info = &soc_private->power_info;
+	soc_info = &e_ctrl->soc_info;
+
+	if (!power_info) {
+		CAM_ERR(CAM_EEPROM, "failed: power_info %pK", power_info);
+		return -EINVAL;
+	}
+	rc = cam_sensor_util_power_down(power_info, soc_info);
+	if (rc) {
+		CAM_ERR(CAM_EEPROM, "power down the core is failed:%d", rc);
+		return rc;
+	}
+
+	if (e_ctrl->io_master_info.master_type == CCI_MASTER)
+		camera_io_release(&(e_ctrl->io_master_info));
+
+	return rc;
+}
+
+/**
+ * cam_eeprom_match_id - match eeprom id
+ * @e_ctrl:     ctrl structure
+ *
+ * Returns success or failure
+ */
+static int cam_eeprom_match_id(struct cam_eeprom_ctrl_t *e_ctrl)
+{
+	int                      rc;
+	struct camera_io_master *client = &e_ctrl->io_master_info;
+	uint8_t                  id[2];
+
+	rc = cam_spi_query_id(client, 0, CAMERA_SENSOR_I2C_TYPE_WORD,
+		&id[0], 2);
+	if (rc)
+		return rc;
+	CAM_DBG(CAM_EEPROM, "read 0x%x 0x%x, check 0x%x 0x%x",
+		id[0], id[1], client->spi_client->mfr_id0,
+		client->spi_client->device_id0);
+	if (id[0] != client->spi_client->mfr_id0
+		|| id[1] != client->spi_client->device_id0)
+		return -ENODEV;
+	return 0;
+}
+
+/**
+ * cam_eeprom_parse_read_memory_map - Parse memory map
+ * @of_node:    device node
+ * @e_ctrl:     ctrl structure
+ *
+ * Returns success or failure
+ */
+int32_t cam_eeprom_parse_read_memory_map(struct device_node *of_node,
+	struct cam_eeprom_ctrl_t *e_ctrl)
+{
+	int32_t                         rc = 0;
+	struct cam_eeprom_soc_private  *soc_private;
+	struct cam_sensor_power_ctrl_t *power_info;
+
+	if (!e_ctrl) {
+		CAM_ERR(CAM_EEPROM, "failed: e_ctrl is NULL");
+		return -EINVAL;
+	}
+
+	soc_private =
+		(struct cam_eeprom_soc_private *)e_ctrl->soc_info.soc_private;
+	power_info = &soc_private->power_info;
+
+	rc = cam_eeprom_parse_dt_memory_map(of_node, &e_ctrl->cal_data);
+	if (rc) {
+		CAM_ERR(CAM_EEPROM, "failed: eeprom dt parse rc %d", rc);
+		return rc;
+	}
+	rc = cam_eeprom_power_up(e_ctrl, power_info);
+	if (rc) {
+		CAM_ERR(CAM_EEPROM, "failed: eeprom power up rc %d", rc);
+		goto data_mem_free;
+	}
+
+	e_ctrl->cam_eeprom_state = CAM_EEPROM_CONFIG;
+	if (e_ctrl->eeprom_device_type == MSM_CAMERA_SPI_DEVICE) {
+		rc = cam_eeprom_match_id(e_ctrl);
+		if (rc) {
+			CAM_DBG(CAM_EEPROM, "eeprom not matching %d", rc);
+			goto power_down;
+		}
+	}
+	rc = cam_eeprom_read_memory(e_ctrl, &e_ctrl->cal_data);
+	if (rc) {
+		CAM_ERR(CAM_EEPROM, "read_eeprom_memory failed");
+		goto power_down;
+	}
+
+	rc = cam_eeprom_power_down(e_ctrl);
+	if (rc)
+		CAM_ERR(CAM_EEPROM, "failed: eeprom power down rc %d", rc);
+
+	e_ctrl->cam_eeprom_state = CAM_EEPROM_ACQUIRE;
+	return rc;
+power_down:
+	cam_eeprom_power_down(e_ctrl);
+data_mem_free:
+	vfree(e_ctrl->cal_data.mapdata);
+	vfree(e_ctrl->cal_data.map);
+	e_ctrl->cal_data.num_data = 0;
+	e_ctrl->cal_data.num_map = 0;
+	e_ctrl->cam_eeprom_state = CAM_EEPROM_ACQUIRE;
+	return rc;
+}
+
+/**
+ * cam_eeprom_get_dev_handle - get device handle
+ * @e_ctrl:     ctrl structure
+ * @arg:        Camera control command argument
+ *
+ * Returns success or failure
+ */
+static int32_t cam_eeprom_get_dev_handle(struct cam_eeprom_ctrl_t *e_ctrl,
+	void *arg)
+{
+	struct cam_sensor_acquire_dev    eeprom_acq_dev;
+	struct cam_create_dev_hdl        bridge_params;
+	struct cam_control              *cmd = (struct cam_control *)arg;
+
+	if (e_ctrl->bridge_intf.device_hdl != -1) {
+		CAM_ERR(CAM_EEPROM, "Device is already acquired");
+		return -EFAULT;
+	}
+	if (copy_from_user(&eeprom_acq_dev,
+		u64_to_user_ptr(cmd->handle),
+		sizeof(eeprom_acq_dev))) {
+		CAM_ERR(CAM_EEPROM,
+			"EEPROM:ACQUIRE_DEV: copy from user failed");
+		return -EFAULT;
+	}
+
+	bridge_params.session_hdl = eeprom_acq_dev.session_handle;
+	bridge_params.ops = &e_ctrl->bridge_intf.ops;
+	bridge_params.v4l2_sub_dev_flag = 0;
+	bridge_params.media_entity_flag = 0;
+	bridge_params.priv = e_ctrl;
+
+	eeprom_acq_dev.device_handle =
+		cam_create_device_hdl(&bridge_params);
+	e_ctrl->bridge_intf.device_hdl = eeprom_acq_dev.device_handle;
+	e_ctrl->bridge_intf.session_hdl = eeprom_acq_dev.session_handle;
+
+	CAM_DBG(CAM_EEPROM, "Device Handle: %d", eeprom_acq_dev.device_handle);
+	if (copy_to_user(u64_to_user_ptr(cmd->handle),
+		&eeprom_acq_dev, sizeof(struct cam_sensor_acquire_dev))) {
+		CAM_ERR(CAM_EEPROM, "EEPROM:ACQUIRE_DEV: copy to user failed");
+		return -EFAULT;
+	}
+	return 0;
+}
+
+/**
+ * cam_eeprom_update_slaveInfo - Update slave info
+ * @e_ctrl:     ctrl structure
+ * @cmd_buf:    command buffer
+ *
+ * Returns success or failure
+ */
+static int32_t cam_eeprom_update_slaveInfo(struct cam_eeprom_ctrl_t *e_ctrl,
+	void *cmd_buf)
+{
+	int32_t                         rc = 0;
+	struct cam_eeprom_soc_private  *soc_private;
+	struct cam_cmd_i2c_info        *cmd_i2c_info = NULL;
+
+	soc_private =
+		(struct cam_eeprom_soc_private *)e_ctrl->soc_info.soc_private;
+	cmd_i2c_info = (struct cam_cmd_i2c_info *)cmd_buf;
+	soc_private->i2c_info.slave_addr = cmd_i2c_info->slave_addr;
+	soc_private->i2c_info.i2c_freq_mode = cmd_i2c_info->i2c_freq_mode;
+
+	rc = cam_eeprom_update_i2c_info(e_ctrl,
+		&soc_private->i2c_info);
+	CAM_DBG(CAM_EEPROM, "Slave addr: 0x%x Freq Mode: %d",
+		soc_private->i2c_info.slave_addr,
+		soc_private->i2c_info.i2c_freq_mode);
+
+	return rc;
+}
+
+/**
+ * cam_eeprom_parse_memory_map - Parse memory map info
+ * @data:             memory block data
+ * @cmd_buf:          command buffer
+ * @cmd_length:       command buffer length
+ * @num_map:          memory map size
+ * @cmd_length_bytes: command length processed in this function
+ *
+ * Returns success or failure
+ */
+static int32_t cam_eeprom_parse_memory_map(
+	struct cam_eeprom_memory_block_t *data,
+	void *cmd_buf, int cmd_length, uint32_t *cmd_length_bytes,
+	int *num_map, size_t remain_buf_len)
+{
+	int32_t                            rc = 0;
+	int32_t                            cnt = 0;
+	int32_t                            processed_size = 0;
+	uint8_t                            generic_op_code;
+	struct cam_eeprom_memory_map_t    *map = data->map;
+	struct common_header              *cmm_hdr =
+		(struct common_header *)cmd_buf;
+	uint16_t                           cmd_length_in_bytes = 0;
+	struct cam_cmd_i2c_random_wr      *i2c_random_wr = NULL;
+	struct cam_cmd_i2c_continuous_rd  *i2c_cont_rd = NULL;
+	struct cam_cmd_conditional_wait   *i2c_poll = NULL;
+	struct cam_cmd_unconditional_wait *i2c_uncond_wait = NULL;
+	size_t                             validate_size = 0;
+
+	generic_op_code = cmm_hdr->fifth_byte;
+
+	if (cmm_hdr->cmd_type == CAMERA_SENSOR_CMD_TYPE_I2C_RNDM_WR)
+		validate_size = sizeof(struct cam_cmd_i2c_random_wr);
+	else if (cmm_hdr->cmd_type == CAMERA_SENSOR_CMD_TYPE_I2C_CONT_RD)
+		validate_size = sizeof(struct cam_cmd_i2c_continuous_rd);
+	else if (cmm_hdr->cmd_type == CAMERA_SENSOR_CMD_TYPE_WAIT)
+		validate_size = sizeof(struct cam_cmd_unconditional_wait);
+
+	if (remain_buf_len < validate_size ||
+	    *num_map >= (MSM_EEPROM_MAX_MEM_MAP_CNT *
+		MSM_EEPROM_MEMORY_MAP_MAX_SIZE)) {
+		CAM_ERR(CAM_EEPROM, "not enough buffer");
+		return -EINVAL;
+	}
+	switch (cmm_hdr->cmd_type) {
+	case CAMERA_SENSOR_CMD_TYPE_I2C_RNDM_WR:
+		i2c_random_wr = (struct cam_cmd_i2c_random_wr *)cmd_buf;
+
+		if (i2c_random_wr->header.count == 0 ||
+		    i2c_random_wr->header.count >= MSM_EEPROM_MAX_MEM_MAP_CNT ||
+		    (size_t)*num_map >= ((MSM_EEPROM_MAX_MEM_MAP_CNT *
+				MSM_EEPROM_MEMORY_MAP_MAX_SIZE) -
+				i2c_random_wr->header.count)) {
+			CAM_ERR(CAM_EEPROM, "OOB Error");
+			return -EINVAL;
+		}
+		cmd_length_in_bytes   = sizeof(struct cam_cmd_i2c_random_wr) +
+			((i2c_random_wr->header.count - 1) *
+			sizeof(struct i2c_random_wr_payload));
+
+		if (cmd_length_in_bytes > remain_buf_len) {
+			CAM_ERR(CAM_EEPROM, "Not enough buffer remaining");
+			return -EINVAL;
+		}
+		for (cnt = 0; cnt < (i2c_random_wr->header.count);
+			cnt++) {
+			map[*num_map + cnt].page.addr =
+				i2c_random_wr->random_wr_payload[cnt].reg_addr;
+			map[*num_map + cnt].page.addr_type =
+				i2c_random_wr->header.addr_type;
+			map[*num_map + cnt].page.data =
+				i2c_random_wr->random_wr_payload[cnt].reg_data;
+			map[*num_map + cnt].page.data_type =
+				i2c_random_wr->header.data_type;
+			map[*num_map + cnt].page.valid_size = 1;
+		}
+
+		*num_map += (i2c_random_wr->header.count - 1);
+		cmd_buf += cmd_length_in_bytes / sizeof(int32_t);
+		processed_size +=
+			cmd_length_in_bytes;
+		break;
+	case CAMERA_SENSOR_CMD_TYPE_I2C_CONT_RD:
+		i2c_cont_rd = (struct cam_cmd_i2c_continuous_rd *)cmd_buf;
+		cmd_length_in_bytes = sizeof(struct cam_cmd_i2c_continuous_rd);
+
+		if (i2c_cont_rd->header.count >= U32_MAX - data->num_data) {
+			CAM_ERR(CAM_EEPROM,
+				"int overflow on eeprom memory block");
+			return -EINVAL;
+		}
+		map[*num_map].mem.addr = i2c_cont_rd->reg_addr;
+		map[*num_map].mem.addr_type = i2c_cont_rd->header.addr_type;
+		map[*num_map].mem.data_type = i2c_cont_rd->header.data_type;
+		map[*num_map].mem.valid_size =
+			i2c_cont_rd->header.count;
+		cmd_buf += cmd_length_in_bytes / sizeof(int32_t);
+		processed_size +=
+			cmd_length_in_bytes;
+		data->num_data += map[*num_map].mem.valid_size;
+		break;
+	case CAMERA_SENSOR_CMD_TYPE_WAIT:
+		if (generic_op_code ==
+			CAMERA_SENSOR_WAIT_OP_HW_UCND ||
+			generic_op_code ==
+			CAMERA_SENSOR_WAIT_OP_SW_UCND) {
+			i2c_uncond_wait =
+				(struct cam_cmd_unconditional_wait *)cmd_buf;
+			cmd_length_in_bytes =
+				sizeof(struct cam_cmd_unconditional_wait);
+
+			if (*num_map < 1) {
+				CAM_ERR(CAM_EEPROM,
+					"invalid map number, num_map=%d",
+					*num_map);
+				return -EINVAL;
+			}
+
+			/*
+			 * Though delay is added all of them, but delay will
+			 * be applicable to only one of them as only one of
+			 * them will have valid_size set to >= 1.
+			 */
+			map[*num_map - 1].mem.delay = i2c_uncond_wait->delay;
+			map[*num_map - 1].page.delay = i2c_uncond_wait->delay;
+			map[*num_map - 1].pageen.delay = i2c_uncond_wait->delay;
+		} else if (generic_op_code ==
+			CAMERA_SENSOR_WAIT_OP_COND) {
+			i2c_poll = (struct cam_cmd_conditional_wait *)cmd_buf;
+			cmd_length_in_bytes =
+				sizeof(struct cam_cmd_conditional_wait);
+
+			map[*num_map].poll.addr = i2c_poll->reg_addr;
+			map[*num_map].poll.addr_type = i2c_poll->addr_type;
+			map[*num_map].poll.data = i2c_poll->reg_data;
+			map[*num_map].poll.data_type = i2c_poll->data_type;
+			map[*num_map].poll.delay = i2c_poll->timeout;
+			map[*num_map].poll.valid_size = 1;
+		}
+		cmd_buf += cmd_length_in_bytes / sizeof(int32_t);
+		processed_size +=
+			cmd_length_in_bytes;
+		break;
+	default:
+		break;
+	}
+
+	*cmd_length_bytes = processed_size;
+	return rc;
+}
+
+static struct i2c_settings_list*
+	cam_eeprom_get_i2c_ptr(struct i2c_settings_array *i2c_reg_settings,
+		uint32_t size)
+{
+	struct i2c_settings_list *tmp;
+
+	tmp = kzalloc(sizeof(struct i2c_settings_list), GFP_KERNEL);
+
+	if (tmp != NULL)
+		list_add_tail(&(tmp->list),
+			&(i2c_reg_settings->list_head));
+	else
+		return NULL;
+
+	tmp->seq_settings.reg_data =
+		kcalloc(size, sizeof(uint8_t), GFP_KERNEL);
+	if (tmp->seq_settings.reg_data == NULL) {
+		list_del(&(tmp->list));
+		kfree(tmp);
+		tmp = NULL;
+		return NULL;
+	}
+	tmp->seq_settings.size = size;
+
+	return tmp;
+}
+
+static int32_t cam_eeprom_handle_continuous_write(
+	struct cam_eeprom_ctrl_t *e_ctrl,
+	struct cam_cmd_i2c_continuous_wr *cam_cmd_i2c_continuous_wr,
+	struct i2c_settings_array *i2c_reg_settings,
+	uint32_t *cmd_length_in_bytes, int32_t *offset,
+	struct list_head **list)
+{
+	struct i2c_settings_list *i2c_list;
+	int32_t rc = 0, cnt = 0;
+
+
+	CAM_DBG(CAM_EEPROM, "Total Size: %d",
+		cam_cmd_i2c_continuous_wr->header.count);
+
+	i2c_list = cam_eeprom_get_i2c_ptr(i2c_reg_settings,
+		cam_cmd_i2c_continuous_wr->header.count);
+	if (i2c_list == NULL ||
+		i2c_list->seq_settings.reg_data == NULL) {
+		CAM_ERR(CAM_SENSOR, "Failed in allocating i2c_list");
+		return -ENOMEM;
+	}
+
+	*cmd_length_in_bytes = (sizeof(struct i2c_rdwr_header) +
+		sizeof(cam_cmd_i2c_continuous_wr->reg_addr) +
+		sizeof(struct cam_cmd_read) *
+		(cam_cmd_i2c_continuous_wr->header.count));
+	if (cam_cmd_i2c_continuous_wr->header.op_code ==
+		CAMERA_SENSOR_I2C_OP_CONT_WR_BRST)
+		i2c_list->op_code = CAM_SENSOR_I2C_WRITE_BURST;
+	else if (cam_cmd_i2c_continuous_wr->header.op_code ==
+		CAMERA_SENSOR_I2C_OP_CONT_WR_SEQN)
+		i2c_list->op_code = CAM_SENSOR_I2C_WRITE_SEQ;
+	else {
+		rc = -EINVAL;
+		goto deallocate_i2c_list;
+	}
+
+	i2c_list->seq_settings.addr_type =
+		cam_cmd_i2c_continuous_wr->header.addr_type;
+
+	CAM_ERR(CAM_EEPROM, "Write Address: 0x%x",
+		cam_cmd_i2c_continuous_wr->reg_addr);
+	if (i2c_list->op_code == CAM_SENSOR_I2C_WRITE_SEQ) {
+		i2c_list->op_code = CAM_SENSOR_I2C_WRITE_RANDOM;
+		e_ctrl->eebin_info.start_address =
+			cam_cmd_i2c_continuous_wr->reg_addr;
+		e_ctrl->eebin_info.size =
+			cam_cmd_i2c_continuous_wr->header.count;
+		CAM_DBG(CAM_EEPROM, "Header Count: %d",
+			cam_cmd_i2c_continuous_wr->header.count);
+		e_ctrl->eebin_info.is_valid = 1;
+
+		i2c_list->seq_settings.reg_addr =
+			cam_cmd_i2c_continuous_wr->reg_addr;
+	} else
+		CAM_ERR(CAM_EEPROM, "Burst Mode Not Supported\n");
+
+	(*offset) += cnt;
+	*list = &(i2c_list->list);
+	return rc;
+deallocate_i2c_list:
+	kfree(i2c_list);
+	return rc;
+}
+
+static int32_t cam_eeprom_handle_delay(
+	uint32_t **cmd_buf,
+	uint16_t generic_op_code,
+	struct i2c_settings_array *i2c_reg_settings,
+	uint32_t offset, uint32_t *byte_cnt,
+	struct list_head *list_ptr,
+	size_t remain_buf_len)
+{
+	int32_t rc = 0;
+	struct i2c_settings_list *i2c_list = NULL;
+	struct cam_cmd_unconditional_wait *cmd_uncond_wait =
+		(struct cam_cmd_unconditional_wait *) *cmd_buf;
+
+	if (remain_buf_len < (sizeof(struct cam_cmd_unconditional_wait))) {
+		CAM_ERR(CAM_EEPROM, "Not Enough buffer");
+		return -EINVAL;
+	}
+
+	if (list_ptr == NULL) {
+		CAM_ERR(CAM_SENSOR, "Invalid list ptr");
+		return -EINVAL;
+	}
+
+	if (offset > 0) {
+		i2c_list =
+			list_entry(list_ptr, struct i2c_settings_list, list);
+		if (generic_op_code ==
+			CAMERA_SENSOR_WAIT_OP_HW_UCND)
+			i2c_list->i2c_settings.reg_setting[offset - 1].delay =
+				cmd_uncond_wait->delay;
+		else
+			i2c_list->i2c_settings.delay =
+				cmd_uncond_wait->delay;
+		(*cmd_buf) +=
+			sizeof(
+			struct cam_cmd_unconditional_wait) / sizeof(uint32_t);
+		(*byte_cnt) +=
+			sizeof(
+			struct cam_cmd_unconditional_wait);
+	} else {
+		CAM_ERR(CAM_SENSOR, "Delay Rxed before any buffer: %d", offset);
+		return -EINVAL;
+	}
+
+	return rc;
+}
+
+/**
+ * cam_eeprom_parse_write_memory_packet - Write eeprom packet
+ * @csl_packet:   csl packet received
+ * @e_ctrl:       ctrl structure
+ *
+ * Returns success or failure
+ */
+static int32_t cam_eeprom_parse_write_memory_packet(
+	struct cam_packet *csl_packet,
+	struct cam_eeprom_ctrl_t *e_ctrl)
+{
+	struct cam_cmd_buf_desc        *cmd_desc = NULL;
+	uint32_t                       *offset = NULL;
+	int32_t                         i, rc = 0;
+	uint32_t                       *cmd_buf = NULL;
+	uintptr_t                       generic_pkt_addr;
+	size_t                          pkt_len = 0;
+	size_t                          remain_len = 0;
+	uint32_t                        total_cmd_buf_in_bytes = 0;
+	uint32_t                        processed_cmd_buf_in_bytes = 0;
+	struct common_header           *cmm_hdr = NULL;
+	uint32_t                        cmd_length_in_bytes = 0;
+	struct cam_cmd_i2c_info        *i2c_info = NULL;
+
+
+	offset = (uint32_t *)&csl_packet->payload;
+	offset += (csl_packet->cmd_buf_offset / sizeof(uint32_t));
+	cmd_desc = (struct cam_cmd_buf_desc *)(offset);
+
+	CAM_DBG(CAM_EEPROM, "Number of Command Buffers: %d",
+		csl_packet->num_cmd_buf);
+	for (i = 0; i < csl_packet->num_cmd_buf; i++) {
+		struct list_head               *list = NULL;
+		uint16_t                       generic_op_code;
+		uint32_t                       off = 0;
+		int                            master;
+		struct cam_sensor_cci_client   *cci;
+
+		total_cmd_buf_in_bytes = cmd_desc[i].length;
+		processed_cmd_buf_in_bytes = 0;
+
+		if (!total_cmd_buf_in_bytes)
+			continue;
+
+		rc = cam_mem_get_cpu_buf(cmd_desc[i].mem_handle,
+			&generic_pkt_addr, &pkt_len);
+		if (rc) {
+			CAM_ERR(CAM_EEPROM, "Failed to get cpu buf");
+			return rc;
+		}
+
+		cmd_buf = (uint32_t *)generic_pkt_addr;
+		if (!cmd_buf) {
+			CAM_ERR(CAM_EEPROM, "invalid cmd buf");
+			rc = -EINVAL;
+			goto end;
+		}
+
+		if ((pkt_len < sizeof(struct common_header) ||
+			(cmd_desc[i].offset) > (pkt_len -
+			sizeof(struct common_header)))) {
+			CAM_ERR(CAM_EEPROM, "Not enough buffer");
+			rc = -EINVAL;
+			goto end;
+		}
+
+		remain_len = pkt_len - cmd_desc[i].offset;
+		cmd_buf += cmd_desc[i].offset / sizeof(uint32_t);
+
+		if (total_cmd_buf_in_bytes > remain_len) {
+			CAM_ERR(CAM_EEPROM, "Not enough buffer for command");
+			rc = -EINVAL;
+			goto end;
+		}
+
+		master = e_ctrl->io_master_info.master_type;
+		cci = e_ctrl->io_master_info.cci_client;
+		while (processed_cmd_buf_in_bytes < total_cmd_buf_in_bytes) {
+			if ((remain_len - processed_cmd_buf_in_bytes) <
+				sizeof(struct common_header)) {
+				CAM_ERR(CAM_EEPROM, "Not Enough buffer");
+				rc = -EINVAL;
+				goto end;
+			}
+			cmm_hdr = (struct common_header *)cmd_buf;
+			generic_op_code = cmm_hdr->fifth_byte;
+
+			switch (cmm_hdr->cmd_type) {
+			case CAMERA_SENSOR_CMD_TYPE_I2C_INFO:
+				i2c_info = (struct cam_cmd_i2c_info *)cmd_buf;
+				if ((remain_len - processed_cmd_buf_in_bytes) <
+					sizeof(struct cam_cmd_i2c_info)) {
+					CAM_ERR(CAM_EEPROM, "Not enough buf");
+					rc = -EINVAL;
+					goto end;
+				}
+				if (master == CCI_MASTER) {
+					cci->cci_i2c_master =
+						e_ctrl->cci_i2c_master;
+					cci->i2c_freq_mode =
+						i2c_info->i2c_freq_mode;
+					cci->sid =
+						i2c_info->slave_addr >> 1;
+					CAM_DBG(CAM_EEPROM,
+						"Slave addr: 0x%x Freq Mode: %d",
+						i2c_info->slave_addr,
+						i2c_info->i2c_freq_mode);
+				} else if (master == I2C_MASTER) {
+					e_ctrl->io_master_info.client->addr =
+						i2c_info->slave_addr;
+					CAM_DBG(CAM_EEPROM,
+						"Slave addr: 0x%x",
+						i2c_info->slave_addr);
+				} else if (master == SPI_MASTER) {
+					CAM_ERR(CAM_EEPROM,
+						"No Need of Slave Info");
+				} else {
+					CAM_ERR(CAM_EEPROM,
+						"Invalid Master type: %d",
+						master);
+					rc = -EINVAL;
+					goto end;
+				}
+				cmd_length_in_bytes =
+					sizeof(struct cam_cmd_i2c_info);
+				processed_cmd_buf_in_bytes +=
+					cmd_length_in_bytes;
+				cmd_buf += cmd_length_in_bytes/4;
+				break;
+			case CAMERA_SENSOR_CMD_TYPE_I2C_CONT_WR: {
+				struct cam_cmd_i2c_continuous_wr
+					*cam_cmd_i2c_continuous_wr =
+					(struct cam_cmd_i2c_continuous_wr *)
+					cmd_buf;
+				if ((remain_len - processed_cmd_buf_in_bytes) <
+				sizeof(struct cam_cmd_i2c_continuous_wr)) {
+					CAM_ERR(CAM_EEPROM, "Not enough buf");
+					rc = -EINVAL;
+					goto end;
+				}
+
+				CAM_DBG(CAM_EEPROM,
+					"CAMERA_SENSOR_CMD_TYPE_I2C_CONT_WR");
+				rc = cam_eeprom_handle_continuous_write(
+					e_ctrl,
+					cam_cmd_i2c_continuous_wr,
+					&(e_ctrl->wr_settings),
+					&cmd_length_in_bytes, &off, &list);
+				if (rc < 0) {
+					CAM_ERR(CAM_SENSOR,
+					"Failed in continuous write %d", rc);
+					goto end;
+				}
+
+				processed_cmd_buf_in_bytes +=
+					cmd_length_in_bytes;
+				cmd_buf += cmd_length_in_bytes /
+					sizeof(uint32_t);
+				break;
+			}
+			case CAMERA_SENSOR_CMD_TYPE_WAIT: {
+				CAM_DBG(CAM_EEPROM,
+					"CAMERA_SENSOR_CMD_TYPE_WAIT");
+				if (generic_op_code ==
+					CAMERA_SENSOR_WAIT_OP_HW_UCND ||
+					generic_op_code ==
+						CAMERA_SENSOR_WAIT_OP_SW_UCND) {
+
+					rc = cam_eeprom_handle_delay(
+						&cmd_buf, generic_op_code,
+						&(e_ctrl->wr_settings), off,
+						&cmd_length_in_bytes,
+						list, (remain_len -
+						processed_cmd_buf_in_bytes));
+					if (rc < 0) {
+						CAM_ERR(CAM_EEPROM,
+							"delay hdl failed: %d",
+							rc);
+						goto end;
+					}
+					processed_cmd_buf_in_bytes +=
+						cmd_length_in_bytes;
+					cmd_buf += cmd_length_in_bytes /
+					sizeof(uint32_t);
+				} else {
+					CAM_ERR(CAM_EEPROM,
+						"Wrong Wait Command: %d",
+						generic_op_code);
+					rc = -EINVAL;
+					goto end;
+				}
+				break;
+			}
+			default:
+				CAM_ERR(CAM_EEPROM,
+					"Invalid Cmd_type rxed: %d\n",
+					cmm_hdr->cmd_type);
+				rc = -EINVAL;
+				break;
+			}
+		}
+		cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
+	}
+	return rc;
+
+end:
+	cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
+	return rc;
+}
+
+/**
+ * cam_eeprom_init_pkt_parser - Parse eeprom packet
+ * @e_ctrl:       ctrl structure
+ * @csl_packet:	  csl packet received
+ *
+ * Returns success or failure
+ */
+static int32_t cam_eeprom_init_pkt_parser(struct cam_eeprom_ctrl_t *e_ctrl,
+	struct cam_packet *csl_packet)
+{
+	int32_t                         rc = 0;
+	int                             i = 0;
+	struct cam_cmd_buf_desc        *cmd_desc = NULL;
+	uint32_t                       *offset = NULL;
+	uint32_t                       *cmd_buf = NULL;
+	uintptr_t                        generic_pkt_addr;
+	size_t                          pkt_len = 0;
+	size_t                          remain_len = 0;
+	uint32_t                        total_cmd_buf_in_bytes = 0;
+	uint32_t                        processed_cmd_buf_in_bytes = 0;
+	struct common_header           *cmm_hdr = NULL;
+	uint32_t                        cmd_length_in_bytes = 0;
+	struct cam_cmd_i2c_info        *i2c_info = NULL;
+	int                             num_map = -1;
+	struct cam_eeprom_memory_map_t *map = NULL;
+	struct cam_eeprom_soc_private  *soc_private =
+		(struct cam_eeprom_soc_private *)e_ctrl->soc_info.soc_private;
+	struct cam_sensor_power_ctrl_t *power_info = &soc_private->power_info;
+
+	e_ctrl->cal_data.map = vzalloc((MSM_EEPROM_MEMORY_MAP_MAX_SIZE *
+		MSM_EEPROM_MAX_MEM_MAP_CNT) *
+		(sizeof(struct cam_eeprom_memory_map_t)));
+	if (!e_ctrl->cal_data.map) {
+		rc = -ENOMEM;
+		CAM_ERR(CAM_EEPROM, "failed");
+		return rc;
+	}
+	map = e_ctrl->cal_data.map;
+
+	offset = (uint32_t *)&csl_packet->payload;
+	offset += (csl_packet->cmd_buf_offset / sizeof(uint32_t));
+	cmd_desc = (struct cam_cmd_buf_desc *)(offset);
+
+	/* Loop through multiple command buffers */
+	for (i = 0; i < csl_packet->num_cmd_buf; i++) {
+		total_cmd_buf_in_bytes = cmd_desc[i].length;
+		processed_cmd_buf_in_bytes = 0;
+		if (!total_cmd_buf_in_bytes)
+			continue;
+		rc = cam_mem_get_cpu_buf(cmd_desc[i].mem_handle,
+			&generic_pkt_addr, &pkt_len);
+		if (rc) {
+			CAM_ERR(CAM_EEPROM, "Failed to get cpu buf");
+			return rc;
+		}
+		cmd_buf = (uint32_t *)generic_pkt_addr;
+		if (!cmd_buf) {
+			CAM_ERR(CAM_EEPROM, "invalid cmd buf");
+			rc = -EINVAL;
+			goto end;
+		}
+
+		if ((pkt_len < sizeof(struct common_header)) ||
+			(cmd_desc[i].offset > (pkt_len -
+			sizeof(struct common_header)))) {
+			CAM_ERR(CAM_EEPROM, "Not enough buffer");
+			rc = -EINVAL;
+			goto end;
+		}
+		remain_len = pkt_len - cmd_desc[i].offset;
+		cmd_buf += cmd_desc[i].offset / sizeof(uint32_t);
+
+		if (total_cmd_buf_in_bytes > remain_len) {
+			CAM_ERR(CAM_EEPROM, "Not enough buffer for command");
+			rc = -EINVAL;
+			goto end;
+		}
+		/* Loop through multiple cmd formats in one cmd buffer */
+		while (processed_cmd_buf_in_bytes < total_cmd_buf_in_bytes) {
+			if ((remain_len - processed_cmd_buf_in_bytes) <
+				sizeof(struct common_header)) {
+				CAM_ERR(CAM_EEPROM, "Not enough buf");
+				rc = -EINVAL;
+				goto end;
+			}
+			cmm_hdr = (struct common_header *)cmd_buf;
+			switch (cmm_hdr->cmd_type) {
+			case CAMERA_SENSOR_CMD_TYPE_I2C_INFO:
+				i2c_info = (struct cam_cmd_i2c_info *)cmd_buf;
+				if ((remain_len - processed_cmd_buf_in_bytes) <
+					sizeof(struct cam_cmd_i2c_info)) {
+					CAM_ERR(CAM_EEPROM, "Not enough buf");
+					rc = -EINVAL;
+					goto end;
+				}
+				/* Configure the following map slave address */
+				map[num_map + 1].saddr = i2c_info->slave_addr;
+				rc = cam_eeprom_update_slaveInfo(e_ctrl,
+					cmd_buf);
+				cmd_length_in_bytes =
+					sizeof(struct cam_cmd_i2c_info);
+				processed_cmd_buf_in_bytes +=
+					cmd_length_in_bytes;
+				cmd_buf += cmd_length_in_bytes/
+					sizeof(uint32_t);
+				break;
+			case CAMERA_SENSOR_CMD_TYPE_PWR_UP:
+			case CAMERA_SENSOR_CMD_TYPE_PWR_DOWN:
+				cmd_length_in_bytes = total_cmd_buf_in_bytes;
+				rc = cam_sensor_update_power_settings(cmd_buf,
+					cmd_length_in_bytes, power_info,
+					(remain_len -
+					processed_cmd_buf_in_bytes));
+				processed_cmd_buf_in_bytes +=
+					cmd_length_in_bytes;
+				cmd_buf += cmd_length_in_bytes/
+					sizeof(uint32_t);
+				if (rc) {
+					CAM_ERR(CAM_EEPROM, "Failed");
+					goto end;
+				}
+				break;
+			case CAMERA_SENSOR_CMD_TYPE_I2C_RNDM_WR:
+			case CAMERA_SENSOR_CMD_TYPE_I2C_CONT_RD:
+			case CAMERA_SENSOR_CMD_TYPE_WAIT:
+				num_map++;
+				rc = cam_eeprom_parse_memory_map(
+					&e_ctrl->cal_data, cmd_buf,
+					total_cmd_buf_in_bytes,
+					&cmd_length_in_bytes, &num_map,
+					(remain_len -
+					processed_cmd_buf_in_bytes));
+				processed_cmd_buf_in_bytes +=
+					cmd_length_in_bytes;
+				cmd_buf += cmd_length_in_bytes/sizeof(uint32_t);
+				break;
+			default:
+				CAM_ERR(CAM_EEPROM, "Invalid cmd_type 0x%x",
+					cmm_hdr->cmd_type);
+				rc = -EINVAL;
+				goto end;
+			}
+		}
+		e_ctrl->cal_data.num_map = num_map + 1;
+		cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
+	}
+	return rc;
+
+end:
+	cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
+	return rc;
+}
+
+/**
+ * cam_eeprom_get_cal_data - parse the userspace IO config and
+ *                                        copy read data to share with userspace
+ * @e_ctrl:     ctrl structure
+ * @csl_packet: csl packet received
+ *
+ * Returns success or failure
+ */
+static int32_t cam_eeprom_get_cal_data(struct cam_eeprom_ctrl_t *e_ctrl,
+	struct cam_packet *csl_packet)
+{
+	struct cam_buf_io_cfg *io_cfg;
+	uint32_t              i = 0;
+	int                   rc = 0;
+	uintptr_t              buf_addr;
+	size_t                buf_size;
+	uint8_t               *read_buffer;
+	size_t                remain_len = 0;
+
+	io_cfg = (struct cam_buf_io_cfg *) ((uint8_t *)
+		&csl_packet->payload +
+		csl_packet->io_configs_offset);
+
+	CAM_DBG(CAM_EEPROM, "number of IO configs: %d:",
+		csl_packet->num_io_configs);
+
+	for (i = 0; i < csl_packet->num_io_configs; i++) {
+		CAM_DBG(CAM_EEPROM, "Direction: %d:", io_cfg->direction);
+		if (io_cfg->direction == CAM_BUF_OUTPUT) {
+			rc = cam_mem_get_cpu_buf(io_cfg->mem_handle[0],
+				&buf_addr, &buf_size);
+			if (rc) {
+				CAM_ERR(CAM_EEPROM, "Fail in get buffer: %d",
+					rc);
+				return rc;
+			}
+			if (buf_size <= io_cfg->offsets[0]) {
+				CAM_ERR(CAM_EEPROM, "Not enough buffer");
+				rc = -EINVAL;
+				return rc;
+			}
+
+			remain_len = buf_size - io_cfg->offsets[0];
+			CAM_DBG(CAM_EEPROM, "buf_addr : %pK, buf_size : %zu\n",
+				(void *)buf_addr, buf_size);
+
+			read_buffer = (uint8_t *)buf_addr;
+			if (!read_buffer) {
+				CAM_ERR(CAM_EEPROM,
+					"invalid buffer to copy data");
+				rc = -EINVAL;
+				return rc;
+			}
+			read_buffer += io_cfg->offsets[0];
+
+			if (remain_len < e_ctrl->cal_data.num_data) {
+				CAM_ERR(CAM_EEPROM,
+					"failed to copy, Invalid size");
+				rc = -EINVAL;
+				return rc;
+			}
+
+			CAM_DBG(CAM_EEPROM, "copy the data, len:%d",
+				e_ctrl->cal_data.num_data);
+			memcpy(read_buffer, e_ctrl->cal_data.mapdata,
+					e_ctrl->cal_data.num_data);
+			cam_mem_put_cpu_buf(io_cfg->mem_handle[0]);
+		} else {
+			CAM_ERR(CAM_EEPROM, "Invalid direction");
+			rc = -EINVAL;
+		}
+	}
+
+	return rc;
+}
+
+static int32_t delete_eeprom_request(struct i2c_settings_array *i2c_array)
+{
+	struct i2c_settings_list *i2c_list = NULL, *i2c_next = NULL;
+	int32_t rc = 0;
+
+	if (i2c_array == NULL) {
+		CAM_ERR(CAM_SENSOR, "FATAL:: Invalid argument");
+		return -EINVAL;
+	}
+
+	list_for_each_entry_safe(i2c_list, i2c_next,
+		&(i2c_array->list_head), list) {
+		kfree(i2c_list->seq_settings.reg_data);
+		list_del(&(i2c_list->list));
+		kfree(i2c_list);
+	}
+	INIT_LIST_HEAD(&(i2c_array->list_head));
+	i2c_array->is_settings_valid = 0;
+
+	return rc;
+}
+
+/**
+ * cam_eeprom_write - Write Packet
+ * @e_ctrl:     ctrl structure
+ *
+ * Returns success or failure
+ */
+static int32_t cam_eeprom_write(struct cam_eeprom_ctrl_t *e_ctrl)
+{
+	int32_t rc = 0;
+	struct i2c_settings_array *i2c_set = NULL;
+	struct i2c_settings_list *i2c_list = NULL;
+
+	i2c_set = &e_ctrl->wr_settings;
+
+	if (i2c_set->is_settings_valid == 1) {
+		list_for_each_entry(i2c_list,
+			&(i2c_set->list_head), list) {
+			rc = camera_io_dev_write_continuous(
+				&e_ctrl->io_master_info,
+				&i2c_list->i2c_settings, 1);
+		if (rc < 0) {
+			CAM_ERR(CAM_EEPROM,
+				"Error in EEPROM write");
+			goto del_req;
+		}
+		}
+	}
+
+del_req:
+	delete_eeprom_request(i2c_set);
+	return rc;
+}
+
+/**
+ * cam_eeprom_pkt_parse - Parse csl packet
+ * @e_ctrl:     ctrl structure
+ * @arg:        Camera control command argument
+ *
+ * Returns success or failure
+ */
+static int32_t cam_eeprom_pkt_parse(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
+{
+	int32_t                         rc = 0;
+	struct cam_control             *ioctl_ctrl = NULL;
+	struct cam_config_dev_cmd       dev_config;
+	uintptr_t                        generic_pkt_addr;
+	size_t                          pkt_len;
+	size_t                          remain_len = 0;
+	struct cam_packet              *csl_packet = NULL;
+	struct cam_eeprom_soc_private  *soc_private =
+		(struct cam_eeprom_soc_private *)e_ctrl->soc_info.soc_private;
+	struct cam_sensor_power_ctrl_t *power_info = &soc_private->power_info;
+
+	ioctl_ctrl = (struct cam_control *)arg;
+
+	if (copy_from_user(&dev_config,
+		u64_to_user_ptr(ioctl_ctrl->handle),
+		sizeof(dev_config)))
+		return -EFAULT;
+	rc = cam_mem_get_cpu_buf(dev_config.packet_handle,
+		&generic_pkt_addr, &pkt_len);
+	if (rc) {
+		CAM_ERR(CAM_EEPROM,
+			"error in converting command Handle Error: %d", rc);
+		return rc;
+	}
+
+	remain_len = pkt_len;
+	if ((sizeof(struct cam_packet) > pkt_len) ||
+		((size_t)dev_config.offset >= pkt_len -
+		sizeof(struct cam_packet))) {
+		CAM_ERR(CAM_EEPROM,
 			"Inval cam_packet strut size: %zu, len_of_buff: %zu",
-			 sizeof(struct cam_packet), len);
+			 sizeof(struct cam_packet), pkt_len);
 		rc = -EINVAL;
 		return rc;
 	}
 
-	remain_len -= (size_t)cfg_dev->offset;
+	remain_len -= (size_t)dev_config.offset;
 	csl_packet = (struct cam_packet *)
-		(generic_pkt_ptr + (uint32_t)cfg_dev->offset);
+		(generic_pkt_addr + (uint32_t)dev_config.offset);
 
 	if (cam_packet_util_validate_packet(csl_packet,
 		remain_len)) {
-		CAM_ERR(CAM_CSIPHY, "Invalid packet params");
+		CAM_ERR(CAM_EEPROM, "Invalid packet params");
 		rc = -EINVAL;
 		return rc;
 	}
 
-	cmd_desc = (struct cam_cmd_buf_desc *)
-		((uint32_t *)&csl_packet->payload +
-		csl_packet->cmd_buf_offset / 4);
-
-	rc = cam_mem_get_cpu_buf(cmd_desc->mem_handle,
-		&generic_ptr, &len);
-	if (rc < 0) {
-		CAM_ERR(CAM_CSIPHY,
-			"Failed to get cmd buf Mem address : %d", rc);
-		return rc;
-	}
-
-	if ((len < sizeof(struct cam_csiphy_info)) ||
-		(cmd_desc->offset > (len - sizeof(struct cam_csiphy_info)))) {
-		CAM_ERR(CAM_CSIPHY,
-			"Not enough buffer provided for cam_cisphy_info");
-		rc = -EINVAL;
-		return rc;
-	}
-
-	cmd_buf = (uint32_t *)generic_ptr;
-	cmd_buf += cmd_desc->offset / 4;
-	cam_cmd_csiphy_info = (struct cam_csiphy_info *)cmd_buf;
-
-	csiphy_dev->config_count++;
-	csiphy_dev->csiphy_info.lane_cnt += cam_cmd_csiphy_info->lane_cnt;
-	csiphy_dev->csiphy_info.lane_mask |= cam_cmd_csiphy_info->lane_mask;
-	csiphy_dev->csiphy_info.csiphy_3phase =
-		cam_cmd_csiphy_info->csiphy_3phase;
-	csiphy_dev->csiphy_info.combo_mode |= cam_cmd_csiphy_info->combo_mode;
-	if (cam_cmd_csiphy_info->combo_mode == 1) {
-		csiphy_dev->csiphy_info.settle_time_combo_sensor =
-			cam_cmd_csiphy_info->settle_time;
-		csiphy_dev->csiphy_info.data_rate_combo_sensor =
-			cam_cmd_csiphy_info->data_rate;
-	} else {
-		csiphy_dev->csiphy_info.settle_time =
-			cam_cmd_csiphy_info->settle_time;
-		csiphy_dev->csiphy_info.data_rate =
-			cam_cmd_csiphy_info->data_rate;
-	}
-
-
-	if (cam_cmd_csiphy_info->secure_mode == 1)
-		cam_csiphy_update_secure_info(csiphy_dev,
-			cam_cmd_csiphy_info, cfg_dev);
-
-	return rc;
-}
-
-void cam_csiphy_cphy_irq_config(struct csiphy_device *csiphy_dev)
-{
-	int32_t i;
-	void __iomem *csiphybase =
-		csiphy_dev->soc_info.reg_map[0].mem_base;
-
-	for (i = 0; i < csiphy_dev->num_irq_registers; i++)
-		cam_io_w_mb(
-			csiphy_dev->ctrl_reg->csiphy_irq_reg[i].reg_data,
-			csiphybase +
-			csiphy_dev->ctrl_reg->csiphy_irq_reg[i].reg_addr);
-}
-
-void cam_csiphy_cphy_data_rate_config(struct csiphy_device *csiphy_device)
-{
-	int i = 0, j = 0;
-	uint64_t phy_data_rate = 0;
-	void __iomem *csiphybase = NULL;
-	ssize_t num_table_entries = 0;
-	struct data_rate_settings_t *settings_table = NULL;
-
-	if ((csiphy_device == NULL) ||
-		(csiphy_device->ctrl_reg == NULL) ||
-		(csiphy_device->ctrl_reg->data_rates_settings_table == NULL)) {
-		CAM_DBG(CAM_CSIPHY,
-			"Data rate specific register table not found");
-		return;
-	}
-
-	phy_data_rate = csiphy_device->csiphy_info.data_rate;
-	csiphybase =
-		csiphy_device->soc_info.reg_map[0].mem_base;
-	settings_table =
-		csiphy_device->ctrl_reg->data_rates_settings_table;
-	num_table_entries =
-		settings_table->num_data_rate_settings;
-
-	CAM_DBG(CAM_CSIPHY, "required data rate : %llu", phy_data_rate);
-	for (i = 0; i < num_table_entries; i++) {
-		struct data_rate_reg_info_t *drate_settings =
-			settings_table->data_rate_settings;
-		uint64_t bandwidth =
-			drate_settings[i].bandwidth;
-		ssize_t  num_reg_entries =
-		drate_settings[i].data_rate_reg_array_size;
-
-		if (phy_data_rate > bandwidth) {
-			CAM_DBG(CAM_CSIPHY,
-					"Skipping table [%d] %llu required: %llu",
-					i, bandwidth, phy_data_rate);
-			continue;
+	switch (csl_packet->header.op_code & 0xFFFFFF) {
+	case CAM_EEPROM_PACKET_OPCODE_INIT:
+		if (e_ctrl->userspace_probe == false) {
+			rc = cam_eeprom_parse_read_memory_map(
+					e_ctrl->soc_info.dev->of_node, e_ctrl);
+			if (rc < 0) {
+				CAM_ERR(CAM_EEPROM, "Failed: rc : %d", rc);
+				return rc;
+			}
+			rc = cam_eeprom_get_cal_data(e_ctrl, csl_packet);
+			vfree(e_ctrl->cal_data.mapdata);
+			vfree(e_ctrl->cal_data.map);
+			e_ctrl->cal_data.num_data = 0;
+			e_ctrl->cal_data.num_map = 0;
+			CAM_DBG(CAM_EEPROM,
+				"Returning the data using kernel probe");
+			break;
+		}
+		rc = cam_eeprom_init_pkt_parser(e_ctrl, csl_packet);
+		if (rc) {
+			CAM_ERR(CAM_EEPROM,
+				"Failed in parsing the pkt");
+			return rc;
 		}
 
-		CAM_DBG(CAM_CSIPHY,
-			"table[%d] BW : %llu Selected", i, bandwidth);
-		for (j = 0; j < num_reg_entries; j++) {
-			uint32_t reg_addr =
-			drate_settings[i].csiphy_data_rate_regs[j].reg_addr;
-
-			uint32_t reg_data =
-			drate_settings[i].csiphy_data_rate_regs[j].reg_data;
-
-			CAM_DBG(CAM_CSIPHY,
-				"writing reg : %x val : %x",
-						reg_addr, reg_data);
-			cam_io_w_mb(reg_data,
-				csiphybase + reg_addr);
+		e_ctrl->cal_data.mapdata =
+			vzalloc(e_ctrl->cal_data.num_data);
+		if (!e_ctrl->cal_data.mapdata) {
+			rc = -ENOMEM;
+			CAM_ERR(CAM_EEPROM, "failed");
+			goto error;
 		}
+
+		if (e_ctrl->eeprom_device_type == MSM_CAMERA_SPI_DEVICE) {
+			rc = cam_eeprom_match_id(e_ctrl);
+			if (rc) {
+				CAM_DBG(CAM_EEPROM,
+					"eeprom not matching %d", rc);
+				goto memdata_free;
+			}
+		}
+
+		rc = cam_eeprom_power_up(e_ctrl,
+			&soc_private->power_info);
+		if (rc) {
+			CAM_ERR(CAM_EEPROM, "failed rc %d", rc);
+			goto memdata_free;
+		}
+
+		e_ctrl->cam_eeprom_state = CAM_EEPROM_CONFIG;
+		rc = cam_eeprom_read_memory(e_ctrl, &e_ctrl->cal_data);
+		if (rc) {
+			CAM_ERR(CAM_EEPROM,
+				"read_eeprom_memory failed");
+			goto power_down;
+		}
+
+		rc = cam_eeprom_get_cal_data(e_ctrl, csl_packet);
+		rc = cam_eeprom_power_down(e_ctrl);
+		e_ctrl->cam_eeprom_state = CAM_EEPROM_ACQUIRE;
+		vfree(e_ctrl->cal_data.mapdata);
+		vfree(e_ctrl->cal_data.map);
+		kfree(power_info->power_setting);
+		kfree(power_info->power_down_setting);
+		power_info->power_setting = NULL;
+		power_info->power_down_setting = NULL;
+		power_info->power_setting_size = 0;
+		power_info->power_down_setting_size = 0;
+		e_ctrl->cal_data.num_data = 0;
+		e_ctrl->cal_data.num_map = 0;
+		break;
+	case CAM_EEPROM_WRITE: {
+		struct i2c_settings_array *i2c_reg_settings =
+			&e_ctrl->wr_settings;
+
+		i2c_reg_settings->is_settings_valid = 1;
+		rc = cam_eeprom_parse_write_memory_packet(
+			csl_packet, e_ctrl);
+		if (rc < 0) {
+			CAM_ERR(CAM_EEPROM, "Failed: rc : %d", rc);
+			return rc;
+		}
+
+		rc = cam_eeprom_power_up(e_ctrl,
+			&soc_private->power_info);
+		if (rc) {
+			CAM_ERR(CAM_EEPROM, "failed power up rc %d", rc);
+			goto memdata_free;
+		}
+
+		usleep_range(10*1000, 11*1000);
+		CAM_DBG(CAM_EEPROM,
+			"Calling Erase : %d start Address: 0x%x size: %d",
+			rc, e_ctrl->eebin_info.start_address,
+			e_ctrl->eebin_info.size);
+
+		rc = camera_io_dev_erase(&e_ctrl->io_master_info,
+			e_ctrl->eebin_info.start_address,
+			e_ctrl->eebin_info.size);
+		if (rc < 0) {
+			CAM_ERR(CAM_EEPROM, "Failed in erase : %d", rc);
+			return rc;
+		}
+
+		/* Buffer time margin */
+		usleep_range(10*1000, 11*1000);
+
+		rc = cam_eeprom_write(e_ctrl);
+		if (rc < 0) {
+			CAM_ERR(CAM_EEPROM, "Failed: rc : %d", rc);
+			return rc;
+		}
+
+		rc = cam_eeprom_power_down(e_ctrl);
+		if (rc) {
+			CAM_ERR(CAM_EEPROM, "failed power down rc %d", rc);
+			goto memdata_free;
+		}
+
 		break;
 	}
-}
-
-void cam_csiphy_cphy_irq_disable(struct csiphy_device *csiphy_dev)
-{
-	int32_t i;
-	void __iomem *csiphybase =
-		csiphy_dev->soc_info.reg_map[0].mem_base;
-
-	for (i = 0; i < csiphy_dev->num_irq_registers; i++)
-		cam_io_w_mb(0x0, csiphybase +
-			csiphy_dev->ctrl_reg->csiphy_irq_reg[i].reg_addr);
-}
-
-irqreturn_t cam_csiphy_irq(int irq_num, void *data)
-{
-	uint32_t irq;
-	uint8_t i;
-	struct csiphy_device *csiphy_dev =
-		(struct csiphy_device *)data;
-	struct cam_hw_soc_info *soc_info = NULL;
-	struct csiphy_reg_parms_t *csiphy_reg = NULL;
-	void __iomem *base = NULL;
-
-	if (!csiphy_dev) {
-		CAM_ERR(CAM_CSIPHY, "Invalid Args");
-		return IRQ_NONE;
+	default:
+		CAM_ERR(CAM_EEPROM, "Invalid op-code 0x%x",
+			csl_packet->header.op_code & 0xFFFFFF);
+		rc = -EINVAL;
+		break;
 	}
 
-	soc_info = &csiphy_dev->soc_info;
-	base =  csiphy_dev->soc_info.reg_map[0].mem_base;
-	csiphy_reg = &csiphy_dev->ctrl_reg->csiphy_reg;
-
-	for (i = 0; i < csiphy_dev->num_irq_registers; i++) {
-		irq = cam_io_r(base +
-			csiphy_reg->mipi_csiphy_interrupt_status0_addr +
-			(0x4 * i));
-		cam_io_w_mb(irq, base +
-			csiphy_reg->mipi_csiphy_interrupt_clear0_addr +
-			(0x4 * i));
-		CAM_ERR_RATE_LIMIT(CAM_CSIPHY,
-			"CSIPHY%d_IRQ_STATUS_ADDR%d = 0x%x",
-			soc_info->index, i, irq);
-		cam_io_w_mb(0x0, base +
-			csiphy_reg->mipi_csiphy_interrupt_clear0_addr +
-			(0x4 * i));
-	}
-	cam_io_w_mb(0x1, base + csiphy_reg->mipi_csiphy_glbl_irq_cmd_addr);
-	cam_io_w_mb(0x0, base + csiphy_reg->mipi_csiphy_glbl_irq_cmd_addr);
-
-	return IRQ_HANDLED;
-}
-
-int32_t cam_csiphy_config_dev(struct csiphy_device *csiphy_dev)
-{
-	int32_t      rc = 0;
-	uint32_t     lane_enable = 0, mask = 1, size = 0;
-	uint16_t     lane_mask = 0, i = 0, cfg_size = 0, temp = 0;
-	uint8_t      lane_cnt, lane_pos = 0;
-	uint16_t     settle_cnt = 0;
-	uint64_t     intermediate_var;
-	void __iomem *csiphybase;
-	struct csiphy_reg_t *csiphy_common_reg = NULL;
-	struct csiphy_reg_t (*reg_array)[MAX_SETTINGS_PER_LANE];
-
-	lane_cnt = csiphy_dev->csiphy_info.lane_cnt;
-	csiphybase = csiphy_dev->soc_info.reg_map[0].mem_base;
-
-	if (!csiphybase) {
-		CAM_ERR(CAM_CSIPHY, "csiphybase NULL");
-		return -EINVAL;
-	}
-
-	if (!csiphy_dev->csiphy_info.csiphy_3phase) {
-		if (csiphy_dev->csiphy_info.combo_mode == 1)
-			reg_array =
-				csiphy_dev->ctrl_reg->csiphy_2ph_combo_mode_reg;
-		else
-			reg_array =
-				csiphy_dev->ctrl_reg->csiphy_2ph_reg;
-		csiphy_dev->num_irq_registers = 11;
-		cfg_size =
-		csiphy_dev->ctrl_reg->csiphy_reg.csiphy_2ph_config_array_size;
-
-		lane_mask = csiphy_dev->csiphy_info.lane_mask & LANE_MASK_2PH;
-		for (i = 0; i < MAX_DPHY_DATA_LN; i++) {
-			if (mask == 0x2) {
-				if (lane_mask & mask)
-					lane_enable |= 0x80;
-				i--;
-			} else if (lane_mask & mask) {
-				lane_enable |= 0x1 << (i<<1);
-			}
-			mask <<= 1;
-		}
-	} else {
-		if (csiphy_dev->csiphy_info.combo_mode == 1) {
-			if (csiphy_dev->ctrl_reg->csiphy_2ph_3ph_mode_reg)
-				reg_array =
-				csiphy_dev->ctrl_reg->csiphy_2ph_3ph_mode_reg;
-			else {
-				reg_array =
-					csiphy_dev->ctrl_reg->csiphy_3ph_reg;
-				CAM_ERR(CAM_CSIPHY,
-					"Unsupported configuration, Falling back to CPHY mode");
-			}
-		} else
-			reg_array =
-				csiphy_dev->ctrl_reg->csiphy_3ph_reg;
-		csiphy_dev->num_irq_registers = 11;
-		cfg_size =
-		csiphy_dev->ctrl_reg->csiphy_reg.csiphy_3ph_config_array_size;
-
-		lane_mask = csiphy_dev->csiphy_info.lane_mask & LANE_MASK_3PH;
-		mask = lane_mask;
-		while (mask != 0) {
-			temp = (i << 1)+1;
-			lane_enable |= ((mask & 0x1) << temp);
-			mask >>= 1;
-			i++;
-		}
-	}
-
-	size = csiphy_dev->ctrl_reg->csiphy_reg.csiphy_common_array_size;
-
-	for (i = 0; i < size; i++) {
-		csiphy_common_reg = &csiphy_dev->ctrl_reg->csiphy_common_reg[i];
-		switch (csiphy_common_reg->csiphy_param_type) {
-		case CSIPHY_LANE_ENABLE:
-			cam_io_w_mb(lane_enable,
-				csiphybase + csiphy_common_reg->reg_addr);
-			usleep_range(csiphy_common_reg->delay * 1000,
-				csiphy_common_reg->delay * 1000 + 10);
-			break;
-		case CSIPHY_DEFAULT_PARAMS:
-			cam_io_w_mb(csiphy_common_reg->reg_data,
-				csiphybase + csiphy_common_reg->reg_addr);
-			usleep_range(csiphy_common_reg->delay * 1000,
-				csiphy_common_reg->delay * 1000 + 10);
-			break;
-		case CSIPHY_2PH_REGS:
-			if (!csiphy_dev->csiphy_info.csiphy_3phase) {
-				cam_io_w_mb(csiphy_common_reg->reg_data,
-					csiphybase +
-					csiphy_common_reg->reg_addr);
-				usleep_range(csiphy_common_reg->delay * 1000,
-					csiphy_common_reg->delay * 1000 + 10);
-			}
-			break;
-		case CSIPHY_3PH_REGS:
-			if (csiphy_dev->csiphy_info.csiphy_3phase) {
-				cam_io_w_mb(csiphy_common_reg->reg_data,
-					csiphybase +
-					csiphy_common_reg->reg_addr);
-				usleep_range(csiphy_common_reg->delay * 1000,
-					csiphy_common_reg->delay * 1000 + 10);
-			}
-			break;
-		default:
-			break;
-		}
-	}
-
-	while (lane_mask) {
-		if (!(lane_mask & 0x1)) {
-			lane_pos++;
-			lane_mask >>= 1;
-			continue;
-		}
-
-		intermediate_var = csiphy_dev->csiphy_info.settle_time;
-		do_div(intermediate_var, 200000000);
-		settle_cnt = intermediate_var;
-		if (csiphy_dev->csiphy_info.combo_mode == 1 &&
-			(lane_pos >= 3)) {
-			intermediate_var =
-			csiphy_dev->csiphy_info.settle_time_combo_sensor;
-			do_div(intermediate_var, 200000000);
-			settle_cnt = intermediate_var;
-		}
-		for (i = 0; i < cfg_size; i++) {
-			switch (reg_array[lane_pos][i].csiphy_param_type) {
-			case CSIPHY_LANE_ENABLE:
-				cam_io_w_mb(lane_enable,
-					csiphybase +
-					reg_array[lane_pos][i].reg_addr);
-			break;
-			case CSIPHY_DEFAULT_PARAMS:
-				cam_io_w_mb(reg_array[lane_pos][i].reg_data,
-					csiphybase +
-					reg_array[lane_pos][i].reg_addr);
-			break;
-			case CSIPHY_SETTLE_CNT_LOWER_BYTE:
-				cam_io_w_mb(settle_cnt & 0xFF,
-					csiphybase +
-					reg_array[lane_pos][i].reg_addr);
-			break;
-			case CSIPHY_SETTLE_CNT_HIGHER_BYTE:
-				cam_io_w_mb((settle_cnt >> 8) & 0xFF,
-					csiphybase +
-					reg_array[lane_pos][i].reg_addr);
-			break;
-			default:
-				CAM_DBG(CAM_CSIPHY, "Do Nothing");
-			break;
-			}
-			if (reg_array[lane_pos][i].delay > 0) {
-				usleep_range(reg_array[lane_pos][i].delay*1000,
-					reg_array[lane_pos][i].delay*1000 + 10);
-			}
-		}
-		lane_mask >>= 1;
-		lane_pos++;
-	}
-
-	if (csiphy_dev->csiphy_info.csiphy_3phase)
-		cam_csiphy_cphy_data_rate_config(csiphy_dev);
-
-	cam_csiphy_cphy_irq_config(csiphy_dev);
-
+	cam_mem_put_cpu_buf(dev_config.packet_handle);
+	return rc;
+power_down:
+	cam_eeprom_power_down(e_ctrl);
+memdata_free:
+	vfree(e_ctrl->cal_data.mapdata);
+error:
+	kfree(power_info->power_setting);
+	kfree(power_info->power_down_setting);
+	power_info->power_setting = NULL;
+	power_info->power_down_setting = NULL;
+	vfree(e_ctrl->cal_data.map);
+	e_ctrl->cal_data.num_data = 0;
+	e_ctrl->cal_data.num_map = 0;
+	e_ctrl->cam_eeprom_state = CAM_EEPROM_ACQUIRE;
 	return rc;
 }
 
-void cam_csiphy_shutdown(struct csiphy_device *csiphy_dev)
+void cam_eeprom_shutdown(struct cam_eeprom_ctrl_t *e_ctrl)
 {
-	struct cam_hw_soc_info *soc_info;
-	int32_t i = 0;
+	int rc;
+	struct cam_eeprom_soc_private  *soc_private =
+		(struct cam_eeprom_soc_private *)e_ctrl->soc_info.soc_private;
+	struct cam_sensor_power_ctrl_t *power_info = &soc_private->power_info;
 
-	if (csiphy_dev->csiphy_state == CAM_CSIPHY_INIT)
+	if (e_ctrl->cam_eeprom_state == CAM_EEPROM_INIT)
 		return;
 
-	if (csiphy_dev->csiphy_state == CAM_CSIPHY_START) {
-		soc_info = &csiphy_dev->soc_info;
-
-		for (i = 0; i < csiphy_dev->acquire_count; i++) {
-			if (csiphy_dev->csiphy_info.secure_mode[i])
-				cam_csiphy_notify_secure_mode(
-					csiphy_dev,
-					CAM_SECURE_MODE_NON_SECURE, i);
-
-			csiphy_dev->csiphy_info.secure_mode[i] =
-				CAM_SECURE_MODE_NON_SECURE;
-
-			csiphy_dev->csiphy_cpas_cp_reg_mask[i] = 0;
-		}
-
-		cam_csiphy_reset(csiphy_dev);
-		cam_soc_util_disable_platform_resource(soc_info, true, true);
-
-		cam_cpas_stop(csiphy_dev->cpas_handle);
-		csiphy_dev->csiphy_state = CAM_CSIPHY_ACQUIRE;
+	if (e_ctrl->cam_eeprom_state == CAM_EEPROM_CONFIG) {
+		rc = cam_eeprom_power_down(e_ctrl);
+		if (rc < 0)
+			CAM_ERR(CAM_EEPROM, "EEPROM Power down failed");
+		e_ctrl->cam_eeprom_state = CAM_EEPROM_ACQUIRE;
 	}
 
-	if (csiphy_dev->csiphy_state == CAM_CSIPHY_ACQUIRE) {
-		if (csiphy_dev->bridge_intf.device_hdl[0] != -1)
-			cam_destroy_device_hdl(
-				csiphy_dev->bridge_intf.device_hdl[0]);
-		if (csiphy_dev->bridge_intf.device_hdl[1] != -1)
-			cam_destroy_device_hdl(
-				csiphy_dev->bridge_intf.device_hdl[1]);
-		csiphy_dev->bridge_intf.device_hdl[0] = -1;
-		csiphy_dev->bridge_intf.device_hdl[1] = -1;
-		csiphy_dev->bridge_intf.link_hdl[0] = -1;
-		csiphy_dev->bridge_intf.link_hdl[1] = -1;
-		csiphy_dev->bridge_intf.session_hdl[0] = -1;
-		csiphy_dev->bridge_intf.session_hdl[1] = -1;
+	if (e_ctrl->cam_eeprom_state == CAM_EEPROM_ACQUIRE) {
+		rc = cam_destroy_device_hdl(e_ctrl->bridge_intf.device_hdl);
+		if (rc < 0)
+			CAM_ERR(CAM_EEPROM, "destroying the device hdl");
+
+		e_ctrl->bridge_intf.device_hdl = -1;
+		e_ctrl->bridge_intf.link_hdl = -1;
+		e_ctrl->bridge_intf.session_hdl = -1;
+
+		kfree(power_info->power_setting);
+		kfree(power_info->power_down_setting);
+		power_info->power_setting = NULL;
+		power_info->power_down_setting = NULL;
+		power_info->power_setting_size = 0;
+		power_info->power_down_setting_size = 0;
 	}
 
-	csiphy_dev->ref_count = 0;
-	csiphy_dev->is_acquired_dev_combo_mode = 0;
-	csiphy_dev->acquire_count = 0;
-	csiphy_dev->start_dev_count = 0;
-	csiphy_dev->csiphy_state = CAM_CSIPHY_INIT;
+	e_ctrl->cam_eeprom_state = CAM_EEPROM_INIT;
 }
 
-static int32_t cam_csiphy_external_cmd(struct csiphy_device *csiphy_dev,
-	struct cam_config_dev_cmd *p_submit_cmd)
+/**
+ * cam_eeprom_driver_cmd - Handle eeprom cmds
+ * @e_ctrl:     ctrl structure
+ * @arg:        Camera control command argument
+ *
+ * Returns success or failure
+ */
+int32_t cam_eeprom_driver_cmd(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 {
-	struct cam_csiphy_info cam_cmd_csiphy_info;
-	int32_t rc = 0;
+	int                            rc = 0;
+	struct cam_eeprom_query_cap_t  eeprom_cap = {0};
+	struct cam_control            *cmd = (struct cam_control *)arg;
 
-	if (copy_from_user(&cam_cmd_csiphy_info,
-		u64_to_user_ptr(p_submit_cmd->packet_handle),
-		sizeof(struct cam_csiphy_info))) {
-		CAM_ERR(CAM_CSIPHY, "failed to copy cam_csiphy_info\n");
-		rc = -EFAULT;
-	} else {
-		csiphy_dev->csiphy_info.lane_cnt =
-			cam_cmd_csiphy_info.lane_cnt;
-		csiphy_dev->csiphy_info.lane_cnt =
-			cam_cmd_csiphy_info.lane_cnt;
-		csiphy_dev->csiphy_info.lane_mask =
-			cam_cmd_csiphy_info.lane_mask;
-		csiphy_dev->csiphy_info.csiphy_3phase =
-			cam_cmd_csiphy_info.csiphy_3phase;
-		csiphy_dev->csiphy_info.combo_mode =
-			cam_cmd_csiphy_info.combo_mode;
-		csiphy_dev->csiphy_info.settle_time =
-			cam_cmd_csiphy_info.settle_time;
-		csiphy_dev->csiphy_info.data_rate =
-			cam_cmd_csiphy_info.data_rate;
-		CAM_DBG(CAM_CSIPHY,
-			"%s CONFIG_DEV_EXT settle_time= %lld lane_cnt=%d lane_mask=0x%x",
-			__func__,
-			csiphy_dev->csiphy_info.settle_time,
-			csiphy_dev->csiphy_info.lane_cnt,
-			csiphy_dev->csiphy_info.lane_mask);
-	}
-
-	return rc;
-}
-
-int32_t cam_csiphy_core_cfg(void *phy_dev,
-			void *arg)
-{
-	struct csiphy_device *csiphy_dev =
-		(struct csiphy_device *)phy_dev;
-	struct intf_params   *bridge_intf = NULL;
-	struct cam_control   *cmd = (struct cam_control *)arg;
-	int32_t              rc = 0;
-
-	if (!csiphy_dev || !cmd) {
-		CAM_ERR(CAM_CSIPHY, "Invalid input args");
+	if (!e_ctrl || !cmd) {
+		CAM_ERR(CAM_EEPROM, "Invalid Arguments");
 		return -EINVAL;
 	}
 
 	if (cmd->handle_type != CAM_HANDLE_USER_POINTER) {
-		CAM_ERR(CAM_CSIPHY, "Invalid handle type: %d",
+		CAM_ERR(CAM_EEPROM, "Invalid handle type: %d",
 			cmd->handle_type);
 		return -EINVAL;
 	}
 
-	CAM_DBG(CAM_CSIPHY, "Opcode received: %d", cmd->op_code);
-	mutex_lock(&csiphy_dev->mutex);
+	mutex_lock(&(e_ctrl->eeprom_mutex));
 	switch (cmd->op_code) {
-	case CAM_ACQUIRE_DEV: {
-		struct cam_sensor_acquire_dev csiphy_acq_dev;
-		struct cam_csiphy_acquire_dev_info csiphy_acq_params;
+	case CAM_QUERY_CAP:
+		eeprom_cap.slot_info = e_ctrl->soc_info.index;
+		if (e_ctrl->userspace_probe == false)
+			eeprom_cap.eeprom_kernel_probe = true;
+		else
+			eeprom_cap.eeprom_kernel_probe = false;
 
-		struct cam_create_dev_hdl bridge_params;
-
-		if (csiphy_dev->csiphy_state == CAM_CSIPHY_START) {
-			CAM_ERR(CAM_CSIPHY,
-				"Not in right state to acquire : %d",
-				csiphy_dev->csiphy_state);
-			rc = -EINVAL;
-			goto release_mutex;
-		}
-
-		rc = copy_from_user(&csiphy_acq_dev,
-			u64_to_user_ptr(cmd->handle),
-			sizeof(csiphy_acq_dev));
-		if (rc < 0) {
-			CAM_ERR(CAM_CSIPHY, "Failed copying from User");
-			goto release_mutex;
-		}
-
-		csiphy_acq_params.combo_mode = 0;
-
-		if (copy_from_user(&csiphy_acq_params,
-			u64_to_user_ptr(csiphy_acq_dev.info_handle),
-			sizeof(csiphy_acq_params))) {
-			CAM_ERR(CAM_CSIPHY,
-				"Failed copying from User");
-			goto release_mutex;
-		}
-
-		if (csiphy_dev->acquire_count == 2) {
-			CAM_ERR(CAM_CSIPHY,
-					"CSIPHY device do not allow more than 2 acquires");
-			rc = -EINVAL;
-			goto release_mutex;
-		}
-
-		if ((csiphy_acq_params.combo_mode == 1) &&
-			(csiphy_dev->is_acquired_dev_combo_mode == 1)) {
-			CAM_ERR(CAM_CSIPHY,
-				"Multiple Combo Acq are not allowed: cm: %d, acm: %d",
-				csiphy_acq_params.combo_mode,
-				csiphy_dev->is_acquired_dev_combo_mode);
-			rc = -EINVAL;
-			goto release_mutex;
-		}
-
-		if ((csiphy_acq_params.combo_mode != 1) &&
-			(csiphy_dev->is_acquired_dev_combo_mode != 1) &&
-			(csiphy_dev->acquire_count == 1)) {
-			CAM_ERR(CAM_CSIPHY,
-				"Multiple Acquires are not allowed cm: %d acm: %d",
-				csiphy_acq_params.combo_mode,
-				csiphy_dev->is_acquired_dev_combo_mode);
-			rc = -EINVAL;
-			goto release_mutex;
-		}
-
-		bridge_params.ops = NULL;
-		bridge_params.session_hdl = csiphy_acq_dev.session_handle;
-		bridge_params.v4l2_sub_dev_flag = 0;
-		bridge_params.media_entity_flag = 0;
-		bridge_params.priv = csiphy_dev;
-
-		if (csiphy_acq_params.combo_mode >= 2) {
-			CAM_ERR(CAM_CSIPHY, "Invalid combo_mode %d",
-				csiphy_acq_params.combo_mode);
-			rc = -EINVAL;
-			goto release_mutex;
-		}
-
-		csiphy_acq_dev.device_handle =
-			cam_create_device_hdl(&bridge_params);
-		bridge_intf = &csiphy_dev->bridge_intf;
-		bridge_intf->device_hdl[csiphy_acq_params.combo_mode]
-			= csiphy_acq_dev.device_handle;
-		bridge_intf->session_hdl[csiphy_acq_params.combo_mode] =
-			csiphy_acq_dev.session_handle;
+		eeprom_cap.is_multimodule_mode =
+			e_ctrl->is_multimodule_mode;
 
 		if (copy_to_user(u64_to_user_ptr(cmd->handle),
-				&csiphy_acq_dev,
-				sizeof(struct cam_sensor_acquire_dev))) {
-			CAM_ERR(CAM_CSIPHY, "Failed copying from User");
-			rc = -EINVAL;
-			goto release_mutex;
-		}
-		if (csiphy_acq_params.combo_mode == 1)
-			csiphy_dev->is_acquired_dev_combo_mode = 1;
-
-		csiphy_dev->acquire_count++;
-		csiphy_dev->csiphy_state = CAM_CSIPHY_ACQUIRE;
-	}
-		break;
-	case CAM_QUERY_CAP: {
-		struct cam_csiphy_query_cap csiphy_cap = {0};
-
-		cam_csiphy_query_cap(csiphy_dev, &csiphy_cap);
-		if (copy_to_user(u64_to_user_ptr(cmd->handle),
-			&csiphy_cap, sizeof(struct cam_csiphy_query_cap))) {
-			CAM_ERR(CAM_CSIPHY, "Failed copying from User");
-			rc = -EINVAL;
-			goto release_mutex;
-		}
-	}
-		break;
-	case CAM_STOP_DEV: {
-		int32_t offset, rc = 0;
-		struct cam_start_stop_dev_cmd config;
-
-		rc = copy_from_user(&config, (void __user *)cmd->handle,
-					sizeof(config));
-		if (rc < 0) {
-			CAM_ERR(CAM_CSIPHY, "Failed copying from User");
-			goto release_mutex;
-		}
-
-		if ((csiphy_dev->csiphy_state != CAM_CSIPHY_START) ||
-			!csiphy_dev->start_dev_count) {
-			CAM_ERR(CAM_CSIPHY, "Not in right state to stop : %d",
-				csiphy_dev->csiphy_state);
-			goto release_mutex;
-		}
-
-		offset = cam_csiphy_get_instance_offset(csiphy_dev,
-			config.dev_handle);
-		if (offset < 0 || offset >= CSIPHY_MAX_INSTANCES) {
-			CAM_ERR(CAM_CSIPHY, "Invalid offset");
-			goto release_mutex;
-		}
-
-		if (--csiphy_dev->start_dev_count) {
-			CAM_DBG(CAM_CSIPHY, "Stop Dev ref Cnt: %d",
-				csiphy_dev->start_dev_count);
-			if (csiphy_dev->csiphy_info.secure_mode[offset])
-				cam_csiphy_notify_secure_mode(
-					csiphy_dev,
-					CAM_SECURE_MODE_NON_SECURE, offset);
-
-			csiphy_dev->csiphy_info.secure_mode[offset] =
-				CAM_SECURE_MODE_NON_SECURE;
-			csiphy_dev->csiphy_cpas_cp_reg_mask[offset] = 0;
-
-			goto release_mutex;
-		}
-
-		if (csiphy_dev->csiphy_info.secure_mode[offset])
-			cam_csiphy_notify_secure_mode(
-				csiphy_dev,
-				CAM_SECURE_MODE_NON_SECURE, offset);
-
-		csiphy_dev->csiphy_info.secure_mode[offset] =
-			CAM_SECURE_MODE_NON_SECURE;
-
-		csiphy_dev->csiphy_cpas_cp_reg_mask[offset] = 0x0;
-
-		rc = cam_csiphy_disable_hw(csiphy_dev);
-		if (rc < 0)
-			CAM_ERR(CAM_CSIPHY, "Failed in csiphy release");
-
-		rc = cam_cpas_stop(csiphy_dev->cpas_handle);
-		if (rc < 0)
-			CAM_ERR(CAM_CSIPHY, "de-voting CPAS: %d", rc);
-
-		csiphy_dev->csiphy_state = CAM_CSIPHY_ACQUIRE;
-	}
-		break;
-	case CAM_RELEASE_DEV: {
-		struct cam_release_dev_cmd release;
-
-		if (!csiphy_dev->acquire_count) {
-			CAM_ERR(CAM_CSIPHY, "No valid devices to release");
-			rc = -EINVAL;
-			goto release_mutex;
-		}
-
-		if (copy_from_user(&release,
-			u64_to_user_ptr(cmd->handle),
-			sizeof(release))) {
+			&eeprom_cap,
+			sizeof(struct cam_eeprom_query_cap_t))) {
+			CAM_ERR(CAM_EEPROM, "Failed Copy to User");
 			rc = -EFAULT;
 			goto release_mutex;
 		}
+		CAM_DBG(CAM_EEPROM, "eeprom_cap: ID: %d", eeprom_cap.slot_info);
+		break;
+	case CAM_ACQUIRE_DEV:
+		rc = cam_eeprom_get_dev_handle(e_ctrl, arg);
+		if (rc) {
+			CAM_ERR(CAM_EEPROM, "Failed to acquire dev");
+			goto release_mutex;
+		}
+		e_ctrl->cam_eeprom_state = CAM_EEPROM_ACQUIRE;
+		break;
+	case CAM_RELEASE_DEV:
+		if (e_ctrl->cam_eeprom_state != CAM_EEPROM_ACQUIRE) {
+			rc = -EINVAL;
+			CAM_WARN(CAM_EEPROM,
+			"Not in right state to release : %d",
+			e_ctrl->cam_eeprom_state);
+			goto release_mutex;
+		}
 
-		rc = cam_destroy_device_hdl(release.dev_handle);
+		if (e_ctrl->bridge_intf.device_hdl == -1) {
+			CAM_ERR(CAM_EEPROM,
+				"Invalid Handles: link hdl: %d device hdl: %d",
+				e_ctrl->bridge_intf.device_hdl,
+				e_ctrl->bridge_intf.link_hdl);
+			rc = -EINVAL;
+			goto release_mutex;
+		}
+		rc = cam_destroy_device_hdl(e_ctrl->bridge_intf.device_hdl);
 		if (rc < 0)
-			CAM_ERR(CAM_CSIPHY, "destroying the device hdl");
-		if (release.dev_handle ==
-			csiphy_dev->bridge_intf.device_hdl[0]) {
-			csiphy_dev->bridge_intf.device_hdl[0] = -1;
-			csiphy_dev->bridge_intf.link_hdl[0] = -1;
-			csiphy_dev->bridge_intf.session_hdl[0] = -1;
-		} else {
-			csiphy_dev->bridge_intf.device_hdl[1] = -1;
-			csiphy_dev->bridge_intf.link_hdl[1] = -1;
-			csiphy_dev->bridge_intf.session_hdl[1] = -1;
-			csiphy_dev->is_acquired_dev_combo_mode = 0;
-		}
-
-		csiphy_dev->config_count--;
-		csiphy_dev->acquire_count--;
-
-		if (csiphy_dev->acquire_count == 0)
-			csiphy_dev->csiphy_state = CAM_CSIPHY_INIT;
-
-		if (csiphy_dev->config_count == 0) {
-			CAM_DBG(CAM_CSIPHY, "reset csiphy_info");
-			csiphy_dev->csiphy_info.lane_mask = 0;
-			csiphy_dev->csiphy_info.lane_cnt = 0;
-			csiphy_dev->csiphy_info.combo_mode = 0;
-		}
-	}
+			CAM_ERR(CAM_EEPROM,
+				"failed in destroying the device hdl");
+		e_ctrl->bridge_intf.device_hdl = -1;
+		e_ctrl->bridge_intf.link_hdl = -1;
+		e_ctrl->bridge_intf.session_hdl = -1;
+		e_ctrl->cam_eeprom_state = CAM_EEPROM_INIT;
 		break;
-	case CAM_CONFIG_DEV: {
-		struct cam_config_dev_cmd config;
-
-		if (copy_from_user(&config,
-			u64_to_user_ptr(cmd->handle),
-					sizeof(config))) {
-			rc = -EFAULT;
-		} else {
-			rc = cam_cmd_buf_parser(csiphy_dev, &config);
-			if (rc < 0) {
-				CAM_ERR(CAM_CSIPHY, "Fail in cmd buf parser");
-				goto release_mutex;
-			}
+	case CAM_CONFIG_DEV:
+		rc = cam_eeprom_pkt_parse(e_ctrl, arg);
+		if (rc) {
+			CAM_ERR(CAM_EEPROM, "Failed in eeprom pkt Parsing");
+			goto release_mutex;
 		}
 		break;
-	}
-	case CAM_START_DEV: {
-		struct cam_ahb_vote ahb_vote;
-		struct cam_axi_vote axi_vote = {0};
-		struct cam_start_stop_dev_cmd config;
-		int32_t offset;
-
-		rc = copy_from_user(&config, (void __user *)cmd->handle,
-			sizeof(config));
-		if (rc < 0) {
-			CAM_ERR(CAM_CSIPHY, "Failed copying from User");
-			goto release_mutex;
-		}
-
-		if (csiphy_dev->csiphy_state == CAM_CSIPHY_START) {
-			csiphy_dev->start_dev_count++;
-			goto release_mutex;
-		}
-
-		offset = cam_csiphy_get_instance_offset(csiphy_dev,
-			config.dev_handle);
-		if (offset < 0 || offset >= CSIPHY_MAX_INSTANCES) {
-			CAM_ERR(CAM_CSIPHY, "Invalid offset");
-			goto release_mutex;
-		}
-
-		ahb_vote.type = CAM_VOTE_ABSOLUTE;
-		ahb_vote.vote.level = CAM_LOWSVS_VOTE;
-		axi_vote.num_paths = 1;
-		axi_vote.axi_path[0].path_data_type = CAM_AXI_PATH_DATA_ALL;
-		axi_vote.axi_path[0].transac_type = CAM_AXI_TRANSACTION_WRITE;
-		axi_vote.axi_path[0].camnoc_bw = CAM_CPAS_DEFAULT_AXI_BW;
-		axi_vote.axi_path[0].mnoc_ab_bw = CAM_CPAS_DEFAULT_AXI_BW;
-		axi_vote.axi_path[0].mnoc_ib_bw = CAM_CPAS_DEFAULT_AXI_BW;
-
-		rc = cam_cpas_start(csiphy_dev->cpas_handle,
-			&ahb_vote, &axi_vote);
-		if (rc < 0) {
-			CAM_ERR(CAM_CSIPHY, "voting CPAS: %d", rc);
-			if (rc == -EALREADY)
-				cam_cpas_stop(csiphy_dev->cpas_handle);
-			goto release_mutex;
-		}
-
-		if (csiphy_dev->csiphy_info.secure_mode[offset] == 1) {
-			if (cam_cpas_is_feature_supported(
-					CAM_CPAS_SECURE_CAMERA_ENABLE) != 1) {
-				CAM_ERR(CAM_CSIPHY,
-					"sec_cam: camera fuse bit not set");
-				cam_cpas_stop(csiphy_dev->cpas_handle);
-				rc = -1;
-				goto release_mutex;
-			}
-
-			rc = cam_csiphy_notify_secure_mode(
-				csiphy_dev,
-				CAM_SECURE_MODE_SECURE, offset);
-			if (rc < 0) {
-				csiphy_dev->csiphy_info.secure_mode[offset] =
-					CAM_SECURE_MODE_NON_SECURE;
-				cam_cpas_stop(csiphy_dev->cpas_handle);
-				goto release_mutex;
-			}
-		}
-
-		rc = cam_csiphy_enable_hw(csiphy_dev);
-		if (rc != 0) {
-			CAM_ERR(CAM_CSIPHY, "cam_csiphy_enable_hw failed");
-			cam_cpas_stop(csiphy_dev->cpas_handle);
-			goto release_mutex;
-		}
-		rc = cam_csiphy_config_dev(csiphy_dev);
-		if (csiphy_dump == 1)
-			cam_csiphy_mem_dmp(&csiphy_dev->soc_info);
-
-		if (rc < 0) {
-			CAM_ERR(CAM_CSIPHY, "cam_csiphy_config_dev failed");
-			cam_csiphy_disable_hw(csiphy_dev);
-			cam_cpas_stop(csiphy_dev->cpas_handle);
-			goto release_mutex;
-		}
-		csiphy_dev->start_dev_count++;
-		csiphy_dev->csiphy_state = CAM_CSIPHY_START;
-	}
-		break;
-	case CAM_CONFIG_DEV_EXTERNAL: {
-		struct cam_config_dev_cmd submit_cmd;
-
-		if (copy_from_user(&submit_cmd,
-			u64_to_user_ptr(cmd->handle),
-			sizeof(struct cam_config_dev_cmd))) {
-			CAM_ERR(CAM_CSIPHY, "failed copy config ext\n");
-			rc = -EFAULT;
-		} else {
-			rc = cam_csiphy_external_cmd(csiphy_dev, &submit_cmd);
-		}
-		break;
-	}
 	default:
-		CAM_ERR(CAM_CSIPHY, "Invalid Opcode: %d", cmd->op_code);
-		rc = -EINVAL;
-		goto release_mutex;
+		CAM_DBG(CAM_EEPROM, "invalid opcode");
+		break;
 	}
 
 release_mutex:
-	mutex_unlock(&csiphy_dev->mutex);
+	mutex_unlock(&(e_ctrl->eeprom_mutex));
 
 	return rc;
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/debugfs.h>
@@ -143,6 +144,7 @@ static int __cam_icp_config_dev_in_ready(struct cam_context *ctx,
 		CAM_ERR(CAM_CTXT,
 			"Invalid offset, len: %zu cmd offset: %llu sizeof packet: %zu",
 			len, cmd->offset, sizeof(struct cam_packet));
+		cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 		return -EINVAL;
 	}
 
@@ -154,6 +156,7 @@ static int __cam_icp_config_dev_in_ready(struct cam_context *ctx,
 	if (rc) {
 		CAM_ERR(CAM_CTXT, "Invalid packet params, remain length: %zu",
 			remain_len);
+		cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 		return rc;
 	}
 
@@ -168,6 +171,7 @@ static int __cam_icp_config_dev_in_ready(struct cam_context *ctx,
 	if (rc)
 		CAM_ERR(CAM_ICP, "Failed to prepare device");
 
+	cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 	return rc;
 }
 

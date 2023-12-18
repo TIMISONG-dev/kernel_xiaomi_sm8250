@@ -938,12 +938,12 @@ static void process_init_reply(struct fuse_conn *fc, struct fuse_req *req)
 			}
 			if (arg->flags & FUSE_ABORT_ERROR)
 				fc->abort_err = 1;
-                       if (arg->flags & FUSE_PASSTHROUGH) {
-                               fc->passthrough = 1;
-                               /* Prevent further stacking */
-                               fc->sb->s_stack_depth =
-                                       FILESYSTEM_MAX_STACK_DEPTH;
-                       }
+			if (arg->flags & FUSE_PASSTHROUGH) {
+				fc->passthrough = 1;
+				/* Prevent further stacking */
+				fc->sb->s_stack_depth =
+					FILESYSTEM_MAX_STACK_DEPTH;
+			}
 		} else {
 			ra_pages = fc->max_read / PAGE_SIZE;
 			fc->no_lock = 1;
@@ -1004,9 +1004,8 @@ static int free_fuse_passthrough(int id, void *p, void *data)
 static void fuse_free_conn(struct fuse_conn *fc)
 {
 	WARN_ON(!list_empty(&fc->devices));
-        idr_for_each(&fc->passthrough_req, free_fuse_passthrough, NULL);
-        idr_destroy(&fc->passthrough_req);
-
+	idr_for_each(&fc->passthrough_req, free_fuse_passthrough, NULL);
+	idr_destroy(&fc->passthrough_req);
 	kfree_rcu(fc, rcu);
 }
 

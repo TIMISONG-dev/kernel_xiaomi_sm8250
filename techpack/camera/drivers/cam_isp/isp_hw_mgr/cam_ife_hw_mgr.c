@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/slab.h>
@@ -5885,6 +5886,167 @@ static int cam_ife_mgr_cmd(void *hw_mgr_priv, void *cmd_args)
 	}
 
 	return rc;
+}
+
+static int cam_ife_mgr_user_dump_hw(
+		struct cam_ife_hw_mgr_ctx *ife_ctx,
+		struct cam_hw_dump_args *dump_args)
+{
+	int rc = 0;
+	struct cam_hw_soc_dump_args soc_dump_args;
+
+	if (!ife_ctx || !dump_args) {
+		CAM_ERR(CAM_ISP, "Invalid parameters %pK %pK",
+			ife_ctx, dump_args);
+		rc = -EINVAL;
+		goto end;
+	}
+	soc_dump_args.buf_handle = dump_args->buf_handle;
+	soc_dump_args.request_id = dump_args->request_id;
+	soc_dump_args.offset = dump_args->offset;
+
+	rc = cam_ife_mgr_handle_reg_dump(ife_ctx,
+		ife_ctx->reg_dump_buf_desc,
+		ife_ctx->num_reg_dump_buf,
+		CAM_ISP_PACKET_META_REG_DUMP_ON_ERROR,
+		&soc_dump_args,
+		true);
+	if (rc) {
+		CAM_ERR(CAM_ISP,
+			"Dump failed req: %lld handle %u offset %u",
+			dump_args->request_id,
+			dump_args->buf_handle,
+			dump_args->offset);
+		goto end;
+	}
+	dump_args->offset = soc_dump_args.offset;
+end:
+	return rc;
+}
+
+static int cam_ife_mgr_dump(void *hw_mgr_priv, void *args)
+{
+	struct cam_isp_hw_dump_args isp_hw_dump_args;
+	struct cam_hw_dump_args *dump_args = (struct cam_hw_dump_args *)args;
+	struct cam_ife_hw_mgr_res            *hw_mgr_res;
+	struct cam_hw_intf                   *hw_intf;
+	struct cam_ife_hw_mgr_ctx *ife_ctx = (struct cam_ife_hw_mgr_ctx *)
+						dump_args->ctxt_to_hw_map;
+	int i;
+	int rc = 0;
+
+	/* for some targets, information about the IFE registers to be dumped
+	 * is already submitted with the hw manager. In this case, we
+	 * can dump just the related registers and skip going to core files.
+	 */
+	if (ife_ctx->num_reg_dump_buf) {
+		cam_ife_mgr_user_dump_hw(ife_ctx, dump_args);
+		goto end;
+	}
+
+	rc  = cam_mem_get_cpu_buf(dump_args->buf_handle,
+		&isp_hw_dump_args.cpu_addr,
+		&isp_hw_dump_args.buf_len);
+	if (rc) {
+		CAM_ERR(CAM_ISP, "Invalid handle %u rc %d",
+			dump_args->buf_handle, rc);
+		return rc;
+	}
+
+	isp_hw_dump_args.offset = dump_args->offset;
+	isp_hw_dump_args.req_id = dump_args->request_id;
+
+	list_for_each_entry(hw_mgr_res, &ife_ctx->res_list_ife_csid, list) {
+		for (i = 0; i < CAM_ISP_HW_SPLIT_MAX; i++) {
+			if (!hw_mgr_res->hw_res[i])
+				continue;
+			hw_intf = hw_mgr_res->hw_res[i]->hw_intf;
+			switch (hw_mgr_res->hw_res[i]->res_id) {
+			case CAM_IFE_PIX_PATH_RES_RDI_0:
+			case CAM_IFE_PIX_PATH_RES_RDI_1:
+			case CAM_IFE_PIX_PATH_RES_RDI_2:
+			case CAM_IFE_PIX_PATH_RES_RDI_3:
+				if (ife_ctx->is_rdi_only_context &&
+					hw_intf->hw_ops.process_cmd) {
+					rc = hw_intf->hw_ops.process_cmd(
+						hw_intf->hw_priv,
+						CAM_ISP_HW_CMD_DUMP_HW,
+						&isp_hw_dump_args,
+						sizeof(struct
+						    cam_isp_hw_dump_args));
+				}
+				break;
+			case CAM_IFE_PIX_PATH_RES_IPP:
+				if (hw_intf->hw_ops.process_cmd) {
+					rc = hw_intf->hw_ops.process_cmd(
+						hw_intf->hw_priv,
+						CAM_ISP_HW_CMD_DUMP_HW,
+						&isp_hw_dump_args,
+						sizeof(struct
+						    cam_isp_hw_dump_args));
+				}
+				break;
+			default:
+				CAM_DBG(CAM_ISP, "not a valid res %d",
+				hw_mgr_res->res_id);
+				break;
+			}
+		}
+	}
+
+	list_for_each_entry(hw_mgr_res, &ife_ctx->res_list_ife_src, list) {
+		for (i = 0; i < CAM_ISP_HW_SPLIT_MAX; i++) {
+			if (!hw_mgr_res->hw_res[i])
+				continue;
+			hw_intf = hw_mgr_res->hw_res[i]->hw_intf;
+			switch (hw_mgr_res->res_id) {
+			case CAM_ISP_HW_VFE_IN_RDI0:
+			case CAM_ISP_HW_VFE_IN_RDI1:
+			case CAM_ISP_HW_VFE_IN_RDI2:
+			case CAM_ISP_HW_VFE_IN_RDI3:
+				if (ife_ctx->is_rdi_only_context &&
+					hw_intf->hw_ops.process_cmd) {
+					rc = hw_intf->hw_ops.process_cmd(
+						hw_intf->hw_priv,
+						CAM_ISP_HW_CMD_DUMP_HW,
+						&isp_hw_dump_args,
+						sizeof(struct
+						    cam_isp_hw_dump_args));
+				}
+				break;
+			case CAM_ISP_HW_VFE_IN_CAMIF:
+				if (hw_intf->hw_ops.process_cmd) {
+					rc = hw_intf->hw_ops.process_cmd(
+						hw_intf->hw_priv,
+						CAM_ISP_HW_CMD_DUMP_HW,
+						&isp_hw_dump_args,
+						sizeof(struct
+						    cam_isp_hw_dump_args));
+				}
+				break;
+			default:
+				CAM_DBG(CAM_ISP, "not a valid res %d",
+					hw_mgr_res->res_id);
+				break;
+			}
+		}
+	}
+	dump_args->offset = isp_hw_dump_args.offset;
+	cam_mem_put_cpu_buf(dump_args->buf_handle);
+end:
+	CAM_DBG(CAM_ISP, "offset %u", dump_args->offset);
+	return rc;
+}
+
+static inline void cam_ife_hw_mgr_get_offline_sof_timestamp(
+	uint64_t                             *timestamp,
+	uint64_t                             *boot_time)
+{
+	struct timespec64                     ts;
+
+	get_monotonic_boottime64(&ts);
+	*timestamp = (uint64_t)((ts.tv_sec * 1000000000) + ts.tv_nsec);
+	*boot_time = *timestamp;
 }
 
 static int cam_ife_mgr_cmd_get_sof_timestamp(

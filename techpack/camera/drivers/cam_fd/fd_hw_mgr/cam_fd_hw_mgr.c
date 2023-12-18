@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -524,6 +525,33 @@ static int cam_fd_mgr_util_get_buf_map_requirement(uint32_t direction,
 	return 0;
 }
 
+static int cam_fd_mgr_put_cpu_buf(struct cam_hw_prepare_update_args *prepare)
+{
+	int i, rc;
+	uint32_t plane;
+	bool need_io_map, need_cpu_map;
+	struct cam_buf_io_cfg *io_cfg;
+
+	io_cfg = (struct cam_buf_io_cfg *) ((uint8_t *)
+		&prepare->packet->payload + prepare->packet->io_configs_offset);
+
+	if (!io_cfg)
+		return -EINVAL;
+
+	for (i = 0; i < prepare->packet->num_io_configs; i++) {
+		rc = cam_fd_mgr_util_get_buf_map_requirement(
+			io_cfg[i].direction, io_cfg[i].resource_type,
+			&need_io_map, &need_cpu_map);
+
+		if (rc || !need_cpu_map)
+			continue;
+
+		for (plane = 0; plane < CAM_PACKET_MAX_PLANES; plane++)
+			cam_mem_put_cpu_buf(io_cfg[i].mem_handle[plane]);
+	}
+	return 0;
+}
+
 static int cam_fd_mgr_util_prepare_io_buf_info(int32_t iommu_hdl,
 	struct cam_hw_prepare_update_args *prepare,
 	struct cam_fd_hw_io_buffer *input_buf,
@@ -620,6 +648,8 @@ static int cam_fd_mgr_util_prepare_io_buf_info(int32_t iommu_hdl,
 						"Invalid cpu buf %d %d %d",
 						io_cfg[i].direction,
 						io_cfg[i].resource_type, plane);
+					cam_mem_put_cpu_buf(
+						io_cfg[i].mem_handle[plane]);
 					rc = -EINVAL;
 					return rc;
 				}
@@ -1501,6 +1531,141 @@ static int cam_fd_mgr_hw_flush(void *hw_mgr_priv,
 	return rc;
 }
 
+static int cam_fd_mgr_hw_dump(
+	void *hw_mgr_priv,
+	void *hw_dump_args)
+{
+	int                              rc;
+	uint8_t                         *dst;
+	ktime_t                          cur_time;
+	size_t                           remain_len;
+	uint32_t                         min_len;
+	uint64_t                         diff;
+	uint64_t                        *addr, *start;
+	struct timespec64                cur_ts;
+	struct timespec64                req_ts;
+	struct cam_fd_hw_mgr            *hw_mgr;
+	struct cam_hw_dump_args         *dump_args;
+	struct cam_fd_hw_mgr_ctx        *hw_ctx;
+	struct cam_fd_device            *hw_device;
+	struct cam_fd_hw_dump_args       fd_dump_args;
+	struct cam_fd_hw_dump_header    *hdr;
+	struct cam_fd_mgr_frame_request *frame_req, *req_temp;
+
+	hw_mgr = (struct cam_fd_hw_mgr *)hw_mgr_priv;
+	dump_args = (struct cam_hw_dump_args *)hw_dump_args;
+	if (!hw_mgr || !dump_args) {
+		CAM_ERR(CAM_FD, "Invalid args %pK %pK",
+			hw_mgr, dump_args);
+		return -EINVAL;
+	}
+
+	hw_ctx = (struct cam_fd_hw_mgr_ctx *)dump_args->ctxt_to_hw_map;
+
+	if (!hw_ctx) {
+		CAM_ERR(CAM_FD, "Invalid ctx");
+		return -EINVAL;
+	}
+
+	rc = cam_fd_mgr_util_get_device(hw_mgr, hw_ctx, &hw_device);
+
+	if (rc) {
+		CAM_ERR(CAM_FD, "Error in getting device %d", rc);
+		return rc;
+	}
+
+	list_for_each_entry_safe(frame_req, req_temp,
+		&hw_mgr->frame_processing_list, list) {
+		if (frame_req->request_id == dump_args->request_id)
+			goto hw_dump;
+	}
+
+	CAM_DBG(CAM_FD, "fd dump cannot find req %llu",
+		dump_args->request_id);
+	return rc;
+hw_dump:
+	cur_time = ktime_get();
+	diff = ktime_us_delta(cur_time, frame_req->submit_timestamp);
+	cur_ts = ktime_to_timespec64(cur_time);
+	req_ts = ktime_to_timespec64(frame_req->submit_timestamp);
+	if (diff < CAM_FD_RESPONSE_TIME_THRESHOLD) {
+		CAM_INFO(CAM_FD, "No Error req %lld %ld:%06ld %ld:%06ld",
+			dump_args->request_id,
+			req_ts.tv_sec,
+			req_ts.tv_nsec/NSEC_PER_USEC,
+			cur_ts.tv_sec,
+			cur_ts.tv_nsec/NSEC_PER_USEC);
+		return 0;
+	}
+	CAM_INFO(CAM_FD, "Error req %lld %ld:%06ld %ld:%06ld",
+		dump_args->request_id,
+		req_ts.tv_sec,
+		req_ts.tv_nsec/NSEC_PER_USEC,
+		cur_ts.tv_sec,
+		cur_ts.tv_nsec/NSEC_PER_USEC);
+	rc  = cam_mem_get_cpu_buf(dump_args->buf_handle,
+		&fd_dump_args.cpu_addr, &fd_dump_args.buf_len);
+	if (rc) {
+		CAM_ERR(CAM_FD, "Invalid handle %u rc %d",
+			dump_args->buf_handle, rc);
+		return rc;
+	}
+	if (fd_dump_args.buf_len <= dump_args->offset) {
+		CAM_WARN(CAM_FD, "dump offset overshoot len %zu offset %zu",
+			fd_dump_args.buf_len, dump_args->offset);
+		cam_mem_put_cpu_buf(dump_args->buf_handle);
+		return -ENOSPC;
+	}
+	remain_len = fd_dump_args.buf_len - dump_args->offset;
+	min_len =  sizeof(struct cam_fd_hw_dump_header) +
+		(CAM_FD_HW_DUMP_NUM_WORDS * sizeof(uint64_t));
+
+	if (remain_len < min_len) {
+		CAM_WARN(CAM_FD, "dump buffer exhaust remain %zu min %u",
+			remain_len, min_len);
+		cam_mem_put_cpu_buf(dump_args->buf_handle);
+		return -ENOSPC;
+	}
+
+	dst = (uint8_t *)fd_dump_args.cpu_addr + dump_args->offset;
+	hdr = (struct cam_fd_hw_dump_header *)dst;
+	scnprintf(hdr->tag, CAM_FD_HW_DUMP_TAG_MAX_LEN,
+		"FD_REQ:");
+	hdr->word_size = sizeof(uint64_t);
+	addr = (uint64_t *)(dst + sizeof(struct cam_fd_hw_dump_header));
+	start = addr;
+	*addr++ = frame_req->request_id;
+	*addr++ = req_ts.tv_sec;
+	*addr++ = req_ts.tv_nsec/NSEC_PER_USEC;
+	*addr++ = cur_ts.tv_sec;
+	*addr++ = cur_ts.tv_nsec/NSEC_PER_USEC;
+	hdr->size = hdr->word_size * (addr - start);
+	dump_args->offset += hdr->size +
+		sizeof(struct cam_fd_hw_dump_header);
+
+	fd_dump_args.request_id = dump_args->request_id;
+	fd_dump_args.offset = dump_args->offset;
+	if (hw_device->hw_intf->hw_ops.process_cmd) {
+		rc = hw_device->hw_intf->hw_ops.process_cmd(
+			hw_device->hw_intf->hw_priv,
+			CAM_FD_HW_CMD_HW_DUMP,
+			&fd_dump_args,
+			sizeof(struct
+			cam_fd_hw_dump_args));
+		if (rc) {
+			CAM_ERR(CAM_FD, "Hw Dump cmd fails req %lld rc %d",
+				frame_req->request_id, rc);
+			cam_mem_put_cpu_buf(dump_args->buf_handle);
+			return rc;
+		}
+	}
+	CAM_DBG(CAM_FD, "Offset before %zu after %zu",
+		dump_args->offset, fd_dump_args.offset);
+	dump_args->offset = fd_dump_args.offset;
+	cam_mem_put_cpu_buf(dump_args->buf_handle);
+	return rc;
+}
+
 static int cam_fd_mgr_hw_stop(void *hw_mgr_priv, void *mgr_stop_args)
 {
 	struct cam_fd_hw_mgr *hw_mgr = (struct cam_fd_hw_mgr *)hw_mgr_priv;
@@ -1633,7 +1798,7 @@ static int cam_fd_mgr_hw_prepare_update(void *hw_mgr_priv,
 		&prestart_args, &kmd_buf);
 	if (rc) {
 		CAM_ERR(CAM_FD, "Error in hw update entries %d", rc);
-		goto error;
+		goto put_cpu_buf;
 	}
 
 	/* get a free frame req from free list */
@@ -1642,7 +1807,8 @@ static int cam_fd_mgr_hw_prepare_update(void *hw_mgr_priv,
 	if (rc || !frame_req) {
 		CAM_ERR(CAM_FD, "Get frame_req failed, rc=%d, hw_ctx=%pK",
 			rc, hw_ctx);
-		return -ENOMEM;
+		rc = -ENOMEM;
+		goto put_cpu_buf;
 	}
 
 	/* Setup frame request info and queue to pending list */
@@ -1657,9 +1823,13 @@ static int cam_fd_mgr_hw_prepare_update(void *hw_mgr_priv,
 	 */
 	prepare->priv = frame_req;
 
+	cam_fd_mgr_put_cpu_buf(prepare);
 	CAM_DBG(CAM_FD, "FramePrepare : Frame[%lld]", frame_req->request_id);
 
 	return 0;
+
+put_cpu_buf:
+	cam_fd_mgr_put_cpu_buf(prepare);
 error:
 	return rc;
 }

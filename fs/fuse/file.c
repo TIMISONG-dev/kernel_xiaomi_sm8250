@@ -138,8 +138,7 @@ int fuse_do_open(struct fuse_conn *fc, u64 nodeid, struct file *file,
 		if (!err) {
 			ff->fh = outarg.fh;
 			ff->open_flags = outarg.open_flags;
-                        fuse_passthrough_setup(fc, ff, &outarg);
-
+			fuse_passthrough_setup(fc, ff, &outarg);
 		} else if (err != -ENOSYS || isdir) {
 			fuse_file_free(ff);
 			return err;
@@ -1251,7 +1250,7 @@ static ssize_t fuse_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	struct fuse_file *ff = file->private_data;
 
 	if (ff->passthrough.filp)
-        	return fuse_passthrough_write_iter(iocb, from);
+		return fuse_passthrough_write_iter(iocb, from);
 
 	if (fuse_is_bad(inode))
 		return -EIO;
@@ -2204,6 +2203,11 @@ static const struct vm_operations_struct fuse_file_vm_ops = {
 
 static int fuse_file_mmap(struct file *file, struct vm_area_struct *vma)
 {
+	struct fuse_file *ff = file->private_data;
+
+	if (ff->passthrough.filp)
+		return fuse_passthrough_mmap(file, vma);
+
 	if ((vma->vm_flags & VM_SHARED) && (vma->vm_flags & VM_MAYWRITE))
 		fuse_link_write_file(file);
 
@@ -2881,7 +2885,7 @@ static void fuse_register_polled_file(struct fuse_conn *fc,
 {
 	spin_lock(&fc->lock);
 	if (RB_EMPTY_NODE(&ff->polled_node)) {
-		struct rb_node **link, *uninitialized_var(parent);
+		struct rb_node **link, *parent;
 
 		link = fuse_find_polled_node(fc, ff->kh, &parent);
 		BUG_ON(*link);
