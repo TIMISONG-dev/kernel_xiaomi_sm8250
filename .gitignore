@@ -134,3 +134,9 @@ all.config
 
 # fetched Android config fragments
 kernel/configs/android-*.cfg
+
+# out dir
+/out/
+
+# build log
+build.log
