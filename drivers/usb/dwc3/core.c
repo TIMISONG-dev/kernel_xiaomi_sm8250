@@ -1629,15 +1629,6 @@ skip_clk_reset:
 
 	pm_runtime_allow(dev);
 	dwc3_debugfs_init(dwc);
-
-	ret = dwc3_core_init_mode(dwc);
-	if (ret)
-		goto err5;
-
-	pm_runtime_put(dev);
-
-	dma_set_max_seg_size(dev, UINT_MAX);
-
 	return 0;
 
 err3:
