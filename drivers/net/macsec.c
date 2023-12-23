@@ -830,7 +830,11 @@ static bool macsec_post_decrypt(struct sk_buff *skb, struct macsec_secy *secy, u
 		u64_stats_update_begin(&rxsc_stats->syncp);
 		rxsc_stats->stats.InPktsLate++;
 		u64_stats_update_end(&rxsc_stats->syncp);
+<<<<<<< HEAD
 		DEV_STATS_INC(secy->netdev, rx_dropped);
+=======
+		secy->netdev->stats.rx_dropped++;
+>>>>>>> qc/lineage-20
 		return false;
 	}
 
@@ -854,7 +858,11 @@ static bool macsec_post_decrypt(struct sk_buff *skb, struct macsec_secy *secy, u
 			rxsc_stats->stats.InPktsNotValid++;
 			u64_stats_update_end(&rxsc_stats->syncp);
 			this_cpu_inc(rx_sa->stats->InPktsNotValid);
+<<<<<<< HEAD
 			DEV_STATS_INC(secy->netdev, rx_errors);
+=======
+			secy->netdev->stats.rx_errors++;
+>>>>>>> qc/lineage-20
 			return false;
 		}
 
@@ -1084,7 +1092,11 @@ static void handle_not_macsec(struct sk_buff *skb)
 			u64_stats_update_begin(&secy_stats->syncp);
 			secy_stats->stats.InPktsNoTag++;
 			u64_stats_update_end(&secy_stats->syncp);
+<<<<<<< HEAD
 			DEV_STATS_INC(macsec->secy.netdev, rx_dropped);
+=======
+			macsec->secy.netdev->stats.rx_dropped++;
+>>>>>>> qc/lineage-20
 			continue;
 		}
 
@@ -1195,7 +1207,11 @@ static rx_handler_result_t macsec_handle_frame(struct sk_buff **pskb)
 		u64_stats_update_begin(&secy_stats->syncp);
 		secy_stats->stats.InPktsBadTag++;
 		u64_stats_update_end(&secy_stats->syncp);
+<<<<<<< HEAD
 		DEV_STATS_INC(secy->netdev, rx_errors);
+=======
+		secy->netdev->stats.rx_errors++;
+>>>>>>> qc/lineage-20
 		goto drop_nosa;
 	}
 
@@ -1212,7 +1228,11 @@ static rx_handler_result_t macsec_handle_frame(struct sk_buff **pskb)
 			u64_stats_update_begin(&rxsc_stats->syncp);
 			rxsc_stats->stats.InPktsNotUsingSA++;
 			u64_stats_update_end(&rxsc_stats->syncp);
+<<<<<<< HEAD
 			DEV_STATS_INC(secy->netdev, rx_errors);
+=======
+			secy->netdev->stats.rx_errors++;
+>>>>>>> qc/lineage-20
 			if (active_rx_sa)
 				this_cpu_inc(active_rx_sa->stats->InPktsNotUsingSA);
 			goto drop_nosa;
@@ -1243,7 +1263,11 @@ static rx_handler_result_t macsec_handle_frame(struct sk_buff **pskb)
 			u64_stats_update_begin(&rxsc_stats->syncp);
 			rxsc_stats->stats.InPktsLate++;
 			u64_stats_update_end(&rxsc_stats->syncp);
+<<<<<<< HEAD
 			DEV_STATS_INC(macsec->secy.netdev, rx_dropped);
+=======
+			macsec->secy.netdev->stats.rx_dropped++;
+>>>>>>> qc/lineage-20
 			goto drop;
 		}
 	}
@@ -1321,7 +1345,11 @@ nosci:
 			u64_stats_update_begin(&secy_stats->syncp);
 			secy_stats->stats.InPktsNoSCI++;
 			u64_stats_update_end(&secy_stats->syncp);
+<<<<<<< HEAD
 			DEV_STATS_INC(macsec->secy.netdev, rx_errors);
+=======
+			macsec->secy.netdev->stats.rx_errors++;
+>>>>>>> qc/lineage-20
 			continue;
 		}
 
@@ -2999,9 +3027,15 @@ static void macsec_get_stats64(struct net_device *dev,
 		s->tx_bytes   += tmp.tx_bytes;
 	}
 
+<<<<<<< HEAD
 	s->rx_dropped = DEV_STATS_READ(dev, rx_dropped);
 	s->tx_dropped = DEV_STATS_READ(dev, tx_dropped);
 	s->rx_errors = DEV_STATS_READ(dev, rx_errors);
+=======
+	s->rx_dropped = dev->stats.rx_dropped;
+	s->tx_dropped = dev->stats.tx_dropped;
+	s->rx_errors = dev->stats.rx_errors;
+>>>>>>> qc/lineage-20
 }
 
 static int macsec_get_iflink(const struct net_device *dev)

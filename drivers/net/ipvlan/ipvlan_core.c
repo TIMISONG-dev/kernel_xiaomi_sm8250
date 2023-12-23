@@ -494,7 +494,7 @@ static int ipvlan_process_v6_outbound(struct sk_buff *skb)
 
 	err = ipvlan_route_v6_outbound(dev, skb);
 	if (unlikely(err)) {
-		DEV_STATS_INC(dev, tx_errors);
+		dev->stats.tx_errors++;
 		kfree_skb(skb);
 		return err;
 	}
