@@ -2625,7 +2625,7 @@ extern struct cpumask min_cap_cpu_mask;
 #ifdef CONFIG_HAVE_SCHED_AVG_IRQ
 static inline unsigned long cpu_util_irq(struct rq *rq)
 {
-	return rq->avg_irq.util_avg;
+	return READ_ONCE(rq->avg_irq.util_avg);
 }
 
 static inline
