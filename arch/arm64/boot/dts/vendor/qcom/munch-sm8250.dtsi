@@ -215,8 +215,8 @@ And public attribution of xiaomi platforms(like L11R and so and)
 /*display team xiexiaobo add*/
 &dsi_sim_vid {
 	qcom,mdss-dsi-bl-min-level = <1>;
-	qcom,mdss-dsi-bl-max-level = <2047>;
-	qcom,mdss-brightness-max-level = <2047>;
+	qcom,mdss-dsi-bl-max-level = <4095>;
+	qcom,mdss-brightness-max-level = <4095>;
 	qcom,mdss-brightness-init-level = <536>;
 };
 
