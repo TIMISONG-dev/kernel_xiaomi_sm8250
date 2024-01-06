@@ -29,7 +29,7 @@ export BUILD
 cd "$KERNEL_TOP" || exit
 
 # These values must be changed for forks!
-KERNEL_DEFCONFIG_URL="https://github.com/VoidUI-Devices/kernel_xiaomi_sm8250"
+KERNEL_DEFCONFIG_URL="https://github.com/UtsavBalar1231/kernel_xiaomi_sm8250"
 KERNEL_DEFCONFIG_HEAD=$(git -C ${KERNEL_CFG} rev-parse HEAD)
 
 SOC="kona"
@@ -45,9 +45,6 @@ if [ -n  "$*" ]; then
       DEVICE=$1;
     ;;
     cmi)
-      DEVICE=$1;
-    ;;
-    dagu)
       DEVICE=$1;
     ;;
     elish)
@@ -92,7 +89,8 @@ if [ -n  "$*" ]; then
   ret=$(ARCH=arm64 LLVM=1 scripts/kconfig/merge_config.sh \
     -O "${OUT_DIR}" \
     ${KERNEL_CFG}/../${SOC}-perf_defconfig \
-    ${KERNEL_CFG}/sm8250-common.config \
+    ${KERNEL_CFG}/xiaomi-kona-common.config \
+    ${KERNEL_CFG}/kona-custom.config \
   ${KERNEL_CFG}/"${DEVICE}".config);
 
   case "$ret" in
@@ -121,7 +119,7 @@ HEAD of the project used to prepare this commit:
 ${KERNEL_DEFCONFIG_URL}/tree/${KERNEL_DEFCONFIG_HEAD}
 EOM
 
-  DEVICES="alioth apollo cas cmi dagu elish enuma lmi munch umi thyme psyche"
+  DEVICES="alioth apollo cas cmi elish enuma lmi munch umi thyme psyche"
 
   for device in $DEVICES; do \
 
@@ -136,9 +134,6 @@ EOM
         DEVICE=$device;
       ;;
       cmi)
-        DEVICE=$device;
-      ;;
-      dagu)
         DEVICE=$device;
       ;;
       elish)
@@ -183,7 +178,8 @@ EOM
       ret=$(ARCH=arm64 LLVM=1 scripts/kconfig/merge_config.sh \
         -O "${OUT_DIR}" \
         ${KERNEL_CFG}/../${SOC}-perf_defconfig \
-        ${KERNEL_CFG}/sm8250-common.config \
+        ${KERNEL_CFG}/xiaomi-kona-common.config \
+        ${KERNEL_CFG}/kona-custom.config \
       ${KERNEL_CFG}/"${DEVICE}".config);
 
       case "$ret" in

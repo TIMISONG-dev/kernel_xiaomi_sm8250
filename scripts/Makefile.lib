@@ -254,9 +254,7 @@ cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -n -f -9 > $@) || \
 # DTC
 # ---------------------------------------------------------------------------
 DTC ?= $(objtree)/scripts/dtc/dtc
-
-# Silence warnings
-DTC_FLAGS += -q
+DTC_FLAGS += -Wno-interrupt_provider
 
 # Disable noisy checks by default
 ifeq ($(findstring 1,$(KBUILD_ENABLE_EXTRA_GCC_CHECKS)),)
@@ -276,7 +274,8 @@ endif
 
 ifneq ($(findstring 2,$(KBUILD_ENABLE_EXTRA_GCC_CHECKS)),)
 DTC_FLAGS += -Wnode_name_chars_strict \
-	-Wproperty_name_chars_strict
+	-Wproperty_name_chars_strict \
+	-Winterrupt_provider
 endif
 
 DTC_FLAGS += $(DTC_FLAGS_$(basetarget))
@@ -321,7 +320,7 @@ dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
 # mkdtimg
 #----------------------------------------------------------------------------
 quiet_cmd_mkdtimg = DTBOIMG $@
-cmd_mkdtimg = mkdtimg create $@ --page_size=4096 $(filter-out FORCE,$^)
+cmd_mkdtimg = $(PYTHON) $(srctree)/scripts/mkdtboimg.py create $@ --page_size=4096 $(filter-out FORCE,$^)
 
 # cat
 # ---------------------------------------------------------------------------
