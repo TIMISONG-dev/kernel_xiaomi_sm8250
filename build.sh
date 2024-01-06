@@ -1,6 +1,8 @@
-CLANG=/home/timisong/kernel/snapdragon-clang/bin/
-GCC32=/home/timisong/kernel/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9/bin/
-GCC64=/home/timisong/kernel/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/bin/
+MAINPATH=/home/timisong # change if you want
+
+CLANG=$MAINPATH/kernel/snapdragon-clang/bin/
+GCC32=$MAINPATH/kernel/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9/bin/
+GCC64=$MAINPATH/kernel/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/bin/
 
 PATH=$CLANG:$GCC64:$GCC32:$PATH
 
@@ -8,6 +10,7 @@ export PATH
 export ARCH=arm64
 export IMGPATH
 export DTBPATH
+export DTBOPATH
 
 export CLANG_TRIPLE="aarch64-linux-gnu-"
 export CROSS_COMPILE="aarch64-linux-gnu-"
@@ -15,12 +18,9 @@ export CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
 export KBUILD_BUILD_USER="TIMISONG"
 export KBUILD_BUILD_HOST="timisong-dev"
 
-IMGPATH="/home/timisong/kernel/MagicTime/Image"
-DTBPATH="/home/timisong/kernel/MagicTime/dtb"
-
-CLANG_TRIPLE="aarch64-linux-gnu-"
-CROSS_COMPILE="aarch64-linux-gnu-"
-CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
+IMGPATH="$MAINPATH/kernel/MagicTime/Image"
+DTBPATH="$MAINPATH/kernel/MagicTime/dtb"
+DTBOPATH="$MAINPATH/kernel/MagicTime/dtbo.img"
 MAGIC_BUILD_DATE=$(date '+%Y-%m-%d_%H-%M-%S')
 
 output_dir=out
@@ -46,6 +46,7 @@ make -j $(nproc) \
 
 find $DTS -name '*.dtb' -exec cat {} + > $DTBPATH
 find $DTS -name 'Image' -exec cat {} + > $IMGPATH
+find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 
 cd ../MagicTime
 7z a -mx9 MagicTime_$MAGIC_BUILD_DATE.zip
