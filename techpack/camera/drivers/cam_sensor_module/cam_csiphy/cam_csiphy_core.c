@@ -1222,6 +1222,7 @@ static int32_t cam_eeprom_pkt_parse(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 			"Inval cam_packet strut size: %zu, len_of_buff: %zu",
 			 sizeof(struct cam_packet), pkt_len);
 		rc = -EINVAL;
+		cam_mem_put_cpu_buf(cfg_dev->packet_handle);
 		return rc;
 	}
 
@@ -1233,26 +1234,83 @@ static int32_t cam_eeprom_pkt_parse(struct cam_eeprom_ctrl_t *e_ctrl, void *arg)
 		remain_len)) {
 		CAM_ERR(CAM_EEPROM, "Invalid packet params");
 		rc = -EINVAL;
+		cam_mem_put_cpu_buf(cfg_dev->packet_handle);
 		return rc;
 	}
 
-	switch (csl_packet->header.op_code & 0xFFFFFF) {
-	case CAM_EEPROM_PACKET_OPCODE_INIT:
-		if (e_ctrl->userspace_probe == false) {
-			rc = cam_eeprom_parse_read_memory_map(
-					e_ctrl->soc_info.dev->of_node, e_ctrl);
-			if (rc < 0) {
-				CAM_ERR(CAM_EEPROM, "Failed: rc : %d", rc);
-				return rc;
-			}
-			rc = cam_eeprom_get_cal_data(e_ctrl, csl_packet);
-			vfree(e_ctrl->cal_data.mapdata);
-			vfree(e_ctrl->cal_data.map);
-			e_ctrl->cal_data.num_data = 0;
-			e_ctrl->cal_data.num_map = 0;
-			CAM_DBG(CAM_EEPROM,
-				"Returning the data using kernel probe");
-			break;
+	if (csl_packet->num_cmd_buf)
+		cmd_desc = (struct cam_cmd_buf_desc *)
+			((uint32_t *)&csl_packet->payload +
+			csl_packet->cmd_buf_offset / 4);
+	else {
+		CAM_ERR(CAM_CSIPHY, "num_cmd_buffers = %d",
+			csl_packet->num_cmd_buf);
+		rc = -EINVAL;
+		cam_mem_put_cpu_buf(cfg_dev->packet_handle);
+		return rc;
+	}
+
+	rc = cam_packet_util_validate_cmd_desc(cmd_desc);
+	if (rc) {
+		CAM_ERR(CAM_CSIPHY, "Invalid cmd desc ret: %d", rc);
+		cam_mem_put_cpu_buf(cfg_dev->packet_handle);
+		return rc;
+	}
+
+	rc = cam_mem_get_cpu_buf(cmd_desc->mem_handle,
+		&generic_ptr, &len);
+	if (rc < 0) {
+		CAM_ERR(CAM_CSIPHY,
+			"Failed to get cmd buf Mem address : %d", rc);
+		cam_mem_put_cpu_buf(cfg_dev->packet_handle);
+		return rc;
+	}
+
+	if ((len < sizeof(struct cam_csiphy_info)) ||
+		(cmd_desc->offset > (len - sizeof(struct cam_csiphy_info)))) {
+		CAM_ERR(CAM_CSIPHY,
+			"Not enough buffer provided for cam_cisphy_info");
+		rc = -EINVAL;
+		cam_mem_put_cpu_buf(cmd_desc->mem_handle);
+		cam_mem_put_cpu_buf(cfg_dev->packet_handle);
+		return rc;
+	}
+
+	cmd_buf = (uint32_t *)generic_ptr;
+	cmd_buf += cmd_desc->offset / 4;
+	cam_cmd_csiphy_info = (struct cam_csiphy_info *)cmd_buf;
+
+	index = cam_csiphy_get_instance_offset(csiphy_dev, cfg_dev->dev_handle);
+	if (index < 0 || index  >= csiphy_dev->session_max_device_support) {
+		CAM_ERR(CAM_CSIPHY, "index is invalid: %d", index);
+		cam_mem_put_cpu_buf(cmd_desc->mem_handle);
+		cam_mem_put_cpu_buf(cfg_dev->packet_handle);
+		return -EINVAL;
+	}
+
+	csiphy_dev->csiphy_info[index].lane_cnt = cam_cmd_csiphy_info->lane_cnt;
+	csiphy_dev->csiphy_info[index].lane_assign =
+		cam_cmd_csiphy_info->lane_assign;
+
+	csiphy_dev->csiphy_info[index].settle_time =
+		cam_cmd_csiphy_info->settle_time;
+	csiphy_dev->csiphy_info[index].data_rate =
+		cam_cmd_csiphy_info->data_rate;
+	csiphy_dev->csiphy_info[index].secure_mode =
+		cam_cmd_csiphy_info->secure_mode;
+	csiphy_dev->csiphy_info[index].mipi_flags =
+		cam_cmd_csiphy_info->mipi_flags;
+	csiphy_dev->csiphy_info[index].csiphy_3phase =
+		cam_cmd_csiphy_info->csiphy_3phase;
+
+	rc = cam_csiphy_get_lane_enable(csiphy_dev, index, &lane_enable);
+	if (rc) {
+		CAM_ERR(CAM_CSIPHY, "Wrong lane configuration: %d",
+			csiphy_dev->csiphy_info[index].lane_assign);
+		if (csiphy_dev->combo_mode) {
+			CAM_DBG(CAM_CSIPHY,
+				"Resetting error to zero for other devices to configure");
+			rc = 0;
 		}
 		rc = cam_eeprom_init_pkt_parser(e_ctrl, csl_packet);
 		if (rc) {
