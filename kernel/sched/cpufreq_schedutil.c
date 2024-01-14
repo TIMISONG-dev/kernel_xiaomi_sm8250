@@ -176,9 +176,17 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 				  unsigned long util, unsigned long max)
 {
 	struct cpufreq_policy *policy = sg_policy->policy;
-	unsigned int freq = arch_scale_freq_invariant() ?
-				policy->cpuinfo.max_freq : policy->cur;
+	unsigned int freq;
 	unsigned int idx, l_freq, h_freq;
+
+	if (arch_scale_freq_invariant())
+		freq = policy->cpuinfo.max_freq;
+	else
+		/*
+		 * Apply a 25% margin so that we select a higher frequency than
+		 * the current one before the CPU is fully busy:
+		 */
+		freq = policy->cur + (policy->cur >> 2);
 
 	freq = map_util_freq(util, freq, max);
 	trace_sugov_next_freq(policy->cpu, util, max, freq);
