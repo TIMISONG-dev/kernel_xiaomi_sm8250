@@ -10,7 +10,6 @@ export PATH
 export ARCH=arm64
 export IMGPATH
 export DTBPATH
-export DTBOPATH
 
 export CLANG_TRIPLE="aarch64-linux-gnu-"
 export CROSS_COMPILE="aarch64-linux-gnu-"
@@ -20,7 +19,6 @@ export KBUILD_BUILD_HOST="timisong-dev"
 
 IMGPATH="$MAINPATH/kernel/MagicTime/Image"
 DTBPATH="$MAINPATH/kernel/MagicTime/dtb"
-DTBOPATH="$MAINPATH/kernel/MagicTime/dtbo.img"
 MAGIC_BUILD_DATE=$(date '+%Y-%m-%d_%H-%M-%S')
 
 output_dir=out
@@ -44,7 +42,6 @@ make -j $(nproc) \
 
 find $DTS -name '*.dtb' -exec cat {} + > $DTBPATH
 find $DTS -name 'Image' -exec cat {} + > $IMGPATH
-find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 
 cd ../MagicTime
 7z a -mx9 MagicTime_$MAGIC_BUILD_DATE.zip
