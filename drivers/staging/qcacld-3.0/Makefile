@@ -1,4 +1,5 @@
 KERNEL_SRC ?= /lib/modules/$(shell uname -r)/build
+KBUILD_CFLAGS := -Wno-incompatible-pointer-types -Wno-implicit-function-declaration
 
 # The Make variable $(M) must point to the directory that contains the module
 # source code (which includes this Makefile). It can either be an absolute or a
