@@ -116,7 +116,7 @@ find $DTS -name 'Image' -exec cat {} + > $IMGPATH
 
 # Перемещение в каталог MagicTime и создание архива
 cd "$MAGIC_TIME_DIR"
-7z a -mx9 MagicTime-$MODEL_$MAGIC_BUILD_DATE.zip * -x!*.zip
+7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
 
 # Завершение отсчета времени выполнения скрипта
 end_time=$(date +%s)
