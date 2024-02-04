@@ -68,8 +68,9 @@ export DTBPATH="$MAGIC_TIME_DIR/dtb"
 export CLANG_TRIPLE="aarch64-linux-gnu-"
 export CROSS_COMPILE="aarch64-linux-gnu-"
 export CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
-export KBUILD_BUILD_USER="decoder"
-export KBUILD_BUILD_HOST="decoder-dev"
+export KBUILD_BUILD_USER="TIMISONG"
+export KBUILD_BUILD_HOST="timisong-dev"
+export MODEL="alioth"
 
 # Запись времени сборки
 MAGIC_BUILD_DATE=$(date '+%Y-%m-%d_%H-%M-%S')
@@ -115,7 +116,7 @@ find $DTS -name 'Image' -exec cat {} + > $IMGPATH
 
 # Перемещение в каталог MagicTime и создание архива
 cd "$MAGIC_TIME_DIR"
-7z a -mx9 MagicTime-munch_$MAGIC_BUILD_DATE.zip * -x!*.zip
+7z a -mx9 MagicTime-$MODEL_$MAGIC_BUILD_DATE.zip * -x!*.zip
 
 # Завершение отсчета времени выполнения скрипта
 end_time=$(date +%s)
