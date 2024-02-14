@@ -911,9 +911,6 @@ static u32 sde_hw_intr_get_intr_status_nolock(struct sde_hw_intr *intr,
 		SDE_REG_WRITE(&intr->hw, intr->sde_irq_tbl[reg_idx].clr_off,
 				intr_status);
 
-	/* ensure register writes go through */
-	wmb();
-
 	return intr_status;
 }
 
