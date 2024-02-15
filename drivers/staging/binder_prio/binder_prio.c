@@ -10,6 +10,7 @@
 
 static const char * const task_name[] = {
 	"com.miui.home",
+	".globallauncher",
 	"s.nexuslauncher"
 	"ndroid.systemui",
 	"surfaceflinger",
