@@ -6616,7 +6616,7 @@ int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sync)
 
 	rcu_read_lock();
 	pd = rcu_dereference(rd->pd);
-	if (!pd)
+	if (!pd || READ_ONCE(rd->overutilized))
 		goto unlock;
 
 	cpu = smp_processor_id();
