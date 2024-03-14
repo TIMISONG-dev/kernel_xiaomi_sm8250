@@ -8840,9 +8840,14 @@ static inline int migrate_degrades_locality(struct task_struct *p,
 static inline bool can_migrate_boosted_task(struct task_struct *p,
 			int src_cpu, int dst_cpu)
 {
+#ifdef CONFIG_SCHED_WALT
 	if (per_task_boost(p) == TASK_BOOST_STRICT_MAX &&
 		task_in_related_thread_group(p) &&
 		(capacity_orig_of(dst_cpu) < capacity_orig_of(src_cpu)))
+#else
+	if (uclamp_boosted(p) && p->prio <= DEFAULT_PRIO &&
+		!is_min_capacity_cpu(src_cpu) && is_min_capacity_cpu(dst_cpu))
+#endif
 		return false;
 	return true;
 }
