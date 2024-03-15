@@ -65,6 +65,7 @@ fi
 # Экспорт переменных среды
 export IMGPATH="$MAGIC_TIME_DIR/Image"
 export DTBPATH="$MAGIC_TIME_DIR/dtb"
+export DTBOPATH="$MAGIC_TIME_DIR/dtbo.img"
 export CLANG_TRIPLE="aarch64-linux-gnu-"
 export CROSS_COMPILE="aarch64-linux-gnu-"
 export CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
@@ -113,6 +114,7 @@ fi
 # Предполагается, что переменная DTS установлена ранее в скрипте
 find $DTS -name '*.dtb' -exec cat {} + > $DTBPATH
 find $DTS -name 'Image' -exec cat {} + > $IMGPATH
+find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 
 # Перемещение в каталог MagicTime и создание архива
 cd "$MAGIC_TIME_DIR"
