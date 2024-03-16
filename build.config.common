@@ -3,7 +3,7 @@ KMI_GENERATION=0
 
 LLVM=1
 DEPMOD=depmod
-CLANG_PREBUILT_BIN=prebuilts-master/clang/host/linux-x86/clang-r416183b/bin
+CLANG_PREBUILT_BIN=prebuilts-master/clang/host/linux-x86/clang-r498229b/bin
 BUILDTOOLS_PREBUILT_BIN=build/build-tools/path/linux-x86
 MKDTBO_EXT=${ROOT_DIR}/tools/libufdt/utils/src/mkdtboimg.py
 DTC_EXT=${ROOT_DIR}/prebuilts/kernel-build-tools/linux-x86/bin/dtc
