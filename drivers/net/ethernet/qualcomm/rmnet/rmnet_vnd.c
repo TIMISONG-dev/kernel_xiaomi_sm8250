@@ -181,11 +181,6 @@ static u16 rmnet_vnd_select_queue(struct net_device *dev,
 						 skb->len,
 						 &boost_trigger,
 						 &boost_period);
-
-#ifdef CONFIG_SCHED_WALT
-		if (boost_trigger)
-			set_task_boost(1, boost_period);
-#endif
 	}
 
 	return (txq < dev->real_num_tx_queues) ? txq : 0;

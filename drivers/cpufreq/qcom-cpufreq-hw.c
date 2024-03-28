@@ -151,7 +151,6 @@ static unsigned long limits_mitigation_notify(struct cpufreq_qcom *c,
 			freq = policy->cpuinfo.max_freq;
 	}
 
-	sched_update_cpu_freq_min_max(&c->related_cpus, 0, freq);
 	trace_dcvsh_freq(cpumask_first(&c->related_cpus), freq);
 	c->dcvsh_freq_limit = freq;
 
@@ -844,12 +843,6 @@ static int qcom_cpufreq_hw_driver_probe(struct platform_device *pdev)
 
 	for_each_possible_cpu(cpu)
 		spin_lock_init(&qcom_cpufreq_counter[cpu].lock);
-
-	rc = register_cpu_cycle_counter_cb(&cycle_counter_cb);
-	if (rc) {
-		dev_err(&pdev->dev, "cycle counter cb failed to register\n");
-		return rc;
-	}
 
 	dev_dbg(&pdev->dev, "QCOM CPUFreq HW driver initialized\n");
 	of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
