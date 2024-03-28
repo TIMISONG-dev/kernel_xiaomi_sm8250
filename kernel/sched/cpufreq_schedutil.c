@@ -61,8 +61,6 @@ struct sugov_cpu {
 	unsigned int		iowait_boost;
 	u64			last_update;
 
-	struct sched_walt_cpu_load walt_load;
-
 	unsigned long util;
 	unsigned int flags;
 
@@ -117,15 +115,6 @@ static bool sugov_should_update_freq(struct sugov_policy *sg_policy, u64 time)
 
 	delta_ns = time - sg_policy->last_freq_update_time;
 	return delta_ns >= sg_policy->min_rate_limit_ns;
-}
-
-static inline bool use_pelt(void)
-{
-#ifdef CONFIG_SCHED_WALT
-	return false;
-#else
-	return true;
-#endif
 }
 
 static bool sugov_up_down_rate_limit(struct sugov_policy *sg_policy, u64 time,
@@ -191,8 +180,7 @@ static void sugov_deferred_update(struct sugov_policy *sg_policy, u64 time,
 	if (!sugov_update_next_freq(sg_policy, time, next_freq))
 		return;
 
-	if (use_pelt())
-		sg_policy->work_in_progress = true;
+	sg_policy->work_in_progress = true;
 	irq_work_queue(&sg_policy->irq_work);
 }
 
@@ -298,11 +286,7 @@ unsigned long schedutil_cpu_util(int cpu, unsigned long util_cfs,
 	 */
 	util = util_cfs + cpu_util_rt(rq);
 	if (type == FREQUENCY_UTIL)
-#ifdef CONFIG_SCHED_TUNE
-		util += schedtune_cpu_margin_with(util, cpu, p);
-#else
 		util = uclamp_rq_util_with(rq, util, p);
-#endif
 
 	dl_util = cpu_util_dl(rq);
 
@@ -353,18 +337,6 @@ unsigned long schedutil_cpu_util(int cpu, unsigned long util_cfs,
 	return min(max, util);
 }
 
-#ifdef CONFIG_SCHED_WALT
-static unsigned long sugov_get_util(struct sugov_cpu *sg_cpu)
-{
-	struct rq *rq = cpu_rq(sg_cpu->cpu);
-	unsigned long max = arch_scale_cpu_capacity(sg_cpu->cpu);
-
-	sg_cpu->max = max;
-	sg_cpu->bw_dl = cpu_bw_dl(rq);
-
-	return stune_util(sg_cpu->cpu, 0, &sg_cpu->walt_load);
-}
-#else
 static unsigned long sugov_get_util(struct sugov_cpu *sg_cpu)
 {
 	struct rq *rq = cpu_rq(sg_cpu->cpu);
@@ -378,7 +350,6 @@ static unsigned long sugov_get_util(struct sugov_cpu *sg_cpu)
 	return schedutil_cpu_util(sg_cpu->cpu, util_cfs, max,
 				  FREQUENCY_UTIL, NULL);
 }
-#endif
 
 /**
  * sugov_iowait_reset() - Reset the IO boost status of a CPU.
@@ -548,8 +519,7 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 		return;
 
 	/* Limits may have changed, don't skip frequency update */
-	busy = use_pelt() && !sg_policy->need_freq_update &&
-		sugov_cpu_is_busy(sg_cpu);
+	busy = !sg_policy->need_freq_update && sugov_cpu_is_busy(sg_cpu);
 
 	sg_cpu->util = util = sugov_get_util(sg_cpu);
 	max = sg_cpu->max;
@@ -664,8 +634,7 @@ static void sugov_work(struct kthread_work *work)
 {
 	struct sugov_policy *sg_policy = container_of(work, struct sugov_policy, work);
 
-	if (use_pelt())
-		sg_policy->work_in_progress = false;
+	sg_policy->work_in_progress = false;
 
 	mutex_lock(&sg_policy->work_lock);
 	__cpufreq_driver_target(sg_policy->policy, sg_policy->next_freq,
