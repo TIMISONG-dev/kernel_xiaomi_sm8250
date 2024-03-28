@@ -351,10 +351,8 @@ static bool build_perf_domains(const struct cpumask *cpu_map)
 	 * EAS gets disabled when there are no asymmetric capacity
 	 * CPUs in the system. For example, all big CPUs are
 	 * hotplugged out on a b.L system. We want EAS enabled
-	 * all the time to get both power and perf benefits. Apply
-	 * this policy when WALT is enabled.
+	 * all the time to get both power and perf benefits.
 	 */
-#ifndef CONFIG_SCHED_WALT
 	if (!per_cpu(sd_asym_cpucapacity, cpu)) {
 		if (sched_debug()) {
 			pr_info("rd %*pbl: CPUs do not have asymmetric capacities\n",
@@ -362,7 +360,6 @@ static bool build_perf_domains(const struct cpumask *cpu_map)
 		}
 		goto free;
 	}
-#endif
 
 	for_each_cpu(i, cpu_map) {
 		/* Skip already covered CPUs. */
