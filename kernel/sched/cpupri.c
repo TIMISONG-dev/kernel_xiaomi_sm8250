@@ -108,7 +108,6 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
 			int cpu;
 
 			cpumask_and(lowest_mask, &p->cpus_allowed, vec->mask);
-
 			/*
 			 * We have to ensure that we have at least one bit
 			 * still set in the array, since the map could have
