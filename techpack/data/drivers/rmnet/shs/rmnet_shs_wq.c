@@ -1225,11 +1225,10 @@ static int rmnet_shs_wq_check_cpu_move_for_ep(u16 current_cpu, u16 dest_cpu,
 	cpu_in_rps_mask = (1 << dest_cpu) & ep->rps_config_msk;
 
 	rm_err("SHS_MASK:  cur cpu [%d] | dest_cpu [%d] | "
-	       "cpu isolation_mask = %*pb | ep_rps_mask = 0x%x | "
+	       "ep_rps_mask = 0x%x | "
 	       "cpu_online(dest) = %d cpu_in_rps_mask = %d | "
 	       "cpu isolated(dest) = %d",
-	       current_cpu, dest_cpu, cpumask_pr_args(&__cpu_isolated_mask),
-	       ep->rps_config_msk,
+	       current_cpu, dest_cpu, ep->rps_config_msk,
 	       cpu_online(dest_cpu), cpu_in_rps_mask, cpu_isolated(dest_cpu));
 
 	/* We cannot move to dest cpu if the cur cpu is the same,
