@@ -58,7 +58,6 @@ static bool migrate_one_irq(struct irq_desc *desc)
 	const struct cpumask *affinity;
 	bool brokeaff = false;
 	int err;
-	struct cpumask available_cpus;
 
 	/*
 	 * IRQ chip might be already torn down, but the irq descriptor is
@@ -111,12 +110,7 @@ static bool migrate_one_irq(struct irq_desc *desc)
 	if (maskchip && chip->irq_mask)
 		chip->irq_mask(d);
 
-	cpumask_copy(&available_cpus, affinity);
-	cpumask_andnot(&available_cpus, &available_cpus, cpu_isolated_mask);
-	affinity = &available_cpus;
-
 	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids) {
-		const struct cpumask *default_affinity;
 
 		/*
 		 * If the interrupt is managed, then shut it down and leave
@@ -128,33 +122,7 @@ static bool migrate_one_irq(struct irq_desc *desc)
 			return false;
 		}
 
-		default_affinity = desc->affinity_hint ? : irq_default_affinity;
-		/*
-		 * The order of preference for selecting a fallback CPU is
-		 *
-		 * (1) online and un-isolated CPU from default affinity
-		 * (2) online and un-isolated CPU
-		 * (3) online CPU
-		 */
-		cpumask_andnot(&available_cpus, cpu_online_mask,
-							cpu_isolated_mask);
-		if (cpumask_intersects(&available_cpus, default_affinity))
-			cpumask_and(&available_cpus, &available_cpus,
-							default_affinity);
-		else if (cpumask_empty(&available_cpus))
-			affinity = cpu_online_mask;
-
-		/*
-		 * We are overriding the affinity with all online and
-		 * un-isolated cpus. irq_set_affinity_locked() call
-		 * below notify this mask to PM QOS affinity listener.
-		 * That results in applying the CPU_DMA_LATENCY QOS
-		 * to all the CPUs specified in the mask. But the low
-		 * level irqchip driver sets the affinity of an irq
-		 * to only one CPU. So pick only one CPU from the
-		 * prepared mask while overriding the user affinity.
-		 */
-		affinity = cpumask_of(cpumask_any(affinity));
+		affinity = cpu_online_mask;
 		brokeaff = true;
 	}
 	/*
