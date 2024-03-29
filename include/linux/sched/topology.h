@@ -69,7 +69,7 @@ struct sched_domain_shared {
 	atomic_t	nr_busy_cpus;
 	int		has_idle_cores;
 
-	bool            overutilized;
+	bool		overutilized;
 };
 
 struct sched_domain {

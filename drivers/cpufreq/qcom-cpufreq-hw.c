@@ -249,40 +249,6 @@ done:
 	return IRQ_HANDLED;
 }
 
-static u64 qcom_cpufreq_get_cpu_cycle_counter(int cpu)
-{
-	struct cpufreq_counter *cpu_counter;
-	struct cpufreq_qcom *cpu_domain;
-	u64 cycle_counter_ret;
-	unsigned long flags;
-	u16 offset;
-	u32 val;
-
-	cpu_domain = qcom_freq_domain_map[cpu];
-	cpu_counter = &qcom_cpufreq_counter[cpu];
-	spin_lock_irqsave(&cpu_counter->lock, flags);
-
-	offset = CYCLE_CNTR_OFFSET(cpu, &cpu_domain->related_cpus,
-					accumulative_counter);
-	val = readl_relaxed_no_log(cpu_domain->reg_bases[REG_CYCLE_CNTR] +
-				   offset);
-
-	if (val < cpu_counter->prev_cycle_counter) {
-		/* Handle counter overflow */
-		cpu_counter->total_cycle_counter += UINT_MAX -
-			cpu_counter->prev_cycle_counter + val;
-		cpu_counter->prev_cycle_counter = val;
-	} else {
-		cpu_counter->total_cycle_counter += val -
-			cpu_counter->prev_cycle_counter;
-		cpu_counter->prev_cycle_counter = val;
-	}
-	cycle_counter_ret = cpu_counter->total_cycle_counter;
-	spin_unlock_irqrestore(&cpu_counter->lock, flags);
-
-	return cycle_counter_ret;
-}
-
 static int
 qcom_cpufreq_hw_target_index(struct cpufreq_policy *policy,
 			     unsigned int index)
@@ -887,9 +853,6 @@ static int cpufreq_hw_register_cooling_device(struct platform_device *pdev)
 
 static int qcom_cpufreq_hw_driver_probe(struct platform_device *pdev)
 {
-	struct cpu_cycle_counter_cb cycle_counter_cb = {
-		.get_cpu_cycle_counter = qcom_cpufreq_get_cpu_cycle_counter,
-	};
 	int rc, cpu;
 
 	/* Get the bases of cpufreq for domains */
