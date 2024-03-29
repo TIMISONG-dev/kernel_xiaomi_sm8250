@@ -1200,7 +1200,6 @@ TRACE_EVENT(sched_cpu_util,
 		__field(unsigned int,	cpu)
 		__field(unsigned int,	nr_running)
 		__field(long,		cpu_util)
-		__field(long,		cpu_util_cum)
 		__field(unsigned int,	capacity_curr)
 		__field(unsigned int,	capacity)
 		__field(unsigned int,	capacity_orig)
@@ -1217,7 +1216,6 @@ TRACE_EVENT(sched_cpu_util,
 		__entry->cpu                = cpu;
 		__entry->nr_running         = cpu_rq(cpu)->nr_running;
 		__entry->cpu_util           = cpu_util(cpu);
-		__entry->cpu_util_cum       = cpu_util_cum(cpu, 0);
 		__entry->capacity_curr      = capacity_curr_of(cpu);
 		__entry->capacity           = capacity_of(cpu);
 		__entry->capacity_orig      = capacity_orig_of(cpu);
@@ -1226,9 +1224,9 @@ TRACE_EVENT(sched_cpu_util,
 		__entry->isolated           = cpu_isolated(cpu);
 	),
 
-	TP_printk("cpu=%d nr_running=%d cpu_util=%ld cpu_util_cum=%ld capacity_curr=%u capacity=%u capacity_orig=%u idle_state=%d irqload=%llu online=%u, isolated=%u, reserved=%u, high_irq_load=%u nr_rtg_hp=%u",
-		__entry->cpu, __entry->nr_running, __entry->cpu_util,
-		__entry->cpu_util_cum, __entry->capacity_curr,
+	TP_printk("cpu=%d nr_running=%d cpu_util=%ld capacity_curr=%u capacity=%u capacity_orig=%u idle_state=%d irqload=%llu online=%u, isolated=%u, reserved=%u, high_irq_load=%u nr_rtg_hp=%u",
+		__entry->cpu, __entry->nr_running,
+		__entry->cpu_util, __entry->capacity_curr,
 		__entry->capacity, __entry->capacity_orig,
 		__entry->idle_state, __entry->irqload, __entry->online,
 		__entry->isolated, __entry->reserved, __entry->high_irq_load,

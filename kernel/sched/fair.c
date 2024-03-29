@@ -3861,17 +3861,6 @@ done:
 	trace_sched_util_est_task(p, &p->se.avg);
 }
 
-static inline bool
-bias_to_this_cpu(struct task_struct *p, int cpu, int start_cpu)
-{
-	bool base_test = cpumask_test_cpu(cpu, &p->cpus_allowed) &&
-			cpu_active(cpu);
-	bool start_cap_test = (capacity_orig_of(cpu) >=
-					capacity_orig_of(start_cpu));
-
-	return base_test && start_cap_test;
-}
-
 static inline int util_fits_cpu(unsigned long util,
 				unsigned long uclamp_min,
 				unsigned long uclamp_max,
@@ -5419,12 +5408,6 @@ static inline void hrtick_update(struct rq *rq)
 #ifdef CONFIG_SMP
 static unsigned long capacity_of(int cpu);
 
-bool __cpu_overutilized(int cpu, int delta)
-{
-	return (capacity_orig_of(cpu) * 1024) <
-		((cpu_util(cpu) + delta) * sched_capacity_margin_up[cpu]);
-}
-
 bool cpu_overutilized(int cpu)
 {
 	unsigned long rq_util_min = uclamp_rq_get(cpu_rq(cpu), UCLAMP_MIN);
@@ -5719,14 +5702,11 @@ static void record_wakee(struct task_struct *p)
  * whatever is irrelevant, spread criteria is apparent partner count exceeds
  * socket size.
  */
-static int wake_wide(struct task_struct *p, int sibling_count_hint)
+static int wake_wide(struct task_struct *p)
 {
 	unsigned int master = current->wakee_flips;
 	unsigned int slave = p->wakee_flips;
 	int llc_size = this_cpu_read(sd_llc_size);
-
-	if (sibling_count_hint >= llc_size)
-		return 1;
 
 	if (master < slave)
 		swap(master, slave);
@@ -6600,31 +6580,6 @@ compute_energy(struct task_struct *p, int dst_cpu, struct perf_domain *pd)
 	return em_cpu_energy(pd->em_pd, max_util, sum_util);
 }
 
-static inline int wake_to_idle(struct task_struct *p)
-{
-	return (current->flags & PF_WAKE_UP_IDLE) ||
-			(p->flags & PF_WAKE_UP_IDLE);
-}
-
-/* return true if cpu should be chosen over best_energy_cpu */
-static inline bool select_cpu_same_energy(int cpu, int best_cpu, int prev_cpu)
-{
-	if (best_cpu == prev_cpu)
-		return false;
-
-	if (idle_cpu(best_cpu) && idle_get_state_idx(cpu_rq(best_cpu)) <= 0)
-		return false; /* best_cpu is idle wfi or shallower */
-
-	if (idle_cpu(cpu) && idle_get_state_idx(cpu_rq(cpu)) <= 0)
-		return true; /* new cpu is idle wfi or shallower */
-
-	/*
-	 * If we are this far this must be a tie between a busy and deep idle,
-	 * pick the busy.
-	 */
-	return idle_cpu(best_cpu);
-}
-
 /*
  * find_energy_efficient_cpu(): Find most energy-efficient target CPU for the
  * waking task. find_energy_efficient_cpu() looks for the CPU with maximum
@@ -6664,8 +6619,7 @@ static inline bool select_cpu_same_energy(int cpu, int best_cpu, int prev_cpu)
  * other use-cases too. So, until someone finds a better way to solve this,
  * let's keep things simple by re-using the existing slow path.
  */
-int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu,
-		int sync, __attribute__((unused))int sibling_count_hint)
+int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sync)
 {
 	unsigned long prev_delta = ULONG_MAX, best_delta = ULONG_MAX;
 	unsigned long p_util_min = uclamp_is_used() ? uclamp_eff_value(p, UCLAMP_MIN) : 0;
@@ -6855,8 +6809,7 @@ unlock:
  * preempt must be disabled.
  */
 static int
-select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_flags,
-		    int sibling_count_hint)
+select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_flags)
 {
 	struct sched_domain *tmp, *sd = NULL;
 	int cpu = smp_processor_id();
@@ -6868,14 +6821,13 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		record_wakee(p);
 
 		if (sched_energy_enabled()) {
-			new_cpu = find_energy_efficient_cpu(p, prev_cpu, sync, 1);
+			new_cpu = find_energy_efficient_cpu(p, prev_cpu, sync);
 			if (new_cpu >= 0)
 				return new_cpu;
 			new_cpu = prev_cpu;
 		}
 
-		want_affine = !wake_wide(p, 1) &&
-			      cpumask_test_cpu(cpu, &p->cpus_allowed);
+		want_affine = !wake_wide(p) && cpumask_test_cpu(cpu, &p->cpus_allowed);
 	}
 
 	rcu_read_lock();
@@ -8170,7 +8122,7 @@ struct sd_lb_stats {
 	unsigned long total_running;
 	unsigned long total_load;	/* Total load of all groups in sd */
 	unsigned long total_capacity;	/* Total capacity of all groups in sd */
-	unsigned long total_util;	/* Total util of all groups in sd */
+	unsigned long total_util;	/* Total utilof all groups in sd */
 	unsigned long avg_load;	/* Average load across all groups in sd */
 
 	struct sg_lb_stats busiest_stat;/* Statistics of the busiest group */
@@ -8275,8 +8227,6 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 			struct sched_group_capacity *sgc;
 			struct rq *rq = cpu_rq(cpu);
 
-			if (cpumask_test_cpu(cpu, cpu_isolated_mask))
-				continue;
 			/*
 			 * build_sched_domains() -> init_sched_groups_capacity()
 			 * gets here before we've attached the domains to the
@@ -8307,7 +8257,7 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 		group = child->groups;
 		do {
 			struct sched_group_capacity *sgc = group->sgc;
-			cpumask_t *cpus = sched_group_span(group);
+			__maybe_unused cpumask_t *cpus = sched_group_span(group);
 
 			if (!cpu_isolated(cpumask_first(cpus))) {
 				capacity += sgc->capacity;
@@ -8506,7 +8456,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 
 			if (rq->misfit_task_load)
 				*sg_status |= SG_HAS_MISFIT_TASK;
-		}
+                }
 
 #ifdef CONFIG_NUMA_BALANCING
 		sgs->nr_numa_running += rq->nr_numa_running;
