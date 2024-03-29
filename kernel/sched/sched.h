@@ -1761,8 +1761,7 @@ struct sched_class {
 	void (*put_prev_task)(struct rq *rq, struct task_struct *p);
 
 #ifdef CONFIG_SMP
-	int  (*select_task_rq)(struct task_struct *p, int task_cpu, int sd_flag, int flags,
-			       int subling_count_hint);
+	int  (*select_task_rq)(struct task_struct *p, int task_cpu, int sd_flag, int flags);
 	void (*migrate_task_rq)(struct task_struct *p, int new_cpu);
 
 	void (*task_woken)(struct rq *this_rq, struct task_struct *task);
@@ -1836,7 +1835,6 @@ extern void trigger_load_balance(struct rq *rq);
 
 extern void set_cpus_allowed_common(struct task_struct *p, const struct cpumask *new_mask);
 
-bool __cpu_overutilized(int cpu, int delta);
 bool cpu_overutilized(int cpu);
 
 #endif
@@ -2102,36 +2100,6 @@ static inline unsigned long cpu_util(int cpu)
 		util = max(util, READ_ONCE(cfs_rq->avg.util_est));
 
 	return min_t(unsigned long, util, capacity_orig_of(cpu));
-}
-
-static inline unsigned long cpu_util_cum(int cpu, int delta)
-{
-	u64 util = cpu_rq(cpu)->cfs.avg.util_avg;
-	unsigned long capacity = capacity_orig_of(cpu);
-
-	delta += util;
-	if (delta < 0)
-		return 0;
-
-	return (delta >= capacity) ? capacity : delta;
-}
-
-static inline unsigned long
-cpu_util_freq(int cpu, struct sched_walt_cpu_load *walt_load)
-{
-	return cpu_util(cpu);
-}
-
-extern unsigned int capacity_margin_freq;
-
-static inline unsigned long
-add_capacity_margin(unsigned long cpu_capacity, int cpu)
-{
-	cpu_capacity  = cpu_capacity * capacity_margin_freq *
-			(100 + per_cpu(sched_load_boost, cpu));
-	cpu_capacity /= 100;
-	cpu_capacity /= SCHED_CAPACITY_SCALE;
-	return cpu_capacity;
 }
 
 #endif
