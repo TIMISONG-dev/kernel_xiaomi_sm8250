@@ -1488,8 +1488,7 @@ task_may_not_preempt(struct task_struct *task, int cpu)
 }
 
 static int
-select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags,
-		  int sibling_count_hint)
+select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 {
 	struct task_struct *curr;
 	struct rq *rq;
