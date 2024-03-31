@@ -141,8 +141,6 @@ unsigned int sched_capacity_margin_up[NR_CPUS] = {
 unsigned int sched_capacity_margin_down[NR_CPUS] = {
 			[0 ... NR_CPUS-1] = 1205}; /* ~15% margin */
 
-unsigned int sched_small_task_threshold = 102;
-
 static inline void update_load_add(struct load_weight *lw, unsigned long inc)
 {
 	lw->weight += inc;
@@ -9197,6 +9195,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
 
 	for_each_cpu_and(i, sched_group_span(group), env->cpus) {
 		unsigned long capacity, load;
+		unsigned int nr_running;
 		enum fbq_type rt;
 
 		rq = cpu_rq(i);
@@ -9237,11 +9236,15 @@ static struct rq *find_busiest_queue(struct lb_env *env,
 			continue;
 		}
 
+		nr_running = rq->nr_running;
+		if (!nr_running)
+			continue;
+
 		/*
 		 * Ignore cpu, which is undergoing active_balance and doesn't
 		 * have more than 2 tasks.
 		 */
-		if (rq->active_balance && rq->nr_running <= 2)
+		if (rq->active_balance && nr_running <= 2)
 			continue;
 
 		capacity = capacity_of(i);
@@ -9254,9 +9257,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
 		 */
 		if (env->sd->flags & SD_ASYM_CPUCAPACITY &&
 		    !capacity_greater(capacity_of(env->dst_cpu), capacity) &&
-		    (rq->nr_running == 1 ||
-			 (rq->nr_running == 2 && task_util(rq->curr) <
-			  sched_small_task_threshold)))
+		    nr_running == 1)
 			continue;
 
 		load = cpu_runnable_load(rq);
@@ -9265,8 +9266,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
 		 * When comparing with imbalance, use cpu_runnable_load()
 		 * which is not scaled with the CPU capacity.
 		 */
-
-		if (rq->nr_running == 1 && load > env->imbalance &&
+		if (nr_running == 1 && load > env->imbalance &&
 		    !check_cpu_capacity(rq, env->sd))
 			continue;
 
