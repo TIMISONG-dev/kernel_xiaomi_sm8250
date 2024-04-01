@@ -226,12 +226,7 @@ static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock,
 
 static __always_inline int __waiter_prio(struct task_struct *task)
 {
-	int prio = task->prio;
-
-	if (!rt_prio(prio))
-		return DEFAULT_PRIO;
-
-	return prio;
+	return task->prio;
 }
 
 static __always_inline void
