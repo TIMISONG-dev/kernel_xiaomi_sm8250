@@ -161,7 +161,7 @@ static unsigned long limits_mitigation_notify(struct cpufreq_qcom *c,
 
 	freq = U32_MAX;   //Fix me! This is WA here！
 
-	arch_set_thermal_pressure(&c->related_cpus, min_t(unsigned long, 0,
+	arch_set_thermal_pressure(&c->related_cpus, max_t(unsigned long, 0,
 				  max_capacity - capacity));
 	trace_dcvsh_freq(cpumask_first(&c->related_cpus), freq);
 	c->dcvsh_freq_limit = freq;
