@@ -31,9 +31,6 @@
 #include <linux/topology.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#ifdef CONFIG_SCHED_CORE_CTL
-#include <linux/sched/core_ctl.h>
-#endif
 #include <pld_common.h>
 #include <linux/pm.h>
 
