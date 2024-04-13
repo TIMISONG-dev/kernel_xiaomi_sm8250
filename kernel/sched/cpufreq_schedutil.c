@@ -61,10 +61,8 @@ struct sugov_cpu {
 	unsigned int		iowait_boost;
 	u64			last_update;
 
-	unsigned long util;
-	unsigned int flags;
-
-	unsigned long		bw_dl;
+	unsigned long		util;
+	unsigned long		bw_min;
 	unsigned long		max;
 
 	/* The field below is for single-CPU policies only: */
@@ -207,12 +205,13 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 
 static unsigned long sugov_get_util(struct sugov_cpu *sg_cpu)
 {
-	unsigned long util = cpu_util_cfs_boost(sg_cpu->cpu);
-	struct rq *rq = cpu_rq(sg_cpu->cpu);
+	unsigned long min, max, util = cpu_util_cfs_boost(sg_cpu->cpu);
 
-	sg_cpu->max = arch_scale_cpu_capacity(sg_cpu->cpu);
-	sg_cpu->bw_dl = cpu_bw_dl(rq);
-	return effective_cpu_util(sg_cpu->cpu, util, FREQUENCY_UTIL, NULL);
+	util = effective_cpu_util(sg_cpu->cpu, util, &min, &max);
+	sg_cpu->max = max;
+	sg_cpu->bw_min = min;
+
+	return max(min, min(util, max));
 }
 
 /**
@@ -358,7 +357,7 @@ static inline bool sugov_cpu_is_busy(struct sugov_cpu *sg_cpu) { return false; }
  */
 static inline void ignore_dl_rate_limit(struct sugov_cpu *sg_cpu, struct sugov_policy *sg_policy)
 {
-	if (cpu_bw_dl(cpu_rq(sg_cpu->cpu)) > sg_cpu->bw_dl)
+	if (cpu_bw_dl(cpu_rq(sg_cpu->cpu)) > sg_cpu->bw_min)
 		sg_policy->limits_changed = true;
 }
 
@@ -380,7 +379,6 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 
 	sg_cpu->util = util = sugov_get_util(sg_cpu);
 	max = sg_cpu->max;
-	sg_cpu->flags = flags;
 
 	util = sugov_iowait_apply(sg_cpu, time, util, max);
 	next_f = get_next_freq(sg_policy, util, max);
@@ -469,7 +467,6 @@ sugov_update_shared(struct update_util_data *hook, u64 time, unsigned int flags)
 	unsigned int next_f;
 
 	sg_cpu->util = sugov_get_util(sg_cpu);
-	sg_cpu->flags = flags;
 	raw_spin_lock(&sg_policy->update_lock);
 
 	sugov_iowait_boost(sg_cpu, time, flags);
