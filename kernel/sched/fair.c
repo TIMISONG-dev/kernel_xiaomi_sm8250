@@ -3150,18 +3150,6 @@ static inline void cfs_rq_util_change(struct cfs_rq *cfs_rq, int flags)
 	}
 }
 
-static inline int per_task_boost(struct task_struct *p)
-{
-	if (p->boost_period) {
-		if (sched_clock() > p->boost_expires) {
-			p->boost_period = 0;
-			p->boost_expires = 0;
-			p->boost = 0;
-		}
-	}
-	return p->boost;
-}
-
 #ifdef CONFIG_SMP
 static inline u64 cfs_rq_last_update_time(struct cfs_rq *cfs_rq)
 {
