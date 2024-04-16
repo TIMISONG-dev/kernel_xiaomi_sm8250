@@ -86,7 +86,7 @@ make O="$output_dir" \
 # Проверка успешности конфигурации
 if [ $? -eq 0 ]; then
     # Компиляция ядра
-    make -j $(nproc) \
+    make -j4 \
                 O="$output_dir" \
                 CC="ccache clang" \
                 HOSTCC=gcc \
