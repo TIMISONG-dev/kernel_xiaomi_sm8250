@@ -2131,7 +2131,6 @@ static inline int hrtick_enabled(struct rq *rq)
 
 #endif /* CONFIG_SCHED_HRTICK */
 
-#define sched_ravg_window TICK_NSEC
 static inline u64 sched_ktime_clock(void)
 {
 	return sched_clock();
