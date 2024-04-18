@@ -133,6 +133,39 @@ rbstatic const struct rb_augment_callbacks rbname = {			\
 	.rotate = rbname ## _rotate					\
 };
 
+#define RB_DECLARE_CALLBACKS_NEW(RBSTATIC, RBNAME, RBSTRUCT,		\
+				 RBFIELD, RBAUGMENTED, RBCOMPUTE)	\
+static inline void							\
+RBNAME ## _propagate(struct rb_node *rb, struct rb_node *stop)		\
+{									\
+	while (rb != stop) {						\
+		RBSTRUCT *node = rb_entry(rb, RBSTRUCT, RBFIELD);	\
+		if (RBCOMPUTE(node, true))					\
+			break;						\
+		rb = rb_parent(&node->RBFIELD);				\
+	}								\
+}									\
+static inline void							\
+RBNAME ## _copy(struct rb_node *rb_old, struct rb_node *rb_new)		\
+{									\
+	RBSTRUCT *old = rb_entry(rb_old, RBSTRUCT, RBFIELD);		\
+	RBSTRUCT *new = rb_entry(rb_new, RBSTRUCT, RBFIELD);		\
+	new->RBAUGMENTED = old->RBAUGMENTED;				\
+}									\
+static void								\
+RBNAME ## _rotate(struct rb_node *rb_old, struct rb_node *rb_new)	\
+{									\
+	RBSTRUCT *old = rb_entry(rb_old, RBSTRUCT, RBFIELD);		\
+	RBSTRUCT *new = rb_entry(rb_new, RBSTRUCT, RBFIELD);		\
+	new->RBAUGMENTED = old->RBAUGMENTED;				\
+	RBCOMPUTE(old, false);							\
+}									\
+RBSTATIC const struct rb_augment_callbacks RBNAME = {			\
+	.propagate = RBNAME ## _propagate,				\
+	.copy = RBNAME ## _copy,					\
+	.rotate = RBNAME ## _rotate					\
+};
+
 
 #define	RB_RED		0
 #define	RB_BLACK	1
