@@ -15,7 +15,7 @@ export KERNEL_CFG
 export OUT_DIR
 
 # Set compiler PATH
-PATH={$HOME}/void/prebuilts/clang/host/linux-x86/clang-r450784d:$HOME/clang/bin:$PATH
+PATH={$HOME}/evo/prebuilts/clang/host/linux-x86/clang-r487747c:$HOME/clang/bin:$PATH
 
 BUILD="make O=$OUT_DIR \
 ARCH=arm64 \
@@ -29,7 +29,7 @@ export BUILD
 cd "$KERNEL_TOP" || exit
 
 # These values must be changed for forks!
-KERNEL_DEFCONFIG_URL="https://github.com/VoidUI-Devices/kernel_xiaomi_sm8250"
+KERNEL_DEFCONFIG_URL="https://github.com/PocoF3Releases/kernel_xiaomi_sm8250"
 KERNEL_DEFCONFIG_HEAD=$(git -C ${KERNEL_CFG} rev-parse HEAD)
 
 SOC="kona"
@@ -107,6 +107,7 @@ if [ -n  "$*" ]; then
 
 read -r -d '' KERNEL_COMMIT_MESSAGE << EOM
 ARM64: configs: ${DEVICE}: update auto-generated defconfig for ${DEVICE}
+
 This update is generated automatically by using the update_defconfig script
 HEAD of the project used to prepare this commit:
 ${KERNEL_DEFCONFIG_URL}/tree/${KERNEL_DEFCONFIG_HEAD}
@@ -116,6 +117,7 @@ else
 
 read -r -d '' KERNEL_COMMIT_MESSAGE << EOM
 ARM64: configs: xiaomi: update auto-generated defconfig for all devices
+
 This update is generated automatically by using the update_defconfig script
 HEAD of the project used to prepare this commit:
 ${KERNEL_DEFCONFIG_URL}/tree/${KERNEL_DEFCONFIG_HEAD}
