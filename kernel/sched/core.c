@@ -1328,17 +1328,6 @@ static void uclamp_fork(struct task_struct *p)
 }
 
 #ifdef CONFIG_SMP
-unsigned int uclamp_task(struct task_struct *p)
-{
-	unsigned long util;
-
-	util = task_util_est(p);
-	util = max(util, uclamp_eff_value(p, UCLAMP_MIN));
-	util = min(util, uclamp_eff_value(p, UCLAMP_MAX));
-
-	return util;
-}
-
 bool uclamp_boosted(struct task_struct *p)
 {
 	return uclamp_eff_value(p, UCLAMP_MIN) > 0;
@@ -1415,11 +1404,6 @@ static inline void uclamp_fork(struct task_struct *p) { }
 long schedtune_task_margin(struct task_struct *task);
 
 #ifdef CONFIG_SMP
-unsigned int uclamp_task(struct task_struct *p)
-{
-	return task_util_est(p);
-}
-
 bool uclamp_boosted(struct task_struct *p)
 {
 	return false;
