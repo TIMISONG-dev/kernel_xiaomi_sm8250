@@ -4191,7 +4191,7 @@ static inline unsigned long _task_util_est(struct task_struct *p)
 	return max(ue.ewma, (ue.enqueued & ~UTIL_AVG_UNCHANGED));
 }
 
-unsigned long task_util_est(struct task_struct *p)
+static inline unsigned long task_util_est(struct task_struct *p)
 {
 	return max(task_util(p), _task_util_est(p));
 }
@@ -4214,8 +4214,6 @@ static inline void util_est_enqueue(struct cfs_rq *cfs_rq,
 	trace_sched_util_est_cpu(cpu_of(rq_of(cfs_rq)), cfs_rq);
 }
 
-#define UTIL_EST_MARGIN (SCHED_CAPACITY_SCALE / 100)
-
 static inline void util_est_dequeue(struct cfs_rq *cfs_rq,
 				    struct task_struct *p)
 {
@@ -4232,6 +4230,8 @@ static inline void util_est_dequeue(struct cfs_rq *cfs_rq,
 	/* Update plots for CPU's estimated utilization */
 	trace_sched_util_est_cpu(cpu_of(rq_of(cfs_rq)), cfs_rq);
 }
+
+#define UTIL_EST_MARGIN (SCHED_CAPACITY_SCALE / 100)
 
 /*
  * Check if a (signed) value is within a specified (unsigned) margin,
@@ -6745,6 +6745,7 @@ cpu_util(int cpu, struct task_struct *p, int dst_cpu, int boost)
 
 	if (sched_feat(UTIL_EST)) {
 		unsigned long util_est;
+
 		util_est = READ_ONCE(cfs_rq->avg.util_est);
 
 		/*
