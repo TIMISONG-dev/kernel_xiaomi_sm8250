@@ -2503,8 +2503,6 @@ static inline void cpufreq_update_util(struct rq *rq, unsigned int flags)
 static inline void cpufreq_update_util(struct rq *rq, unsigned int flags) {}
 #endif /* CONFIG_CPU_FREQ */
 
-unsigned long task_util_est(struct task_struct *p);
-unsigned int uclamp_task(struct task_struct *p);
 bool uclamp_latency_sensitive(struct task_struct *p);
 bool uclamp_boosted(struct task_struct *p);
 
