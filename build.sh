@@ -13,7 +13,7 @@ MAINPATH=/home/timisong # измените, если необходимо
 KERNEL_DIR=$MAINPATH/kernel
 
 # Каталоги компиляторов
-SNAPDRAGON_CLANG_DIR=$KERNEL_DIR/clang19
+CLANG19_DIR=$KERNEL_DIR/clang19
 ANDROID_PREBUILTS_GCC_ARM_DIR=$KERNEL_DIR/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9
 ANDROID_PREBUILTS_GCC_AARCH64_DIR=$KERNEL_DIR/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9
 
@@ -28,13 +28,28 @@ check_and_clone() {
     fi
 }
 
+check_and_wget() {
+    local dir=$1
+    local repo=$2
+
+    if [ ! -d "$dir" ]; then
+        echo "Папка $dir не существует. Клонирование $repo."
+        mkdir $dir
+        cd $dir
+        wget $repo
+        tar -zxvf Clang-19.0.0git-20240430.tar.gz
+        rm -rf Clang-19.0.0git-20240430.tar.gz
+        cd ../kernel_xiaomi_sm8250
+    fi
+}
+
 # Клонирование инструментов компиляции, если они не существуют
-check_and_clone $SNAPDRAGON_CLANG_DIR https://gitlab.com/VoidUI/snapdragon-clang
+check_and_wget $CLANG19_DIR https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240430-release/Clang-19.0.0git-20240430.tar.gz
 check_and_clone $ANDROID_PREBUILTS_GCC_ARM_DIR https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9
 check_and_clone $ANDROID_PREBUILTS_GCC_AARCH64_DIR https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9
 
 # Установка переменных PATH
-PATH=$SNAPDRAGON_CLANG_DIR/bin:$ANDROID_PREBUILTS_GCC_AARCH64_DIR/bin:$ANDROID_PREBUILTS_GCC_ARM_DIR/bin:$PATH
+PATH=$CLANG19_DIR/bin:$ANDROID_PREBUILTS_GCC_AARCH64_DIR/bin:$ANDROID_PREBUILTS_GCC_ARM_DIR/bin:$PATH
 export PATH
 export ARCH=arm64
 
