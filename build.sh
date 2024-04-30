@@ -13,7 +13,7 @@ MAINPATH=/home/timisong # измените, если необходимо
 KERNEL_DIR=$MAINPATH/kernel
 
 # Каталоги компиляторов
-SNAPDRAGON_CLANG_DIR=$KERNEL_DIR/snapdragon-clang
+SNAPDRAGON_CLANG_DIR=$KERNEL_DIR/clang19
 ANDROID_PREBUILTS_GCC_ARM_DIR=$KERNEL_DIR/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9
 ANDROID_PREBUILTS_GCC_AARCH64_DIR=$KERNEL_DIR/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9
 
@@ -66,9 +66,8 @@ fi
 export IMGPATH="$MAGIC_TIME_DIR/Image"
 export DTBPATH="$MAGIC_TIME_DIR/dtb"
 export DTBOPATH="$MAGIC_TIME_DIR/dtbo.img"
-export CLANG_TRIPLE="aarch64-linux-gnu-"
 export CROSS_COMPILE="aarch64-linux-gnu-"
-export CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
+export CROSS_COMPILE_COMPAT="arm-linux-gnueabi-"
 export KBUILD_BUILD_USER="TIMISONG"
 export KBUILD_BUILD_HOST="timisong-dev"
 export MODEL="alioth"
