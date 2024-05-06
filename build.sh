@@ -12,6 +12,7 @@ MAINPATH=/home/timisong # измените, если необходимо
 # Каталог ядра
 KERNEL_DIR=$MAINPATH/kernel
 
+HASH=$(git rev-parse HEAD)
 value=$(<../info.txt)
 TOKEN=$value
 
@@ -128,7 +129,7 @@ find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 cd "$MAGIC_TIME_DIR"
 7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
 
-curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
+curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$HASH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
 
 # Завершение отсчета времени выполнения скрипта
 end_time=$(date +%s)
