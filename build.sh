@@ -118,17 +118,6 @@ if [ $? -eq 0 ]; then
                 LLVM_IAS=1 \
                 V=$VERBOSE 2>&1 | tee error.log
                 
-    # Проверка успешности сборки
-    if [ $? -eq 0 ]; then
-        message="\e[32mОбщее время выполнения: $elapsed_time секунд\e[0m"
-        curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Компиляция завершилась успешно! Время выполенения: $elapsed_time секунд"
-    else
-        message="\e[31mОшибка: Сборка завершилась с ошибкой\e[0m"
-        curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Ошибка в компиляции!"
-    fi
-else
-    message="\e[31mОшибка: Не удалось настроить конфигурацию ядра\e[0m"
-fi
 
 # Предполагается, что переменная DTS установлена ранее в скрипте
 find $DTS -name '*.dtb' -exec cat {} + > $DTBPATH
@@ -143,8 +132,16 @@ curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="MagicTi
 
 # Завершение отсчета времени выполнения скрипта
 end_time=$(date +%s)
-elapsed_time=$((end_time - start_time))
+elapsed_time=$((end_time - start_time))0
 
-# Вывод сообщения о завершении выполнения скрипта
-echo -e "$message"
-echo "Total execution time: $elapsed_time seconds"
+    # Проверка успешности сборки
+    if [ $? -eq 0 ]; then
+        echo "\e[32mОбщее время выполнения: $elapsed_time секунд\e[0m"
+        curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Компиляция завершилась успешно! Время выполенения: $elapsed_time секунд"
+    else
+        echo "\e[31mОшибка: Сборка завершилась с ошибкой\e[0m"
+        curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Ошибка в компиляции!"
+    fi
+else
+    message="\e[31mОшибка: Не удалось настроить конфигурацию ядра\e[0m"
+fi
