@@ -12,6 +12,9 @@ MAINPATH=/home/timisong # измените, если необходимо
 # Каталог ядра
 KERNEL_DIR=$MAINPATH/kernel
 
+value=$(<../info.txt)
+TOKEN=$value
+
 # Каталоги компиляторов
 CLANG19_DIR=$KERNEL_DIR/clang19
 ANDROID_PREBUILTS_GCC_ARM_DIR=$KERNEL_DIR/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9
@@ -118,8 +121,10 @@ if [ $? -eq 0 ]; then
     # Проверка успешности сборки
     if [ $? -eq 0 ]; then
         message="\e[32mОбщее время выполнения: $elapsed_time секунд\e[0m"
+        curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Компиляция завершилась успешно! Время выполенения: $elapsed_time секунд"
     else
         message="\e[31mОшибка: Сборка завершилась с ошибкой\e[0m"
+        curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Ошибка в компиляции!"
     fi
 else
     message="\e[31mОшибка: Не удалось настроить конфигурацию ядра\e[0m"
@@ -133,6 +138,8 @@ find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 # Перемещение в каталог MagicTime и создание архива
 cd "$MAGIC_TIME_DIR"
 7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
+
+curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="MagicTime $MAGIC_BUILD_DATE" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
 
 # Завершение отсчета времени выполнения скрипта
 end_time=$(date +%s)
