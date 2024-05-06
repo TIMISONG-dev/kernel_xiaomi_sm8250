@@ -128,11 +128,11 @@ find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 cd "$MAGIC_TIME_DIR"
 7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
 
-curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="MagicTime $MAGIC_BUILD_DATE" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
+curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
 
 # Завершение отсчета времени выполнения скрипта
 end_time=$(date +%s)
-elapsed_time=$((end_time - start_time))0
+elapsed_time=$((end_time - start_time))
 
     # Проверка успешности сборки
     if [ $? -eq 0 ]; then
