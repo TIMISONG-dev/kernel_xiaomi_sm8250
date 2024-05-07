@@ -135,13 +135,11 @@ end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
 
     # Проверка успешности сборки
-    if [ $? -ne 0 ]; then
-        if [ $? -eq 0 ]; then
+    if [ $? -eq 0 ]; then
             echo "\e[32mОбщее время выполнения: $elapsed_time секунд\e[0m"
             curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Компиляция завершилась успешно! Время выполенения: $elapsed_time секунд"
             curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$HASH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
             rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
-        fi
     else
         cd "$KERNEL_PATH"
         echo "\e[31mОшибка: Сборка завершилась с ошибкой\e[0m"
