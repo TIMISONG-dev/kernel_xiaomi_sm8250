@@ -131,6 +131,8 @@ cd "$MAGIC_TIME_DIR"
 
 curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$HASH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
 
+rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
+
 # Завершение отсчета времени выполнения скрипта
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
@@ -142,6 +144,7 @@ elapsed_time=$((end_time - start_time))
     else
         echo "\e[31mОшибка: Сборка завершилась с ошибкой\e[0m"
         curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Ошибка в компиляции!"
+        curl -F document=@"./error.log" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
     fi
 else
     message="\e[31mОшибка: Не удалось настроить конфигурацию ядра\e[0m"
