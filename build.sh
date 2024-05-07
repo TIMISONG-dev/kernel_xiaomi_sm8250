@@ -102,8 +102,6 @@ output_dir=out
 make O="$output_dir" \
             alioth_defconfig
 
-# Проверка успешности конфигурации
-if [ $? -eq 0 ]; then
     # Компиляция ядра
     make -j $(nproc) \
                 O="$output_dir" \
@@ -129,21 +127,21 @@ find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 # Перемещение в каталог MagicTime и создание архива
 cd "$MAGIC_TIME_DIR"
 7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
+checkdtb="dtb"
 
 # Завершение отсчета времени выполнения скрипта
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
 
-    # Проверка успешности сборки
-    if [ $? -eq 0 ]; then
-            echo "\e[32mОбщее время выполнения: $elapsed_time секунд\e[0m"
-            curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Компиляция завершилась успешно! Время выполенения: $elapsed_time секунд"
-            curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$HASH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
-            rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
-    else
-        cd "$KERNEL_PATH"
-        echo "\e[31mОшибка: Сборка завершилась с ошибкой\e[0m"
-        curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Ошибка в компиляции!"
-        curl -F document=@"./error.log" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
-    fi
+# Проверка успешности сборки
+if [ -s "$checkdtb" ]; then
+    echo "\e[32mОбщее время выполнения: $elapsed_time секунд\e[0m"
+    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Компиляция завершилась успешно! Время выполенения: $elapsed_time секунд"
+    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$HASH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
+    rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
+else
+    cd "$KERNEL_PATH"
+    echo "\e[31mОшибка: Сборка завершилась с ошибкой\e[0m"
+    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Ошибка в компиляции!"
+    curl -F document=@"./error.log" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
 fi
