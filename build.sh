@@ -13,7 +13,7 @@ MAINPATH=/home/timisong # измените, если необходимо
 KERNEL_DIR=$MAINPATH/kernel
 KERNEL_PATH=$KERNEL_DIR/kernel_xiaomi_sm8250
 
-HASH=$(git rev-parse HEAD)
+HASH=$(git log -1 --pretty=format:"%h - %s")
 value=$(<../info.txt)
 TOKEN=$value
 
