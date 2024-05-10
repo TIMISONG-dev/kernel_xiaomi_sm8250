@@ -125,7 +125,7 @@ const struct sched_class stop_sched_class = {
 	.dequeue_task		= dequeue_task_stop,
 	.yield_task		= yield_task_stop,
 
-	.check_preempt_curr	= check_preempt_curr_stop,
+	.wakeup_preempt		= check_preempt_curr_stop,
 
 	.pick_next_task		= pick_next_task_stop,
 	.put_prev_task		= put_prev_task_stop,
