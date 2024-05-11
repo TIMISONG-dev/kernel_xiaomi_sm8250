@@ -124,6 +124,7 @@ find $DTS -name '*.dtb' -exec cat {} + > $DTBPATH
 find $DTS -name 'Image' -exec cat {} + > $IMGPATH
 find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 
+cd "$MAGIC_TIME_DIR"
 checkdtb="dtb"
 
 # Завершение отсчета времени выполнения скрипта
