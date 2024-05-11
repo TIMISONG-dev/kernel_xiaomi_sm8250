@@ -124,9 +124,6 @@ find $DTS -name '*.dtb' -exec cat {} + > $DTBPATH
 find $DTS -name 'Image' -exec cat {} + > $IMGPATH
 find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 
-# Перемещение в каталог MagicTime и создание архива
-cd "$MAGIC_TIME_DIR"
-7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
 checkdtb="dtb"
 
 # Завершение отсчета времени выполнения скрипта
@@ -136,6 +133,11 @@ elapsed_time=$((end_time - start_time))
 # Проверка успешности сборки
 if [ -s "$checkdtb" ]; then
     echo "\e[32mОбщее время выполнения: $elapsed_time секунд\e[0m"
+
+    # Перемещение в каталог MagicTime и создание архива
+    cd "$MAGIC_TIME_DIR"
+    7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
+    
     curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд"
     curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$HASH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
     rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
