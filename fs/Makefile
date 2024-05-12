@@ -6,6 +6,8 @@
 # Rewritten to use lists instead of if-statements.
 #
 
+ccflags-y += -Wframe-larger-than=4225
+
 obj-y :=	open.o read_write.o file_table.o super.o \
 		char_dev.o stat.o exec.o pipe.o namei.o fcntl.o \
 		ioctl.o readdir.o select.o dcache.o inode.o \
