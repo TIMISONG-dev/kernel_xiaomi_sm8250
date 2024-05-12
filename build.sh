@@ -139,12 +139,12 @@ if [ -s "$checkdtb" ]; then
     cd "$MAGIC_TIME_DIR"
     7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
     
-    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд"
-    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$HASH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
+    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд"
+    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$HASH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
     rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
 else
     cd "$KERNEL_PATH"
     echo "\e[31mОшибка: Сборка завершилась с ошибкой\e[0m"
-    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimec" -d text="Ошибка в компиляции!"
-    curl -F document=@"./error.log" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimec"
+    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Ошибка в компиляции!"
+    curl -F document=@"./error.log" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
 fi
