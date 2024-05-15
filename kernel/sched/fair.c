@@ -8101,7 +8101,6 @@ static int detach_tasks(struct lb_env *env)
 	unsigned long util, load;
 	struct task_struct *p;
 	int detached = 0;
-	u64 start_t = rq_clock(env->src_rq);
 
 	lockdep_assert_held(&env->src_rq->lock);
 
@@ -8125,8 +8124,6 @@ static int detach_tasks(struct lb_env *env)
 		if (env->idle != CPU_NOT_IDLE && env->src_rq->nr_running <= 1)
 			break;
 
-		p = list_last_entry(tasks, struct task_struct, se.group_node);
-
 		env->loop++;
 		/*
 		 * We've more or less seen every task there is, call it quits
@@ -8136,16 +8133,14 @@ static int detach_tasks(struct lb_env *env)
 		    !(env->flags & LBF_ALL_PINNED))
 			break;
 
-		/* Abort the loop, if we spent more than 5 msec */
-		if (rq_clock(env->src_rq) - start_t > 5000000)
-			break;
-
 		/* take a breather every nr_migrate tasks */
 		if (env->loop > env->loop_break) {
 			env->loop_break += sched_nr_migrate_break;
 			env->flags |= LBF_NEED_BREAK;
 			break;
 		}
+
+		p = list_last_entry(tasks, struct task_struct, se.group_node);
 
 		if (!can_migrate_task(p, env))
 			goto next;
