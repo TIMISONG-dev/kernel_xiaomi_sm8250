@@ -8506,7 +8506,6 @@ struct sd_lb_stats {
 	struct sched_group *local;	/* Local group in this sd */
 	unsigned long total_load;	/* Total load of all groups in sd */
 	unsigned long total_capacity;	/* Total capacity of all groups in sd */
-	unsigned long total_util;	/* Total utilof all groups in sd */
 	unsigned long avg_load;	/* Average load across all groups in sd */
 	unsigned int prefer_sibling; /* tasks should go to sibling first */
 
@@ -8528,7 +8527,6 @@ static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
 		.local = NULL,
 		.total_load = 0UL,
 		.total_capacity = 0UL,
-		.total_util = 0UL,
 		.busiest_stat = {
 			.idle_cpus = UINT_MAX,
 			.group_type = group_has_spare,
@@ -8951,7 +8949,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 
 	case group_asym_packing:
 		/* Prefer to move from lowest priority CPU's work */
-		if (sched_asym_prefer(sg->asym_prefer_cpu, sds->busiest->asym_prefer_cpu))
+		if (!sched_asym_prefer(sg->asym_prefer_cpu, sds->busiest->asym_prefer_cpu))
 			return false;
 		break;
 
@@ -9461,14 +9459,18 @@ next_group:
 		/* Now, start updating sd_lb_stats */
 		sds->total_load += sgs->group_load;
 		sds->total_capacity += sgs->group_capacity;
-		sds->total_util += sgs->group_util;
 
 		sum_util += sgs->group_util;
 		sg = sg->next;
 	} while (sg != env->sd->groups);
 
-	/* Tag domain that child domain prefers tasks go to siblings first */
-	sds->prefer_sibling = child && child->flags & SD_PREFER_SIBLING;
+	/*
+	 * Indicate that the child domain of the busiest group prefers tasks
+	 * go to a child's sibling domains first. NB the flags of a sched group
+	 * are those of the child domain.
+	 */
+	if (sds->busiest)
+		sds->prefer_sibling = child && child->flags & SD_PREFER_SIBLING;
 
 	if (env->sd->flags & SD_NUMA)
 		env->fbq_type = fbq_classify_group(&sds->busiest_stat);
@@ -10240,7 +10242,7 @@ more_balance:
 		 */
 		if (idle != CPU_NEWLY_IDLE &&
 		    env.migration_type != migrate_misfit)
-				sd->nr_balance_failed++;
+			sd->nr_balance_failed++;
 
 		if (need_active_balance(&env)) {
 			unsigned long flags;
@@ -10279,11 +10281,7 @@ more_balance:
 				stop_one_cpu_nowait(cpu_of(busiest),
 					active_load_balance_cpu_stop, busiest,
 					&busiest->active_balance_work);
-				*continue_balancing = 0;
 			}
-
-			/* We've kicked active balancing, force task migration. */
-			sd->nr_balance_failed = sd->cache_nice_tries+1;
 		}
 	} else
 		sd->nr_balance_failed = 0;
@@ -10341,12 +10339,6 @@ out_one_pinned:
 	    sd->balance_interval < sd->max_interval)
 		sd->balance_interval *= 2;
 out:
-	trace_sched_load_balance(this_cpu, idle, *continue_balancing,
-				 group ? group->cpumask[0] : 0,
-				 busiest ? busiest->nr_running : 0,
-				 env.imbalance, env.flags, ld_moved,
-				 sd->balance_interval, active_balance,
-				 READ_ONCE(this_rq->rd->overutilized));
 	return ld_moved;
 }
 
@@ -10393,7 +10385,6 @@ static int active_load_balance_cpu_stop(void *data)
 	struct sched_domain *sd = NULL;
 	struct task_struct *p = NULL;
 	struct rq_flags rf;
-	bool moved = false;
 
 	rq_lock_irq(busiest_rq, &rf);
 	/*
@@ -10452,7 +10443,6 @@ static int active_load_balance_cpu_stop(void *data)
 			schedstat_inc(sd->alb_pushed);
 			/* Active balancing done, reset the failure counter. */
 			sd->nr_balance_failed = 0;
-			moved = true;
 		} else {
 			schedstat_inc(sd->alb_failed);
 		}
@@ -11124,6 +11114,7 @@ static int newidle_balance(struct rq *this_rq, struct rq_flags *rf)
 {
 	unsigned long next_balance = jiffies + HZ;
 	int this_cpu = this_rq->cpu;
+	int continue_balancing = 1;
 	u64 t0, t1, curr_cost = 0;
 	struct sched_domain *sd;
 	int pulled_task = 0;
@@ -11182,8 +11173,9 @@ static int newidle_balance(struct rq *this_rq, struct rq_flags *rf)
 
 	rcu_read_lock();
 	for_each_domain(this_cpu, sd) {
-		int continue_balancing = 1;
 		u64 domain_cost;
+
+		update_next_balance(sd, &next_balance);
 
 		if (avg_idle < curr_cost + sd->max_newidle_lb_cost) {
 			update_next_balance(sd, &next_balance);
@@ -11203,14 +11195,11 @@ static int newidle_balance(struct rq *this_rq, struct rq_flags *rf)
 			t0 = t1;
 		}
 
-		update_next_balance(sd, &next_balance);
-
 		/*
-		 * Stop searching for tasks to pull if there are now runnable
-		 * tasks on this rq or if active migration kicked in.
+		 * Stop searching for tasks to pull if there are
+		 * now runnable tasks on this rq.
 		 */
-		if (pulled_task || this_rq->nr_running > 0 ||
-		    this_rq->ttwu_pending)
+		if (pulled_task || !continue_balancing)
 			break;
 	}
 	rcu_read_unlock();
