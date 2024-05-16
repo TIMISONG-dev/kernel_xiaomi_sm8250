@@ -10623,93 +10623,33 @@ static inline int on_null_domain(struct rq *rq)
 }
 
 #ifdef CONFIG_NO_HZ_COMMON
-static inline int find_energy_aware_new_ilb(void)
-{
-	int ilb = nr_cpu_ids;
-	struct sched_domain *sd;
-	int cpu = raw_smp_processor_id();
-	cpumask_t idle_cpus, tmp_cpus;
-	struct sched_group *sg;
-	unsigned long ref_cap = capacity_orig_of(cpu);
-	unsigned long best_cap = 0, best_cap_cpu = -1;
-
-	rcu_read_lock();
-	sd = rcu_dereference(per_cpu(sd_asym_cpucapacity, cpu));
-	if (!sd)
-		goto out;
-
-	cpumask_and(&idle_cpus, nohz.idle_cpus_mask,
-			housekeeping_cpumask(HK_FLAG_MISC));
-
-	sg = sd->groups;
-	do {
-		int i;
-		unsigned long cap;
-
-		cpumask_and(&tmp_cpus, &idle_cpus, sched_group_span(sg));
-		i = cpumask_first(&tmp_cpus);
-
-		/* This sg did not have any idle CPUs */
-		if (i >= nr_cpu_ids)
-			continue;
-
-		cap = capacity_orig_of(i);
-
-		/* The first preference is for the same capacity CPU */
-		if (cap == ref_cap) {
-			ilb = i;
-			break;
-		}
-
-		/*
-		 * When there are no idle CPUs in the same capacity group,
-		 * we find the next best capacity CPU.
-		 */
-		if (best_cap > ref_cap) {
-			if (cap > ref_cap && cap < best_cap) {
-				best_cap = cap;
-				best_cap_cpu = i;
-			}
-			continue;
-		}
-
-		if (cap > best_cap) {
-			best_cap = cap;
-			best_cap_cpu = i;
-		}
-
-	} while (sg = sg->next, sg != sd->groups);
-
-	if (best_cap_cpu != -1)
-		ilb = best_cap_cpu;
-out:
-	rcu_read_unlock();
-	return ilb;
-}
-
 /*
- * idle load balancing details
- * - When one of the busy CPUs notice that there may be an idle rebalancing
+ * NOHZ idle load balancing (ILB) details:
+ *
+ * - When one of the busy CPUs notices that there may be an idle rebalancing
  *   needed, they will kick the idle load balancer, which then does idle
  *   load balancing for all the idle CPUs.
- * - HK_FLAG_MISC CPUs are used for this task, because HK_FLAG_SCHED not set
+ *
+ * - HK_FLAG_MISC CPUs are used for this task, because HK_FLAG_SCHED is not set
  *   anywhere yet.
  */
-
 static inline int find_new_ilb(void)
 {
-	int ilb;
+	const struct cpumask *hk_mask;
+	int ilb_cpu;
 
-	if (static_branch_likely(&sched_asym_cpucapacity))
-		return find_energy_aware_new_ilb();
+	hk_mask = housekeeping_cpumask(HK_FLAG_MISC);
 
-	for_each_cpu_and(ilb, nohz.idle_cpus_mask,
-			      housekeeping_cpumask(HK_FLAG_MISC)) {
-		if (idle_cpu(ilb))
-			return ilb;
+	for_each_cpu_and(ilb_cpu, nohz.idle_cpus_mask, hk_mask) {
+
+		if (ilb_cpu == smp_processor_id())
+			continue;
+
+		if (idle_cpu(ilb_cpu))
+			return ilb_cpu;
 	}
 
-	return nr_cpu_ids;
+	return -1;
 }
 
 /*
@@ -10728,8 +10668,7 @@ static void kick_ilb(unsigned int flags)
 		nohz.next_balance = jiffies+1;
 
 	ilb_cpu = find_new_ilb();
-
-	if (ilb_cpu >= nr_cpu_ids)
+	if (ilb_cpu < 0)
 		return;
 
 	flags = atomic_fetch_or(flags, nohz_flags(ilb_cpu));
