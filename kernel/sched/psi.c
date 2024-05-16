@@ -141,10 +141,10 @@
 #include <linux/poll.h>
 #include <linux/psi.h>
 #include <linux/oom.h>
-#include "sched.h"
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/psi.h>
+#include "sched.h"
 
 static int psi_bug __read_mostly;
 
@@ -192,7 +192,7 @@ static void group_init(struct psi_group *group)
 		seqcount_init(&per_cpu_ptr(group->pcpu, cpu)->seq);
 	group->avg_last_update = sched_clock();
 	group->avg_next_update = group->avg_last_update + psi_period;
-	INIT_DEFERRABLE_WORK(&group->avgs_work, psi_avgs_work);
+	INIT_DELAYED_WORK(&group->avgs_work, psi_avgs_work);
 	mutex_init(&group->avgs_lock);
 	/* Init trigger-related members */
 	atomic_set(&group->poll_scheduled, 0);
@@ -450,41 +450,6 @@ static void psi_avgs_work(struct work_struct *work)
 	mutex_unlock(&group->avgs_lock);
 }
 
-#ifdef CONFIG_PSI_FTRACE
-
-#define TOKB(x) ((x) * (PAGE_SIZE / 1024))
-
-static void trace_event_helper(struct psi_group *group)
-{
-	struct zone *zone;
-	unsigned long wmark;
-	unsigned long free;
-	unsigned long cma;
-	unsigned long file;
-
-	u64 mem_some_delta = group->total[PSI_POLL][PSI_MEM_SOME] -
-			group->polling_total[PSI_MEM_SOME];
-	u64 mem_full_delta = group->total[PSI_POLL][PSI_MEM_FULL] -
-			group->polling_total[PSI_MEM_FULL];
-
-	for_each_populated_zone(zone) {
-		wmark = TOKB(high_wmark_pages(zone));
-		free = TOKB(zone_page_state(zone, NR_FREE_PAGES));
-		cma = TOKB(zone_page_state(zone, NR_FREE_CMA_PAGES));
-		file = TOKB(zone_page_state(zone, NR_ZONE_ACTIVE_FILE) +
-			zone_page_state(zone, NR_ZONE_INACTIVE_FILE));
-
-		trace_psi_window_vmstat(
-			mem_some_delta, mem_full_delta, zone->name, wmark,
-			free, cma, file);
-	}
-}
-#else
-static void trace_event_helper(struct psi_group *group)
-{
-}
-#endif /* CONFIG_PSI_FTRACE */
-
 /* Trigger tracking window manupulations */
 static void window_reset(struct psi_window *win, u64 now, u64 value,
 			 u64 prev_growth)
@@ -570,6 +535,8 @@ static u64 update_triggers(struct psi_group *group, u64 now)
 
 		/* Calculate growth since last update */
 		growth = window_update(&t->win, now, total[t->state]);
+		trace_psi_update_trigger_growth(t, now, growth);
+
 		if (growth < t->threshold)
 			continue;
 
@@ -577,10 +544,9 @@ static u64 update_triggers(struct psi_group *group, u64 now)
 		if (now < t->last_event_time + t->win.size)
 			continue;
 
-		trace_psi_event(t->state, t->threshold);
-
 		/* Generate an event */
 		if (cmpxchg(&t->event, 0, 1) == 0) {
+			trace_psi_update_trigger_wake_up(t, growth);
 			if (!strcmp(t->comm, ULMK_MAGIC))
 				mod_timer(&t->wdog_timer, jiffies +
 					  nsecs_to_jiffies(2 * t->win.size));
@@ -589,7 +555,6 @@ static u64 update_triggers(struct psi_group *group, u64 now)
 		t->last_event_time = now;
 	}
 
-	trace_event_helper(group);
 	if (new_stall)
 		memcpy(group->polling_total, total,
 				sizeof(group->polling_total));
@@ -620,7 +585,6 @@ void psi_emergency_trigger(void)
 	list_for_each_entry(t, &group->triggers, node) {
 		if (strcmp(t->comm, ULMK_MAGIC))
 			continue;
-		trace_psi_event(t->state, t->threshold);
 
 		/* Generate an event */
 		if (cmpxchg(&t->event, 0, 1) == 0) {
