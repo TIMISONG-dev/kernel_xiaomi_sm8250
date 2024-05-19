@@ -125,14 +125,14 @@ find $DTS -name 'Image' -exec cat {} + > $IMGPATH
 find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 
 cd "$MAGIC_TIME_DIR"
-checkdtb="dtb"
+check="Image"
 
 # Завершение отсчета времени выполнения скрипта
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
 
 # Проверка успешности сборки
-if [ -s "$checkdtb" ]; then
+if [ -s "$check" ]; then
     echo "\e[32mОбщее время выполнения: $elapsed_time секунд\e[0m"
 
     # Перемещение в каталог MagicTime и создание архива
