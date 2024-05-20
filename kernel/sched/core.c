@@ -2434,10 +2434,10 @@ ttwu_do_activate(struct rq *rq, struct task_struct *p, int wake_flags,
 
 	lockdep_assert_held(&rq->lock);
 
-#ifdef CONFIG_SMP
 	if (p->sched_contributes_to_load)
 		rq->nr_uninterruptible--;
 
+#ifdef CONFIG_SMP
 	if (wake_flags & WF_MIGRATED)
 		en_flags |= ENQUEUE_MIGRATED;
 #endif
