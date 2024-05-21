@@ -652,9 +652,6 @@ static inline bool lpm_disallowed(s64 sleep_us, int cpu, struct lpm_cpu *pm_cpu)
 {
 	uint64_t bias_time = 0;
 
-	if (cpu_isolated(cpu))
-		goto out;
-
 	if (sleep_disabled)
 		return true;
 
@@ -664,7 +661,6 @@ static inline bool lpm_disallowed(s64 sleep_us, int cpu, struct lpm_cpu *pm_cpu)
 		return true;
 	}
 
-out:
 	if (sleep_us < 0)
 		return true;
 
@@ -725,7 +721,7 @@ static int cpu_power_select(struct cpuidle_device *dev,
 		calculate_next_wakeup(&next_wakeup_us, next_event_us,
 				      lvl_latency_us, sleep_us);
 
-		if (!i && !cpu_isolated(dev->cpu)) {
+		if (!i) {
 			/*
 			 * If the next_wake_us itself is not sufficient for
 			 * deeper low power modes than clock gating do not
