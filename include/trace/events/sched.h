@@ -1215,7 +1215,6 @@ TRACE_EVENT(sched_cpu_util,
 		__entry->capacity_orig      = capacity_orig_of(cpu);
 		__entry->idle_state         = idle_get_state_idx(cpu_rq(cpu));
 		__entry->online             = cpu_online(cpu);
-		__entry->isolated           = cpu_isolated(cpu);
 	),
 
 	TP_printk("cpu=%d nr_running=%d capacity_curr=%u capacity=%u capacity_orig=%u idle_state=%d irqload=%llu online=%u, isolated=%u, reserved=%u, high_irq_load=%u nr_rtg_hp=%u",

@@ -317,13 +317,9 @@ static void msm_pm_set_timer(uint32_t modified_time_us)
 
 static inline bool lpm_disallowed(s64 sleep_us, int cpu, struct lpm_cpu *pm_cpu)
 {
-	if (cpu_isolated(cpu))
-		goto out;
-
 	if (sleep_disabled)
 		return true;
 
-out:
 	if (sleep_us < 0)
 		return true;
 
