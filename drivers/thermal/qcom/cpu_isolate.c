@@ -25,7 +25,6 @@ static DEFINE_MUTEX(cpu_isolate_lock);
 static LIST_HEAD(cpu_isolate_cdev_list);
 static atomic_t in_suspend;
 static struct cpumask cpus_pending_online;
-static struct cpumask cpus_isolated_by_thermal;
 
 static struct cpumask cpus_in_max_cooling_level;
 static BLOCKING_NOTIFIER_HEAD(cpu_max_cooling_level_notifer);
@@ -67,15 +66,6 @@ static int cpu_isolate_pm_notify(struct notifier_block *nb,
 				continue;
 			if (cpu_isolate_cdev->cpu_isolate_state) {
 				cpu = cpu_isolate_cdev->cpu_id;
-				if (cpu_online(cpu) &&
-					!cpumask_test_and_set_cpu(cpu,
-					&cpus_isolated_by_thermal)) {
-					mutex_unlock(&cpu_isolate_lock);
-					if (sched_isolate_cpu(cpu))
-						cpumask_clear_cpu(cpu,
-						&cpus_isolated_by_thermal);
-					mutex_lock(&cpu_isolate_lock);
-				}
 				continue;
 			}
 		}
@@ -104,10 +94,6 @@ static int cpu_isolate_hp_offline(unsigned int offline_cpu)
 		if (!cpu_isolate_cdev->cdev)
 			break;
 
-		if ((cpu_isolate_cdev->cpu_isolate_state)
-			&& (cpumask_test_and_clear_cpu(offline_cpu,
-			&cpus_isolated_by_thermal)))
-			sched_unisolate_cpu_unlocked(offline_cpu);
 		break;
 	}
 	mutex_unlock(&cpu_isolate_lock);
@@ -181,15 +167,6 @@ static int cpu_isolate_set_cur_state(struct thermal_cooling_device *cdev,
 	cpu = cpu_isolate_cdev->cpu_id;
 	cpu_isolate_cdev->cpu_isolate_state = state;
 	if (state == CPU_ISOLATE_LEVEL) {
-		if (cpu_online(cpu) &&
-			(!cpumask_test_and_set_cpu(cpu,
-			&cpus_isolated_by_thermal))) {
-			mutex_unlock(&cpu_isolate_lock);
-			if (sched_isolate_cpu(cpu))
-				cpumask_clear_cpu(cpu,
-					&cpus_isolated_by_thermal);
-			mutex_lock(&cpu_isolate_lock);
-		}
 		cpumask_set_cpu(cpu, &cpus_in_max_cooling_level);
 		blocking_notifier_call_chain(&cpu_max_cooling_level_notifer,
 						1, (void *)(long)cpu);
@@ -206,11 +183,6 @@ static int cpu_isolate_set_cur_state(struct thermal_cooling_device *cdev,
 			if (ret)
 				pr_err("CPU:%d online error:%d\n", cpu, ret);
 			return ret;
-		} else if (cpumask_test_and_clear_cpu(cpu,
-			&cpus_isolated_by_thermal)) {
-			mutex_unlock(&cpu_isolate_lock);
-			sched_unisolate_cpu(cpu);
-			mutex_lock(&cpu_isolate_lock);
 		}
 		cpumask_clear_cpu(cpu, &cpus_in_max_cooling_level);
 		blocking_notifier_call_chain(&cpu_max_cooling_level_notifer,
