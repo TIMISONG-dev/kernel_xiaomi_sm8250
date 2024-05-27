@@ -142,7 +142,7 @@ static unsigned long limits_mitigation_notify(struct cpufreq_qcom *c,
 
 	cpu = cpumask_first(&c->related_cpus);
 	policy = cpufreq_cpu_get_raw(cpu);
-	capacity = max_capacity = arch_scale_cpu_capacity(cpu);
+	capacity = max_capacity = arch_scale_cpu_capacity(NULL, cpu);
 
 	if (limit) {
 		freq = readl_relaxed(c->reg_bases[REG_DOMAIN_STATE]) &

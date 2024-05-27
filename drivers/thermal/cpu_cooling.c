@@ -446,7 +446,7 @@ static int cpufreq_set_cur_state(struct thermal_cooling_device *cdev,
 	cpufreq_cdev->clipped_freq = clip_freq;
 
 	cpus = cpufreq_cdev->policy->related_cpus;
-	max_capacity = arch_scale_cpu_capacity(cpumask_first(cpus));
+	max_capacity = arch_scale_cpu_capacity(NULL, cpumask_first(cpus));
 	capacity = clip_freq * max_capacity;
 	capacity /= cpufreq_cdev->policy->cpuinfo.max_freq;
 	arch_set_thermal_pressure(cpus, max_capacity - capacity);
