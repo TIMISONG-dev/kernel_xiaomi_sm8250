@@ -721,7 +721,8 @@ static void update_min_vruntime(struct cfs_rq *cfs_rq)
 	}
 
 	/* ensure we never gain time by being placed backwards. */
-	cfs_rq->min_vruntime = __update_min_vruntime(cfs_rq, vruntime);
+	u64_u32_store(cfs_rq->min_vruntime,
+		      __update_min_vruntime(cfs_rq, vruntime));
 }
 
 static inline bool __entity_less(struct rb_node *a, const struct rb_node *b)
@@ -3918,22 +3919,6 @@ static inline void add_tg_cfs_propagate(struct cfs_rq *cfs_rq, long runnable_sum
 
 #endif /* CONFIG_FAIR_GROUP_SCHED */
 
-#ifdef CONFIG_NO_HZ_COMMON
-static inline void update_cfs_rq_lag(struct cfs_rq *cfs_rq)
-{
-	struct rq *rq = rq_of(cfs_rq);
-
-	u64_u32_store(cfs_rq->last_update_lag,
-#ifdef CONFIG_CFS_BANDWIDTH
-		      /* Timer stopped by throttling */
-		      unlikely(cfs_rq->throttle_count) ? U64_MAX :
-#endif
-		      rq->clock - rq->clock_task + rq->clock_pelt);
-}
-#else
-static void update_cfs_rq_lag(struct cfs_rq *cfs_rq) {}
-#endif
-
 /**
  * update_cfs_rq_load_avg - update the cfs_rq's load/util averages
  * @now: current time, as per cfs_rq_clock_pelt()
@@ -4007,14 +3992,9 @@ update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq)
 	}
 
 	decayed |= __update_load_avg_cfs_rq(now, cfs_rq);
-
-#ifndef CONFIG_64BIT
 	u64_u32_store_copy(sa->last_update_time,
 			   cfs_rq->last_update_time_copy,
 			   sa->last_update_time);
-#endif
-	update_cfs_rq_lag(cfs_rq);
-
 	return decayed;
 }
 
@@ -7288,7 +7268,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int wake_flags)
 #ifdef CONFIG_NO_HZ_COMMON
 static inline void migrate_se_pelt_lag(struct sched_entity *se)
 {
-	u64 now, last_update_lag;
+	u64 now, lut;
 	struct cfs_rq *cfs_rq;
 	struct rq *rq;
 	bool is_idle;
@@ -7311,14 +7291,25 @@ static inline void migrate_se_pelt_lag(struct sched_entity *se)
 	if (!is_idle)
 		return;
 
-	last_update_lag = u64_u32_load(cfs_rq->last_update_lag);
+	now = u64_u32_load(rq->clock_pelt_idle);
 
-	/* The clock has been stopped for throttling */
-	if (last_update_lag == U64_MAX)
-		return;
+	/*
+	 * Paired with _update_idle_rq_clock_pelt(). It ensures at the worst case
+	 * is observed the old clock_pelt_idle value and the new clock_idle,
+	 * which lead to an underestimation. The opposite would lead to an
+	 * overestimation.
+	 */
+	smp_rmb();
+	lut = cfs_rq_last_update_time(cfs_rq);
 
-	now = se->avg.last_update_time - last_update_lag +
-	      sched_clock_cpu(cpu_of(rq));
+	if (now < lut)
+		/*
+		 * cfs_rq->avg.last_update_time is more recent than our
+		 * estimation, let's use it.
+		 */
+		now = lut;
+	else
+		now += sched_clock_cpu(cpu_of(rq)) - u64_u32_load(rq->clock_idle);
 
 	__update_load_avg_blocked_se(now, se);
 }

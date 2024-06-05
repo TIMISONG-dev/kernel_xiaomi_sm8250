@@ -607,9 +607,6 @@ struct cfs_rq {
 #ifndef CONFIG_64BIT
 	u64			last_update_time_copy;
 #endif
-#ifdef CONFIG_NO_HZ_COMMON
-	u64			last_update_lag;
-#endif
 	struct {
 		raw_spinlock_t	lock ____cacheline_aligned;
 		int		nr;
@@ -1024,6 +1021,8 @@ struct rq {
 	u64			clock_task ____cacheline_aligned;
 	u64			clock_pelt;
 	unsigned long		lost_idle_time;
+	u64			clock_pelt_idle;
+	u64			clock_idle;
 
 	atomic_t		nr_iowait;
 
