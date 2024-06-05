@@ -6260,11 +6260,6 @@ static void cpu_load_update_idle(struct rq *this_rq)
 	cpu_load_update_nohz(this_rq, READ_ONCE(jiffies), 0);
 }
 
-static unsigned long cpu_runnable(struct rq *rq)
-{
-	return cfs_rq_runnable_avg(&rq->cfs);
-}
-
 /*
  * Record CPU load on nohz entry so we know the tickless load to account
  * on nohz exit. cpu_load[0] happens then to be updated more frequently
