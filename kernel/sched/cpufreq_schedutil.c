@@ -38,7 +38,6 @@ struct sugov_policy {
 	s64			down_rate_delay_ns;
 	unsigned int		next_freq;
 	unsigned int		cached_raw_freq;
-	unsigned int		prev_cached_raw_freq;
 
 	/* The next fields are only needed if fast switch cannot be used: */
 	struct			irq_work irq_work;
@@ -142,8 +141,8 @@ static bool sugov_update_next_freq(struct sugov_policy *sg_policy, u64 time,
 	}
 
 	if (sugov_up_down_rate_limit(sg_policy, time, next_freq)) {
-		/* Restore cached freq as next_freq is not changed */
-		sg_policy->cached_raw_freq = sg_policy->prev_cached_raw_freq;
+		/* Reset cached freq as next_freq is not changed */
+		sg_policy->cached_raw_freq = 0;
 		return false;
 	}
 
@@ -196,7 +195,6 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 	if (freq == sg_policy->cached_raw_freq && !sg_policy->need_freq_update)
 		return sg_policy->next_freq;
 
-	sg_policy->prev_cached_raw_freq = sg_policy->cached_raw_freq;
 	sg_policy->cached_raw_freq = freq;
 	return cpufreq_driver_resolve_freq(policy, freq);
 }
@@ -387,8 +385,8 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 	    !sg_policy->need_freq_update) {
 		next_f = sg_policy->next_freq;
 
-		/* Restore cached freq as next_freq has changed */
-		sg_policy->cached_raw_freq = sg_policy->prev_cached_raw_freq;
+		/* Reset cached freq as next_freq has changed */
+		sg_policy->cached_raw_freq = 0;
 	}
 
 	if (!sugov_update_next_freq(sg_policy, time, next_f))
@@ -845,7 +843,6 @@ static int sugov_start(struct cpufreq_policy *policy)
 	sg_policy->limits_changed		= false;
 	sg_policy->need_freq_update		= false;
 	sg_policy->cached_raw_freq		= 0;
-	sg_policy->prev_cached_raw_freq		= 0;
 
 	for_each_cpu(cpu, policy->cpus) {
 		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
