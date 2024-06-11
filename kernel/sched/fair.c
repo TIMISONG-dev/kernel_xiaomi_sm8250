@@ -6808,18 +6808,6 @@ static unsigned long cpu_util_without(int cpu, struct task_struct *p)
 }
 
 /*
- * Returns the current capacity of cpu after applying both
- * cpu and freq scaling.
- */
-unsigned long capacity_curr_of(int cpu)
-{
-	unsigned long max_cap = cpu_rq(cpu)->cpu_capacity_orig;
-	unsigned long scale_freq = arch_scale_freq_capacity(cpu);
-
-	return cap_scale(max_cap, scale_freq);
-}
-
-/*
  * energy_env - Utilization landscape for energy estimation.
  * @task_busy_time: Utilization contribution by the task for which we test the
  *                  placement. Given by eenv_task_busy_time().
@@ -8530,7 +8518,6 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
 	if (!capacity)
 		capacity = 1;
 
-	cpu_rq(cpu)->cpu_capacity_orig = capacity;
 	cpu_rq(cpu)->cpu_capacity = capacity;
 
 	sdg->sgc->capacity = capacity;
@@ -8597,7 +8584,7 @@ static inline int
 check_cpu_capacity(struct rq *rq, struct sched_domain *sd)
 {
 	return ((rq->cpu_capacity * sd->imbalance_pct) <
-				(rq->cpu_capacity_orig * 100));
+				(arch_scale_cpu_capacity(cpu_of(rq)) * 100));
 }
 
 /* Check if the rq has a misfit task */
