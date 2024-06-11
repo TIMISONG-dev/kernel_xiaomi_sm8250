@@ -136,21 +136,32 @@ static unsigned long limits_mitigation_notify(struct cpufreq_qcom *c,
 					bool limit)
 {
 	struct cpufreq_policy *policy;
-	u32 cpu;
-	unsigned long freq;
+	u32 cpu = cpumask_first(&c->related_cpus);
+	unsigned long freq, max_capacity, capacity;
+
+	max_capacity = arch_scale_cpu_capacity(cpu);
+	capacity = max_capacity;
 
 	if (limit) {
 		freq = readl_relaxed(c->reg_bases[REG_DOMAIN_STATE]) &
 				GENMASK(7, 0);
 		freq = DIV_ROUND_CLOSEST_ULL(freq * c->xo_rate, 1000);
+
+		/* Convert limited freq to reduced capacity */
+		capacity = mult_frac(max_capacity, freq, policy->cpuinfo.max_freq);
+
+		/* Don't pass boost capacity to scheduler */
+		if (capacity > max_capacity)
+			capacity = max_capacity;
 	} else {
-		cpu = cpumask_first(&c->related_cpus);
 		policy = cpufreq_cpu_get_raw(cpu);
 		if (!policy)
 			freq = U32_MAX;
 		else
 			freq = policy->cpuinfo.max_freq;
 	}
+
+	arch_set_thermal_pressure(policy->related_cpus, max_capacity - capacity);
 
 	trace_dcvsh_freq(cpumask_first(&c->related_cpus), freq);
 	c->dcvsh_freq_limit = freq;
