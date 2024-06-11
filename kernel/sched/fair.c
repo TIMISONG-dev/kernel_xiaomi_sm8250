@@ -4367,7 +4367,7 @@ static inline int util_fits_cpu(unsigned long util,
 	 * the time.
 	 */
 	capacity_orig = capacity_orig_of(cpu);
-	capacity_orig_thermal = capacity_orig; // FIXME: thermal_pressure
+	capacity_orig_thermal = capacity_orig - arch_scale_thermal_pressure(cpu);
 
 	/*
 	 * We want to force a task to fit a cpu as implied by uclamp_max.
@@ -7046,7 +7046,7 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 		/* Account thermal pressure for the energy estimation */
 		cpu = cpumask_first(cpus);
 		cpu_thermal_cap = arch_scale_cpu_capacity(cpu);
-		cpu_thermal_cap -= 0; // FIXME: arch_scale_thermal_pressure(cpu);
+		cpu_thermal_cap -= arch_scale_thermal_pressure(cpu);
 
 		eenv.cpu_cap = cpu_thermal_cap;
 		eenv.pd_cap = 0;
