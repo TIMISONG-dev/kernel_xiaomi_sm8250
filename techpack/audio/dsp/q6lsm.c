@@ -2348,14 +2348,17 @@ static int q6lsm_mmapcallback(struct apr_client_data *data, void *priv)
 	 
 	*/
 
-	if (data->payload_size < (2 * sizeof(uint16_t))) {
+	if (data->payload_size >= (2 * sizeof(uint32_t))) {
+		command = payload[0];
+		retcode = payload[1];
+	} else if (data->payload_size >= sizeof(uint32_t)) {
+		command = payload[0];
+		retcode = 0;
+	} else {
 		pr_err("%s: payload has invalid size[%d]\n", __func__,
 			data->payload_size);
 		return -EINVAL;
 	}
-
-	command = payload[0];
-	retcode = payload[1];
 	sid = (data->token >> 8) & 0x0F;
 	pr_debug("%s: opcode 0x%x command 0x%x return code 0x%x SID 0x%x\n",
 		 __func__, data->opcode, command, retcode, sid);
