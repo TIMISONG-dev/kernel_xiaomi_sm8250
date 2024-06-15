@@ -13,9 +13,10 @@ MAINPATH=/home/timisong # измените, если необходимо
 KERNEL_DIR=$MAINPATH/kernel
 KERNEL_PATH=$KERNEL_DIR/kernel_xiaomi_sm8250
 
-HASH=$(git log -1 --pretty=format:"%h - %s")
-value=$(<../info.txt)
-TOKEN=$value
+TOKEN=$(<../info.txt)
+LAST=$(<../last.txt)
+HISTORY=$(git log $LAST..HEAD)
+BRANCH=$(git branch --show-current)
 
 # Каталоги компиляторов
 CLANG19_DIR=$KERNEL_DIR/clang19
@@ -133,15 +134,18 @@ elapsed_time=$((end_time - start_time))
 
 # Проверка успешности сборки
 if [ -s "$checkdtb" ]; then
-    echo "\e[32mОбщее время выполнения: $elapsed_time секунд\e[0m"
+    echo "Общее время выполнения: $elapsed_time секунд"
 
     # Перемещение в каталог MagicTime и создание архива
     cd "$MAGIC_TIME_DIR"
     7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
     
     curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд"
-    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$HASH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
+    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$BRANCH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
+    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="$HISTORY"
     rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
+
+    git log -1 --format=%H > ../last.txt
 else
     cd "$KERNEL_PATH"
     echo "\e[31mОшибка: Сборка завершилась с ошибкой\e[0m"
