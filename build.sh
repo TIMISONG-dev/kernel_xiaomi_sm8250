@@ -141,7 +141,7 @@ if [ -s "$checkdtb" ]; then
     7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
     
     curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд"
-    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$BRANCH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
+    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="branch: $BRANCH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
     curl -F document=@"../log.txt" -F caption="Latest changes" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
     rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
 
