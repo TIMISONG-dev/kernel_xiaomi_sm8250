@@ -15,7 +15,7 @@ KERNEL_PATH=$KERNEL_DIR/kernel_xiaomi_sm8250
 
 TOKEN=$(<../info.txt)
 LAST=$(<../last.txt)
-HISTORY=$(git log $LAST..HEAD)
+git log $LAST..HEAD > ../log.txt
 BRANCH=$(git branch --show-current)
 
 # Каталоги компиляторов
@@ -142,9 +142,10 @@ if [ -s "$checkdtb" ]; then
     
     curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд"
     curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="$BRANCH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
-    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="$HISTORY"
+    curl -F document=@"../log.txt" -F caption="Latest changes" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
     rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
 
+    cd "$KERNEL_PATH"
     git log -1 --format=%H > ../last.txt
 else
     cd "$KERNEL_PATH"
