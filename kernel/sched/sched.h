@@ -2156,11 +2156,6 @@ static inline unsigned long capacity_of(int cpu)
 	return cpu_rq(cpu)->cpu_capacity;
 }
 
-static inline unsigned long capacity_orig_of(int cpu)
-{
-	return arch_scale_cpu_capacity(cpu);
-}
-
 static inline unsigned long task_util(struct task_struct *p)
 {
 	return READ_ONCE(p->se.avg.util_avg);
@@ -2684,7 +2679,7 @@ static inline bool is_min_capacity_cpu(int cpu)
 	int min_cpu = cpu_rq(cpu)->rd->min_cap_orig_cpu;
 
 	return unlikely(min_cpu == -1) ||
-		capacity_orig_of(cpu) == capacity_orig_of(min_cpu);
+		arch_scale_cpu_capacity(cpu) == arch_scale_cpu_capacity(min_cpu);
 #else
 	return true;
 #endif
