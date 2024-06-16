@@ -7995,8 +7995,8 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 	if ((p->flags & PF_KTHREAD) && kthread_is_per_cpu(p))
 		return 0;
 
-	if (p->in_iowait && is_min_capacity_cpu(env->dst_cpu) &&
-			!is_min_capacity_cpu(env->src_cpu))
+	if ((p->in_iowait || uclamp_boosted(p)) &&
+		is_min_capacity_cpu(env->dst_cpu) && !is_min_capacity_cpu(env->src_cpu))
 		return 0;
 
 	if (!cpumask_test_cpu(env->dst_cpu, p->cpus_ptr)) {
