@@ -4996,8 +4996,8 @@ hub_port_init(struct usb_hub *hub, struct usb_device *udev, int port1,
 	/* notify HCD that we have a device connected and addressed */
 	if (hcd->driver->update_device)
 		hcd->driver->update_device(hcd, udev);
-	/*skip this initial*/
-	if (0)
+	/* skip this initial LPM setup for xiaomi devices */
+	if (!IS_ENABLED(CONFIG_MACH_XIAOMI))
 		hub_set_initial_usb2_lpm_policy(udev);
 fail:
 	if (retval) {
