@@ -125,17 +125,20 @@ find $DTS -name '*.dtb' -exec cat {} + > $DTBPATH
 find $DTS -name 'Image' -exec cat {} + > $IMGPATH
 find $DTS -name 'dtbo.img' -exec cat {} + > $DTBOPATH
 
-cd "$MAGIC_TIME_DIR"
-checkdtb="dtb"
-
 # Завершение отсчета времени выполнения скрипта
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
 
-# Проверка успешности сборки
-if [ -s "$checkdtb" ]; then
-    echo "Общее время выполнения: $elapsed_time секунд"
+cd "$KERNEL_PATH"
 
+# Проверка успешности сборки
+if grep -q -E "Ошибка 2|Error 2" error.log; then
+    cd "$KERNEL_PATH"
+    echo "Ошибка: Сборка завершилась с ошибкой"
+    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Ошибка в компиляции!"
+    curl -F document=@"./error.log" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
+else
+    echo "Общее время выполнения: $elapsed_time секунд"
     # Перемещение в каталог MagicTime и создание архива
     cd "$MAGIC_TIME_DIR"
     7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
@@ -144,12 +147,4 @@ if [ -s "$checkdtb" ]; then
     curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="branch: $BRANCH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
     curl -F document=@"../log.txt" -F caption="Latest changes" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
     rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
-
-    cd "$KERNEL_PATH"
-    git log -1 --format=%H > ../last.txt
-else
-    cd "$KERNEL_PATH"
-    echo "\e[31mОшибка: Сборка завершилась с ошибкой\e[0m"
-    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Ошибка в компиляции!"
-    curl -F document=@"./error.log" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
 fi
