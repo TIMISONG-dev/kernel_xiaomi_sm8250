@@ -147,4 +147,7 @@ else
     curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="branch: $BRANCH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
     curl -F document=@"../log.txt" -F caption="Latest changes" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
     rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
+
+    cd "$KERNEL_PATH"
+    git log -1 --format=%H > ../last.txt
 fi
