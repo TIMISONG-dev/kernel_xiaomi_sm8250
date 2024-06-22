@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Добавляем данные из настроек
+source ../settings.sh
+
 # Начало отсчета времени выполнения скрипта
 start_time=$(date +%s)
 
@@ -13,8 +16,6 @@ MAINPATH=/home/timisong # измените, если необходимо
 KERNEL_DIR=$MAINPATH/kernel
 KERNEL_PATH=$KERNEL_DIR/kernel_xiaomi_sm8250
 
-TOKEN=$(<../info.txt)
-LAST=$(<../last.txt)
 git log $LAST..HEAD > ../log.txt
 BRANCH=$(git branch --show-current)
 
@@ -135,19 +136,24 @@ cd "$KERNEL_PATH"
 if grep -q -E "Ошибка 2|Error 2" error.log; then
     cd "$KERNEL_PATH"
     echo "Ошибка: Сборка завершилась с ошибкой"
-    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Ошибка в компиляции!"
-    curl -F document=@"./error.log" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
+    curl -s -X POST "https://api.telegram.org/bot$TGTOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Ошибка в компиляции!"
+    curl -F document=@"./error.log" "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimebuilds"
 else
     echo "Общее время выполнения: $elapsed_time секунд"
     # Перемещение в каталог MagicTime и создание архива
     cd "$MAGIC_TIME_DIR"
     7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
     
-    curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд"
-    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="branch: $BRANCH" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
-    curl -F document=@"../log.txt" -F caption="Latest changes" "https://api.telegram.org/bot$TOKEN/sendDocument?chat_id=@magictimebuilds"
+    curl -s -X POST "https://api.telegram.org/bot$TGTOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд"
+    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="MagicTime ${VERSION}${PREFIX}${BUILD}" "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimebuilds"
+    curl -F document=@"../log.txt" -F caption="Latest changes" "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimebuilds"
     rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
 
+    VERSION=$((VERSION + 1))
+
     cd "$KERNEL_PATH"
-    git log -1 --format=%H > ../last.txt
+    LAST=$(git log -1 --format=%H)
+
+    sed -i "s/LAST=.*/LAST=$LAST/" ../settings.sh
+    sed -i "s/VERSION=.*/VERSION=$VERSION/" ../settings.sh
 fi
