@@ -145,15 +145,15 @@ else
     7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
     
     curl -s -X POST "https://api.telegram.org/bot$TGTOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд"
-    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="MagicTime ${VERSION}${PREFIX}${BUILD}" "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimebuilds"
+    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${BUILD_TYPE})" "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimebuilds"
     curl -F document=@"../log.txt" -F caption="Latest changes" "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimebuilds"
     rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
 
-    VERSION=$((VERSION + 1))
+    BUILD=$((BUILD + 1))
 
     cd "$KERNEL_PATH"
     LAST=$(git log -1 --format=%H)
 
     sed -i "s/LAST=.*/LAST=$LAST/" ../settings.sh
-    sed -i "s/VERSION=.*/VERSION=$VERSION/" ../settings.sh
+    sed -i "s/BUILD=.*/BUILD=$BUILD/" ../settings.sh
 fi
