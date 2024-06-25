@@ -365,7 +365,7 @@ static void histtimer_start(uint32_t time_us)
 	struct hrtimer *cpu_histtimer = &per_cpu(histtimer, cpu);
 
 	cpu_histtimer->function = histtimer_fn;
-	hrtimer_start(cpu_histtimer, hist_ktime, HRTIMER_MODE_REL_PINNED_HARD);
+	hrtimer_start(cpu_histtimer, hist_ktime, HRTIMER_MODE_REL_PINNED);
 }
 
 static void cluster_timer_init(struct lpm_cluster *cluster)
@@ -375,8 +375,7 @@ static void cluster_timer_init(struct lpm_cluster *cluster)
 	if (!cluster)
 		return;
 
-	hrtimer_init(&cluster->histtimer, CLOCK_MONOTONIC,
-		     HRTIMER_MODE_REL_HARD);
+	hrtimer_init(&cluster->histtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 
 	list_for_each(list, &cluster->child) {
 		struct lpm_cluster *n;
@@ -423,7 +422,7 @@ static void clusttimer_start(struct lpm_cluster *cluster, uint32_t time_us)
 
 	cluster->histtimer.function = clusttimer_fn;
 	hrtimer_start(&cluster->histtimer, clust_ktime,
-		      HRTIMER_MODE_REL_PINNED_HARD);
+				HRTIMER_MODE_REL_PINNED);
 }
 
 static void msm_pm_set_timer(uint32_t modified_time_us)
@@ -432,8 +431,7 @@ static void msm_pm_set_timer(uint32_t modified_time_us)
 	ktime_t modified_ktime = ns_to_ktime(modified_time_ns);
 
 	lpm_hrtimer.function = lpm_hrtimer_cb;
-	hrtimer_start(&lpm_hrtimer, modified_ktime,
-		      HRTIMER_MODE_REL_PINNED_HARD);
+	hrtimer_start(&lpm_hrtimer, modified_ktime, HRTIMER_MODE_REL_PINNED);
 }
 
 static void biastimer_cancel(void)
@@ -461,7 +459,7 @@ static void biastimer_start(uint32_t time_ns)
 	struct hrtimer *cpu_biastimer = &per_cpu(biastimer, cpu);
 
 	cpu_biastimer->function = biastimer_fn;
-	hrtimer_start(cpu_biastimer, bias_ktime, HRTIMER_MODE_REL_PINNED_HARD);
+	hrtimer_start(cpu_biastimer, bias_ktime, HRTIMER_MODE_REL_PINNED);
 }
 
 static uint64_t find_deviation(int *interval, uint32_t ref_stddev,
@@ -1801,14 +1799,12 @@ static int lpm_probe(struct platform_device *pdev)
 	 */
 	suspend_set_ops(&lpm_suspend_ops);
 	s2idle_set_ops(&lpm_s2idle_ops);
-	hrtimer_init(&lpm_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_HARD);
+	hrtimer_init(&lpm_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	for_each_possible_cpu(cpu) {
 		cpu_histtimer = &per_cpu(histtimer, cpu);
-		hrtimer_init(cpu_histtimer, CLOCK_MONOTONIC,
-			     HRTIMER_MODE_REL_HARD);
+		hrtimer_init(cpu_histtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 		cpu_histtimer = &per_cpu(biastimer, cpu);
-		hrtimer_init(cpu_histtimer, CLOCK_MONOTONIC,
-			     HRTIMER_MODE_REL_HARD);
+		hrtimer_init(cpu_histtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	}
 
 	cluster_timer_init(lpm_root_node);
