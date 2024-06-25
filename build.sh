@@ -44,14 +44,14 @@ check_and_wget() {
         mkdir $dir
         cd $dir
         wget $repo
-        tar -zxvf Clang-19.0.0git-20240523.tar.gz
-        rm -rf Clang-19.0.0git-20240523.tar.gz
+        tar -zxvf Clang-19.0.0git-20240625.tar.gz
+        rm -rf Clang-19.0.0git-20240625.tar.gz
         cd ../kernel_xiaomi_sm8250
     fi
 }
 
 # Клонирование инструментов компиляции, если они не существуют
-check_and_wget $CLANG19_DIR https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240523-release/Clang-19.0.0git-20240523.tar.gz
+check_and_wget $CLANG19_DIR https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240625-release/Clang-19.0.0git-20240625.tar.gz
 check_and_clone $ANDROID_PREBUILTS_GCC_ARM_DIR https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9
 check_and_clone $ANDROID_PREBUILTS_GCC_AARCH64_DIR https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9
 
