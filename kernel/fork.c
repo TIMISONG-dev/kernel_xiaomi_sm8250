@@ -98,6 +98,7 @@
 #ifdef CONFIG_XIAOMI_MIUI
 #include <linux/cpuset.h>
 #endif
+#include <linux/devfreq_boost.h>
 
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
