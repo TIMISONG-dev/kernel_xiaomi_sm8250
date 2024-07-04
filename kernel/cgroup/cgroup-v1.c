@@ -14,6 +14,8 @@
 #include <linux/pid_namespace.h>
 #include <linux/cgroupstats.h>
 #include <linux/cpu.h>
+#include <linux/binfmts.h>
+#include <linux/devfreq_boost.h>
 
 #include <trace/events/cgroup.h>
 
