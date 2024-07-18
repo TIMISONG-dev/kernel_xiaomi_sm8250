@@ -8,3 +8,19 @@ config TOUCHSCREEN_ST_FTS_V521_SPI
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called fts_touch_spi.
+
+config TOUCHSCREEN_FOD
+	tristate "FTS FOD area report"
+	depends on TOUCHSCREEN_ST_FTS_V521_SPI
+	help
+          Say Y here to enable fod area report functionality.
+
+          If unsure, say N.
+
+config TOUCHSCREEN_ST_DEBUG_FS
+	tristate "St core driver module"
+	depends on TOUCHSCREEN_ST_FTS_V521_SPI
+	help
+          Say Y here to enable touch debugfs functionality.
+
+          If unsure, say N.
