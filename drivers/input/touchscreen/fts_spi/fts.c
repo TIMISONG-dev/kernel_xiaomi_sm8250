@@ -550,6 +550,32 @@ static struct tp_common_ops double_tap_ops = {
 };
 
 #ifdef CONFIG_TOUCHSCREEN_FOD
+static int fts_set_fod_status(int value);
+static ssize_t fod_status_show(struct kobject *kobj,
+                               struct kobj_attribute *attr, char *buf)
+{
+    return sprintf(buf, "%d\n", fts_info->fod_status);
+}
+
+static ssize_t fod_status_store(struct kobject *kobj,
+                                struct kobj_attribute *attr, const char *buf,
+                                size_t count)
+{
+    int rc, val;
+
+    rc = kstrtoint(buf, 10, &val);
+    if (rc)
+    return -EINVAL;
+
+    fts_set_fod_status(val);
+    return count;
+}
+
+static struct tp_common_ops fod_status_ops = {
+    .show = fod_status_show,
+    .store = fod_status_store
+};
+
 static ssize_t fp_state_show(struct kobject *kobj,
                              struct kobj_attribute *attr, char *buf)
 {
@@ -9087,6 +9113,7 @@ static int fts_probe(struct spi_device *client)
 #if defined(GESTURE_MODE) && defined(CONFIG_TOUCHSCREEN_COMMON)
 	tp_common_set_double_tap_ops(&double_tap_ops);
 #ifdef CONFIG_TOUCHSCREEN_FOD
+	tp_common_set_fod_status_ops(&fod_status_ops);
 	tp_common_set_fp_state_ops(&fp_state_ops);
 #endif
 #endif
