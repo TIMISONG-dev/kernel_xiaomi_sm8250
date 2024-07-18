@@ -154,8 +154,6 @@ extern int power_supply_is_system_supplied(void);
 static int fts_write_charge_status(int status);
 #endif
 
-extern int mi_disp_set_fod_queue_work(u32 fod_btn, bool from_touch);
-
 /**
 * Release all the touches in the linux input subsystem
 * @param info pointer to fts_ts_info which contains info about the device and its hw setup
@@ -180,7 +178,6 @@ void release_all_touches(struct fts_ts_info *info)
 	}
 	input_sync(info->input_dev);
 	input_report_key(info->input_dev, BTN_INFO, 0);
-	mi_disp_set_fod_queue_work(0, true);
 	input_sync(info->input_dev);
 	info->touch_id = 0;
 	info->touch_skip = 0;
@@ -3303,7 +3300,6 @@ static ssize_t fts_fod_test_store(struct device *dev,
 	sscanf(buf, "%u", &value);
 	if (value) {
 		input_report_key(info->input_dev, BTN_INFO, 1);
-		mi_disp_set_fod_queue_work(1, true);
 		info->fod_pressed = true;
 		input_sync(info->input_dev);
 		input_mt_slot(info->input_dev, 0);
@@ -3326,7 +3322,6 @@ static ssize_t fts_fod_test_store(struct device *dev,
 		input_mt_report_slot_state(info->input_dev, MT_TOOL_FINGER, 0);
 		input_report_abs(info->input_dev, ABS_MT_TRACKING_ID, -1);
 		input_report_key(info->input_dev, BTN_INFO, 0);
-		mi_disp_set_fod_queue_work(0, true);
 		input_sync(info->input_dev);
 		// last_touch_events_collect(0, 0);
 	}
@@ -4060,7 +4055,6 @@ static void fts_enter_pointer_event_handler(struct fts_ts_info *info,
 					 info->fod_overlap);
 			if (!info->board->support_fod) {
 				input_report_key(info->input_dev, BTN_INFO, 1);
-				mi_disp_set_fod_queue_work(1, true);
 			}
 			if (!__test_and_set_bit(touchId, &info->fod_id))
 				logError(
@@ -4071,7 +4065,6 @@ static void fts_enter_pointer_event_handler(struct fts_ts_info *info,
 	} else if (__test_and_clear_bit(touchId, &info->fod_id)) {
 		input_report_abs(info->input_dev, ABS_MT_WIDTH_MINOR, 0);
 		input_report_key(info->input_dev, BTN_INFO, 0);
-		mi_disp_set_fod_queue_work(0, true);
 		info->fod_x = 0;
 		info->fod_y = 0;
 		info->fod_coordinate_update = false;
@@ -4184,7 +4177,6 @@ static void fts_leave_pointer_event_handler(struct fts_ts_info *info,
 	if (__test_and_clear_bit(touchId, &info->fod_id)) {
 		input_report_abs(info->input_dev, ABS_MT_WIDTH_MINOR, 0);
 		input_report_key(info->input_dev, BTN_INFO, 0);
-		mi_disp_set_fod_queue_work(0, true);
 		info->fod_coordinate_update = false;
 		info->fod_x = 0;
 		info->fod_y = 0;
@@ -4197,7 +4189,6 @@ static void fts_leave_pointer_event_handler(struct fts_ts_info *info,
 
 		info->fod_pressed = false;
 		input_report_key(info->input_dev, BTN_INFO, 0);
-		mi_disp_set_fod_queue_work(0, true);
 
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 		wake_up(&info->wait_queue);
@@ -4621,7 +4612,6 @@ static void fts_gesture_event_handler(struct fts_ts_info *info,
 				    !info->sensor_sleep) {
 					input_report_key(info->input_dev,
 							 BTN_INFO, 1);
-					mi_disp_set_fod_queue_work(1, true);
 					input_sync(info->input_dev);
 					if (info->fod_id) {
 						fod_id = ffs(info->fod_id) - 1;
