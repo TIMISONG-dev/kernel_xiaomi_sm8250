@@ -77,8 +77,6 @@
 #define LIMITS_ARRAY_NAME myArray2
 #endif
 
-#define DEBUG
-
 /*#define USE_ONE_FILE_NODE*/
 
 #ifndef FW_UPDATE_ON_PROBE
