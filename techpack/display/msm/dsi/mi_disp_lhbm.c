@@ -212,7 +212,6 @@ int mi_disp_set_fod_queue_work(u32 fod_btn, bool from_touch)
 	struct fod_work_data *fod_data;
 	int fp_status = FINGERPRINT_NONE;
 	struct dsi_panel_mi_cfg *mi_cfg;
-	static bool ignore_fod_btn;
 
 	if (!dl_ptr) {
 		pr_err("%s invalid params\n", LHBM_TAG);
@@ -235,30 +234,10 @@ int mi_disp_set_fod_queue_work(u32 fod_btn, bool from_touch)
 			atomic_set(&touch_last_status, fod_btn);
 			return 0;
 		} else {
-			if (ignore_fod_btn) {
-				if (fod_btn == 1) {
-					return 0;
-				} else {
-					ignore_fod_btn = false;
-					pr_info("%s clear ignore state\n", LHBM_TAG);
-					return 0;
-				}
-			}
-
 			if (atomic_read(&touch_current_status) == fod_btn) {
 				pr_debug("%s from touch fod_btn(%d), skip\n", LHBM_TAG, fod_btn);
 				return 0;
 			} else {
-				mutex_lock(&display->display_lock);
-				if (display->panel->power_mode == SDE_MODE_DPMS_ON && atomic_read(&touch_current_status) == 0
-							&& fod_btn == 1 && !mi_cfg->fod_anim_layer_enabled) {
-					pr_info("%s ignore fod_btn due to fod anim is disable!\n", LHBM_TAG);
-					ignore_fod_btn = true;
-					mutex_unlock(&display->display_lock);
-					return 0;
-				}
-				mutex_unlock(&display->display_lock);
-
 				atomic_set(&touch_last_status, fod_btn);
 				pr_debug("%s from touch fod_btn=%d\n", LHBM_TAG, fod_btn);
 			}
