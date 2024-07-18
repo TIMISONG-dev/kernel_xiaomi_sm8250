@@ -83,7 +83,7 @@
 #include <linux/rtc.h>
 #include <linux/time.h>
 
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 #include "../xiaomi/xiaomi_touch.h"
 #endif
 
@@ -146,7 +146,7 @@ static int fts_mode_handler(struct fts_ts_info *info, int force);
 static int fts_chip_initialization(struct fts_ts_info *info, int init_type);
 static irqreturn_t fts_event_handler(int irq, void *ts_info);
 static int fts_enable_reg(struct fts_ts_info *info, bool enable);
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 static int fts_set_cur_value(int mode, int value);
 #endif
 extern int power_supply_is_system_supplied(void);
@@ -3250,7 +3250,7 @@ static ssize_t fts_grip_area_store(struct device *dev,
 	}
 	return count;
 }
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 static ssize_t fts_fod_test_store(struct device *dev,
 				  struct device_attribute *attr,
 				  const char *buf, size_t count)
@@ -3330,7 +3330,7 @@ static ssize_t fts_ellipse_data_show(struct device *dev,
 			frameSS.sense_data[sense_node * 3 / 4]);
 }
 
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 static ssize_t fts_touchgame_show(struct device *dev,
 				  struct device_attribute *attr, char *buf)
 {
@@ -3741,7 +3741,7 @@ static DEVICE_ATTR(grip_area, (S_IRUGO | S_IWUSR | S_IWGRP), fts_grip_area_show,
 static DEVICE_ATTR(hover_tune, (S_IRUGO | S_IWUSR | S_IWGRP), NULL,
 		   fts_hover_autotune_store);
 
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 static DEVICE_ATTR(touchgame, (S_IRUGO | S_IWUSR | S_IWGRP), fts_touchgame_show,
 		   fts_touchgame_store);
 #endif
@@ -3782,13 +3782,13 @@ static struct attribute *fts_attr_group[] = {
 	&dev_attr_ms_strength.attr,	&dev_attr_ss_hover.attr,
 	&dev_attr_hover_tune.attr,	&dev_attr_doze_time.attr,
 	&dev_attr_grip_enable.attr,	&dev_attr_grip_area.attr,
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	&dev_attr_touchgame.attr,
 #endif
 	&dev_attr_fod_area.attr,	NULL,
 };
 
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 static DEVICE_ATTR(fod_test, (S_IRUGO | S_IWUSR | S_IWGRP), NULL,
 		   fts_fod_test_store);
 #endif
@@ -3840,7 +3840,7 @@ static void fts_nop_event_handler(struct fts_ts_info *info,
 		event[5], event[6], event[7]);
 }
 
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 static bool fts_is_in_fodarea(int x, int y)
 {
 	if (!fts_info)
@@ -3913,7 +3913,7 @@ static void fts_enter_pointer_event_handler(struct fts_ts_info *info,
 			 event[4], event[5], event[6], event[7]);
 	}
 
-#ifndef FTS_FOD_AREA_REPORT
+#ifndef CONFIG_TOUCHSCREEN_FOD
 	if (!info->resume_bit)
 		goto no_report;
 #endif
@@ -3984,7 +3984,7 @@ static void fts_enter_pointer_event_handler(struct fts_ts_info *info,
 	default:
 		logError(1, "%s  %s : Invalid touch type = %d ! No Report...\n",
 			 tag, __func__, touchType);
-#ifndef FTS_FOD_AREA_REPORT
+#ifndef CONFIG_TOUCHSCREEN_FOD
 		goto no_report;
 #endif
 	}
@@ -4007,7 +4007,7 @@ static void fts_enter_pointer_event_handler(struct fts_ts_info *info,
 	}
 	info->last_x[touchId] = x;
 	info->last_y[touchId] = y;
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	if (fts_is_in_fodarea(x, y) && !(info->fod_id & ~(1 << touchId))) {
 		__set_bit(touchId, &info->sleep_finger);
 		if (fts_fingerprint_is_enable()) {
@@ -4049,7 +4049,7 @@ static void fts_enter_pointer_event_handler(struct fts_ts_info *info,
 		// last_touch_events_collect(touchId, 1);
 	}
 
-#ifndef FTS_FOD_AREA_REPORT
+#ifndef CONFIG_TOUCHSCREEN_FOD
 no_report:
 	return;
 #endif
@@ -4066,7 +4066,7 @@ static void fts_leave_pointer_event_handler(struct fts_ts_info *info,
 	unsigned int tool = MT_TOOL_FINGER;
 	unsigned int touch_condition = 0;
 	u8 touchType;
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	int x, y;
 	bool fod_up = false;
 #endif
@@ -4077,7 +4077,7 @@ static void fts_leave_pointer_event_handler(struct fts_ts_info *info,
 			 tag, __func__, event[0], event[1], event[2], event[3],
 			 event[4], event[5], event[6], event[7]);
 	}
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	if (event[1] == 0xb5) {
 		touchType = TOUCH_TYPE_FINGER;
 		if (info->fod_id)
@@ -4099,7 +4099,7 @@ static void fts_leave_pointer_event_handler(struct fts_ts_info *info,
 #endif
 		touchType = event[1] & 0x0F;
 		touchId = (event[1] & 0xF0) >> 4;
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	}
 	x = (event[2] << 4) | (event[4] & 0xF0) >> 4;
 	y = (event[3] << 4) | (event[4] & 0x0F);
@@ -4157,7 +4157,7 @@ static void fts_leave_pointer_event_handler(struct fts_ts_info *info,
 		input_report_key(info->input_dev, BTN_INFO, 0);
 		mi_disp_set_fod_queue_work(0, true);
 
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 		wake_up(&info->wait_queue);
 #endif
 		info->touch_skip = 0;
@@ -4432,7 +4432,7 @@ static void fts_status_event_handler(struct fts_ts_info *info,
 				tag, __func__, event[2], event[3], event[4],
 				event[5], event[6], event[7]);
 		break;
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	case EVT_TYPE_STATUS_POCKET:
 		if (event[0] == 0x43 && event[2] == 0x01) {
 			update_palm_sensor_value(1);
@@ -4524,7 +4524,7 @@ static void fts_gesture_event_handler(struct fts_ts_info *info,
 {
 	int value;
 	int needCoords = 0;
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	int touch_area;
 	int fod_overlap;
 	int fod_id = 0;
@@ -4549,7 +4549,7 @@ static void fts_gesture_event_handler(struct fts_ts_info *info,
 	if (event[0] == EVT_ID_USER_REPORT &&
 	    event[1] == EVT_TYPE_USER_GESTURE) {
 		needCoords = 1;
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 		if (event[2] == GEST_ID_LONG_PRESS) {
 			if (!fts_fingerprint_is_enable()) {
 				logError(
@@ -4817,7 +4817,7 @@ static void fts_user_report_event_handler(struct fts_ts_info *info,
 		fts_gesture_event_handler(info, event);
 		break;
 #endif
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	case EVT_TYPE_USER_EARDET:
 		if (event[2] == 0xAA) {
 			logError(1, "%s %s hover ear enter\n", tag, __func__);
@@ -4964,7 +4964,7 @@ static void fts_ts_sleep_work(struct work_struct *work)
 	}
 	input_sync(info->input_dev);
 	info->irq_status = false;
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	wake_up(&info->wait_queue);
 #endif
 	pm_relax(info->dev);
@@ -5079,7 +5079,7 @@ end:
 		} else if (!info->touch_id)
 			info->clicktouch_count = info->clicktouch_num;
 	}
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	wake_up(&info->wait_queue);
 #endif
 	pm_relax(info->dev);
@@ -5670,7 +5670,7 @@ static int fts_init_sensing(struct fts_ts_info *info)
 #endif
 	error |= fts_interrupt_install(info);
 	error |= fts_mode_handler(info, 0);
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	error |= setScanMode(SCAN_MODE_ACTIVE, 0x00);
 	mdelay(WAIT_AFTER_SENSEOFF);
 	error |= setScanMode(SCAN_MODE_ACTIVE, 0x01);
@@ -5700,7 +5700,7 @@ static int fts_mode_handler(struct fts_ts_info *info, int force)
 	int res = OK;
 	int ret = OK;
 	u8 settings[4] = { 0 };
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	u8 gesture_type = 0x00;
 	/* longpress_cmd: A2 03 00 00 00 01
 	 * doubletap cmd: A2 03 20 00 00 00
@@ -5709,7 +5709,7 @@ static int fts_mode_handler(struct fts_ts_info *info, int force)
 #endif
 	u8 doubletap_cmd[6] = { 0xA2, 0x03, 0x20, 0x00, 0x00, 0x00 };
 
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	mutex_lock(&info->fod_mutex);
 #endif
 	info->mode = MODE_NOTHING;
@@ -5878,7 +5878,7 @@ static int fts_mode_handler(struct fts_ts_info *info, int force)
 			}
 		}
 #endif
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 #ifndef CONFIG_FACTORY_BUILD
 		if (info->fod_pressed) {
 			logError(1, "%s %s: Sense OFF \n", tag, __func__);
@@ -5919,13 +5919,13 @@ static int fts_mode_handler(struct fts_ts_info *info, int force)
 
 	logError(0, "%s %s: Mode Handler finished! res = %08X mode = %08X \n",
 		 tag, __func__, res, info->mode);
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	mutex_unlock(&info->fod_mutex);
 #endif
 	return res;
 }
 
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 static struct xiaomi_touch_interface xiaomi_touch_interfaces;
 
 int fts_read_touchmode_data(void)
@@ -7108,14 +7108,14 @@ static void fts_resume_work(struct work_struct *work)
 #endif
 	info->resume_bit = 1;
 #ifndef CONFIG_FACTORY_BUILD
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	if (!info->fod_pressed) {
 #endif
 #endif
 		fts_system_reset();
 		release_all_touches(info);
 #ifndef CONFIG_FACTORY_BUILD
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	}
 #endif
 #endif
@@ -7128,7 +7128,7 @@ static void fts_resume_work(struct work_struct *work)
 	info->sleep_finger = 0;
 
 	fts_enableInterrupt();
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	if (info->palm_sensor_switch && !info->palm_sensor_changed) {
 		fts_palm_sensor_cmd(info->palm_sensor_switch);
 		info->palm_sensor_changed = true;
@@ -7171,7 +7171,7 @@ static void fts_suspend_work(struct work_struct *work)
 #ifdef CONFIG_SECURE_TOUCH
 	fts_secure_stop(info, true);
 #endif
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	if (info->palm_sensor_switch) {
 		logError(1, "%s %s: palm sensor on status, switch to off\n",
 			 tag, __func__);
@@ -7269,7 +7269,7 @@ static int fts_bl_state_chg_callback(struct notifier_block *nb,
 		flush_workqueue(info->event_wq);
 		if (blank == BACKLIGHT_OFF &&
 		    (!info->sensor_sleep && !info->touch_id)) {
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 			if (info->p_sensor_switch) {
 				logError(1,
 					 "%s eardet enabled, skip disableirq\n",
@@ -7653,7 +7653,7 @@ err_pinctrl_get:
 	return retval;
 }
 
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 static int parse_gamemode_dt(struct device *dev,
 			     struct fts_hw_platform_data *bdata)
 {
@@ -8144,7 +8144,7 @@ static int parse_dt(struct device *dev, struct fts_hw_platform_data *bdata)
 		logError(1, "%s get fod size error\n", tag);
 	else
 		logError(1, "%s fod size:%d\n", tag, bdata->fod_y_size);
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	retval = parse_gamemode_dt(dev, bdata);
 	if (retval < 0)
 		logError(1, "%s Unable to parse gamemode parameters\n", tag);
@@ -8233,7 +8233,7 @@ static int parse_dt(struct device *dev, struct fts_hw_platform_data *bdata)
 	return OK;
 }
 
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 static void fts_switch_mode_work(struct work_struct *work)
 {
 	struct fts_ts_info *info =
@@ -8595,7 +8595,7 @@ static int fts_pm_suspend(struct device *dev)
 		logError(1, "%s fts_pm_suspend failed, return\n", tag);
 		return 0;
 	}
-#ifndef FTS_FOD_AREA_REPORT
+#ifndef CONFIG_TOUCHSCREEN_FOD
 	if (device_may_wakeup(dev) && info->gesture_enabled) {
 		logError(1, "%s enable touch irq wake\n", tag);
 		enable_irq_wake(info->client->irq);
@@ -8613,7 +8613,7 @@ static int fts_pm_resume(struct device *dev)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
 
-#ifndef FTS_FOD_AREA_REPORT
+#ifndef CONFIG_TOUCHSCREEN_FOD
 	if (device_may_wakeup(dev) && info->gesture_enabled) {
 		logError(1, "%s disable touch irq wake\n", tag);
 		disable_irq_wake(info->client->irq);
@@ -8633,7 +8633,7 @@ static const struct dev_pm_ops fts_dev_pm_ops = {
 };
 #endif
 
-#ifdef FTS_DEBUG_FS
+#ifdef CONFIG_TOUCHSCREEN_ST_DEBUG_FS
 static void tpdbg_shutdown(struct fts_ts_info *info, bool sleep)
 {
 	u8 settings[4] = { 0 };
@@ -8963,7 +8963,7 @@ static int fts_probe(struct spi_device *client)
 	INIT_WORK(&info->suspend_work, fts_suspend_work);
 	INIT_WORK(&info->sleep_work, fts_ts_sleep_work);
 	init_completion(&info->tp_reset_completion);
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	init_waitqueue_head(&info->wait_queue);
 #endif
 	logError(0, "%s SET Input Device Property: \n", tag);
@@ -9009,7 +9009,7 @@ static int fts_probe(struct spi_device *client)
 	input_set_abs_params(info->input_dev, ABS_MT_WIDTH_MAJOR, AREA_MIN,
 			     AREA_MAX, 0, 0);
 
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	/*input_set_abs_params(info->input_dev, ABS_MT_PRESSURE, PRESSURE_MIN, PRESSURE_MAX, 0, 0);*/
 	input_set_abs_params(info->input_dev, ABS_MT_ORIENTATION, -90, 90, 0,
 			     0);
@@ -9053,7 +9053,7 @@ static int fts_probe(struct spi_device *client)
 	input_set_capability(info->input_dev, EV_KEY, KEY_BACK);
 	input_set_capability(info->input_dev, EV_KEY, KEY_MENU);
 #endif
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	input_set_capability(info->input_dev, EV_KEY, BTN_INFO);
 	input_set_capability(info->input_dev, EV_KEY, KEY_GOTO);
 #endif
@@ -9222,7 +9222,7 @@ static int fts_probe(struct spi_device *client)
 	}
 #endif
 
-#ifdef FTS_DEBUG_FS
+#ifdef CONFIG_TOUCHSCREEN_ST_DEBUG_FS
 	info->debugfs = debugfs_create_dir("tp_debug", NULL);
 	if (info->debugfs) {
 		debugfs_create_file("switch_state", 0660, info->debugfs, info,
@@ -9231,7 +9231,7 @@ static int fts_probe(struct spi_device *client)
 #endif
 
 	if (info->fts_tp_class == NULL)
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 		info->fts_tp_class = get_xiaomi_touch_class();
 #else
 		info->fts_tp_class = class_create(THIS_MODULE, "touch");
@@ -9247,7 +9247,7 @@ static int fts_probe(struct spi_device *client)
 	}
 
 	dev_set_drvdata(info->fts_touch_dev, info);
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 	mutex_init(&(info->fod_mutex));
 #ifdef CONFIG_FACTORY_BUILD
 	mutex_lock(&info->fod_mutex);
@@ -9290,7 +9290,7 @@ static int fts_probe(struct spi_device *client)
 	info->tp_fw_version_proc =
 		proc_create("tp_fw_version", 0444, NULL, &fts_fw_version_ops);
 
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	info->touch_feature_wq =
 		alloc_workqueue("fts-touch-feature",
 				WQ_UNBOUND | WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
@@ -9459,7 +9459,7 @@ static int fts_remove(struct spi_device *client)
 #ifndef FW_UPDATE_ON_PROBE
 	destroy_workqueue(info->fwu_workqueue);
 #endif
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	destroy_workqueue(info->touch_feature_wq);
 #endif
 	device_destroy(info->fts_tp_class, DCHIP_ID_0);
@@ -9467,9 +9467,10 @@ static int fts_remove(struct spi_device *client)
 	class_destroy(info->fts_tp_class);
 	info->fts_tp_class = NULL;
 */
+#ifdef CONFIG_TOUCHSCREEN_ST_DEBUG_FS
 	if (info->debugfs)
 		debugfs_remove(info->debugfs);
-
+#endif
 	fts_enable_reg(info, false);
 	fts_get_reg(info, false);
 	fts_gpio_setup(info->board->irq_gpio, false, 0, 0);
