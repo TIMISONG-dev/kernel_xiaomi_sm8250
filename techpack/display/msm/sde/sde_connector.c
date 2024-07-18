@@ -834,7 +834,10 @@ void sde_connector_update_fod_hbm(struct drm_connector *connector)
 			(!status && mi_cfg && mi_cfg->delay_before_fod_hbm_off))
 		sde_encoder_wait_for_event(c_conn->encoder, MSM_ENC_VBLANK);
 
-	dsi_panel_set_fod_hbm(display->panel, status);
+	if (mi_cfg->local_hbm_enabled)
+		mi_disp_set_fod_queue_work(status, true);
+	else
+		dsi_panel_set_fod_hbm(display->panel, status);
 
 	if ((status && mi_cfg && mi_cfg->delay_after_fod_hbm_on) ||
 			(!status && mi_cfg && mi_cfg->delay_after_fod_hbm_off))
