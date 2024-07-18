@@ -77,10 +77,6 @@
 #define LIMITS_ARRAY_NAME myArray2
 #endif
 
-#define FTS_XIAOMI_TOUCHFEATURE
-#define FTS_FOD_AREA_REPORT
-#define FTS_DEBUG_FS
-
 #define DEBUG
 
 /*#define USE_ONE_FILE_NODE*/
@@ -218,7 +214,7 @@ struct fts_hw_platform_data {
 	unsigned int fod_ly;
 	unsigned int fod_x_size;
 	unsigned int fod_y_size;
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	u32 touch_follow_per_def;
 	u32 touch_tap_sensitivity_def;
 	u32 touch_aim_sensitivity_def;
@@ -383,7 +379,7 @@ struct fts_ts_info {
 	unsigned int doze_time;
 	unsigned int grip_pixel_def;
 	unsigned int doze_time_def;
-#ifdef FTS_DEBUG_FS
+#ifdef CONFIG_TOUCHSCREEN_ST_DEBUG_FS
 	struct dentry *debugfs;
 #endif
 	struct class *fts_tp_class;
@@ -448,14 +444,14 @@ extern int input_unregister_notifier_client(struct notifier_block *nb);
 
 extern int fts_proc_init(void);
 extern int fts_proc_remove(void);
-#ifdef FTS_FOD_AREA_REPORT
+#ifdef CONFIG_TOUCHSCREEN_FOD
 #define CENTER_X 540
 #define CENTER_Y 1910
 bool fts_is_infod(void);
 #endif
 void fts_restore_regvalues(void);
 const char *fts_get_limit(struct fts_ts_info *info);
-#ifdef FTS_XIAOMI_TOUCHFEATURE
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 int fts_palm_sensor_cmd(int input);
 int fts_prox_sensor_cmd(int input);
 bool fts_touchmode_edgefilter(unsigned int touch_id, int x, int y);
