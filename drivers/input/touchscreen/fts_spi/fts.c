@@ -4593,6 +4593,10 @@ static void fts_gesture_event_handler(struct fts_ts_info *info,
 		needCoords = 1;
 #ifdef CONFIG_TOUCHSCREEN_FOD
 		if (event[2] == GEST_ID_LONG_PRESS) {
+			info->fod_pressed = true;
+			info->fod_pressed_x = x;
+			info->fod_pressed_y = y;
+			tp_common_notify_fp_state();
 			if (!fts_fingerprint_is_enable()) {
 				logError(
 					1,
@@ -4615,10 +4619,6 @@ static void fts_gesture_event_handler(struct fts_ts_info *info,
 				if ((info->sensor_sleep &&
 				     !info->sleep_finger) ||
 				    !info->sensor_sleep) {
-					info->fod_pressed = true;
-					info->fod_pressed_x = x;
-					info->fod_pressed_y = y;
-					tp_common_notify_fp_state();
 					input_report_key(info->input_dev,
 							 BTN_INFO, 1);
 					mi_disp_set_fod_queue_work(1, true);
