@@ -505,34 +505,6 @@
 	mi,mdss-dsi-panel-gir-update-flag;
 	mi,mdss-dsi-panel-gir-on-update-b9-index = <2>;
 
-/*aod status enter lp1 not on start*/
-	mi,mdss-dsi-panel-fod-dimlayer-enabled;
-	mi,mdss-dsi-dimlayer-brightness-alpha-lut-item-count = <21>;
-	mi,mdss-dsi-dimlayer-brightness-alpha-lut =
-	/* brightness  alpha */
-		<0          0xFF
-		 4          0xEB
-		 8          0xEA
-		 12         0xE9
-		 13         0xE8
-		 20         0xE5
-		 24         0xE3
-		 30         0xE0
-		 68         0xD0
-		 133        0xC0
-		 218        0xB0
-		 328        0xA0
-		 486        0x90
-		 642        0x80
-		 832        0x70
-		 1043       0x60
-		 1267       0x50
-		 1500       0x40
-		 1770       0x30
-		 2000       0x24
-		 2047       0x21>;
-/*aod status enter lp1 not on end*/
-
 	qcom,mdss-dsi-display-timings {
 		timing@0{
 			mi,mdss-dsi-doze-hbm-command = [
