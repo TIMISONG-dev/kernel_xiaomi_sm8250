@@ -4793,9 +4793,9 @@ int dsi_panel_set_lp1(struct dsi_panel *panel)
 
 exit:
 	//for l3a && j11
-	if (panel->mi_cfg.panel_id == 0x4C334100420200 || panel->mi_cfg.panel_id == 0x4A323200380801)
+	/*if (panel->mi_cfg.panel_id == 0x4C334100420200 || panel->mi_cfg.panel_id == 0x4A323200380801)
 		panel->mi_cfg.bl_enable = false;
-	else
+	else*/
 		panel->mi_cfg.bl_enable = true;
 	panel->mi_cfg.bl_wait_frame = false;
 	mutex_unlock(&panel->panel_lock);
