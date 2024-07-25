@@ -43,21 +43,23 @@ static int mi_disp_fod_thread_create(struct disp_lhbm *dl_ptr, int disp_id)
 	return ret;
 }
 
-static int mi_get_fod_lhbm_target_brightness(struct dsi_display *display)
+int mi_get_fod_lhbm_target_brightness(struct dsi_panel *panel)
 {
 	int target = LOCAL_LHBM_TARGET_BRIGHTNESS_WHITE_1000NIT;
 
-	if (display->panel->mi_cfg.fp_status == HEART_RATE_START)
+	if (panel->mi_cfg.fp_status == HEART_RATE_START)
 		target = LOCAL_LHBM_TARGET_BRIGHTNESS_GREEN_500NIT;
-	else if (display->panel->mi_cfg.fod_lhbm_low_brightness_enabled &&
-		 display->panel->mi_cfg.fod_lhbm_low_brightness_allow)
+	else if (panel->mi_cfg.fod_lhbm_low_brightness_enabled &&
+		 panel->mi_cfg.fod_lhbm_low_brightness_allow)
 		target = LOCAL_LHBM_TARGET_BRIGHTNESS_WHITE_110NIT;
 
-	if (display->panel->mi_cfg.fp_status == ENROLL_START)
+	if (panel->mi_cfg.fp_status == ENROLL_START)
 		target = LOCAL_LHBM_TARGET_BRIGHTNESS_WHITE_1000NIT;
 
 	return target;
 }
+
+EXPORT_SYMBOL_GPL(mi_get_fod_lhbm_target_brightness);
 
 static int mi_dsi_panel_set_fod_lhbm(struct dsi_panel *panel, int lhbm_target)
 {
@@ -128,7 +130,7 @@ static int mi_sde_connector_fod_lhbm(struct drm_connector *connector, bool from_
 			rc = -EINVAL;
 			pr_info("%s LHBM on from display skip\n", LHBM_TAG);
 		} else {
-			lhbm_target = mi_get_fod_lhbm_target_brightness(display);
+			lhbm_target = mi_get_fod_lhbm_target_brightness(display->panel);
 			rc = mi_dsi_panel_set_fod_lhbm(display->panel, lhbm_target);
 			display->panel->mi_cfg.lhbm_target = lhbm_target;
 			if (!rc) {
