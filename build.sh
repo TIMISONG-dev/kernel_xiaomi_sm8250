@@ -102,7 +102,8 @@ output_dir=out
 
 # Конфигурация ядра
 make O="$output_dir" \
-            alioth_defconfig
+            alioth_defconfig \
+            vendor/xiaomi/sm8250-common.config
 
     # Компиляция ядра
     make -j $(nproc) \
