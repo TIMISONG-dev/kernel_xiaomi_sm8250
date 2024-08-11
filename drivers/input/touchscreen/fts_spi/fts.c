@@ -4584,10 +4584,12 @@ static void fts_gesture_event_handler(struct fts_ts_info *info,
 		needCoords = 1;
 #ifdef CONFIG_TOUCHSCREEN_FOD
 		if (event[2] == GEST_ID_LONG_PRESS) {
-			info->fod_pressed = true;
-			info->fod_pressed_x = x;
-			info->fod_pressed_y = y;
-			tp_common_notify_fp_state();
+			if (info->fod_pressed_report) {
+				info->fod_pressed = true;
+				info->fod_pressed_x = x;
+				info->fod_pressed_y = y;
+				tp_common_notify_fp_state();
+			}
 			if (!fts_fingerprint_is_enable()) {
 				logError(
 					1,
@@ -7264,6 +7266,7 @@ static int fts_drm_state_chg_callback(struct notifier_block *nb,
 		if (val == MI_DRM_EARLY_EVENT_BLANK &&
 		    (blank == MI_DRM_BLANK_POWERDOWN ||
 		     blank == MI_DRM_BLANK_LP1 || blank == MI_DRM_BLANK_LP2)) {
+			info->fod_pressed_report = true;
 			if (info->sensor_sleep)
 				return NOTIFY_OK;
 
@@ -7274,6 +7277,7 @@ static int fts_drm_state_chg_callback(struct notifier_block *nb,
 			queue_work(info->event_wq, &info->suspend_work);
 		} else if (val == MI_DRM_EVENT_BLANK &&
 			   blank == MI_DRM_BLANK_UNBLANK) {
+			info->fod_pressed_report = false;
 			if (!info->sensor_sleep)
 				return NOTIFY_OK;
 

@@ -404,6 +404,7 @@ struct fts_ts_info {
 	struct mutex cmd_update_mutex;
 	bool fod_coordinate_update;
 	bool fod_pressed;
+	bool fod_pressed_report;
 	bool prox_sensor_changed;
 	bool prox_sensor_switch;
 	bool palm_sensor_changed;
