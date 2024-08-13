@@ -1887,7 +1887,7 @@ static struct task_struct *pick_task_dl(struct rq *rq)
 	return p;
 }
 
-static void put_prev_task_dl(struct rq *rq, struct task_struct *p)
+static void put_prev_task_dl(struct rq *rq, struct task_struct *p, struct task_struct *next)
 {
 	update_curr_dl(rq);
 
