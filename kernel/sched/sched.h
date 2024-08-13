@@ -2255,6 +2255,11 @@ static inline void set_next_task(struct rq *rq, struct task_struct *next)
 	next->sched_class->set_next_task(rq, next, false);
 }
 
+static inline void set_next_task_first(struct rq *rq, struct task_struct *next)
+{
+	next->sched_class->set_next_task(rq, next, true);
+}
+
 #ifdef CONFIG_SMP
 #define sched_class_highest (&stop_sched_class)
 #else
