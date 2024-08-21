@@ -3466,7 +3466,7 @@ static void update_cfs_group(struct sched_entity *se)
 #endif
 
 	if (unlikely(se->load.weight != shares))
-		reweight_entity(cfs_rq_of(se), se, shares);
+		reweight_entity(cfs_rq_of(se), se, shares, runnable);
 }
 
 #else /* CONFIG_FAIR_GROUP_SCHED */
