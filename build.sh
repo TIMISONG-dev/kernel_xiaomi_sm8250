@@ -145,9 +145,21 @@ else
     cd "$MAGIC_TIME_DIR"
     7z a -mx9 MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip * -x!*.zip
     
-    curl -s -X POST "https://api.telegram.org/bot$TGTOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд"
-    curl -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${BUILD_TYPE})" "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimebuilds"
-    curl -F document=@"../log.txt" -F caption="Latest changes" "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimebuilds"
+    curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendMessage \
+    -d chat_id="@magictimekernel" \
+    -d text="Компиляция завершилась успешно! Время выполнения: $elapsed_time секунд" \
+    -d message_thread_id="38153"
+
+    curl -s -X POST "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel" \
+    -F document=@"./MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip" \
+    -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${BUILD_TYPE})" \
+    -F message_thread_id="38153"
+    
+    curl -s -X POST "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel" \
+    -F document=@"../log.txt" \
+    -F caption="Latest changes" \
+    -F message_thread_id="38153"
+
     rm -rf MagicTime-$MODEL-$MAGIC_BUILD_DATE.zip
 
     BUILD=$((BUILD + 1))
