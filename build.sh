@@ -137,8 +137,15 @@ cd "$KERNEL_PATH"
 if grep -q -E "Ошибка 2|Error 2" error.log; then
     cd "$KERNEL_PATH"
     echo "Ошибка: Сборка завершилась с ошибкой"
-    curl -s -X POST "https://api.telegram.org/bot$TGTOKEN/sendMessage" -d chat_id="@magictimebuilds" -d text="Ошибка в компиляции!"
-    curl -F document=@"./error.log" "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimebuilds"
+
+    curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendMessage \
+    -d chat_id="@magictimekernel" \
+    -d text="Ошибка в компиляции!" \
+    -d message_thread_id="38153"
+
+    curl -s -X POST "https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel" \
+    -F document=@"./error.log" \
+    -F message_thread_id="38153"
 else
     echo "Общее время выполнения: $elapsed_time секунд"
     # Перемещение в каталог MagicTime и создание архива
