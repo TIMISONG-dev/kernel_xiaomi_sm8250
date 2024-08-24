@@ -327,7 +327,7 @@ static inline unsigned long sugov_apply_dvfs_headroom(unsigned long util, int cp
 	 * switch or TICK?
 	 */
 	if (rq->cfs.h_nr_queued > 1)
-		delay = min(rq->curr->se.slice/1000, TICK_USEC);
+		delay = min_t(u64, rq->curr->se.slice/1000, TICK_USEC);
 	else
 		delay = TICK_USEC;
 	delay = max(delay, per_cpu(dvfs_update_delay, cpu));
