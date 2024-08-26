@@ -480,6 +480,8 @@ struct sched_avg {
 	u64				last_update_time;
 	u64				load_sum;
 	u64				runnable_sum;
+	u64				runnable_load_avg;
+	u64				runnable_load_sum;
 	u32				util_sum;
 	u32				period_contrib;
 	unsigned long			load_avg;
