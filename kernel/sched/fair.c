@@ -102,7 +102,7 @@ DEFINE_PER_CPU_READ_MOSTLY(int, sched_load_boost);
  */
 int __weak arch_asym_cpu_priority(int cpu)
 {
-	return -arch_scale_cpu_capacity(NULL, cpu);
+	return -arch_scale_cpu_capacity(cpu);
 }
 
 /*
@@ -3466,7 +3466,7 @@ static void update_cfs_group(struct sched_entity *se)
 #endif
 
 	if (unlikely(se->load.weight != shares))
-		reweight_entity(cfs_rq_of(se), se, shares, runnable);
+		reweight_entity(cfs_rq_of(se), se, shares);
 }
 
 #else /* CONFIG_FAIR_GROUP_SCHED */
