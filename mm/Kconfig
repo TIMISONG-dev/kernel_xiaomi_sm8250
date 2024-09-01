@@ -888,7 +888,6 @@ config FORCE_ALLOC_FROM_DMA_ZONE
 
 config EMERGENCY_MEMORY
 	bool "Enable emergency memory"
-	default y if BOARD_XIAOMI
 	help
 	 This enables the migration type MIGRATE_EMERGENCY which reserves
 	 a small amount of memory for non-costly non-NOWARN page allocation
