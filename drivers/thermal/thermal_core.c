@@ -79,7 +79,7 @@ struct usb_monitor usb_state;
 static atomic_t charger_mode = ATOMIC_INIT(-1);
 
 static struct device thermal_message_dev;
-static atomic_t switch_mode = ATOMIC_INIT(10);
+static atomic_t switch_mode = ATOMIC_INIT(-1);
 static atomic_t balance_mode = ATOMIC_INIT(0);
 static atomic_t temp_state = ATOMIC_INIT(0);
 static atomic_t modem_limit = ATOMIC_INIT(0);
@@ -1747,14 +1747,12 @@ static ssize_t sconfig_show(struct device *dev,
 static ssize_t sconfig_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t len)
 {
-	int ret, val = -1;
+	int val = -1;
 
-	ret = kstrtoint(buf, 10, &val);
+	val = simple_strtol(buf, NULL, 10);
 
 	atomic_set(&switch_mode, val);
 
-	if (ret)
-		return ret;
 	return len;
 }
 
@@ -1825,14 +1823,12 @@ static ssize_t temp_state_show(struct device *dev,
 static ssize_t temp_state_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t len)
 {
-	int ret, val = -1;
+	int val = -1;
 
-	ret = kstrtoint(buf, 10, &val);
+	val = simple_strtol(buf, NULL, 10);
 
 	atomic_set(&temp_state, val);
 
-	if (ret)
-		return ret;
 	return len;
 }
 
