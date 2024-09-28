@@ -69,7 +69,7 @@ if [ ! -d "$MAGIC_TIME_DIR" ]; then
     
     # Проверка и клонирование Anykernel, если MagicTime не существует
     if [ ! -d "$MAGIC_TIME_DIR/Anykernel" ]; then
-        git clone https://github.com/decoder-dev/Anykernel.git "$MAGIC_TIME_DIR/Anykernel"
+        git clone https://github.com/TIMISONG-dev/Anykernel.git "$MAGIC_TIME_DIR/Anykernel"
         
         # Перемещение всех файлов из Anykernel в MagicTime
         mv "$MAGIC_TIME_DIR/Anykernel/"* "$MAGIC_TIME_DIR/"
