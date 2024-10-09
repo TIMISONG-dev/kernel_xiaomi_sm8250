@@ -239,7 +239,6 @@ static void do_idle(void)
 
 	while (!need_resched()) {
 		check_pgt_cache();
-		rmb();
 
 		local_irq_disable();
 
