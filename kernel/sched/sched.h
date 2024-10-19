@@ -2645,3 +2645,4 @@ static inline bool is_per_cpu_kthread(struct task_struct *p)
 
 extern u64 avg_vruntime(struct cfs_rq *cfs_rq);
 extern int entity_eligible(struct cfs_rq *cfs_rq, struct sched_entity *se);
+extern bool dequeue_task(struct rq *rq, struct task_struct *p, int flags);
