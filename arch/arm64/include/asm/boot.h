@@ -14,7 +14,7 @@
 
 /*
  * arm64 requires the kernel image to placed
- * TEXT_OFFSET bytes beyond a 2 MB aligned base
+ * at a 2 MB aligned base address
  */
 #define MIN_KIMG_ALIGN		SZ_2M
 
