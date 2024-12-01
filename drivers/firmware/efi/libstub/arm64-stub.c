@@ -79,7 +79,7 @@ efi_status_t handle_kernel_image(efi_system_table_t *sys_table_arg,
 	 * a 2 MB aligned base, which itself may be lower than dram_base, as
 	 * long as the resulting offset equals or exceeds it.
 	 */
-	preferred_offset = round_down(dram_base, MIN_KIMG_ALIGN) + TEXT_OFFSET;
+	preferred_offset = round_down(dram_base, MIN_KIMG_ALIGN);
 	if (preferred_offset < dram_base)
 		preferred_offset += MIN_KIMG_ALIGN;
 
@@ -98,25 +98,15 @@ efi_status_t handle_kernel_image(efi_system_table_t *sys_table_arg,
 			     (phys_seed >> 32) & mask : TEXT_OFFSET;
 
 		/*
-		 * With CONFIG_RANDOMIZE_TEXT_OFFSET=y, TEXT_OFFSET may not
-		 * be a multiple of EFI_KIMG_ALIGN, and we must ensure that
-		 * we preserve the misalignment of 'offset' relative to
-		 * EFI_KIMG_ALIGN so that statically allocated objects whose
-		 * alignment exceeds PAGE_SIZE appear correctly aligned in
-		 * memory.
-		 */
-		offset |= TEXT_OFFSET % EFI_KIMG_ALIGN;
-
-		/*
 		 * If KASLR is enabled, and we have some randomness available,
 		 * locate the kernel at a randomized offset in physical memory.
 		 */
-		*reserve_size = kernel_memsize + offset;
+		*reserve_size = kernel_memsize;
 		status = efi_random_alloc(sys_table_arg, *reserve_size,
 					  MIN_KIMG_ALIGN, reserve_addr,
 					  (u32)phys_seed);
 
-		*image_addr = *reserve_addr + offset;
+		*image_addr = *reserve_addr;
 	} else {
 		/*
 		 * Else, try a straight allocation at the preferred offset.
@@ -142,7 +132,7 @@ efi_status_t handle_kernel_image(efi_system_table_t *sys_table_arg,
 	}
 
 	if (status != EFI_SUCCESS) {
-		*reserve_size = kernel_memsize + TEXT_OFFSET;
+		*reserve_size = kernel_memsize;
 		status = efi_low_alloc(sys_table_arg, *reserve_size,
 				       MIN_KIMG_ALIGN, reserve_addr);
 
@@ -151,7 +141,7 @@ efi_status_t handle_kernel_image(efi_system_table_t *sys_table_arg,
 			*reserve_size = 0;
 			return status;
 		}
-		*image_addr = *reserve_addr + TEXT_OFFSET;
+		*image_addr = *reserve_addr;
 	}
 	memcpy((void *)*image_addr, old_image_addr, kernel_size);
 
