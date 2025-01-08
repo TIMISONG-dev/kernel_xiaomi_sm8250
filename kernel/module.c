@@ -2791,35 +2791,38 @@ static void add_kallsyms(struct module *mod, const struct load_info *info)
 	const Elf_Sym *src;
 	Elf_Sym *dst;
 	char *s;
+	struct mod_kallsyms *kallsyms;
 	Elf_Shdr *symsec = &info->sechdrs[info->index.sym];
 
-	/* Set up to point into init section. */
-	mod->kallsyms = mod->init_layout.base + info->mod_kallsyms_init_off;
+	kallsyms = mod->init_layout.base + info->mod_kallsyms_init_off;
 
-	mod->kallsyms->symtab = (void *)symsec->sh_addr;
-	mod->kallsyms->num_symtab = symsec->sh_size / sizeof(Elf_Sym);
+	kallsyms->symtab = (void *)symsec->sh_addr;
+	kallsyms->num_symtab = symsec->sh_size / sizeof(Elf_Sym);
 	/* Make sure we get permanent strtab: don't use info->strtab. */
-	mod->kallsyms->strtab = (void *)info->sechdrs[info->index.str].sh_addr;
+	kallsyms->strtab = (void *)info->sechdrs[info->index.str].sh_addr;
 
 	/* Set types up while we still have access to sections. */
-	for (i = 0; i < mod->kallsyms->num_symtab; i++)
-		mod->kallsyms->symtab[i].st_info
-			= elf_type(&mod->kallsyms->symtab[i], info);
+	for (i = 0; i < kallsyms->num_symtab; i++)
+		kallsyms->symtab[i].st_info
+			= elf_type(&kallsyms->symtab[i], info);
 
 	/* Now populate the cut down core kallsyms for after init. */
 	mod->core_kallsyms.symtab = dst = mod->core_layout.base + info->symoffs;
 	mod->core_kallsyms.strtab = s = mod->core_layout.base + info->stroffs;
-	src = mod->kallsyms->symtab;
-	for (ndst = i = 0; i < mod->kallsyms->num_symtab; i++) {
+	src = kallsyms->symtab;
+	for (ndst = i = 0; i < kallsyms->num_symtab; i++) {
 		if (i == 0 || is_livepatch_module(mod) ||
 		    is_core_symbol(src+i, info->sechdrs, info->hdr->e_shnum,
 				   info->index.pcpu)) {
 			dst[ndst] = src[i];
 			dst[ndst++].st_name = s - mod->core_kallsyms.strtab;
-			s += strlcpy(s, &mod->kallsyms->strtab[src[i].st_name],
+			s += strlcpy(s, &kallsyms->strtab[src[i].st_name],
 				     KSYM_NAME_LEN) + 1;
 		}
 	}
+
+	/* Set up to point into init section. */
+	rcu_assign_pointer(mod->kallsyms, kallsyms);
 	mod->core_kallsyms.num_symtab = ndst;
 }
 #else
@@ -4248,8 +4251,10 @@ int module_kallsyms_on_each_symbol(int (*fn)(void *, const char *,
 	module_assert_mutex();
 
 	list_for_each_entry(mod, &modules, list) {
-		/* We hold module_mutex: no need for rcu_dereference_sched */
-		struct mod_kallsyms *kallsyms = mod->kallsyms;
+		struct mod_kallsyms *kallsyms;
+
+		kallsyms = rcu_dereference_protected(mod->kallsyms,
+						     lockdep_is_held(&module_mutex));
 
 		if (mod->state == MODULE_STATE_UNFORMED)
 			continue;
