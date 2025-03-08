@@ -357,15 +357,12 @@ static inline void ignore_dl_rate_limit(struct sugov_cpu *sg_cpu, struct sugov_p
 		sg_policy->limits_changed = true;
 }
 
-static void sugov_update_single(struct update_util_data *hook, u64 time,
-				unsigned int flags)
+static inline bool sugov_update_single_common(struct sugov_cpu *sg_cpu,
+	u64 time, unsigned long max_cap,
+	unsigned int flags)
 {
-	struct sugov_cpu *sg_cpu = container_of(hook, struct sugov_cpu, update_util);
 	struct sugov_policy *sg_policy = sg_cpu->sg_policy;
-	unsigned long max_cap, boost;
-	unsigned int next_f;
-
-	max_cap = arch_scale_cpu_capacity(sg_cpu->cpu);
+	unsigned long boost;
 
 	sugov_iowait_boost(sg_cpu, time, flags);
 	sg_cpu->last_update = time;
@@ -373,10 +370,27 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 	ignore_dl_rate_limit(sg_cpu, sg_policy);
 
 	if (!sugov_should_update_freq(sg_policy, time))
-		return;
+		return false;
 
-	boost = sugov_iowait_apply(sg_cpu, time, max_cap);
+	sugov_iowait_apply(sg_cpu, time, max_cap);
 	sugov_get_util(sg_cpu, boost);
+
+	return true;
+}
+
+static void sugov_update_single_freq(struct update_util_data *hook, u64 time,
+	unsigned int flags)
+{
+	struct sugov_cpu *sg_cpu = container_of(hook, struct sugov_cpu, update_util);
+	struct sugov_policy *sg_policy = sg_cpu->sg_policy;
+	unsigned int cached_freq = sg_policy->cached_raw_freq;
+	unsigned long max_cap;
+	unsigned int next_f;
+
+	max_cap = arch_scale_cpu_capacity(sg_cpu->cpu);
+
+	if (!sugov_update_single_common(sg_cpu, time, max_cap, flags))
+		return;
 
 	next_f = get_next_freq(sg_policy, sg_cpu->util, max_cap);
 
@@ -410,6 +424,41 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 		sugov_deferred_update(sg_policy);
 		raw_spin_unlock(&sg_policy->update_lock);
 	}
+}
+
+static void sugov_update_single_perf(struct update_util_data *hook, u64 time,
+	unsigned int flags)
+{
+	struct sugov_cpu *sg_cpu = container_of(hook, struct sugov_cpu, update_util);
+	unsigned long prev_util = sg_cpu->util;
+	unsigned long max_cap;
+
+	/*
+	* Fall back to the "frequency" path if frequency invariance is not
+	* supported, because the direct mapping between the utilization and
+	* the performance levels depends on the frequency invariance.
+	*/
+	if (!arch_scale_freq_invariant()) {
+		sugov_update_single_freq(hook, time, flags);
+		return;
+	}
+
+	max_cap = arch_scale_cpu_capacity(sg_cpu->cpu);
+
+	if (!sugov_update_single_common(sg_cpu, time, max_cap, flags))
+		return;
+
+	/*
+	* Do not reduce the target performance level if the CPU has not been
+	* idle recently, as the reduction is likely to be premature then.
+	*/
+	if (sugov_cpu_is_busy(sg_cpu) && sg_cpu->util < prev_util)
+		sg_cpu->util = prev_util;
+
+	cpufreq_driver_adjust_perf(sg_cpu->cpu, map_util_perf(sg_cpu->bw_min),
+	map_util_perf(sg_cpu->util), max_cap);
+
+	sg_cpu->sg_policy->last_freq_update_time = time;
 }
 
 static unsigned int sugov_next_freq_shared(struct sugov_cpu *sg_cpu, u64 time)
@@ -755,6 +804,7 @@ static void sugov_exit(struct cpufreq_policy *policy)
 static int sugov_start(struct cpufreq_policy *policy)
 {
 	struct sugov_policy *sg_policy = policy->governor_data;
+	void (*uu)(struct update_util_data *data, u64 time, unsigned int flags);
 	unsigned int cpu;
 
 	sg_policy->freq_update_delay_ns	= sg_policy->tunables->rate_limit_us * NSEC_PER_USEC;
@@ -766,16 +816,20 @@ static int sugov_start(struct cpufreq_policy *policy)
 
 	sg_policy->need_freq_update = cpufreq_driver_test_flags(CPUFREQ_NEED_UPDATE_LIMITS);
 
+	if (policy_is_shared(policy))
+	uu = sugov_update_shared;
+else if (policy->fast_switch_enabled && cpufreq_driver_has_adjust_perf())
+	uu = sugov_update_single_perf;
+else
+	uu = sugov_update_single_freq;
+
 	for_each_cpu(cpu, policy->cpus) {
 		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
 
 		memset(sg_cpu, 0, sizeof(*sg_cpu));
 		sg_cpu->cpu = cpu;
 		sg_cpu->sg_policy = sg_policy;
-		cpufreq_add_update_util_hook(cpu, &sg_cpu->update_util,
-					     policy_is_shared(policy) ?
-							sugov_update_shared :
-							sugov_update_single);
+		cpufreq_add_update_util_hook(cpu, &sg_cpu->update_util, uu);
 	}
 	return 0;
 }
