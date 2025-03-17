@@ -112,7 +112,7 @@ static inline void sugov_update_response_time_mult(struct sugov_policy *sg_polic
 	mult = sg_policy->freq_response_time_ms * SCHED_CAPACITY_SCALE;
 	mult /=	sg_policy->tunables->response_time_ms;
 
-	if (SCHED_WARN_ON(!mult))
+	if (WARN_ON_ONCE(!mult))
 		mult = SCHED_CAPACITY_SCALE;
 
 	for_each_cpu(cpu, sg_policy->policy->cpus)
