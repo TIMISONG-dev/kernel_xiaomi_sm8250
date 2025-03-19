@@ -180,7 +180,6 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 				policy->cpuinfo.max_freq : policy->cur;
 	unsigned int idx, l_freq, h_freq;
 
-	util = map_util_perf(util);
 	freq = map_util_freq(util, freq, max);
 	trace_sugov_next_freq(policy->cpu, util, max, freq);
 
@@ -205,14 +204,30 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 	return l_freq;
 }
 
+unsigned long sugov_effective_cpu_perf(int cpu, unsigned long actual,
+	unsigned long min,
+	unsigned long max)
+{
+	/* Add dvfs headroom to actual utilization */
+	actual = map_util_perf(actual);
+	/* Actually we don't need to target the max performance */
+	if (actual < max)
+		max = actual;
+
+	/*
+	* Ensure at least minimum performance while providing more compute
+	* capacity when possible.
+	*/
+	return max(min, max);
+}
+
 static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)
 {
 	unsigned long min, max, util = cpu_util_cfs_boost(sg_cpu->cpu);
 
 	util = effective_cpu_util(sg_cpu->cpu, util, &min, &max);
-	util = max(util, boost);
 	sg_cpu->bw_min = min;
-	sg_cpu->util = max(min, min(util, max));
+	sg_cpu->util = sugov_effective_cpu_perf(sg_cpu->cpu, util, min, max);
 }
 
 /**
@@ -382,7 +397,7 @@ static inline bool sugov_update_single_common(struct sugov_cpu *sg_cpu,
 	if (!sugov_should_update_freq(sg_cpu->sg_policy, time))
 		return false;
 
-	sugov_iowait_apply(sg_cpu, time, max_cap);
+	boost = sugov_iowait_apply(sg_cpu, time, max_cap);
 	sugov_get_util(sg_cpu, boost);
 
 	return true;
@@ -454,8 +469,8 @@ static void sugov_update_single_perf(struct update_util_data *hook, u64 time,
 	if (sugov_hold_freq(sg_cpu) && sg_cpu->util < prev_util)
 		sg_cpu->util = prev_util;
 
-	cpufreq_driver_adjust_perf(sg_cpu->cpu, map_util_perf(sg_cpu->bw_min),
-	map_util_perf(sg_cpu->util), max_cap);
+	cpufreq_driver_adjust_perf(sg_cpu->cpu, sg_cpu->bw_min,
+ 	sg_cpu->util, max_cap);
 
 	sg_cpu->sg_policy->last_freq_update_time = time;
 }
