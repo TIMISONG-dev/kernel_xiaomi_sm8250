@@ -50,6 +50,7 @@ static int bypass_charging = 0;
 
 bool off_charge_flag;
 static bool first_boot_flag;
+static int bypass_charging = 0;
 
 static void update_sw_icl_max(struct smb_charger *chg, int pst);
 static int smblib_get_prop_typec_mode(struct smb_charger *chg);
