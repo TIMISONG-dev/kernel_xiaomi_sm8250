@@ -4309,22 +4309,13 @@ done:
 	trace_sched_util_est_task(p, &p->se.avg);
 }
 
-static inline unsigned long get_actual_cpu_capacity(int cpu)
-{
-	unsigned long capacity = arch_scale_cpu_capacity(cpu);
-
-	capacity -= arch_scale_thermal_pressure(cpu);
-
-	return capacity;
-}
-
 static inline int util_fits_cpu(unsigned long util,
 				unsigned long uclamp_min,
 				unsigned long uclamp_max,
 				int cpu)
 {
+	unsigned long capacity_orig, capacity_orig_thermal;
 	unsigned long capacity = capacity_of(cpu);
-	unsigned long capacity_orig;
 	bool fits, uclamp_max_fits;
 
 	/*
@@ -4359,7 +4350,8 @@ static inline int util_fits_cpu(unsigned long util,
 	 * honour the inverted capacity for both uclamp_min and uclamp_max all
 	 * the time.
 	 */
-	capacity_orig = arch_scale_cpu_capacity(cpu);
+	capacity_orig = capacity_orig_of(cpu);
+	capacity_orig_thermal = capacity_orig - arch_scale_thermal_pressure(cpu);
 
 	/*
 	 * We want to force a task to fit a cpu as implied by uclamp_max.
@@ -4434,8 +4426,7 @@ static inline int util_fits_cpu(unsigned long util,
 	 * handle the case uclamp_min > uclamp_max.
 	 */
 	uclamp_min = min(uclamp_min, uclamp_max);
-	if (fits && (util < uclamp_min) &&
-	    (uclamp_min > get_actual_cpu_capacity(cpu)))
+	if (fits && (util < uclamp_min) && (uclamp_min > capacity_orig_thermal))
 		return -1;
 
 	return fits;
@@ -6815,7 +6806,7 @@ select_idle_capacity(struct task_struct *p, struct sched_domain *sd, int target)
 		 * Look for the CPU with best capacity.
 		 */
 		else if (fits < 0)
-			cpu_cap = get_actual_cpu_capacity(cpu);
+			cpu_cap = capacity_orig_of(cpu);
 
 		/*
 		 * First, select CPU which fits better (-1 being better than 0).
@@ -7275,8 +7266,8 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 	struct root_domain *rd = this_rq()->rd;
 	int cpu, best_energy_cpu, target = -1;
 	int prev_fits = -1, best_fits = -1;
-	unsigned long best_actual_cap = 0;
-	unsigned long prev_actual_cap = 0;
+	unsigned long best_thermal_cap = 0;
+	unsigned long prev_thermal_cap = 0;
 	struct sched_domain *sd;
 	struct perf_domain *pd;
 	struct energy_env eenv;
@@ -7314,7 +7305,7 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 
 	for (; pd; pd = pd->next) {
 		unsigned long util_min = p_util_min, util_max = p_util_max;
-		unsigned long cpu_cap, cpu_actual_cap, util;
+		unsigned long cpu_cap, cpu_thermal_cap, util;
 		long prev_spare_cap = -1, max_spare_cap = -1;
 		unsigned long rq_util_min, rq_util_max;
 		unsigned long cur_delta, base_energy;
@@ -7328,15 +7319,16 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 
 		/* Account thermal pressure for the energy estimation */
 		cpu = cpumask_first(cpus);
-		cpu_actual_cap = get_actual_cpu_capacity(cpu);
+		cpu_thermal_cap = arch_scale_cpu_capacity(cpu);
+		cpu_thermal_cap -= arch_scale_thermal_pressure(cpu);
 
-		eenv.cpu_cap = cpu_actual_cap;
+		eenv.cpu_cap = cpu_thermal_cap;
 		eenv.pd_cap = 0;
 
 		for_each_cpu(cpu, cpus) {
 			struct rq *rq = cpu_rq(cpu);
 
-			eenv.pd_cap += cpu_actual_cap;
+			eenv.pd_cap += cpu_thermal_cap;
 
 			if (!cpumask_test_cpu(cpu, sched_domain_span(sd)))
 				continue;
@@ -7407,7 +7399,7 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 			if (prev_delta < base_energy)
 				goto unlock;
 			prev_delta -= base_energy;
-			prev_actual_cap = cpu_actual_cap;
+			prev_thermal_cap = cpu_thermal_cap;
 			best_delta = min(best_delta, prev_delta);
 		}
 
@@ -7422,7 +7414,7 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 			 * but best energy cpu has better capacity.
 			 */
 			if ((max_fits < 0) &&
-			    (cpu_actual_cap <= best_actual_cap))
+			    (cpu_thermal_cap <= best_thermal_cap))
 				continue;
 
 			cur_delta = compute_energy(&eenv, pd, cpus, p,
@@ -7443,14 +7435,14 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 			best_delta = cur_delta;
 			best_energy_cpu = max_spare_cap_cpu;
 			best_fits = max_fits;
-			best_actual_cap = cpu_actual_cap;
+			best_thermal_cap = cpu_thermal_cap;
 		}
 	}
 	rcu_read_unlock();
 
 	if ((best_delta < prev_delta) ||
 	    ((best_fits > 0) && (best_delta < prev_delta)) ||
-	    ((best_fits < 0) && (best_actual_cap > prev_actual_cap)))
+	    ((best_fits < 0) && (best_thermal_cap > prev_thermal_cap)))
 		target = best_energy_cpu;
 
 	return target;
@@ -8890,7 +8882,7 @@ static inline void init_sd_lb_stats(struct sd_lb_stats *sds)
 
 static unsigned long scale_rt_capacity(int cpu)
 {
-	unsigned long max = get_actual_cpu_capacity(cpu);
+	unsigned long max = arch_scale_cpu_capacity(cpu);
 	struct rq *rq = cpu_rq(cpu);
 	unsigned long used, free;
 	unsigned long irq;
