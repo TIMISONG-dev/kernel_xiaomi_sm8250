@@ -52,7 +52,7 @@ static int smblib_dc_therm_charging(struct smb_charger *chg,
 					int temp_level);
 static int smblib_get_batt_voltage_now(struct smb_charger *chg,
 					union power_supply_propval *val);
-
+static int bypass_charging = 0;
 
 int smblib_read(struct smb_charger *chg, u16 addr, u8 *val)
 {
@@ -2429,9 +2429,13 @@ int smblib_vbus_regulator_is_enabled(struct regulator_dev *rdev)
 int smblib_get_prop_input_suspend(struct smb_charger *chg,
 				  union power_supply_propval *val)
 {
-	val->intval
-		= (get_client_vote(chg->usb_icl_votable, USER_VOTER) == 0)
-		 || get_client_vote(chg->dc_suspend_votable, USER_VOTER);
+	if ((get_client_vote(chg->chg_disable_votable, BYPASS_VOTER) == 1)) {
+           	val->intval = 1;
+        } else if (bypass_charging) {
+            	val->intval = 2;
+        } else {
+           	val->intval = 0;
+        }
 	return 0;
 }
 
@@ -3216,19 +3220,36 @@ int smblib_set_prop_input_suspend(struct smb_charger *chg,
 	int rc;
 
 	/* vote 0mA when suspended */
-	rc = vote(chg->usb_icl_votable, USER_VOTER, (bool)val->intval, 0);
+	rc = vote(chg->usb_icl_votable, USER_VOTER, false, 0);
 	if (rc < 0) {
 		smblib_err(chg, "Couldn't vote to %s USB rc=%d\n",
 			(bool)val->intval ? "suspend" : "resume", rc);
 		return rc;
 	}
 
-	rc = vote(chg->dc_suspend_votable, USER_VOTER, (bool)val->intval, 0);
+	rc = vote(chg->dc_suspend_votable, USER_VOTER, false, 0);
 	if (rc < 0) {
 		smblib_err(chg, "Couldn't vote to %s DC rc=%d\n",
 			(bool)val->intval ? "suspend" : "resume", rc);
 		return rc;
 	}
+
+	if (val->intval == 1) {
+            	rc = vote(chg->chg_disable_votable, BYPASS_VOTER, 1, 0);
+            	bypass_charging = 0;
+        } else if (val->intval == 2) {
+            	rc = vote(chg->chg_disable_votable, BYPASS_VOTER, 0, 0);
+            	bypass_charging = 1;
+        } else {
+            	rc = vote(chg->chg_disable_votable, BYPASS_VOTER, 0, 0);
+            	bypass_charging = 0;
+        }
+
+   	if (rc < 0) {
+    		smblib_err(chg, "Couldn't vote to %d input_suspend rc=%d\n",
+    			val->intval, rc);
+    		return rc;
+    	}
 
 	power_supply_changed(chg->batt_psy);
 	return rc;
