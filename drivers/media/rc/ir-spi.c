@@ -35,7 +35,7 @@
 #include <linux/sched/signal.h>
 #include <linux/sched/task.h>
 
-#define IR_SPI_DRIVER_NAME		"ir-spi"
+#define IR_SPI_DRIVER_NAME		"ir-spi-led"
 
 #define IR_SPI_DEFAULT_RC_FREQUENCY	38000
 #define IR_SPI_DEFAULT_CHAR_FREQUENCY	1920000
