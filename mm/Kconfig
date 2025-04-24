@@ -216,11 +216,17 @@ config MEMORY_HOTREMOVE
 # PA-RISC 7xxx's spinlock_t would enlarge struct page from 32 to 44 bytes.
 # DEBUG_SPINLOCK and DEBUG_LOCK_ALLOC spinlock_t also enlarge struct page.
 #
+# Moto huangzq2: disable SPLIT_RSS_COUNTING if we have ulmk.
+# ulmk fully relies on rss in proc/pid/statm, but rss in statm sometimes
+# is zero if we enabled SPLIT_RSS_COUNTING, checked with Google,
+# they agree to disalbe this. Also, our performance test didn't show any
+# performance downgrade.
 config SPLIT_PTLOCK_CPUS
 	int
 	default "999999" if !MMU
 	default "999999" if ARM && !CPU_CACHE_VIPT
 	default "999999" if PARISC && !PA20
+	default "999999" if HAVE_USERSPACE_LOW_MEMORY_KILLER
 	default "4"
 
 config ARCH_ENABLE_SPLIT_PMD_PTLOCK
@@ -600,29 +606,13 @@ config Z3FOLD
 	  still there.
 
 config ZSMALLOC
-	tristate "Memory allocator for compressed pages"
+	tristate "N:1 compression allocator (zsmalloc)"
 	depends on MMU
 	default n
 	help
 	  zsmalloc is a slab-based memory allocator designed to store
-	  compressed RAM pages.  zsmalloc uses virtual memory mapping
-	  in order to reduce fragmentation.  However, this results in a
-	  non-standard allocator interface where a handle, not a pointer, is
-	  returned by an alloc().  This handle must be mapped in order to
-	  access the allocated space.
-
-config PGTABLE_MAPPING
-	bool "Use page table mapping to access object in zsmalloc"
-	depends on ZSMALLOC
-	help
-	  By default, zsmalloc uses a copy-based object mapping method to
-	  access allocations that span two pages. However, if a particular
-	  architecture (ex, ARM) performs VM mapping faster than copying,
-	  then you should select this. This causes zsmalloc to use page table
-	  mapping rather than copying for object mapping.
-
-	  You can check speed with zsmalloc benchmark:
-	  https://github.com/spartacus06/zsmapbench
+	  pages of various compression levels efficiently. It achieves
+	  the highest storage density with the least amount of fragmentation
 
 config ZSMALLOC_STAT
 	bool "Export zsmalloc statistics"
@@ -630,7 +620,7 @@ config ZSMALLOC_STAT
 	select DEBUG_FS
 	help
 	  This option enables code in the zsmalloc to collect various
-	  statistics about whats happening in zsmalloc and exports that
+	  statistics about what's happening in zsmalloc and exports that
 	  information to userspace via debugfs.
 	  If unsure, say N.
 
@@ -649,6 +639,25 @@ config MM_EVENT_STAT
 	  the MM event). If it's too large, that would be not good situation.
 
 	  System can dump the trace into bugreport when user allows the dump.
+
+config ZSMALLOC_CHAIN_SIZE
+	int "Maximum number of physical pages per-zspage"
+	default 4
+	range 4 16
+	depends on ZSMALLOC
+	help
+	  This option sets the upper limit on the number of physical pages
+	  that a zmalloc page (zspage) can consist of. The optimal zspage
+	  chain size is calculated for each size class during the
+	  initialization of the pool.
+
+	  Changing this option can alter the characteristics of size classes,
+	  such as the number of pages per zspage and the number of objects
+	  per zspage. This can also result in different configurations of
+	  the pool, as zsmalloc merges size classes with similar
+	  characteristics.
+
+	  For more information, see zsmalloc documentation.
 
 config GENERIC_EARLY_IOREMAP
 	bool
@@ -797,6 +806,28 @@ config PERCPU_STATS
 	  information includes global and per chunk statistics, which can
 	  be used to help understand percpu memory usage.
 
+config ARCH_SUPPORTS_SPECULATIVE_PAGE_FAULT
+       def_bool n
+
+config SPECULATIVE_PAGE_FAULT
+       bool "Speculative page faults"
+       default y
+       depends on ARCH_SUPPORTS_SPECULATIVE_PAGE_FAULT
+       depends on MMU && SMP
+       help
+         Try to handle user space page faults without holding the mmap_sem.
+
+	 This should allow better concurrency for massively threaded process
+	 since the page fault handler will not wait for other threads memory
+	 layout change to be done, assuming that this change is done in another
+	 part of the process's memory space. This type of page fault is named
+	 speculative page fault.
+
+	 If the speculative page fault fails because of a concurrency is
+	 detected or because underlying PMD or PTE tables are not yet
+	 allocating, it is failing its processing and a classic page fault
+	 is then tried.
+
 config GUP_BENCHMARK
 	bool "Enable infrastructure for get_user_pages_fast() benchmarking"
 	default n
@@ -827,13 +858,6 @@ config PROCESS_RECLAIM
 
 	 Any other value is ignored.
 
-config MEMFD_ASHMEM_SHIM
-	bool "Memfd ashmem ioctl compatibility support"
-	depends on MEMFD_CREATE
-	help
-	  This provides compatibility support for ashmem ioctl commands against
-	  memfd file descriptors. This is useful for compatibility on Android
-	  for older applications that may use ashmem's ioctl commands on the
-	  now memfds passed to them.
-
-	  Unless you are running Android, say N.
+config VMSTAT_INTERVAL
+	int "Default interval in seconds to update vmstat"
+	default 20
