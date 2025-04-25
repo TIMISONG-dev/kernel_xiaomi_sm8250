@@ -1033,6 +1033,7 @@ static struct kgsl_process_private *kgsl_process_private_new(
 	spin_lock_init(&private->mem_lock);
 	spin_lock_init(&private->syncsource_lock);
 	spin_lock_init(&private->ctxt_count_lock);
+	mutex_init(&private->private_mutex);
 
 	idr_init(&private->mem_idr);
 	idr_init(&private->syncsource_idr);
@@ -1097,10 +1098,10 @@ static void process_release_memory(struct kgsl_process_private *private)
 static void kgsl_process_private_close(struct kgsl_device_private *dev_priv,
 		struct kgsl_process_private *private)
 {
-	mutex_lock(&kgsl_driver.process_mutex);
+	mutex_lock(&private->private_mutex);
 
 	if (--private->fd_count > 0) {
-		mutex_unlock(&kgsl_driver.process_mutex);
+		mutex_unlock(&private->private_mutex);
 		kgsl_process_private_put(private);
 		return;
 	}
@@ -1115,7 +1116,7 @@ static void kgsl_process_private_close(struct kgsl_device_private *dev_priv,
 	/* Release all syncsource objects from process private */
 	kgsl_syncsource_process_release_syncsources(private);
 
-	mutex_unlock(&kgsl_driver.process_mutex);
+	mutex_unlock(&private->private_mutex);
 
 	kgsl_process_private_put(private);
 }
