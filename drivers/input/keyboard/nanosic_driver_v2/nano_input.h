@@ -88,10 +88,10 @@ static unsigned char HID_MouseReportDescriptor[] = {
 	0xC0, //    End Collection
 };
 
-#define TOUCH_PAD_X_SIZE_DESC 2879
-#define TOUCH_PAD_Y_SIZE_DESC 1799
-#define MI_DISPLAY_X_SIZE_DESC 363
-#define MI_DISPLAY_Y_SIZE_DESC 214
+#define TOUCH_PAD_X_SIZE_DESC 2560
+#define TOUCH_PAD_Y_SIZE_DESC 1600
+#define MI_DISPLAY_X_SIZE_DESC 2560
+#define MI_DISPLAY_Y_SIZE_DESC 1600
 
 // touch:reportID(0x19)
 static unsigned char HID_TouchReportDescriptor[] = {
