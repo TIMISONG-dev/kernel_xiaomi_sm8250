@@ -7,6 +7,7 @@
 #include <uapi/linux/sched/types.h>
 #include <linux/ctype.h>
 #include <linux/debugfs.h>
+#include <linux/delay.h>
 #include <linux/dma-buf.h>
 #include <linux/fdtable.h>
 #include <linux/io.h>
@@ -990,8 +991,15 @@ static struct kgsl_process_private *kgsl_process_private_new(
 	list_for_each_entry(private, &kgsl_driver.process_list, list) {
 		if (private->pid == cur_pid) {
 			if (!kgsl_process_private_get(private)) {
-				private = ERR_PTR(-EINVAL);
-			}else{
+				/*
+				 * This will happen only if refcount is zero
+				 * i.e. destroy is triggered but didn't complete
+				 * yet. Return -EEXIST to indicate caller that
+				 * destroy is pending to allow caller to take
+				 * appropriate action.
+				 */
+				private = ERR_PTR(-EEXIST);
+			} else {
 				mutex_lock(&private->private_mutex);
 				private->fd_count++;
 				mutex_unlock(&private->private_mutex);
@@ -1141,6 +1149,7 @@ static struct kgsl_process_private *kgsl_process_private_open(
 		usleep_range(10, 100);
 		private = _process_private_open(device);
 	}
+	
 	if (i >= 100) {
 		pr_info("kgsl: kgsl_process_private_open times = %d\n", i);
 	}
