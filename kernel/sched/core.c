@@ -2568,7 +2568,7 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
 			 * When on_rq && !on_cpu the task is preempted, see if
 			 * it should preempt the task that is current now.
 			 */
-			check_preempt_curr(rq, p, wake_flags);
+			wakeup_preempt(rq, p, wake_flags);
 		}
 		p->state = TASK_RUNNING;
 		trace_sched_wakeup(p);
