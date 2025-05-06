@@ -279,8 +279,13 @@ struct device_attribute *attr, const char *buf, size_t count)
 		pdata->bump_sample_rate = true;
 		touch_data->setModeValue(0, 1);
 		touch_data->setModeValue(1, 1);
+#ifndef CONFIG_TOUCHSCREEN_SUPPORT_NEW_GAME_MODE
+		touch_data->setModeValue(3, 5);
+		touch_data->setModeValue(2, 4);
+#else
 		touch_data->setModeValue(3, 34);
 		touch_data->setModeValue(2, 99);
+#endif
 		touch_data->setModeValue(7, 0);
 	} else {
 		pdata->bump_sample_rate = false;
