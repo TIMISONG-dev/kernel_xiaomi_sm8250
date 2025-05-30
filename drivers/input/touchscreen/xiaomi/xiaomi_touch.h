@@ -187,6 +187,8 @@ extern int update_palm_sensor_value(int value);
 
 extern int update_p_sensor_value(int value);
 
+extern void update_bump_sample_rate(bool state);
+
 int xiaomitouch_register_modedata(struct xiaomi_touch_interface *data);
 
 #endif

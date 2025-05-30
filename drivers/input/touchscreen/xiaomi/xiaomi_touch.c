@@ -254,6 +254,33 @@ static ssize_t palm_sensor_store(struct device *dev,
 	return count;
 }
 
+void update_bump_sample_rate(bool state)
+{
+	struct xiaomi_touch_interface *touch_data;
+
+	if (!touch_pdata)
+		return;
+	
+	touch_data = touch_pdata->touch_data;
+
+	if(touch_pdata->bump_sample_rate && state) {
+		touch_data->setModeValue(0, 1);
+		touch_data->setModeValue(1, 1);
+#ifndef CONFIG_TOUCHSCREEN_SUPPORT_NEW_GAME_MODE
+		touch_data->setModeValue(3, 5);
+		touch_data->setModeValue(2, 4);
+#else
+		touch_data->setModeValue(3, 34);
+		touch_data->setModeValue(2, 99);
+#endif
+		touch_data->setModeValue(7, 0);
+	} else {
+		touch_data->resetMode(0);
+	}
+
+	return;
+}
+
 static ssize_t bump_sample_rate_start(struct device *dev,
 struct device_attribute *attr, char *buf)
 {
@@ -266,7 +293,6 @@ static ssize_t bump_sample_rate_store(struct device *dev,
 struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct xiaomi_touch_pdata *pdata = dev_get_drvdata(dev);
-	struct xiaomi_touch_interface *touch_data = pdata->touch_data;
 	int input;
 	int ret;
 
@@ -275,22 +301,12 @@ struct device_attribute *attr, const char *buf, size_t count)
 	if (ret < 0)
 		return -EINVAL; // Avoid possible crashes
 
-	if(input) {
+	if(input)
 		pdata->bump_sample_rate = true;
-		touch_data->setModeValue(0, 1);
-		touch_data->setModeValue(1, 1);
-#ifndef CONFIG_TOUCHSCREEN_SUPPORT_NEW_GAME_MODE
-		touch_data->setModeValue(3, 5);
-		touch_data->setModeValue(2, 4);
-#else
-		touch_data->setModeValue(3, 34);
-		touch_data->setModeValue(2, 99);
-#endif
-		touch_data->setModeValue(7, 0);
-	} else {
+	else
 		pdata->bump_sample_rate = false;
-		touch_data->resetMode(0);
-	}
+
+	update_bump_sample_rate(true);
 
 	return count;
 }
