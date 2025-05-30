@@ -7173,6 +7173,8 @@ static void fts_resume_work(struct work_struct *work)
 		fts_palm_sensor_cmd(info->palm_sensor_switch);
 		info->palm_sensor_changed = true;
 	}
+
+	update_bump_sample_rate(true);
 #endif
 
 #ifdef TOUCH_THP_SUPPORT
@@ -7219,6 +7221,8 @@ static void fts_suspend_work(struct work_struct *work)
 		fts_palm_sensor_cmd(0);
 		info->palm_sensor_switch = false;
 	}
+
+	update_bump_sample_rate(false);
 #endif
 	fts_disableInterrupt();
 	info->resume_bit = 0;
