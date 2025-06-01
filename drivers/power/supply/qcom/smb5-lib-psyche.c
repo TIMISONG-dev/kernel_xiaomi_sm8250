@@ -2509,7 +2509,7 @@ static void smblib_check_input_status(struct smb_charger *chg)
 	if ((input_present & INPUT_PRESENT_DC
 			|| input_present & INPUT_PRESENT_USB)
 				&& !off_charge_flag
-				&& (vbat_uv <= (CUTOFF_VOL_THR - 200))) {
+				&& (vbat_uv <= CUTOFF_VOL_THR)) {
 		chg->report_input_absent = true;
 		power_supply_changed(chg->batt_psy);
 	}
