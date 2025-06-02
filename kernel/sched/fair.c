@@ -9886,10 +9886,6 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
 	/*
 	 * Try to use spare capacity of local group without overloading it or
 	 * emptying busiest.
-	 * XXX Spreading tasks across NUMA nodes is not always the best policy
-	 * and special care should be taken for SD_NUMA domain level before
-	 * spreading the tasks. For now, load_balance() fully relies on
-	 * NUMA_BALANCING and fbq_classify_group/rq to override the decision.
 	 */
 	if (local->group_type == group_has_spare) {
 		if ((busiest->group_type > group_fully_busy) &&
@@ -9930,15 +9926,14 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
 			env->migration_type = migrate_task;
 			lsub_positive(&nr_diff, local->sum_nr_running);
 			env->imbalance = nr_diff >> 1;
-			return;
 		} else {
 
-			/*
-			 * If there is no overload, we just want to even the number of
-			 * idle cpus.
-			 */
-			env->migration_type = migrate_task;
-			env->imbalance = max_t(long, 0, (local->idle_cpus -
+				/*
+			 	* If there is no overload, we just want to even the number of
+			 	* idle cpus.
+			 	*/
+				env->migration_type = migrate_task;
+				env->imbalance = max_t(long, 0, (local->idle_cpus -
 							 busiest->idle_cpus) >> 1);
 		}
 
