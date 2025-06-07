@@ -2017,10 +2017,10 @@ static int pd_policy_parse_dt(struct usbpd_pm *pdpm)
 
 	pdpm->chg_enable_k81 = of_property_read_bool(node, "mi,chg-enable-k81");
 
-	rc = of_property_read_u32(node, "mi,pd-power-max", &pdpm->pd_power_max);
-	pr_info("pd-power-max:%d\n", pdpm->pd_power_max);
+	/* Set the max power to 33W,The unit of measurement is mW, so it should be x10.  */
+	pdpm->pd_power_max = 330;
 
-	return rc;
+	return 0;
 }
 
 static int usbpd_pm_probe(struct platform_device *pdev)
