@@ -12,3 +12,9 @@ config TOUCHSCREEN_FOCALTECH
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called focaltech_touch.
+
+config TOUCHSCREEN_DEBUG
+	bool "Focaltech debug"
+	default n
+	help
+	  Say Y here if you want to debug Focaltech
