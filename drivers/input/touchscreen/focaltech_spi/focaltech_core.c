@@ -511,29 +511,34 @@ static int fts_input_report_b(struct fts_ts_data *data)
 
 			touchs |= BIT(events[i].id);
 			data->touchs |= BIT(events[i].id);
-
+		#ifdef CONFIG_TOUCHSCREEN_DEBUG
 			if ((data->log_level >= 2) ||
 			    ((1 == data->log_level) &&
 			     (FTS_TOUCH_DOWN == events[i].flag))) {
 				FTS_DEBUG("[B]P%d DOWN!", events[i].id);
 			}
+		#endif
 		} else {
 			uppoint++;
 			input_mt_report_slot_state(data->input_dev,
 						   MT_TOOL_FINGER, false);
 			data->touchs &= ~BIT(events[i].id);
+		#ifdef CONFIG_TOUCHSCREEN_DEBUG
 			if (data->log_level >= 1) {
 				FTS_DEBUG("[B]P%d UP!", events[i].id);
 			}
+		#endif
 		}
 	}
 
 	if (unlikely(data->touchs ^ touchs)) {
 		for (i = 0; i < max_touch_num; i++) {
 			if (BIT(i) & (data->touchs ^ touchs)) {
+			#ifdef CONFIG_TOUCHSCREEN_DEBUG
 				if (data->log_level >= 1) {
 					FTS_DEBUG("[B]P%d UP!", i);
 				}
+			#endif
 				va_reported = true;
 				input_mt_slot(data->input_dev, i);
 				input_mt_report_slot_state(
@@ -546,9 +551,11 @@ static int fts_input_report_b(struct fts_ts_data *data)
 	if (va_reported) {
 		/* touchs==0, there's no point but key */
 		if (EVENT_NO_DOWN(data) || (!touchs)) {
+		#ifdef CONFIG_TOUCHSCREEN_DEBUG
 			if (data->log_level >= 1) {
 				FTS_DEBUG("[B]Points All Up!");
 			}
+		#endif
 			input_report_key(data->input_dev, BTN_TOUCH, 0);
 		} else {
 			input_report_key(data->input_dev, BTN_TOUCH, 1);
@@ -593,7 +600,7 @@ static int fts_input_report_a(struct fts_ts_data *data)
 					 events[i].y);
 
 			input_mt_sync(data->input_dev);
-
+		#ifdef CONFIG_TOUCHSCREEN_DEBUG
 			if ((data->log_level >= 2) ||
 			    ((1 == data->log_level) &&
 			     (FTS_TOUCH_DOWN == events[i].flag))) {
@@ -602,6 +609,7 @@ static int fts_input_report_a(struct fts_ts_data *data)
 					  events[i].y, events[i].p,
 					  events[i].area);
 			}
+		#endif
 			touchs++;
 		}
 	}
@@ -614,9 +622,11 @@ static int fts_input_report_a(struct fts_ts_data *data)
 
 	if (va_reported) {
 		if (EVENT_NO_DOWN(data)) {
+		#ifdef CONFIG_TOUCHSCREEN_DEBUG
 			if (data->log_level >= 1) {
 				FTS_DEBUG("[A]Points All Up!");
 			}
+		#endif
 			input_report_key(data->input_dev, BTN_TOUCH, 0);
 			input_mt_sync(data->input_dev);
 		} else {
