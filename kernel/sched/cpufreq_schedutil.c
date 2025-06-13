@@ -234,24 +234,24 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 	return l_freq;
 }
 
+static const unsigned long factor[8] = { [0 ... 7] = 1280 - SCHED_CAPACITY_SCALE };
+
 static inline unsigned long apply_dvfs_headroom(unsigned long util, int cpu)
 {
-	unsigned int sched_dvfs_headroom[8] = { [0 ... 7] = 1280 };
 	unsigned long capacity = capacity_orig_of(cpu);
+	unsigned long delta;
 	unsigned long headroom;
 
 	if (util >= capacity)
 		return util;
 
 	/*
-	 * Taper the boosting at the top end as these are expensive and
-	 * we don't need that much of a big headroom as we approach max
-	 * capacity
+	 * Quadratic taper the boosting at the top end as these are expensive and
+	 * we don't need that much of a big headroom as we approach max capacity
 	 */
-	headroom = (capacity - util);
-	/* formula: headroom * (1.X - 1) == headroom * 0.X */
-	headroom = headroom *
-		(sched_dvfs_headroom[cpu] - SCHED_CAPACITY_SCALE) >> SCHED_CAPACITY_SHIFT;
+	delta = capacity - util;
+	headroom = (delta * delta * factor[cpu]) >> (SCHED_CAPACITY_SHIFT + 10);
+
 	return util + headroom;
 }
 
