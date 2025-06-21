@@ -243,7 +243,7 @@ static inline unsigned long apply_dvfs_headroom(unsigned long util, int cpu)
 	 * for very low utilization as well. Consider 6.25% (capacity / 16)
 	 * as the minimum utilization required.
 	 */
-	if (util >= capacity || util < (capacity >> 4))
+	if (unlikely(util >= capacity) || likely(util < (capacity >> 4)))
 		return util;
 
 	/*
@@ -252,16 +252,16 @@ static inline unsigned long apply_dvfs_headroom(unsigned long util, int cpu)
 	 * approach max capacity.
 	 */
 	delta = capacity - util;
-	headroom = (delta * delta * 7) >> 15;
+	headroom = (delta * delta * 6) >> 15;
 
         /* Limit the headroom within a valid range to avoid excessive or
 	 * negligible boosts.
-	 * Cap the maximum headroom at 12.5% (capacity / 8) to prevent
+	 * Cap the maximum headroom at 10% (capacity / 10) to prevent
 	 * unnecessary over-boosting.
 	 * If the calculated headroom is below 0.39% (capacity / 256),
 	 * skip boosting as it is unlikely to trigger a frequency change.
          */
-	max_boost = capacity >> 3;
+	max_boost = capacity / 10;
 	min_boost = capacity >> 8;
 
 	if (headroom > max_boost)
