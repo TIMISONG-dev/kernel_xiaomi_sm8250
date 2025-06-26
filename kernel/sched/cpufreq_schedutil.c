@@ -247,12 +247,14 @@ static inline unsigned long apply_dvfs_headroom(unsigned long util, int cpu)
 		return util;
 
 	/*
-	 * Quadratically taper the boosting at the top end as these are
-	 * expensive and we don't need that much of a big headroom as we
-	 * approach max capacity.
+	 * Quadratically taper the boosting at the top end based on capacity
+	 * as these are expensive and we don't need that much of a big
+	 * headroom as we approach max capacity.
+	 *
+	 * Formula: (3 * delta²) / (16 * capacity)
 	 */
 	delta = capacity - util;
-	headroom = (delta * delta * 6) >> 15;
+	headroom = (delta * delta * 3) / (16 * capacity);
 
         /* Limit the headroom within a valid range to avoid excessive or
 	 * negligible boosts.
