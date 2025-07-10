@@ -251,10 +251,10 @@ static inline unsigned long apply_dvfs_headroom(unsigned long util, int cpu)
 	 * as these are expensive and we don't need that much of a big
 	 * headroom as we approach max capacity.
 	 *
-	 * Formula: (3 * delta²) / (16 * capacity)
+	 * Formula: (delta²) / (5 * capacity)
 	 */
 	delta = capacity - util;
-	headroom = (delta * delta * 3) / (16 * capacity);
+	headroom = (delta * delta) / (5 * capacity);
 
         /* Limit the headroom within a valid range to avoid excessive or
 	 * negligible boosts.
