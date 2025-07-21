@@ -236,7 +236,7 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 
 static inline unsigned long apply_dvfs_headroom(unsigned long util, int cpu)
 {
-	unsigned long capacity = capacity_orig_of(cpu);
+	unsigned long capacity = arch_scale_cpu_capacity(cpu);
 	unsigned long delta, headroom, max_boost, min_boost;
 
 	/* There's no need of headroom at high utilization. The same goes
