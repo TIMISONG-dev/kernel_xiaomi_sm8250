@@ -1263,13 +1263,15 @@ SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
 	down_read(&uts_sem);
 	memcpy(&tmp, utsname(), sizeof(tmp));
 #ifndef CONFIG_FAKE_UNAME_NONE
-	if (!strncmp(current->comm, "bpfloader", 9) ||
-	    !strncmp(current->comm, "netbpfload", 10) ||
-	    !strncmp(current->comm, "netd", 4) ||
-	    !strncmp(current->comm, "uprobestats", 11)) {
-		strcpy(tmp.release, FAKE_UNAME);
-		pr_debug("fake uname: %s/%d release=%s\n",
-			 current->comm, current->pid, tmp.release);
+	if (current_uid().val == 0) {
+		if (!strncmp(current->comm, "bpfloader", 9) ||
+			!strncmp(current->comm, "netbpfload", 10) ||
+			!strncmp(current->comm, "netd", 4) ||
+			!strncmp(current->comm, "uprobestats", 11)) {
+			strcpy(tmp.release, FAKE_UNAME);
+			pr_info("fake uname: %s/%d release=%s\n",
+				current->comm, current->pid, tmp.release);
+		}
 	}
 #endif
 	up_read(&uts_sem);
