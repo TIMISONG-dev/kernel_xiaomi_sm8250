@@ -1,21 +1,17 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * CPUFreq governor based on scheduler-provided CPU utilization data.
  *
  * Copyright (C) 2016, Intel Corporation
  * Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+#include <linux/cpufreq.h>
+#include <linux/kthread.h>
+#include <uapi/linux/sched/types.h>
+#include <trace/events/power.h>
 
 #include "sched.h"
-
-#include <linux/sched/cpufreq.h>
-#include <trace/events/power.h>
-#include <linux/sched/sysctl.h>
 
 #define IOWAIT_BOOST_MIN	(SCHED_CAPACITY_SCALE / 8)
 
@@ -893,7 +889,7 @@ static void sugov_stop(struct cpufreq_policy *policy)
 static void sugov_limits(struct cpufreq_policy *policy)
 {
 	struct sugov_policy *sg_policy = policy->governor_data;
-	unsigned long flags;
+	unsigned long flags, now;
 	unsigned int freq;
 
 	if (!policy->fast_switch_enabled) {
@@ -903,14 +899,19 @@ static void sugov_limits(struct cpufreq_policy *policy)
 	} else {
 		raw_spin_lock_irqsave(&sg_policy->update_lock, flags);
 		freq = policy->cur;
+		now = ktime_get_ns();
 
 		/*
 		 * cpufreq_driver_resolve_freq() has a clamp, so we do not need
 		 * to do any sort of additional validation here.
 		 */
 		freq = cpufreq_driver_resolve_freq(policy, freq);
-		sg_policy->cached_raw_freq = freq;
-		cpufreq_driver_fast_switch(sg_policy->policy, freq);
+
+		if (sugov_update_next_freq(sg_policy, now, freq)) {
+			sg_policy->cached_raw_freq = freq;
+			cpufreq_driver_fast_switch(sg_policy->policy, freq);
+		}
+		
 		raw_spin_unlock_irqrestore(&sg_policy->update_lock, flags);
 	}
 
