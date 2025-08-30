@@ -3061,8 +3061,8 @@ static int rmnet_ipa3_set_data_quota_modem(
 	data->interface_name[IFNAMSIZ-1] = '\0';
 
 	index = find_vchannel_name_index(data->interface_name);
-	IPAWANERR("iface name %s, quota %lu\n",
-		  data->interface_name, (unsigned long) data->quota_mbytes);
+	pr_err_once("%s: iface name %s, quota %lu\n", __func__,
+				data->interface_name, (unsigned long) data->quota_mbytes);
 
 	if (index == MAX_NUM_OF_MUX_CHANNEL) {
 		IPAWANERR("%s is an invalid iface name\n",
