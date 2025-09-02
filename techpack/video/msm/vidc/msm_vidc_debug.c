@@ -180,7 +180,7 @@ static ssize_t debug_level_write(struct file *filp, const char __user *buf,
 		goto exit;
 	}
 	core->resources.msm_vidc_hw_rsp_timeout =
-	((msm_vidc_debug & 0xFF) > (VIDC_ERR | VIDC_HIGH)) ? 1500 : 1000;
+	((msm_vidc_debug & 0xFF) > (VIDC_ERR | VIDC_HIGH)) ? 2500 : 1000;
 	rc = count;
 	d_vpr_h("debug timeout updated to - %d\n",
 		core->resources.msm_vidc_hw_rsp_timeout);
