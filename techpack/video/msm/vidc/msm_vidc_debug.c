@@ -520,7 +520,7 @@ void msm_vidc_debugfs_deinit_inst(struct msm_vidc_inst *inst)
 {
 	struct dentry *dentry = NULL;
 
-	if (!inst || !inst->debugfs_root)
+	if (!inst || IS_ERR_OR_NULL(inst->debugfs_root))
 		return;
 
 	dentry = inst->debugfs_root;
