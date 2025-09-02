@@ -479,6 +479,7 @@ static int msm_vidc_probe_vidc_device(struct platform_device *pdev)
 	struct msm_vidc_core *core;
 	struct device *dev = NULL;
 	int nr = BASE_DEVICE_NUMBER;
+	u32 sku_index = 0;
 
 	if (!vidc_driver) {
 		d_vpr_e("Invalid vidc driver\n");
@@ -496,6 +497,16 @@ static int msm_vidc_probe_vidc_device(struct platform_device *pdev)
 		goto err_core_init;
 	}
 	dev_set_drvdata(&pdev->dev, core);
+
+	/* If the sku_version != the DT node's sku-index, then return as a successful
+	 * probe to prevent the bus from staying on. */
+	rc = of_property_read_u32(pdev->dev.of_node, "sku-index",
+			&sku_index);
+	if (!rc && sku_index != core->platform_data->sku_version) {
+		rc = 0;
+		goto err_core_init;
+	}
+
 	rc = msm_vidc_initialize_core(pdev, core);
 	if (rc) {
 		d_vpr_e("Failed to init core\n");
@@ -724,6 +735,7 @@ static int msm_vidc_pm_suspend(struct device *dev)
 {
 	int rc = 0;
 	struct msm_vidc_core *core;
+	u32 sku_index = 0;
 
 	/*
 	 * Bail out if
@@ -733,6 +745,11 @@ static int msm_vidc_pm_suspend(struct device *dev)
 	 */
 	if (!dev || !dev->driver ||
 		!of_device_is_compatible(dev->of_node, "qcom,msm-vidc"))
+		return 0;
+
+	rc = of_property_read_u32(dev->of_node, "sku-index",
+			&sku_index);
+	if (!rc && sku_index != vidc_driver->sku_version)
 		return 0;
 
 	core = dev_get_drvdata(dev);
