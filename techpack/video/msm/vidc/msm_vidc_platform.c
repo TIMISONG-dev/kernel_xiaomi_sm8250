@@ -943,10 +943,11 @@ static struct msm_vidc_common_data lito_common_data_v0[] = {
 	},
 	{
 		.key = "qcom,max-hw-load",
-		.value = 1958400,
+		.value = 3916800,
 		/**
-		 * ((3840x2176)/256)@60
+		 * supported is: ((3840x2176)/256)@60
 		 * UHD@30 decode + UHD@30 encode
+		 * mentioned value is as per UHD@120
 		 */
 	},
 	{
@@ -1030,9 +1031,11 @@ static struct msm_vidc_common_data lito_common_data_v1[] = {
 	},
 	{
 		.key = "qcom,max-hw-load",
-		.value = 1224000,
+		.value = 3916800,
 		/**
+		 * supported is:
 		 * UHD@30 decode + 1080@30 encode
+		 * mentioned is as per UHD@120
 		 */
 	},
 		{
