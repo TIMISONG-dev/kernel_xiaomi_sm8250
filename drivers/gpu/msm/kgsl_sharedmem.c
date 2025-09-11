@@ -1479,9 +1479,9 @@ void kgsl_get_memory_usage(char *name, size_t name_size, uint64_t memflags)
 		KGSL_MEMTYPE_SHIFT);
 
 	if (type == KGSL_MEMTYPE_KERNEL)
-		strlcpy(name, "kernel", name_size);
+		strscpy(name, "kernel", name_size);
 	else if (type < ARRAY_SIZE(memtype_str) && memtype_str[type] != NULL)
-		strlcpy(name, memtype_str[type], name_size);
+		strscpy(name, memtype_str[type], name_size);
 	else
 		snprintf(name, name_size, "VK/others(%3d)", type);
 }
