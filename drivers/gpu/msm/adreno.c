@@ -1503,11 +1503,11 @@ static const char *adreno_get_gpu_model(struct kgsl_device *device)
 	if (!ret)
 		strlcpy(gpu_model, model, sizeof(gpu_model));
 	else
-		scnprintf(gpu_model, sizeof(gpu_model), "Adreno%d%d%dv%d",
-			ADRENO_CHIPID_CORE(ADRENO_DEVICE(device)->chipid),
-			ADRENO_CHIPID_MAJOR(ADRENO_DEVICE(device)->chipid),
-			ADRENO_CHIPID_MINOR(ADRENO_DEVICE(device)->chipid),
-			ADRENO_CHIPID_PATCH(ADRENO_DEVICE(device)->chipid) + 1);
+		scnprintf(gpu_model, sizeof(gpu_model), "Adreno%u%u%uv%u",
+			(u32)ADRENO_CHIPID_CORE(ADRENO_DEVICE(device)->chipid),
+			(u32)ADRENO_CHIPID_MAJOR(ADRENO_DEVICE(device)->chipid),
+			(u32)ADRENO_CHIPID_MINOR(ADRENO_DEVICE(device)->chipid),
+			(u32)ADRENO_CHIPID_PATCH(ADRENO_DEVICE(device)->chipid) + 1);
 
 	return gpu_model;
 }
