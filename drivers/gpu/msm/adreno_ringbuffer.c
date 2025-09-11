@@ -1213,7 +1213,7 @@ done:
 /**
  * adreno_ringbuffer_wait_callback() - Callback function for event registered
  * on a ringbuffer timestamp
- * @device: Device for which the the callback is valid
+ * @device: Device for which the callback is valid
  * @context: The context of the event
  * @priv: The private parameter of the event
  * @result: Result of the event trigger

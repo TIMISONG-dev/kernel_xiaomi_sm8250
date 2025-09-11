@@ -76,7 +76,7 @@ static void _process_event_group(struct kgsl_device *device,
 	context = group->context;
 
 	/*
-	 * Sanity check to be sure that we we aren't racing with the context
+	 * Sanity check to be sure that we aren't racing with the context
 	 * getting destroyed
 	 */
 	if (WARN_ON(context != NULL && !_kgsl_context_get(context)))
