@@ -94,7 +94,7 @@ struct kgsl_pwr_constraint {
 };
 
 /**
- * struct kgsl_pwrlevel - Struct holding different pwrlevel info obtained from
+ * struct kgsl_pwrlevel - Struct holding different pwrlevel info obtained
  * from dtsi file
  * @gpu_freq:          GPU frequency vote in Hz
  * @bus_freq:          Bus bandwidth vote index
