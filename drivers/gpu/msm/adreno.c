@@ -1501,7 +1501,7 @@ static const char *adreno_get_gpu_model(struct kgsl_device *device)
 	of_node_put(node);
 
 	if (!ret)
-		strlcpy(gpu_model, model, sizeof(gpu_model));
+		strscpy(gpu_model, model, sizeof(gpu_model));
 	else
 		scnprintf(gpu_model, sizeof(gpu_model), "Adreno%u%u%uv%u",
 			(u32)ADRENO_CHIPID_CORE(ADRENO_DEVICE(device)->chipid),
@@ -2696,7 +2696,7 @@ static int adreno_prop_gpu_model(struct kgsl_device *device,
 {
 	struct kgsl_gpu_model model = {0};
 
-	strlcpy(model.gpu_model, adreno_get_gpu_model(device),
+	strscpy(model.gpu_model, adreno_get_gpu_model(device),
 			sizeof(model.gpu_model));
 
 	return copy_prop(param, &model, sizeof(model));
