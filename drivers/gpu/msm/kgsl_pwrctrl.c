@@ -1096,7 +1096,7 @@ static ssize_t idle_timer_show(struct device *dev,
 	struct kgsl_device *device = dev_get_drvdata(dev);
 
 	/* Show the idle_timeout converted to msec */
-	return scnprintf(buf, PAGE_SIZE, "%u\n",
+	return scnprintf(buf, PAGE_SIZE, "%lu\n",
 		jiffies_to_msecs(device->pwrctrl.interval_timeout));
 }
 
