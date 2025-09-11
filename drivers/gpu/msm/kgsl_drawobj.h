@@ -8,7 +8,6 @@
 #define __KGSL_DRAWOBJ_H
 
 #include <linux/dma-fence.h>
-#include <linux/irq_work.h>
 #include <linux/kref.h>
 
 #define DRAWOBJ(obj) (&obj->base)
