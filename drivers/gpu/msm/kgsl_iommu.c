@@ -257,7 +257,7 @@ static void kgsl_iommu_add_global(struct kgsl_mmu *mmu,
 	memdesc->priv |= KGSL_MEMDESC_GLOBAL;
 
 	global_pt_entries[global_pt_count].memdesc = memdesc;
-	strlcpy(global_pt_entries[global_pt_count].name, name,
+	strscpy(global_pt_entries[global_pt_count].name, name,
 			sizeof(global_pt_entries[global_pt_count].name));
 	global_pt_count++;
 }
@@ -605,7 +605,7 @@ static void _get_global_entries(uint64_t faultaddr,
 		prev->flags = p->memdesc->flags;
 		prev->priv = p->memdesc->priv;
 		prev->pid = 0;
-		strlcpy(prev->name, p->name, sizeof(prev->name));
+		strscpy(prev->name, p->name, sizeof(prev->name));
 	}
 
 	if (n != NULL) {
@@ -614,7 +614,7 @@ static void _get_global_entries(uint64_t faultaddr,
 		next->flags = n->memdesc->flags;
 		next->priv = n->memdesc->priv;
 		next->pid = 0;
-		strlcpy(next->name, n->name, sizeof(next->name));
+		strscpy(next->name, n->name, sizeof(next->name));
 	}
 }
 
