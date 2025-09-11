@@ -1034,7 +1034,7 @@ DECLARE_EVENT_CLASS(syncpoint_timestamp_template,
 		__entry->context_id = context->id;
 		__entry->timestamp = timestamp;
 	),
-	TP_printk("ctx=%d sync ctx=%d ts=%d",
+	TP_printk("ctx=%u sync ctx=%u ts=%u",
 		__entry->syncobj_context_id, __entry->context_id,
 		__entry->timestamp)
 );
@@ -1064,7 +1064,7 @@ DECLARE_EVENT_CLASS(syncpoint_fence_template,
 		__entry->syncobj_context_id = syncobj->base.context->id;
 		__assign_str(fence_name, name);
 	),
-	TP_printk("ctx=%d fence=%s",
+	TP_printk("ctx=%u fence=%s",
 		__entry->syncobj_context_id, __get_str(fence_name))
 );
 
