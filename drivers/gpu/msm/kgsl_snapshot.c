@@ -106,9 +106,9 @@ static size_t snapshot_os(struct kgsl_device *device,
 	header->osid = KGSL_SNAPSHOT_OS_LINUX_V3;
 
 	/* Get the kernel build information */
-	strlcpy(header->release, init_utsname()->release,
+	strscpy(header->release, init_utsname()->release,
 			sizeof(header->release));
-	strlcpy(header->version, init_utsname()->version,
+	strscpy(header->version, init_utsname()->version,
 			sizeof(header->version));
 
 	/* Get the Unix time for the timestamp */
@@ -137,7 +137,7 @@ static size_t snapshot_os(struct kgsl_device *device,
 	if (context) {
 
 		header->pid = context->tid;
-		strlcpy(header->comm, context->proc_priv->comm,
+		strscpy(header->comm, context->proc_priv->comm,
 				sizeof(header->comm));
 		kgsl_context_put(context);
 		context = NULL;
@@ -194,9 +194,9 @@ static size_t snapshot_os_no_ctxt(struct kgsl_device *device,
 	header->osid = KGSL_SNAPSHOT_OS_LINUX_V3;
 
 	/* Get the kernel build information */
-	strlcpy(header->release, init_utsname()->release,
+	strscpy(header->release, init_utsname()->release,
 			sizeof(header->release));
-	strlcpy(header->version, init_utsname()->version,
+	strscpy(header->version, init_utsname()->version,
 			sizeof(header->version));
 
 	/* Get the Unix time for the timestamp */
