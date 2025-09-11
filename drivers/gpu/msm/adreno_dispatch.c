@@ -1723,7 +1723,7 @@ static void adreno_fault_header(struct kgsl_device *device,
 	if (!gx_on) {
 		if (drawobj != NULL)
 			pr_fault(device, drawobj,
-				"%s fault ctx %d ctx_type %s ts %d and GX is OFF\n",
+				"%s fault ctx %d ctx_type %s ts %u and GX is OFF\n",
 				type, drawobj->context->id,
 				get_api_type_str(drawctxt->type),
 				drawobj->timestamp);
@@ -1754,7 +1754,7 @@ static void adreno_fault_header(struct kgsl_device *device,
 			ib2base, ib2sz, drawctxt->rb->id);
 
 		pr_fault(device, drawobj,
-			"%s fault ctx %d ctx_type %s ts %d status %8.8X rb %4.4x/%4.4x ib1 %16.16llX/%4.4x ib2 %16.16llX/%4.4x\n",
+			"%s fault ctx %d ctx_type %s ts %u status %8.8X rb %4.4x/%4.4x ib1 %16.16llX/%4.4x ib2 %16.16llX/%4.4x\n",
 			type, drawobj->context->id,
 			get_api_type_str(drawctxt->type),
 			drawobj->timestamp, status,
@@ -1956,7 +1956,7 @@ static void process_cmdobj_fault(struct kgsl_device *device,
 
 	/* If we get here then all the policies failed */
 
-	pr_context(device, drawobj->context, "gpu %s ctx %d ts %d\n",
+	pr_context(device, drawobj->context, "gpu %s ctx %d ts %u\n",
 		state, drawobj->context->id, drawobj->timestamp);
 
 	/* Mark the context as failed */
@@ -2066,7 +2066,7 @@ replay:
 
 		if (ret) {
 			pr_context(device, replay[i]->base.context,
-				"gpu reset failed ctx %d ts %d\n",
+				"gpu reset failed ctx %d ts %u\n",
 				replay[i]->base.context->id,
 				replay[i]->base.timestamp);
 
@@ -2341,7 +2341,7 @@ static void _print_recovery(struct kgsl_device *device,
 	}
 
 	pr_context(device, drawobj->context,
-		"gpu %s ctx %d ts %d policy %lX\n",
+		"gpu %s ctx %d ts %u policy %lX\n",
 		result, drawobj->context->id, drawobj->timestamp,
 		cmdobj->fault_recovery);
 }
@@ -2446,7 +2446,7 @@ static void _adreno_dispatch_check_timeout(struct adreno_device *adreno_dev,
 	if (drawobj->context->flags & KGSL_CONTEXT_NO_FAULT_TOLERANCE)
 		return;
 
-	pr_context(device, drawobj->context, "gpu timeout ctx %d ts %d\n",
+	pr_context(device, drawobj->context, "gpu timeout ctx %d ts %u\n",
 		drawobj->context->id, drawobj->timestamp);
 
 	adreno_set_gpu_fault(adreno_dev, ADRENO_TIMEOUT_FAULT);
