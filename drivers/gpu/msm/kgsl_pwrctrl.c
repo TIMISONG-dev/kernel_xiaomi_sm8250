@@ -2024,7 +2024,7 @@ static int _get_regulator(struct kgsl_device *device,
 		return ret;
 	}
 
-	strlcpy(regulator->name, str, sizeof(regulator->name));
+	strscpy(regulator->name, str, sizeof(regulator->name));
 	return 0;
 }
 
