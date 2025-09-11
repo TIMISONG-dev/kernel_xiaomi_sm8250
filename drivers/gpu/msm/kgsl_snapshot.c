@@ -227,7 +227,7 @@ static void kgsl_snapshot_put_object(struct kgsl_snapshot_object *obj)
 /**
  * kgsl_snapshot_have_object() - return 1 if the object has been processed
  * @snapshot: the snapshot data
- * @process: The process that owns the the object to freeze
+ * @process: The process that owns the object to freeze
  * @gpuaddr: The gpu address of the object to freeze
  * @size: the size of the object (may not always be the size of the region)
  *
@@ -640,7 +640,7 @@ static void set_isdb_breakpoint_registers(struct kgsl_device *device)
 }
 
 /**
- * kgsl_snapshot() - construct a device snapshot
+ * kgsl_device_snapshot() - construct a device snapshot
  * @device: device to snapshot
  * @context: the context that is hung, might be NULL if unknown.
  * @gmu_fault: whether this snapshot is triggered by a GMU fault.
