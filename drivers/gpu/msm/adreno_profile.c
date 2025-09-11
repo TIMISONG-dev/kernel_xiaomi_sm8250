@@ -306,7 +306,7 @@ static bool _add_to_assignments_list(struct adreno_profile *profile,
 	entry->offset = offset;
 	entry->offset_hi = offset_hi;
 
-	strlcpy(entry->name, str, sizeof(entry->name));
+	strscpy(entry->name, str, sizeof(entry->name));
 
 	profile->assignment_count++;
 
