@@ -92,7 +92,7 @@ static unsigned int adreno_ft_regs_default[] = {
 /* Nice level for the higher priority GPU start thread */
 int adreno_wake_nice = -7;
 
-/* Number of milliseconds to stay active active after a wake on touch */
+/* Number of milliseconds to stay active after a wake on touch */
 unsigned int adreno_wake_timeout = 100;
 
 void adreno_reglist_write(struct adreno_device *adreno_dev,
@@ -108,7 +108,7 @@ void adreno_reglist_write(struct adreno_device *adreno_dev,
 /**
  * adreno_readreg64() - Read a 64bit register by getting its offset from the
  * offset array defined in gpudev node
- * @adreno_dev:		Pointer to the the adreno device
+ * @adreno_dev: Pointer to the adreno device
  * @lo:	lower 32bit register enum that is to be read
  * @hi:	higher 32bit register enum that is to be read
  * @val: 64 bit Register value read is placed here

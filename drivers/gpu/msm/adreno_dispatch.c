@@ -466,7 +466,7 @@ static struct kgsl_drawobj *_process_drawqueue_get_next_drawobj(
  * @cmdobj: Pointer to the KGSL command object to requeue
  *
  * Failure to submit a command to the ringbuffer isn't the fault of the command
- * being submitted so if a failure happens, push it back on the head of the the
+ * being submitted so if a failure happens, push it back on the head of the
  * context queue to be reconsidered again unless the context got detached.
  */
 static inline int adreno_dispatcher_requeue_cmdobj(
