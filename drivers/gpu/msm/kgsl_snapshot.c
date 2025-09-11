@@ -478,7 +478,7 @@ static size_t kgsl_snapshot_dump_indexed_regs(struct kgsl_device *device,
 	unsigned int *data = (unsigned int *)(buf + sizeof(*header));
 	int i;
 
-	if (remain < (iregs->count * 4) + sizeof(*header)) {
+	if (remain < ((iregs->count * 4) + sizeof(*header))) {
 		SNAPSHOT_ERR_NOMEM(device, "INDEXED REGS");
 		return 0;
 	}
