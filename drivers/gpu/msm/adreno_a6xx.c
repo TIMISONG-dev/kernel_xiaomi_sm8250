@@ -365,7 +365,7 @@ struct a6xx_reglist_list {
 };
 
 #define REGLIST(_a) \
-	 (struct a6xx_reglist_list) { .regs = _a, .count = ARRAY_SIZE(_a), }
+	 ((struct a6xx_reglist_list) { .regs = _a, .count = ARRAY_SIZE(_a), })
 
 static void a6xx_patch_pwrup_reglist(struct adreno_device *adreno_dev)
 {
