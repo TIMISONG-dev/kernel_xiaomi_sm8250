@@ -2915,7 +2915,7 @@ static int fastrpc_send_cpuinfo_to_dsp(struct fastrpc_file *fl)
 	uint64_t cpuinfo = 0;
 	struct fastrpc_apps *me = &gfa;
 	struct fastrpc_ioctl_invoke_crc ioctl;
-	remote_arg_t ra[2];
+	remote_arg_t ra[1];
 	int cid = -1;
 
 	if (!fl) {
