@@ -113,7 +113,7 @@
 #define DEVICE_NAME	"spcom"
 
 /* maximum clients that can register over a single channel */
-#define SPCOM_MAX_CHANNEL_CLIENTS 2
+#define SPCOM_MAX_CHANNEL_CLIENTS 5
 
 /* maximum ION buffers should be >= SPCOM_MAX_CHANNELS  */
 #define SPCOM_MAX_ION_BUF_PER_CH (SPCOM_MAX_CHANNELS + 4)
