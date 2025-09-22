@@ -99,7 +99,7 @@ struct gsi_ring_ctx {
 	uint64_t rp;
 	uint64_t wp_local;
 	uint64_t rp_local;
-	uint16_t len;
+	uint32_t len;
 	uint8_t elem_sz;
 	uint16_t max_num_elem;
 	uint64_t end;
