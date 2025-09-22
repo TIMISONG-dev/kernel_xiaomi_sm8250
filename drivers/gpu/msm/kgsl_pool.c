@@ -31,7 +31,7 @@
  */
 struct kgsl_page_pool {
 	unsigned int pool_order;
-	int page_count;
+	unsigned int page_count;
 	unsigned int reserved_pages;
 	bool allocation_allowed;
 	unsigned int max_pages;
