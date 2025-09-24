@@ -403,23 +403,19 @@ void cgroup_base_stat_cputime_show(struct seq_file *seq)
 {
 	struct cgroup *cgrp = seq_css(seq)->cgroup;
 	u64 usage, utime, stime;
-	struct cgroup_base_stat bstat;
 #ifdef CONFIG_SCHED_CORE
+	struct cgroup_base_stat bstat;
 	u64 forceidle_time;
 #endif
 
-	if (!cgroup_parent(cgrp)) {
-#ifdef CONFIG_SCHED_CORE
-		forceidle_time = bstat.forceidle_sum;
-#endif
+	if (!cgroup_parent(cgrp))
 		return;
-	}
 
 	cgroup_rstat_flush_hold(cgrp);
 	usage = cgrp->bstat.cputime.sum_exec_runtime;
 	cputime_adjust(&cgrp->bstat.cputime, &cgrp->prev_cputime, &utime, &stime);
 #ifdef CONFIG_SCHED_CORE
-		forceidle_time = cgrp->bstat.forceidle_sum;
+	forceidle_time = cgrp->bstat.forceidle_sum;
 #endif
 	cgroup_rstat_flush_release();
 
