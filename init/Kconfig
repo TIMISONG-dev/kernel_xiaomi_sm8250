@@ -380,6 +380,12 @@ config CROSS_MEMORY_ATTACH
 	  to directly read from or write to another process' address space.
 	  See the man page for more details.
 
+config MIHW
+	bool "MI driver"
+	default n
+	help
+	  Mi driver code
+
 config USELIB
 	bool "uselib syscall"
 	def_bool ALPHA || M68K || SPARC || X86_32 || IA32_EMULATION

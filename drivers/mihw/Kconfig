@@ -1,0 +1,49 @@
+config MILLET_CGROUP
+	tristate "frozen framework cgroup"
+	depends on MIHW
+	default n
+	help
+	  Mi frozen function
+
+config MILLET_SIG
+	tristate "frozen framework signal"
+	depends on MIHW
+	default n
+	help
+	  Mi frozen function
+
+config MILLET_BINDER
+	tristate "frozen framework binder"
+	depends on MIHW
+	default n
+	help
+	  Mi frozen function
+
+config MILLET_PKG
+	tristate "frozen framework pkg"
+	depends on MIHW
+	default n
+	help
+	  Mi frozen function
+
+config MILLET_BINDER_GKI
+	tristate "frozen framework binder gki"
+	depends on MIHW
+	default n
+	help
+	  Mi frozen function
+
+config MILLET_CORE
+	tristate "frozen framework core"
+	depends on MIHW
+	default n
+	help
+	  Mi frozen function
+
+config MILLET_HS
+	tristate "frozen framework hs"
+	depends on MIHW
+	default n
+	help
+	  Mi frozen function
+
