@@ -366,6 +366,8 @@ void cpu_limits_set_level(unsigned int cpu, unsigned int max_freq)
 				get_state_freq(cpufreq_cdev, state);
 
 			if (max_freq <= target_freq) {
+				if (level < 11)
+					level = 11;
 				if (cpufreq_cdev->cpufreq_state != state) {
 					cpufreq_cdev->cpufreq_state = state;
 					cpufreq_cdev->clipped_freq = target_freq;
