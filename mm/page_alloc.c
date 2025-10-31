@@ -7854,9 +7854,9 @@ static void __setup_per_zone_wmarks(void)
 		u64 min, low;
 
 		spin_lock_irqsave(&zone->lock, flags);
-		min = (u64)pages_min * zone->managed_pages;
+		min = (u64)pages_min * zone_managed_pages(zone);
 		do_div(min, lowmem_pages);
-		low = (u64)pages_low * zone->managed_pages;
+		low = (u64)pages_low * zone_managed_pages(zone);
 		do_div(low, vm_total_pages);
 
 		if (is_highmem(zone)) {
@@ -7888,7 +7888,7 @@ static void __setup_per_zone_wmarks(void)
 		 * ensure a minimum size on small systems.
 		 */
 		min = max_t(u64, min >> 2,
-			    mult_frac(zone->managed_pages,
+			    mult_frac(zone_managed_pages(zone),
 				      watermark_scale_factor, 10000));
 
 		zone->watermark_boost = 0;
