@@ -91,6 +91,9 @@
 #include <linux/bpf.h>
 #include <linux/kernfs.h>
 #include <linux/stringhash.h>	/* for hashlen_string() */
+#ifdef CONFIG_KSU
+#include <asm/memory.h>
+#endif
 
 #include "avc.h"
 #include "objsec.h"
@@ -329,11 +332,20 @@ static void inode_free_security(struct inode *inode)
 	 * concurrent list_add(), but for better safety against future changes
 	 * in the code, we use list_empty_careful() here.
 	 */
+#ifdef CONFIG_KSU
+    spin_lock(&sbsec->isec_lock);
+    if (isec->on_head) {
+        list_del_init(untagged_addr(&isec->list));
+        isec->on_head = false;
+    }
+    spin_unlock(&sbsec->isec_lock);
+#else
 	if (!list_empty_careful(&isec->list)) {
 		spin_lock(&sbsec->isec_lock);
 		list_del_init(&isec->list);
 		spin_unlock(&sbsec->isec_lock);
 	}
+#endif
 }
 
 static void superblock_free_security(struct super_block *sb)
@@ -539,7 +551,12 @@ static int sb_finish_set_opts(struct super_block *sb)
 				list_first_entry(&sbsec->isec_head,
 					   struct inode_security_struct, list);
 		struct inode *inode = isec->inode;
+#ifdef CONFIG_KSU
+        list_del_init(untagged_addr(&isec->list));
+        isec->on_head = false;
+#else
 		list_del_init(&isec->list);
+#endif
 		spin_unlock(&sbsec->isec_lock);
 		inode = igrab(inode);
 		if (inode) {
@@ -1392,8 +1409,12 @@ static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dent
 		   after the initial policy is loaded and the security
 		   server is ready to handle calls. */
 		spin_lock(&sbsec->isec_lock);
-		if (list_empty(&isec->list))
+		if (list_empty(&isec->list)) {
 			list_add(&isec->list, &sbsec->isec_head);
+#ifdef CONFIG_KSU
+			isec->on_head = true;
+#endif
+		}
 		spin_unlock(&sbsec->isec_lock);
 		goto out_unlock;
 	}
