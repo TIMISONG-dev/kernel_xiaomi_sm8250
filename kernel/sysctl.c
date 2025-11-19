@@ -1625,7 +1625,7 @@ static struct ctl_table vm_table[] = {
 		.maxlen		= sizeof(kswapd_threads),
 		.mode		= 0644,
 		.proc_handler	= kswapd_threads_sysctl_handler,
-		.extra1		= SYSCTL_ONE,
+		.extra1		= &one,
 		.extra2		= &max_kswapd_threads,
 	},
 #endif
