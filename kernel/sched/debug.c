@@ -462,6 +462,7 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
 
 	SEQ_printf(m, " %15s %5d %9Ld %c %9Ld.%06ld %9Ld.%06ld %9Ld.%06ld %9Ld %5d ",
 		p->comm, task_pid_nr(p),
+		p->se.h_load.weight,
 		SPLIT_NS(p->se.vruntime),
 		SPLIT_NS(p->se.deadline),
 		p->se.custom_slice ? 'S' : ' ',
@@ -491,8 +492,16 @@ static void print_rq(struct seq_file *m, struct rq *rq, int rq_cpu)
 
 	SEQ_printf(m, "\n");
 	SEQ_printf(m, "runnable tasks:\n");
-	SEQ_printf(m, " S            task   PID         tree-key  switches  prio"
-		   "     wait-time             sum-exec        sum-sleep\n");
+	SEQ_printf(m, " S            task   PID     weight       vruntime   eligible    "
+		   "deadline             slice          sum-exec      switches  "
+		   "prio         wait-time        sum-sleep       sum-block"
+#ifdef CONFIG_NUMA_BALANCING
+		   "  node   group-id"
+#endif
+#ifdef CONFIG_CGROUP_SCHED
+		   "  group-path"
+#endif
+		   "\n");
 	SEQ_printf(m, "-------------------------------------------------------"
 		   "------------------------------------------------------\n");
 
@@ -590,6 +599,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
 			cfs_rq->tg_load_avg_contrib);
 	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
 			atomic_long_read(&cfs_rq->tg->load_avg));
+	SEQ_printf(m, "  .%-30s: %lu\n", "h_load",
+			cfs_rq->h_load);
 #endif
 #endif
 #ifdef CONFIG_CFS_BANDWIDTH
