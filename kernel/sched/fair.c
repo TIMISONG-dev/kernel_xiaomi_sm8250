@@ -7382,6 +7382,8 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 	struct perf_domain *pd;
 	struct energy_env eenv;
 
+	sync_entity_load_avg(&p->se);
+
 	rcu_read_lock();
 	pd = rcu_dereference(rd->pd);
 	if (!pd || READ_ONCE(rd->overutilized))
@@ -7407,7 +7409,6 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 
 	target = prev_cpu;
 
-	sync_entity_load_avg(&p->se);
 	if (!task_util_est(p) && p_util_min == 0)
 		goto unlock;
 
