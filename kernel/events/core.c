@@ -5861,7 +5861,7 @@ static const struct vm_operations_struct perf_mmap_vmops = {
 	.close		= perf_mmap_close, /* non mergable */
 	.fault		= perf_mmap_fault,
 	.page_mkwrite	= perf_mmap_fault,
-	.split		= perf_mmap_may_split,
+	.may_split		= perf_mmap_may_split,
 };
 
 static int perf_mmap(struct file *file, struct vm_area_struct *vma)
