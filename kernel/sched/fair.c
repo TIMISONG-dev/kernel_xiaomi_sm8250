@@ -3517,6 +3517,15 @@ static inline bool load_avg_is_decayed(struct sched_avg *sa)
 	if (sa->runnable_sum)
 		return false;
 
+	/*
+ 	 * _avg must be null when _sum are null because _avg = _sum / divider
+ 	 * Make sure that rounding and/or propagation of PELT values never
+ 	 * break this.
+ 	 */
+	  SCHED_WARN_ON(sa->load_avg ||
+		sa->util_avg ||
+		sa->runnable_avg);
+
 	return true;
 }
 
@@ -4787,6 +4796,9 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 	 */
 	if ((flags & (DEQUEUE_SAVE | DEQUEUE_MOVE)) != DEQUEUE_SAVE)
 		update_min_vruntime(cfs_rq);
+
+	if (cfs_rq->nr_running == 0)
+ 		update_idle_cfs_rq_clock_pelt(cfs_rq);
 }
 
 static void
@@ -7290,7 +7302,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int wake_flags)
 #ifdef CONFIG_NO_HZ_COMMON
 static inline void migrate_se_pelt_lag(struct sched_entity *se)
 {
-	u64 now, lut;
+	u64 throttled = 0, now, lut;
 	struct cfs_rq *cfs_rq;
 	struct rq *rq;
 	bool is_idle;
@@ -7313,6 +7325,38 @@ static inline void migrate_se_pelt_lag(struct sched_entity *se)
 	if (!is_idle)
 		return;
 
+	/*
+ 	 * Estimated "now" is: last_update_time + cfs_idle_lag + rq_idle_lag, where:
+ 	 *
+ 	 *   last_update_time (the cfs_rq's last_update_time)
+ 	 *	= cfs_rq_clock_pelt()@cfs_rq_idle
+ 	 *      = rq_clock_pelt()@cfs_rq_idle
+ 	 *        - cfs->throttled_clock_pelt_time@cfs_rq_idle
+ 	 *
+ 	 *   cfs_idle_lag (delta between rq's update and cfs_rq's update)
+ 	 *      = rq_clock_pelt()@rq_idle - rq_clock_pelt()@cfs_rq_idle
+ 	 *
+ 	 *   rq_idle_lag (delta between now and rq's update)
+ 	 *      = sched_clock_cpu() - rq_clock()@rq_idle
+ 	 *
+ 	 * We can then write:
+ 	 *
+ 	 *    now = rq_clock_pelt()@rq_idle - cfs->throttled_clock_pelt_time +
+ 	 *          sched_clock_cpu() - rq_clock()@rq_idle
+ 	 * Where:
+ 	 *      rq_clock_pelt()@rq_idle is rq->clock_pelt_idle
+ 	 *      rq_clock()@rq_idle      is rq->clock_idle
+ 	 *      cfs->throttled_clock_pelt_time@cfs_rq_idle
+ 	 *                              is cfs_rq->throttled_pelt_idle
+ 	 */
+ 
+#ifdef CONFIG_CFS_BANDWIDTH
+	throttled = u64_u32_load(cfs_rq->throttled_pelt_idle);
+	/* The clock has been stopped for throttling */
+	if (throttled == U64_MAX)
+		return;
+#endif
+
 	now = u64_u32_load(rq->clock_pelt_idle);
 
 	/*
@@ -7324,6 +7368,7 @@ static inline void migrate_se_pelt_lag(struct sched_entity *se)
 	smp_rmb();
 	lut = cfs_rq_last_update_time(cfs_rq);
 
+	now -= throttled;
 	if (now < lut)
 		/*
 		 * cfs_rq->avg.last_update_time is more recent than our
@@ -7339,6 +7384,8 @@ static inline void migrate_se_pelt_lag(struct sched_entity *se)
 static void migrate_se_pelt_lag(struct sched_entity *se) {}
 #endif
 
+static void detach_entity_cfs_rq(struct sched_entity *se);
+
 /*
  * Called immediately before a task is migrated to a new CPU; task_cpu(p) and
  * cfs_rq_of(p) references at time of call are still valid and identify the
@@ -7353,12 +7400,13 @@ static void migrate_task_rq_fair(struct task_struct *p, int new_cpu)
 
 		/*
 		 * Here, the task's PELT values have been updated according to
-		 * the current rq's clock. But if that clock hasn't been
-		 * updated in a while, a substantial idle time will be missed,
-		 * leading to an inflation after wake-up on the new rq.
-		 *
-		 * Estimate the missing time from the rq clock and update
-		 * sched_avg to improve the PELT continuity after migration.
+ 		 * the current rq's clock. But if that clock hasn't been
+ 		 * updated in a while, a substantial idle time will be missed,
+ 		 * leading to an inflation after wake-up on the new rq.
+ 		 *
+ 		 * Estimate the missing time from the cfs_rq last_update_time
+ 		 * and update sched_avg to improve the PELT continuity after
+ 		 * migration.
 		 */
 		migrate_se_pelt_lag(se);
 	}
@@ -8382,6 +8430,9 @@ static bool __update_blocked_fair(struct rq *rq, bool *done)
 
 		if (update_cfs_rq_load_avg(cfs_rq_clock_pelt(cfs_rq), cfs_rq)) {
 			update_tg_load_avg(cfs_rq);
+
+			if (cfs_rq->nr_running == 0)
+				update_idle_cfs_rq_clock_pelt(cfs_rq);
 
 			if (cfs_rq == &rq->cfs)
 				decayed = true;
