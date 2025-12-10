@@ -162,6 +162,18 @@ static inline void update_idle_rq_clock_pelt(struct rq *rq)
 }
 
 #ifdef CONFIG_CFS_BANDWIDTH
+static inline void update_idle_cfs_rq_clock_pelt(struct cfs_rq *cfs_rq)
+{
+	u64 throttled;
+
+	if (unlikely(cfs_rq->throttle_count))
+		throttled = U64_MAX;
+	else
+		throttled = cfs_rq->throttled_clock_pelt_time;
+
+	u64_u32_store(cfs_rq->throttled_pelt_idle, throttled);
+}
+
 /* rq->task_clock normalized against any time this cfs_rq has spent throttled */
 static inline u64 cfs_rq_clock_pelt(struct cfs_rq *cfs_rq)
 {
@@ -171,6 +183,7 @@ static inline u64 cfs_rq_clock_pelt(struct cfs_rq *cfs_rq)
 	return rq_clock_pelt(rq_of(cfs_rq)) - cfs_rq->throttled_clock_pelt_time;
 }
 #else
+static inline void update_idle_cfs_rq_clock_pelt(struct cfs_rq *cfs_rq) { }
 static inline u64 cfs_rq_clock_pelt(struct cfs_rq *cfs_rq)
 {
 	return rq_clock_pelt(rq_of(cfs_rq));
@@ -219,6 +232,7 @@ update_rq_clock_task_mult(struct rq *rq, s64 delta) { }
 static inline void
 update_idle_rq_clock_pelt(struct rq *rq) { }
 
+static inline void update_idle_cfs_rq_clock_pelt(struct cfs_rq *cfs_rq) { }
 #endif
 
 
