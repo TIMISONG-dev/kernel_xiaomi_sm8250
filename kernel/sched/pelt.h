@@ -63,7 +63,7 @@ static inline void cfs_se_util_change(struct sched_avg *avg)
 
 static inline u64 rq_clock_task_mult(struct rq *rq)
 {
-	lockdep_assert_rq_held(rq);
+	lockdep_assert_held(rq);
 	assert_clock_updated(rq);
 
 	return rq->clock_task_mult;
