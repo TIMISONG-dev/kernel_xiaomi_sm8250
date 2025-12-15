@@ -8010,7 +8010,6 @@ static u64 cpu_uclamp_ls_read_u64(struct cgroup_subsys_state *css,
 struct uclamp_param {
 	char *name;
 	char uclamp_min[3];
-	char uclamp_max[3];
 	u64  uclamp_latency_sensitive;
 };
 
@@ -8019,11 +8018,11 @@ static void uclamp_set(struct cgroup_subsys_state *css)
 	int i;
 
 	static struct uclamp_param tgts[] = {
-		{"top-app",             "1", "max",  1},
-       		{"foreground",          "0", "max",  0},
-                {"dex2oat",             "0",  "60",  0},
-        	{"background",          "0",  "50",  0},
-        	{"system-background",   "0",  "50",  0},
+		{"top-app",            "30", 1},
+       	{"foreground",         "30", 1},
+        {"dex2oat",             "0", 0},
+        {"background",          "0", 0},
+        {"system-background",   "0", 0},
 	};
 
         if(!css->cgroup->kn)
@@ -8035,13 +8034,11 @@ static void uclamp_set(struct cgroup_subsys_state *css)
 		if (!strcmp(css->cgroup->kn->name, tgt.name)) {
 			cpu_uclamp_write_wrapper(css, tgt.uclamp_min,
 						UCLAMP_MIN);
-			cpu_uclamp_write_wrapper(css, tgt.uclamp_max,
-						UCLAMP_MAX);
 			cpu_uclamp_ls_write_u64(css, NULL,
 						tgt.uclamp_latency_sensitive);
 
-			pr_info("uclamp_assist: setting values for %s: uclamp_min=%s uclamp_max=%s uclamp_latency_sensitive=%d\n",
-				tgt.name, tgt.uclamp_min, tgt.uclamp_max,tgt.uclamp_latency_sensitive);
+			pr_info("UCLAMP Assist: Setting values for %s: uclamp_min=%s uclamp_latency_sensitive=%d\n",
+				tgt.name, tgt.uclamp_min, tgt.uclamp_latency_sensitive);
 			return;			
 		}
 	}
