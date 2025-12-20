@@ -52,14 +52,14 @@ do {						\
 	current->softirq_context--;		\
 } while (0)
 
-# define lockdep_irq_work_enter(_flags)					\
+# define lockdep_irq_work_enter(__work)					\
 	  do {								\
-		  if (!((_flags) & IRQ_WORK_HARD_IRQ))			\
+		  if (!(atomic_read(&__work->flags) & IRQ_WORK_HARD_IRQ))\
 			current->irq_config = 1;			\
 	  } while (0)
-# define lockdep_irq_work_exit(_flags)					\
+# define lockdep_irq_work_exit(__work)					\
 	  do {								\
-		  if (!((_flags) & IRQ_WORK_HARD_IRQ))			\
+		  if (!(atomic_read(&__work->flags) & IRQ_WORK_HARD_IRQ))\
 			current->irq_config = 0;			\
 	  } while (0)
 
