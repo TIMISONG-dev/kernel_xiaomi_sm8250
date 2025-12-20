@@ -33,7 +33,7 @@ static bool irq_work_claim(struct irq_work *work)
 	oflags = atomic_fetch_or(IRQ_WORK_CLAIMED | CSD_TYPE_IRQ_WORK, &work->flags);
 	/*
 	 * If the work is already pending, no need to raise the IPI.
-	 * The pairing smp_mb() in irq_work_single() makes sure
+	 * The pairing atomic_fetch_andnot() in irq_work_run() makes sure
 	 * everything we did before is visible.
 	 */
 	if (oflags & IRQ_WORK_PENDING)
@@ -135,27 +135,22 @@ void irq_work_single(void *arg)
 	int flags;
 
 	/*
-	 * Clear the PENDING bit, after this point the @work can be re-used.
-	 * The PENDING bit acts as a lock, and we own it, so we can clear it
-	 * without atomic ops.
+	 * Clear the PENDING bit, after this point the @work
+	 * can be re-used.
+	 * Make it immediately visible so that other CPUs trying
+	 * to claim that work don't rely on us to handle their data
+	 * while we are in the middle of the func.
 	 */
-	flags = atomic_read(&work->flags);
-	flags &= ~IRQ_WORK_PENDING;
-	atomic_set(&work->flags, flags);
+	flags = atomic_fetch_andnot(IRQ_WORK_PENDING, &work->flags);
 
-	/*
-	 * See irq_work_claim().
-	 */
-	smp_mb();
-
-	lockdep_irq_work_enter(flags);
+	lockdep_irq_work_enter(work);
 	work->func(work);
-	lockdep_irq_work_exit(flags);
-
+	lockdep_irq_work_exit(work);
 	/*
-	 * Clear the BUSY bit, if set, and return to the free state if no one
-	 * else claimed it meanwhile.
+	 * Clear the BUSY bit and return to the free state if
+	 * no-one else claimed it meanwhile.
 	 */
+	flags &= ~IRQ_WORK_PENDING;
 	(void)atomic_cmpxchg(&work->flags, flags, flags & ~IRQ_WORK_BUSY);
 }
 
