@@ -2608,6 +2608,7 @@ static ssize_t sched_partition_write(struct kernfs_open_file *of, char *buf,
 		return -EINVAL;
 
 	css_get(&cs->css);
+	get_online_cpus();
 	percpu_down_write(&cpuset_rwsem);
 	if (!is_cpuset_online(cs))
 		goto out_unlock;
@@ -2615,6 +2616,7 @@ static ssize_t sched_partition_write(struct kernfs_open_file *of, char *buf,
 	retval = update_prstate(cs, val);
 out_unlock:
 	percpu_up_write(&cpuset_rwsem);
+	put_online_cpus();
 	css_put(&cs->css);
 	return retval ?: nbytes;
 }
