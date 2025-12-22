@@ -6157,17 +6157,6 @@ static int sched_idle_rq(struct rq *rq)
 			rq->nr_running);
 }
 
-/*
- * Returns true if cfs_rq only has SCHED_IDLE entities enqueued. Note the use
- * of idle_nr_running, which does not consider idle descendants of normal
- * entities.
- */
-static bool sched_idle_cfs_rq(struct cfs_rq *cfs_rq)
-{
-	return cfs_rq->nr_running &&
-		cfs_rq->nr_running == cfs_rq->idle_nr_running;
-}
-
 #ifdef CONFIG_SMP
 static int sched_idle_cpu(int cpu)
 {
