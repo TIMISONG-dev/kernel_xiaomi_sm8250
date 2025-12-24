@@ -237,43 +237,31 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 static inline unsigned long apply_dvfs_headroom(unsigned long util, int cpu)
 {
 	unsigned long capacity = arch_scale_cpu_capacity(cpu);
-	unsigned long delta, headroom, max_boost, min_boost;
+	unsigned long headroom;
 
-	/* There's no need of headroom at high utilization. The same goes
-	 * for very low utilization as well. Consider 6.25% (capacity / 16)
-	 * as the minimum utilization required.
+	/*
+	 * Skip boosting for very low utilization (< 6.25%)
 	 */
-	if (unlikely(util >= capacity) || likely(util < (capacity >> 4)))
+	if (likely(util < (capacity >> 4)))
 		return util;
 
 	/*
-	 * Quadratically taper the boosting at the top end based on capacity
-	 * as these are expensive and we don't need that much of a big
-	 * headroom as we approach max capacity.
-	 *
-	 * Formula: (delta²) / (4 * capacity)
+	 * Perform 12.5% boost in < 50% load and 25% boost in >= 50% load
 	 */
-	delta = capacity - util;
-	headroom = (delta * delta) / (4 * capacity);
+	if (util < (capacity >> 1))
+		headroom = util >> 3;
+	else
+		headroom = util >> 2;
 
-        /* Limit the headroom within a valid range to avoid excessive or
-	 * negligible boosts.
-	 * Cap the maximum headroom at 10% (capacity / 10) to prevent
-	 * unnecessary over-boosting.
-	 * If the calculated headroom is below 0.39% (capacity / 256),
-	 * skip boosting as it is unlikely to trigger a frequency change.
-         */
-	max_boost = capacity / 10;
-	min_boost = capacity >> 8;
-
-	if (headroom > max_boost)
-		headroom = max_boost;
-	else if (headroom < min_boost)
-		return util;
+	/*
+	 * Ensure the total boosted utilization does not exceed the CPU's
+	 * maximum capacity
+	 */
+	if (util + headroom > capacity)
+		return capacity;
 
 	return util + headroom;
 }
-
 
 unsigned long sugov_effective_cpu_perf(int cpu, unsigned long actual,
 	unsigned long min,
