@@ -8,7 +8,7 @@ SCHED_FEAT(PLACE_LAG, true)
 /*
  * Give new tasks half a slice to ease into the competition.
  */
-SCHED_FEAT(PLACE_DEADLINE_INITIAL, true)
+SCHED_FEAT(PLACE_DEADLINE_INITIAL, false)
 /*
  * Preserve relative virtual deadline on 'migration'.
  */
