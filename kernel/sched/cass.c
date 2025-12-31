@@ -33,6 +33,7 @@ struct cass_cpu_cand {
 	unsigned long cap_max;
 	unsigned long cap_no_therm;
 	unsigned long cap_orig;
+	unsigned long therm;
 	unsigned long eff_util;
 	unsigned long hard_util;
 	unsigned long util;
@@ -84,12 +85,12 @@ void cass_cpu_util(struct cass_cpu_cand *c, int this_cpu, bool sync)
 static __always_inline
 bool cass_cpu_better(const struct cass_cpu_cand *a,
 		     const struct cass_cpu_cand *b, unsigned long p_util,
-		     int this_cpu, int prev_cpu, bool sync)
+		     int this_cpu, int prev_cpu, bool sync, bool prefer_idle)
 {
 #define cass_cmp(a, b) ({ res = (a) - (b); })
 #define cass_eq(a, b) ({ res = (a) == (b); })
 	long res;
-	const unsigned long margin;
+	unsigned long margin;
 
 	/* Prefer the CPU that's not overloaded */
 	if (cass_cmp(b->eff_util * a->cap_max, a->eff_util * b->cap_max))
@@ -99,6 +100,26 @@ bool cass_cpu_better(const struct cass_cpu_cand *a,
 	if (cass_cmp(fits_capacity(p_util, a->cap_max),
 		     fits_capacity(p_util, b->cap_max)))
 		goto done;
+
+	/*
+	 * Prefer packing small, non-sync work on an active cpu over waking an idle
+	 * CPU, unless the active CPU is much worse.
+	 */
+	if (!prefer_idle && !!a->exit_lat != !!b->exit_lat) {
+		if (!a->exit_lat && b->exit_lat) {
+			if (a->eff_util <= a->cap_max &&
+			    a->util <= b->util + (SCHED_CAPACITY_SCALE / 16)) {
+				res = 1;
+				goto done;
+			}
+		} else if (a->exit_lat && !b->exit_lat) {
+			if (b->eff_util <= b->cap_max &&
+			    b->util <= a->util + (SCHED_CAPACITY_SCALE / 16)) {
+				res = -1;
+				goto done;
+			}
+		}
+	}
 
 	/* Prefer the CPU with lower relative utilization */
 	if (cass_cmp(b->util, a->util))
@@ -136,6 +157,10 @@ bool cass_cpu_better(const struct cass_cpu_cand *a,
 	if (cass_cmp(b->exit_lat, a->exit_lat))
 		goto done;
 
+	/* Prefer the CPU with less thermal pressure */
+	if (cass_cmp(b->therm, a->therm))
+		goto done;
+
 	/* Prefer the previous CPU */
 	if (cass_eq(a->cpu, prev_cpu) || !cass_cmp(b->cpu, prev_cpu))
 		goto done;
@@ -153,6 +178,7 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 	int this_cpu = raw_smp_processor_id();
 	unsigned long p_util, uc_min;
 	bool has_idle = false;
+	bool prefer_idle;
 	int cidx = 0, cpu;
 
 	memset(cands, 0, sizeof(cands));
@@ -163,6 +189,12 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 	 */
 	p_util = rt ? 0 : task_util_est(p);
 	uc_min = uclamp_eff_value(p, UCLAMP_MIN);
+
+	/*
+	 * Prefer idle CPUs for sync wakes and for "heavy enough" work; otherwise,
+	 * prefer packing onto an already-active CPU.
+	 */
+	prefer_idle = sync || rt || uc_min || p_util >= (SCHED_CAPACITY_SCALE / 8);
 
 	/*
 	 * Find the best CPU to wake @p on. Although idle_get_state() requires
@@ -191,6 +223,7 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 		/* Get the _current_, throttled maximum capacity of this CPU */
 		therm = thermal_load_avg(rq);
 		curr->cap_max = curr->cap_orig - therm;
+		curr->therm = therm;
 
 		/* Prefer the CPU that more closely meets the uclamp minimum */
 		if (curr->cap_max < uc_min && best->cap_max >= uc_min)
@@ -210,7 +243,7 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 			 * found so far is the prime CPU. Otherwise, prefer idle
 			 * candidates.
 			 */
-			if (!has_idle &&
+			if (!has_idle && prefer_idle &&
 			    uc_min <= arch_scale_min_freq_capacity(cpu)) {
 				/* Discard any previous non-idle candidate */
 				best = curr;
@@ -226,7 +259,7 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 				curr->exit_lat += idle_state->exit_latency;
 		} else {
 			/* Skip non-idle CPUs if there's an idle candidate */
-			if (has_idle)
+			if (has_idle && prefer_idle)
 				continue;
 
 			/* Zero exit latency indicates this CPU isn't idle */
@@ -281,7 +314,7 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 		 */
 		if (best == curr ||
 		    cass_cpu_better(curr, best, p_util, this_cpu, prev_cpu,
-				    sync)) {
+				    sync, prefer_idle)) {
 			best = curr;
 			cidx ^= 1;
             /*
