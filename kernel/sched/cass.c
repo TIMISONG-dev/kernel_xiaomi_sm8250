@@ -89,6 +89,7 @@ bool cass_cpu_better(const struct cass_cpu_cand *a,
 #define cass_cmp(a, b) ({ res = (a) - (b); })
 #define cass_eq(a, b) ({ res = (a) == (b); })
 	long res;
+	const unsigned long margin;
 
 	/* Prefer the CPU that's not overloaded */
 	if (cass_cmp(b->eff_util * a->cap_max, a->eff_util * b->cap_max))
@@ -107,9 +108,25 @@ bool cass_cpu_better(const struct cass_cpu_cand *a,
 	if (cass_cmp(!!a->exit_lat, !!b->exit_lat))
 		goto done;
 
-	/* Prefer the current CPU for sync wakes */
-	if (sync && (cass_eq(a->cpu, this_cpu) || !cass_cmp(b->cpu, this_cpu)))
-		goto done;
+	/*
+	 * Prefer the current CPU for sync wakes, but only if it isn't
+	 * substantially more overloaded than the alternative.
+	 */
+	if (sync) {
+		margin = SCHED_CAPACITY_SCALE / 20; /* 5% */
+
+		if (a->cpu == this_cpu) {
+			if (a->eff_util <= a->cap_max &&
+			    a->util <= b->util + margin &&
+			    cass_eq(a->cpu, this_cpu))
+				goto done;
+		} else if (b->cpu == this_cpu) {
+			if (b->eff_util <= b->cap_max &&
+			    b->util <= a->util + margin &&
+			    !cass_cmp(b->cpu, this_cpu))
+				goto done;
+		}
+	}
 
 	/* Prefer the CPU with higher capacity */
 	if (cass_cmp(a->cap, b->cap))
