@@ -1951,8 +1951,6 @@ extern void trigger_load_balance(struct rq *rq);
 
 extern void set_cpus_allowed_common(struct task_struct *p, const struct cpumask *new_mask);
 
-bool cpu_overutilized(int cpu);
-
 #endif
 
 #ifdef CONFIG_CPU_IDLE
