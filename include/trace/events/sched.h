@@ -413,7 +413,6 @@ TRACE_EVENT(sched_load_balance_nohz_kick,
 		__field(int,		cpu)
 		__field(unsigned int,	cpu_nr)
 		__field(unsigned long,	misfit_task_load)
-		__field(int,		cpu_overutil)
 		__field(int,		kick_cpu)
 		__field(unsigned long,	nohz_flags)
 	),
@@ -422,14 +421,13 @@ TRACE_EVENT(sched_load_balance_nohz_kick,
 		__entry->cpu	          = cpu;
 		__entry->cpu_nr		  = cpu_rq(cpu)->nr_running;
 		__entry->misfit_task_load = cpu_rq(cpu)->misfit_task_load;
-		__entry->cpu_overutil	  = cpu_overutilized(cpu);
 		__entry->kick_cpu	  = kick_cpu;
 		__entry->nohz_flags	  = atomic_read(nohz_flags(kick_cpu));
 	),
 
-	TP_printk("cpu=%d nr_run=%u misfit_task_load=%lu overutilized=%d kick_cpu=%d nohz_flags=0x%lx",
+	TP_printk("cpu=%d nr_run=%u misfit_task_load=%lu kick_cpu=%d nohz_flags=0x%lx",
 			__entry->cpu, __entry->cpu_nr,
-			__entry->misfit_task_load, __entry->cpu_overutil,
+			__entry->misfit_task_load,
 			__entry->kick_cpu, __entry->nohz_flags)
 
 );
