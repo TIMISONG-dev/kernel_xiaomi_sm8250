@@ -126,11 +126,6 @@ bool cass_cpu_better(const struct cass_cpu_cand *a,
 	if (cass_eq(a->cpu, prev_cpu) || !cass_cmp(b->cpu, prev_cpu))
 		goto done;
 
-	/* Prefer the CPU that shares a cache with the previous CPU */
-	if (cass_cmp(cpus_share_cache(a->cpu, prev_cpu),
-		     cpus_share_cache(b->cpu, prev_cpu)))
-		goto done;
-
 	/* @a isn't a better CPU than @b. @res must be <=0 to indicate such. */
 done:
 	/* @a is a better CPU than @b if @res is positive */
