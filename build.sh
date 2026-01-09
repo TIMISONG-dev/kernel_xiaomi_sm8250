@@ -141,24 +141,40 @@ build() {
         echo Общее время выполнения: $ELAPSED секунд
 
         cd $MAGICTIME
-        7z a -mx9 MagicTime-$DEVICE-$BUILD_DATE.zip * -x!*.zip
+        
+        if [ "$TYPE" = "test" ]; then
+            7z a -mx9 MagicTime-$DEVICE-$FILE.zip * -x!*.zip
+        else
+            7z a -mx9 MagicTime-$DEVICE-$BUILD_DATE.zip * -x!*.zip
+        fi
         
         curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendMessage \
         -d chat_id=@magictimekernel \
         -d text="Компиляция завершилась успешно! Время выполнения: $ELAPSED секунд" \
         -d message_thread_id=38153
 
-        curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
-        -F document=@./MagicTime-$DEVICE-$BUILD_DATE.zip \
-        -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${DESC}) branch: ${BRANCH}" \
-        -F message_thread_id=38153
+        if [ "$TYPE" = "test" ]; then
+            curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
+            -F document=@./MagicTime-$DEVICE-$FILE.zip \
+            -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${DESC}) branch: ${BRANCH}" \
+            -F message_thread_id=38153
+        else
+            curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
+            -F document=@./MagicTime-$DEVICE-$BUILD_DATE.zip \
+            -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${DESC}) branch: ${BRANCH}" \
+            -F message_thread_id=38153
+        fi
         
         curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
         -F document=@../changelog.txt \
         -F caption="Latest changes" \
         -F message_thread_id=38153
 
-        rm -rf MagicTime-$DEVICE-$BUILD_DATE.zip
+        if [ "$TYPE" = "test" ]; then
+            rm -rf MagicTime-$DEVICE-$FILE.zip
+        else
+            rm -rf MagicTime-$DEVICE-$BUILD_DATE.zip
+        fi
 
         BUILD=$((BUILD + 1))
 
@@ -197,143 +213,76 @@ if [ $LEVEL = 1 ] && [ $TYPE = early ]; then
 fi
 
 # Test builds
-if [ $LEVEL = 1 ] && [ $TYPE = test ]; then
-    DEVICE="alioth"
-    DESC="POCO F3 build"
-    build
-    LEVEL=$((LEVEL + 1))
-    sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-    clear
-fi
+if [ "$TYPE" = "test" ]; then
+    # Format: "DEVICE:BRANCH:MOD_KSU:MOD_BATTERY:DESC:FILE"
+    CONFIGS=(
+        "alioth:magictime-new:ksu:stk:POCO F3 AOSP:AOSP-KSU"
+        "pipa:magictime-new:ksu:stk:Mi Pad 6 AOSP:AOSP-KSU"
+        "alioth:magictime-new:ksu:5k:POCO F3 AOSP 5k battery:AOSP-KSU-5K"
+        "alioth:magictime-new:no_ksu:stk:POCO F3 AOSP without KSU:AOSP-NONKSU"
+        "pipa:magictime-new:no_ksu:stk:Mi Pad 6 AOSP without KSU:AOSP-NONKSU"
+        "alioth:magictime-new:no_ksu:5k:POCO F3 AOSP without KSU 5k battery:AOSP-NONKSU-5K"
+        
+        "alioth:magictime-miui:ksu:stk:POCO F3 MIUI:MIUI-KSU"
+        "pipa:magictime-miui:ksu:stk:Mi Pad 6 MIUI:MIUI-KSU"
+        "alioth:magictime-miui:ksu:5k:POCO F3 MIUI 5k battery:MIUI-KSU-5K"
+        "alioth:magictime-miui:no_ksu:stk:POCO F3 MIUI without KSU:MIUI-NONKSU"
+        "pipa:magictime-miui:no_ksu:stk:Mi Pad 6 MIUI without KSU:MIUI-NONKSU"
+        "alioth:magictime-miui:no_ksu:5k:POCO F3 MIUI without KSU 5k battery:MIUI-NONKSU-5K"
+    )
 
-if [ $TYPE = test ]; then
-    if [ $LEVEL = 2 ]; then
-        DEVICE="pipa"
-        DESC="Mi Pad 6 AOSP build"
-        build
-        LEVEL=$((LEVEL + 1))
-        sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-        clear
-    fi
+    while true; do
+        IDX=$((LEVEL - 1))
 
-    if [ $LEVEL = 3 ]; then
-        DEVICE="alioth"
-        git cherry-pick $SHAB
-        DESC="POCO F3 build 5k battery"
-        build
-        LEVEL=$((LEVEL + 1))
-        sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-        clear
-        # RESET!
-        git reset --hard HEAD~1
-    fi
+        if [ "$IDX" -ge "${#CONFIGS[@]}" ]; then
+            LEVEL=1
+            EXTRA=""
+            sed -i "s/LEVEL=.*/LEVEL=1/" ../settings.sh
+            sed -i "s/EXTRA=.*/EXTRA=\"\"/ " ../settings.sh
+            git checkout magictime-new >/dev/null 2>&1
+            git reset --hard origin/magictime-new >/dev/null 2>&1
+            clear
+            exit 0
+        fi
 
-    if [ $LEVEL = 4 ]; then
-        git cherry-pick $SHAK
-        DESC="POCO F3 build without KSU"
-        build
-        LEVEL=$((LEVEL + 1))
-        sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-        clear
-    fi
+        IFS=':' read -r DEVICE BRANCH MOD_KSU MOD_BATTERY DESC FILE <<< "${CONFIGS[$IDX]}"
 
-    if [ $EXTRA = "!4"]; then
-        git cherry-pick $SHAK
-    fi
+        echo "=== Сборка уровня $LEVEL / ${#CONFIGS[@]}: $DESC ==="
 
-    if [ $LEVEL = 5 ]; then
-        DEVICE="pipa"
-        DESC="Mi Pad 6 AOSP build without KSU"
-        build
-        LEVEL=$((LEVEL + 1))
-        sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-        clear
-    fi
+        git checkout "$BRANCH" >/dev/null 2>&1
+        git fetch origin "$BRANCH" >/dev/null 2>&1 || true
+        git reset --hard "origin/$BRANCH" >/dev/null 2>&1
 
-    if [ $LEVEL = 6 ]; then
-        DEVICE="alioth"
-        git cherry-pick $SHAB
-        DESC="POCO F3 build 5k battery without KSU"
-        build
-        LEVEL=$((LEVEL + 1))
-        sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-        clear
+        if [ "$MOD_BATTERY" = "5k" ]; then
+            git cherry-pick --no-commit "$SHAB" >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                git cherry-pick --abort >/dev/null 2>&1
+                exit 1
+            fi
+        fi
 
-        # Return to stock
-        git reset --hard HEAD~2
-        clear
-    fi
+        if [ "$MOD_KSU" = "no_ksu" ]; then
+            git cherry-pick --no-commit "$SHAK" >/dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                git cherry-pick --abort >/dev/null 2>&1
+                exit 1
+            fi
+        fi
 
-    # MIUI
+        if [ "$EXTRA" = "!4" ]; then
+            git cherry-pick "$SHAK" || true
+        elif [ "$EXTRA" = "!10" ]; then
+            git cherry-pick "$SHAK" || true
+        fi
 
-    git checkout magictime-miui
-
-    if [ $LEVEL = 7 ]; then
-        DESC="POCO F3 MIUI build"
-        build
-        LEVEL=$((LEVEL + 1))
-        sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-        clear
-    fi
-
-    if [ $LEVEL = 8 ]; then
-        DEVICE="pipa"
-        DESC="Mi Pad 6 MIUI build"
-        build
-        LEVEL=$((LEVEL + 1))
-        sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-        clear
-    fi
-
-    if [ $LEVEL = 9 ]; then
-        DEVICE="alioth"
-        git cherry-pick $SHAB
-        DESC="POCO F3 MIUI build 5k battery"
-        build
-        LEVEL=$((LEVEL + 1))
-        sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-        clear
-        # RESET!
-        git reset --hard HEAD~1
-    fi
-
-    if [ $LEVEL = 10 ]; then
-        git cherry-pick $SHAK
-        DESC="POCO F3 MIUI build without KSU"
-        build
-        LEVEL=$((LEVEL + 1))
-        sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-        clear
-    fi
-
-    if [ $EXTRA = "!10" ]; then
-        git cherry-pick $SHAK
-    fi
-
-    if [ $LEVEL = 11 ]; then
-        DEVICE="pipa"
-        DESC="Mi Pad 6 MIUI build without KSU"
-        build
-        LEVEL=$((LEVEL + 1))
-        sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-        clear
-    fi
-
-    if [ $LEVEL = 12 ]; then
-        DEVICE="alioth"
-        git cherry-pick $SHAB
-        DESC="POCO F3 MIUI build 5k battery without KSU"
-        build
-
-        # Return to stock
-        git reset --hard HEAD~2
-        clear
-    fi
-
-    LEVEL=1
-    EXTRA=""
-    sed -i "s/LEVEL=.*/LEVEL=$LEVEL/" ../settings.sh
-    sed -i "s/EXTRA=.*/EXTRA=$EXTRA/" ../settings.sh
-    git checkout magictime-new
-    clear
+        if build; then
+            NEXT_LEVEL=$((LEVEL + 1))
+            sed -i "s/LEVEL=.*/LEVEL=$NEXT_LEVEL/" ../settings.sh
+            LEVEL=$NEXT_LEVEL
+            clear
+        else
+            echo "Ошибка сборки на уровне $LEVEL ($DESC)"
+            exit 1
+        fi
+    done
 fi
