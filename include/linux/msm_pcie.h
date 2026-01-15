@@ -57,6 +57,8 @@ struct msm_pcie_register_event {
 	u32 options;
 };
 
+void msm_msi_config_access(struct irq_domain *domain, bool allow);
+void msm_msi_config(struct irq_domain *domain);
 #ifdef CONFIG_PCI_MSM_MSI
 int msm_msi_init(struct device *dev);
 #else
