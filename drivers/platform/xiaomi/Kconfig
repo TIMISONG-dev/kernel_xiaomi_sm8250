@@ -10,6 +10,7 @@ config MACH_XIAOMI_SM8250
 	bool "Xiaomi SM8250"
 	depends on ARCH_QCOM
 	select MACH_XIAOMI
+	select BOARD_XIAOMI
 	help
 	  Support for Xiaomi SM8250 devices
 
