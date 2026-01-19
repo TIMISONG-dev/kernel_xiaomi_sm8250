@@ -195,6 +195,7 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 	u64 p_vruntime = 0;
 	bool prefer_idle;
 	int cidx = 0, cpu;
+	s64 this_lag;
 
 	memset(cands, 0, sizeof(cands));
 
@@ -217,7 +218,7 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 	eevdf_lag_margin = SCHED_CAPACITY_SCALE / 16;
 	if (!rt && !sync && !uc_min && p_util < (SCHED_CAPACITY_SCALE / 8)) {
 		cfs_rq = &cpu_rq(this_cpu)->cfs;
-		s64 this_lag = READ_ONCE(cfs_rq->avg_vruntime) - (s64)p_vruntime;
+		this_lag = READ_ONCE(cfs_rq->avg_vruntime) - (s64)p_vruntime;
 
 		if (this_lag < 0) {
 			eevdf_lag_margin = SCHED_CAPACITY_SCALE / 8;
