@@ -284,6 +284,27 @@ static int cass_best_cpu(struct task_struct *p, int prev_cpu, bool sync, bool rt
 				    sync)) {
 			best = curr;
 			cidx ^= 1;
+            /*
+			 * Early-exit when we land on an idle, cache-affined CPU that
+			 * cleanly fits the task and isn't overloaded.
+			 */
+			if (best->exit_lat &&
+				best->cpu == prev_cpu &&
+				(best->cpu == prev_cpu || cpus_share_cache(best->cpu, prev_cpu)) &&
+				best->cap_max >= uc_min &&
+				fits_capacity(p_util, best->cap_max) &&
+				best->eff_util <= best->cap_max)
+				return best->cpu;
+			/*
+			 * Also early-exit for an obvious packed choice: non-idle, fits,
+			 * not overloaded, and prev_cpu.
+			*/
+			if (!best->exit_lat &&
+				best->cpu == prev_cpu &&
+				best->cap_max >= uc_min &&
+				fits_capacity(p_util, best->cap_max) &&
+				best->eff_util <= best->cap_max)
+				return best->cpu;
 		}
 	}
 
