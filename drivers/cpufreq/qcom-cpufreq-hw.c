@@ -345,7 +345,7 @@ static int qcom_cpufreq_hw_cpu_init(struct cpufreq_policy *policy)
 	policy->driver_data = c;
 	policy->dvfs_possible_from_any_cpu = true;
 
-	em_dev_register_perf_domain(cpu_dev, ret, &em_cb, policy->cpus);
+	em_dev_register_perf_domain(cpu_dev, ret, &em_cb, policy->cpus, true);
 
 	if (c->dcvsh_irq > 0 && !c->is_irq_requested) {
 		snprintf(c->dcvsh_irq_name, sizeof(c->dcvsh_irq_name),

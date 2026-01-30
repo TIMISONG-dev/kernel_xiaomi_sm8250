@@ -306,7 +306,7 @@ int dev_pm_opp_of_get_sharing_cpus(struct device *cpu_dev, struct cpumask *cpuma
 struct device_node *dev_pm_opp_of_get_opp_desc_node(struct device *dev);
 struct dev_pm_opp *of_dev_pm_opp_find_required_opp(struct device *dev, struct device_node *np);
 struct device_node *dev_pm_opp_get_of_node(struct dev_pm_opp *opp);
-int of_dev_pm_opp_get_cpu_power(unsigned long *mW, unsigned long *KHz, int cpu);
+int of_dev_pm_opp_get_cpu_power(unsigned long *mW, unsigned long *KHz, struct device *cpu_dev);
 void dev_pm_opp_of_register_em(struct cpumask *cpus);
 #else
 static inline int dev_pm_opp_of_add_table(struct device *dev)
@@ -355,7 +355,7 @@ static inline void dev_pm_opp_of_register_em(struct cpumask *cpus)
 {
 }
 
-static inline int of_dev_pm_opp_get_cpu_power(unsigned long *mW, unsigned long *KHz, int cpu)
+static inline int of_dev_pm_opp_get_cpu_power(unsigned long *mW, unsigned long *KHz, struct device *cpu_dev)
 {
 	return -ENOTSUPP;
 }
