@@ -809,17 +809,15 @@ EXPORT_SYMBOL_GPL(dev_pm_opp_get_of_node);
  * Return: -ENODEV if the CPU device cannot be found, -EINVAL if the power
  * calculation failed because of missing parameters, 0 otherwise.
  */
-int of_dev_pm_opp_get_cpu_power(unsigned long *mW, unsigned long *KHz, int cpu)
+int of_dev_pm_opp_get_cpu_power(unsigned long *mW, unsigned long *KHz, struct device *cpu_dev)
 {
 	unsigned long mV, Hz, MHz;
-	struct device *cpu_dev;
 	struct dev_pm_opp *opp;
 	struct device_node *np;
 	u32 cap;
 	u64 tmp;
 	int ret;
 
-	cpu_dev = get_cpu_device(cpu);
 	if (!cpu_dev)
 		return -ENODEV;
 
