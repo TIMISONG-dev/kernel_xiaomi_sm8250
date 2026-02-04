@@ -1183,6 +1183,7 @@ static int himax_set_pen_mode(uint8_t pen_mode)
 	kobject_uevent_env(&private_ts->dev->kobj, KOBJ_CHANGE, envp);
 	sysfs_notify(&private_ts->dev->kobj, NULL, "pen_connect_strategy");
 
+	pen_mode = (pen_mode == 18 || pen_mode == 17 || pen_mode == 1) ? 1 : 0;
 	if (pen_mode == 1)
 		memset(tmp_data, 0, DATA_LEN_4);
 
