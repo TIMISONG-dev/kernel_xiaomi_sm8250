@@ -167,18 +167,6 @@ static struct rb_entry *__lookup_rb_tree_slow(struct rb_root_cached *root,
 	return NULL;
 }
 
-struct rb_entry *f2fs_lookup_rb_tree(struct rb_root_cached *root,
-				struct rb_entry *cached_re, unsigned int ofs)
-{
-	struct rb_entry *re;
-
-	re = __lookup_rb_tree_fast(cached_re, ofs);
-	if (!re)
-		return __lookup_rb_tree_slow(root, ofs);
-
-	return re;
-}
-
 struct rb_node **f2fs_lookup_rb_tree_ext(struct f2fs_sb_info *sbi,
 					struct rb_root_cached *root,
 					struct rb_node **parent,
@@ -200,6 +188,18 @@ struct rb_node **f2fs_lookup_rb_tree_ext(struct f2fs_sb_info *sbi,
 	}
 
 	return p;
+}
+
+struct rb_entry *f2fs_lookup_rb_tree(struct rb_root_cached *root,
+				struct rb_entry *cached_re, unsigned int ofs)
+{
+	struct rb_entry *re;
+
+	re = __lookup_rb_tree_fast(cached_re, ofs);
+	if (!re)
+		return __lookup_rb_tree_slow(root, ofs);
+
+	return re;
 }
 
 struct rb_node **f2fs_lookup_rb_tree_for_insert(struct f2fs_sb_info *sbi,
@@ -310,7 +310,7 @@ lookup_neighbors:
 }
 
 bool f2fs_check_rb_tree_consistence(struct f2fs_sb_info *sbi,
-				struct rb_root_cached *root, bool check_key)
+						struct rb_root_cached *root, bool check_key)
 {
 #ifdef CONFIG_F2FS_CHECK_FS
 	struct rb_node *cur = rb_first_cached(root), *next;
@@ -343,6 +343,7 @@ bool f2fs_check_rb_tree_consistence(struct f2fs_sb_info *sbi,
 				  next_re->ofs, next_re->len);
 			return false;
 		}
+
 next:
 		cur = next;
 	}
@@ -361,7 +362,7 @@ static struct extent_node *__attach_extent_node(struct f2fs_sb_info *sbi,
 	struct extent_tree_info *eti = &sbi->extent_tree[et->type];
 	struct extent_node *en;
 
-	en = f2fs_kmem_cache_alloc(extent_node_slab, GFP_ATOMIC, false, sbi);
+	en = kmem_cache_alloc(extent_node_slab, GFP_ATOMIC);
 	if (!en)
 		return NULL;
 
@@ -420,8 +421,7 @@ static struct extent_tree *__grab_extent_tree(struct inode *inode,
 	mutex_lock(&eti->extent_tree_lock);
 	et = radix_tree_lookup(&eti->extent_tree_root, ino);
 	if (!et) {
-		et = f2fs_kmem_cache_alloc(extent_tree_slab,
-					GFP_NOFS, true, NULL);
+		et = f2fs_kmem_cache_alloc(extent_tree_slab, GFP_NOFS);
 		f2fs_radix_tree_insert(&eti->extent_tree_root, ino, et);
 		memset(et, 0, sizeof(struct extent_tree));
 		et->ino = ino;
@@ -1154,7 +1154,6 @@ static void __drop_extent_tree(struct inode *inode, enum extent_type type)
 		return;
 
 	write_lock(&et->lock);
-	set_inode_flag(inode, FI_NO_EXTENT);
 	__free_extent_tree(sbi, et);
 	if (type == EX_READ) {
 		set_inode_flag(inode, FI_NO_EXTENT);
