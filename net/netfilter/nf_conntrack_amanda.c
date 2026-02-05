@@ -39,7 +39,7 @@ MODULE_PARM_DESC(master_timeout, "timeout for the master connection");
 module_param(ts_algo, charp, 0400);
 MODULE_PARM_DESC(ts_algo, "textsearch algorithm to use (default kmp)");
 
-unsigned int (*nf_nat_amanda_hook)(struct sk_buff *skb,
+unsigned int (__rcu *nf_nat_amanda_hook)(struct sk_buff *skb,
 				   enum ip_conntrack_info ctinfo,
 				   unsigned int protoff,
 				   unsigned int matchoff,
@@ -95,7 +95,7 @@ static int amanda_help(struct sk_buff *skb,
 	u_int16_t len;
 	__be16 port;
 	int ret = NF_ACCEPT;
-	typeof(nf_nat_amanda_hook) nf_nat_amanda;
+	typeof(*nf_nat_amanda_hook) *nf_nat_amanda;
 
 	/* Only look at packets from the Amanda server */
 	if (CTINFO2DIR(ctinfo) == IP_CT_DIR_ORIGINAL)
