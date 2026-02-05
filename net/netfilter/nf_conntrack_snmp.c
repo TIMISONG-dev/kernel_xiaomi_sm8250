@@ -29,7 +29,7 @@ static unsigned int timeout __read_mostly = 30;
 module_param(timeout, uint, 0400);
 MODULE_PARM_DESC(timeout, "timeout for master connection/replies in seconds");
 
-int (*nf_nat_snmp_hook)(struct sk_buff *skb,
+int (__rcu *nf_nat_snmp_hook)(struct sk_buff *skb,
 			unsigned int protoff,
 			struct nf_conn *ct,
 			enum ip_conntrack_info ctinfo);
@@ -39,7 +39,7 @@ static int snmp_conntrack_help(struct sk_buff *skb, unsigned int protoff,
 			       struct nf_conn *ct,
 			       enum ip_conntrack_info ctinfo)
 {
-	typeof(nf_nat_snmp_hook) nf_nat_snmp;
+	typeof(*nf_nat_snmp_hook) *nf_nat_snmp;
 
 	nf_conntrack_broadcast_help(skb, ct, ctinfo, timeout);
 
