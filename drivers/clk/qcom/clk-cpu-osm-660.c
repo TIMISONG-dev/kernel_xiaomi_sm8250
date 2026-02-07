@@ -3131,9 +3131,11 @@ static int clk_cpu_osm_driver_probe(struct platform_device *pdev)
 	struct clk_onecell_data *clk_data;
 	char perfclspeedbinstr[] = "qcom,perfcl-speedbin0-v0";
 	char pwrclspeedbinstr[] = "qcom,pwrcl-speedbin0-v0";
+/* LunarKernel Note: Maybe WALT related code? */
 	struct cpu_cycle_counter_cb cb = {
 		.get_cpu_cycle_counter = clk_osm_get_cpu_cycle_counter,
 	};
+/* END: LunarKernel Note */
 
 	/*
 	 * Require the RPM-XO clock and GCC-HMSS-GPLL0 clocks to be registererd
@@ -3412,7 +3414,9 @@ static int clk_cpu_osm_driver_probe(struct platform_device *pdev)
 
 	of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
 
+/* LunarKernel Note: Maybe WALT related code? */
 	register_cpu_cycle_counter_cb(&cb);
+/* LunarKernel Note: Maybe WALT related code? */
 
 	pr_info("OSM driver initialize\n");
 	put_online_cpus();

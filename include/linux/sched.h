@@ -233,21 +233,6 @@ enum fps {
 /* Task command name length: */
 #define TASK_COMM_LEN			16
 
-enum task_event {
-	PUT_PREV_TASK   = 0,
-	PICK_NEXT_TASK  = 1,
-	TASK_WAKE       = 2,
-	TASK_MIGRATE    = 3,
-	TASK_UPDATE     = 4,
-	IRQ_UPDATE      = 5,
-};
-
-/* Note: this need to be in sync with migrate_type_names array */
-enum migrate_types {
-	GROUP_TO_RQ,
-	RQ_TO_GROUP,
-};
-
 #ifdef CONFIG_HOTPLUG_CPU
 extern int sched_isolate_count(const cpumask_t *mask, bool include_offline);
 extern int sched_isolate_cpu(int cpu);
@@ -587,19 +572,11 @@ struct sched_entity {
 	ANDROID_KABI_RESERVE(4);
 };
 
-struct sched_load {
-	unsigned long prev_load;
-	unsigned long new_task_load;
-	unsigned long predicted_load;
-};
-
+/* LunarKernel Note: Maybe WALT related code? */
 struct cpu_cycle_counter_cb {
 	u64 (*get_cpu_cycle_counter)(int cpu);
 };
-
-#define MAX_NUM_CGROUP_COLOC_ID	20
-
-DECLARE_PER_CPU_READ_MOSTLY(int, sched_load_boost);
+/* END: LunarKernel Note */
 
 struct sched_rt_entity {
 	struct list_head		run_list;
@@ -1652,7 +1629,9 @@ extern struct pid *cad_pid;
 #define PF_UMH			0x02000000	/* I'm an Usermodehelper process */
 #define PF_NO_SETAFFINITY	0x04000000	/* Userland is not allowed to meddle with cpus_mask */
 #define PF_MCE_EARLY		0x08000000      /* Early kill for mce process policy */
+/* LunarKernel Note: Maybe WALT related code? */
 #define PF_WAKE_UP_IDLE         0x10000000	/* TTWU on an idle CPU */
+/* END: LunarKernel Note */
 #define PF_MUTEX_TESTER		0x20000000	/* Thread belongs to the rt mutex tester */
 #define PF_FREEZER_SKIP		0x40000000	/* Freezer should not count it as freezable */
 #define PF_SUSPEND_TASK		0x80000000      /* This thread called freeze_processes() and should not be frozen */
@@ -2181,6 +2160,7 @@ static inline void rseq_syscall(struct pt_regs *regs)
 
 #endif
 
+/* LunarKernel Note: Maybe WALT related code? */
 static inline u32 sched_get_wake_up_idle(struct task_struct *p)
 {
 	u32 enabled = p->flags & PF_WAKE_UP_IDLE;
@@ -2208,6 +2188,7 @@ static inline void set_wake_up_idle(bool enabled)
 	else
 		current->flags &= ~PF_WAKE_UP_IDLE;
 }
+/* END: LunarKernel Note */
 
 #ifdef CONFIG_SCHED_CORE
 extern void sched_core_free(struct task_struct *tsk);

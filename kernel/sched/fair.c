@@ -98,12 +98,6 @@ int __weak arch_asym_cpu_priority(int cpu)
 unsigned int sysctl_sched_cfs_bandwidth_slice		= 5000UL;
 #endif
 
-/* Migration margins */
-unsigned int sched_capacity_margin_up[NR_CPUS] = {
-			[0 ... NR_CPUS-1] = 1078}; /* ~5% margin */
-unsigned int sched_capacity_margin_down[NR_CPUS] = {
-			[0 ... NR_CPUS-1] = 1205}; /* ~15% margin */
-
 static inline void update_load_add(struct load_weight *lw, unsigned long inc)
 {
 	lw->weight += inc;
@@ -4363,6 +4357,11 @@ static inline unsigned long task_runnable(struct task_struct *p)
 	return READ_ONCE(p->se.avg.runnable_avg);
 }
 
+static inline unsigned long task_util(struct task_struct *p)
+{
+	return READ_ONCE(p->se.avg.util_avg);
+}
+
 static inline unsigned long _task_util_est(struct task_struct *p)
 {
 	return READ_ONCE(p->se.avg.util_est) & ~UTIL_AVG_UNCHANGED;
@@ -6522,6 +6521,11 @@ static unsigned long cpu_runnable(struct rq *rq)
 	return cfs_rq_runnable_avg(&rq->cfs);
 }
 
+static unsigned long capacity_of(int cpu)
+{
+	return cpu_rq(cpu)->cpu_capacity;
+}
+
 static unsigned long cpu_runnable_without(struct rq *rq, struct task_struct *p)
 {
 	struct cfs_rq *cfs_rq;
@@ -8618,10 +8622,6 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 
 	/* Disregard percpu kthreads; they are where they need to be. */
     if (kthread_is_per_cpu(p))
-		return 0;
-
-	if ((p->in_iowait || uclamp_boosted(p)) &&
-		is_min_capacity_cpu(env->dst_cpu) && !is_min_capacity_cpu(env->src_cpu))
 		return 0;
 
 	if (!cpumask_test_cpu(env->dst_cpu, p->cpus_ptr)) {
