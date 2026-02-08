@@ -88,17 +88,6 @@
 struct rq;
 struct cpuidle_state;
 
-extern __read_mostly bool sched_predl;
-extern unsigned int sched_capacity_margin_up[NR_CPUS];
-extern unsigned int sched_capacity_margin_down[NR_CPUS];
-
-struct sched_walt_cpu_load {
-	unsigned long nl;
-	unsigned long pl;
-	bool rtgb_active;
-	u64 ws;
-};
-
 /* task_struct::on_rq states: */
 #define TASK_ON_RQ_QUEUED	1
 #define TASK_ON_RQ_MIGRATING	2
@@ -897,11 +886,6 @@ struct root_domain {
 	 * CPUs of the rd. Protected by RCU.
 	 */
 	struct perf_domain	*pd;
-
-	/* First cpu with maximum and minimum original capacity */
-	int max_cap_orig_cpu, min_cap_orig_cpu;
-	/* First cpu with mid capacity */
-	int mid_cap_orig_cpu;
 };
 
 extern void init_defrootdomain(void);
@@ -1727,6 +1711,8 @@ enum numa_faults_stats {
 };
 extern void sched_setnuma(struct task_struct *p, int node);
 extern int migrate_task_to(struct task_struct *p, int cpu);
+extern int migrate_swap(struct task_struct *p, struct task_struct *t,
+			int cpu, int scpu);
 extern void init_numa_balancing(unsigned long clone_flags, struct task_struct *p);
 #else
 static inline void
@@ -1734,9 +1720,6 @@ init_numa_balancing(unsigned long clone_flags, struct task_struct *p)
 {
 }
 #endif /* CONFIG_NUMA_BALANCING */
-
-extern int migrate_swap(struct task_struct *p, struct task_struct *t,
-			int cpu, int scpu);
 
 #ifdef CONFIG_SMP
 
@@ -2370,9 +2353,6 @@ static inline int idle_get_state_idx(struct rq *rq)
 {
 	WARN_ON(!rcu_read_lock_held());
 
-	if (rq->nr_running || cpu_of(rq) == raw_smp_processor_id())
-		return -1;
-
 	return rq->idle_state_idx;
 }
 #else
@@ -2459,7 +2439,6 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
 {
 	unsigned prev_nr = rq->nr_running;
 
-	sched_update_nr_prod(cpu_of(rq), count, true);
 	rq->nr_running = prev_nr + count;
 
 #ifdef CONFIG_SMP
@@ -2474,7 +2453,6 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
 
 static inline void sub_nr_running(struct rq *rq, unsigned count)
 {
-	sched_update_nr_prod(cpu_of(rq), count, false);
 	rq->nr_running -= count;
 	/* Check if we still need preemption */
 	sched_update_tick_dependency(rq);
@@ -2581,11 +2559,6 @@ static inline int hrtick_enabled(struct rq *rq)
 
 #endif /* CONFIG_SCHED_HRTICK */
 
-static inline u64 sched_ktime_clock(void)
-{
-	return sched_clock();
-}
-
 #ifndef arch_scale_freq_capacity
 static __always_inline
 unsigned long arch_scale_freq_capacity(int cpu)
@@ -2612,15 +2585,6 @@ unsigned long arch_scale_min_freq_capacity(int cpu)
 #endif
 
 #ifdef CONFIG_SMP
-static inline unsigned long capacity_of(int cpu)
-{
-	return cpu_rq(cpu)->cpu_capacity;
-}
-
-static inline unsigned long task_util(struct task_struct *p)
-{
-	return READ_ONCE(p->se.avg.util_avg);
-}
 
 #ifdef CONFIG_SCHED_DEBUG
 /*
@@ -2956,9 +2920,6 @@ static inline void cpufreq_update_util(struct rq *rq, unsigned int flags)
 static inline void cpufreq_update_util(struct rq *rq, unsigned int flags) {}
 #endif /* CONFIG_CPU_FREQ */
 
-bool uclamp_latency_sensitive(struct task_struct *p);
-bool uclamp_boosted(struct task_struct *p);
-
 #ifdef arch_scale_freq_capacity
 # ifndef arch_scale_freq_invariant
 #  define arch_scale_freq_invariant()	true
@@ -3179,31 +3140,6 @@ static inline bool is_per_cpu_kthread(struct task_struct *p)
 	return true;
 }
 #endif
-
-static inline bool is_min_capacity_cpu(int cpu)
-{
-#ifdef CONFIG_SMP
-	int min_cpu = cpu_rq(cpu)->rd->min_cap_orig_cpu;
-
-	return unlikely(min_cpu == -1) ||
-		arch_scale_cpu_capacity(cpu) == arch_scale_cpu_capacity(min_cpu);
-#else
-	return true;
-#endif
-}
-
-static inline unsigned long thermal_cap(int cpu)
-{
-	return SCHED_CAPACITY_SCALE;
-}
-
-struct sched_avg_stats {
-	int nr;
-	int nr_misfit;
-	int nr_max;
-	int nr_scaled;
-};
-extern void sched_get_nr_running_avg(struct sched_avg_stats *stats);
 
 extern u64 avg_vruntime(struct cfs_rq *cfs_rq);
 extern int entity_eligible(struct cfs_rq *cfs_rq, struct sched_entity *se);
