@@ -229,21 +229,6 @@ enum fps {
 /* Task command name length: */
 #define TASK_COMM_LEN			16
 
-enum task_event {
-	PUT_PREV_TASK   = 0,
-	PICK_NEXT_TASK  = 1,
-	TASK_WAKE       = 2,
-	TASK_MIGRATE    = 3,
-	TASK_UPDATE     = 4,
-	IRQ_UPDATE      = 5,
-};
-
-/* Note: this need to be in sync with migrate_type_names array */
-enum migrate_types {
-	GROUP_TO_RQ,
-	RQ_TO_GROUP,
-};
-
 #ifdef CONFIG_HOTPLUG_CPU
 extern int sched_isolate_count(const cpumask_t *mask, bool include_offline);
 extern int sched_isolate_cpu(int cpu);
@@ -561,19 +546,9 @@ struct sched_entity {
 	ANDROID_KABI_RESERVE(4);
 };
 
-struct sched_load {
-	unsigned long prev_load;
-	unsigned long new_task_load;
-	unsigned long predicted_load;
-};
-
 struct cpu_cycle_counter_cb {
 	u64 (*get_cpu_cycle_counter)(int cpu);
 };
-
-#define MAX_NUM_CGROUP_COLOC_ID	20
-
-DECLARE_PER_CPU_READ_MOSTLY(int, sched_load_boost);
 
 struct sched_rt_entity {
 	struct list_head		run_list;

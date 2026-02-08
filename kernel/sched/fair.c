@@ -85,12 +85,6 @@ int __weak arch_asym_cpu_priority(int cpu)
 unsigned int sysctl_sched_cfs_bandwidth_slice		= 5000UL;
 #endif
 
-/* Migration margins */
-unsigned int sched_capacity_margin_up[NR_CPUS] = {
-			[0 ... NR_CPUS-1] = 1078}; /* ~5% margin */
-unsigned int sched_capacity_margin_down[NR_CPUS] = {
-			[0 ... NR_CPUS-1] = 1205}; /* ~15% margin */
-
 static inline void update_load_add(struct load_weight *lw, unsigned long inc)
 {
 	lw->weight += inc;
@@ -4190,6 +4184,11 @@ static inline unsigned long task_runnable(struct task_struct *p)
 	return READ_ONCE(p->se.avg.runnable_avg);
 }
 
+static inline unsigned long task_util(struct task_struct *p)
+{
+	return READ_ONCE(p->se.avg.util_avg);
+}
+
 static inline unsigned long _task_util_est(struct task_struct *p)
 {
 	return READ_ONCE(p->se.avg.util_est) & ~UTIL_AVG_UNCHANGED;
@@ -6067,6 +6066,11 @@ static unsigned long cpu_load_without(struct rq *rq, struct task_struct *p)
 static unsigned long cpu_runnable(struct rq *rq)
 {
 	return cfs_rq_runnable_avg(&rq->cfs);
+}
+
+static unsigned long capacity_of(int cpu)
+{
+	return cpu_rq(cpu)->cpu_capacity;
 }
 
 static unsigned long cpu_runnable_without(struct rq *rq, struct task_struct *p)
@@ -7989,10 +7993,6 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 
 	/* Disregard pcpu kthreads; they are where they need to be. */
 	if ((p->flags & PF_KTHREAD) && kthread_is_per_cpu(p))
-		return 0;
-
-	if ((p->in_iowait || uclamp_boosted(p)) &&
-		is_min_capacity_cpu(env->dst_cpu) && !is_min_capacity_cpu(env->src_cpu))
 		return 0;
 
 	if (!cpumask_test_cpu(env->dst_cpu, p->cpus_ptr)) {
@@ -10688,7 +10688,6 @@ static void nohz_balancer_kick(struct rq *rq)
 	struct sched_domain *sd;
 	int nr_busy, i, cpu = rq->cpu;
 	unsigned int flags = 0;
-	cpumask_t cpumask;
 
 	if (unlikely(rq->idle_balance))
 		return;
@@ -10703,7 +10702,6 @@ static void nohz_balancer_kick(struct rq *rq)
 	 * None are in tickless mode and hence no need for NOHZ idle load
 	 * balancing.
 	 */
-	cpumask_copy(&cpumask, nohz.idle_cpus_mask);
 	if (likely(!atomic_read(&nohz.nr_cpus)))
 		return;
 
@@ -10713,17 +10711,6 @@ static void nohz_balancer_kick(struct rq *rq)
 
 	if (time_before(now, nohz.next_balance))
 		goto out;
-
-	/*
-	 * With EAS, no-hz idle balance is allowed only when the CPU
-	 * is overutilized and has 2 tasks. The misfit task migration
-	 * happens from the tickpath.
-	 */
-	if (sched_energy_enabled()) {
-		if (rq->nr_running >= 2 && (cpu_overutilized(cpu)))
-			flags = NOHZ_KICK_MASK;
-		goto out;
-	}
 
 	if (rq->nr_running >= 2) {
 		flags = NOHZ_KICK_MASK;
@@ -10930,6 +10917,7 @@ static bool _nohz_idle_balance(struct rq *this_rq, unsigned int flags,
 	int balance_cpu;
 	int ret = false;
 	struct rq *rq;
+	cpumask_t cpus;
 
 	SCHED_WARN_ON((flags & NOHZ_KICK_MASK) == NOHZ_BALANCE_KICK);
 
