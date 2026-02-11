@@ -161,6 +161,7 @@ void __init sched_init_granularity(void)
 	update_sysctl();
 }
 
+#ifndef CONFIG_64BIT
 #define WMULT_CONST	(~0U)
 #define WMULT_SHIFT	32
 
@@ -216,6 +217,12 @@ static u64 __calc_delta(u64 delta_exec, unsigned long weight, struct load_weight
 
 	return mul_u64_u32_shr(delta_exec, fact, shift);
 }
+#else
+static u64 __calc_delta(u64 delta_exec, unsigned long weight, struct load_weight *lw)
+{
+	return (delta_exec * weight) / lw->weight;
+}
+#endif
 
 /*
  * delta /= w
