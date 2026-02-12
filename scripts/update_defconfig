@@ -15,10 +15,8 @@ export KERNEL_CFG
 export OUT_DIR
 
 # Set compiler PATH
-CLANG=~/evo/prebuilts/clang/host/linux-x86/clang-r530567/bin/
-GCC64=~/evo/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/
-GCC32=~/evo/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/
-export PATH=$CLANG:$GCC64:$GCC32:$PATH
+CLANG=~/evo/prebuilts/clang/host/linux-x86/clang-r563880c/bin/
+export PATH=$CLANG:$PATH
 export ARCH=arm64
 export CLANG_TRIPLE="aarch64-linux-gnu-"
 export CROSS_COMPILE="aarch64-linux-android-"
@@ -26,7 +24,6 @@ export CROSS_COMPILE_ARM32="arm-linux-androideabi-"
 
 BUILD="make O=$OUT_DIR \
 CC=clang \
-HOSTCC=gcc \
 LD=ld.lld \
 AS=llvm-as \
 AR=llvm-ar \
