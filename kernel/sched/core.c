@@ -407,11 +407,6 @@ bool raw_spin_rq_trylock(struct rq *rq)
 	}
 }
 
-void raw_spin_rq_unlock(struct rq *rq)
-{
-	raw_spin_unlock(rq_lockp(rq));
-}
-
 #ifdef CONFIG_SMP
 /*
  * double_rq_lock - safely lock two runqueues
