@@ -419,10 +419,8 @@ static int tz_get_target_freq(struct devfreq *devfreq, unsigned long *freq)
 
 		scm_data[0] = level;
 		scm_data[1] = priv->bin.total_time;
-		if (refresh_rate >= 120) {
-			scm_data[2] = priv->bin.busy_time + (priv->bin.busy_time >> 1);
-		} else if (refresh_rate == 90) {
-			scm_data[2] = priv->bin.busy_time + (priv->bin.busy_time >> 2);
+		if (refresh_rate > 60) {
+			scm_data[2] = priv->bin.busy_time + (priv->bin.busy_time >> 2); // 25%
 		} else {
 			scm_data[2] = priv->bin.busy_time;
 		}
