@@ -9509,7 +9509,7 @@ void sched_move_task(struct task_struct *tsk)
 		 */
 		resched_curr(rq);
 	} else if (queued) {
-		check_preempt_curr(rq, tsk, 0);
+		wakeup_preempt(rq, tsk, 0);
 	}
 
 	task_rq_unlock(rq, tsk, &rf);
