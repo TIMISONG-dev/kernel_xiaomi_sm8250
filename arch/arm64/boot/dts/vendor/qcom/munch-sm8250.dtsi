@@ -508,6 +508,7 @@ And public attribution of xiaomi platforms(like L11R and so and)
 
 &qupv3_se4_spi {
 	status = "ok";
+	qcom,rt;
 	focaltech@0 {
 		status = "ok";
 		compatible = "focaltech,fts";
