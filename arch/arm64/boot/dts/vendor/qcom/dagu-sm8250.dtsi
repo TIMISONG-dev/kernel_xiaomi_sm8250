@@ -235,6 +235,7 @@ And public attribution of xiaomi platforms(like dagu and so and)
 
 &qupv3_se4_spi {
 	status = "ok";
+	qcom,rt;
 	himax_ts@0 {
 		compatible = "himax,hxcommon";
 		reg = <0>;
