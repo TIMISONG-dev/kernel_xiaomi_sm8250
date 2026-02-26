@@ -2978,8 +2978,6 @@ extern struct reclaim_param reclaim_task_anon(struct task_struct *task,
 #ifdef CONFIG_RTMM
 extern unsigned long reclaim_global(unsigned long nr_to_reclaim);
 #endif
-extern int reclaim_pte_range(pmd_t *pmd, unsigned long addr,
-				unsigned long end, struct mm_walk *walk);
 extern struct reclaim_param reclaim_task_nomap(struct task_struct *task,
 		int nr_to_reclaim);
 extern int reclaim_address_space(struct address_space *mapping,
