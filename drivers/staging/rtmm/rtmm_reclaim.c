@@ -180,8 +180,10 @@ static int mem_process_reclaim(pid_t pid, int type, int nr_to_reclaim)
 	struct task_struct *task;
 	struct mm_struct *mm;
 	struct vm_area_struct *vma;
-	struct mm_walk reclaim_walk = {};
 	struct reclaim_param rp;
+	const struct mm_walk_ops reclaim_walk_ops = {
+		.pmd_entry = reclaim_pte_range,
+	};
 	int ret = 0;
 
 	task = find_get_task_by_pid(pid);
@@ -194,13 +196,9 @@ static int mem_process_reclaim(pid_t pid, int type, int nr_to_reclaim)
 		goto out;
 	}
 
-	reclaim_walk.mm = mm;
-	reclaim_walk.pmd_entry = reclaim_pte_range;
-
 	rp.nr_scanned = 0;
 	rp.nr_to_reclaim = nr_to_reclaim;
 	rp.nr_reclaimed = 0;
-	reclaim_walk.private = &rp;
 
 	mmap_read_lock(mm);
 
@@ -215,8 +213,8 @@ static int mem_process_reclaim(pid_t pid, int type, int nr_to_reclaim)
 			continue;
 
 		rp.vma = vma;
-		ret = walk_page_range(vma->vm_start, vma->vm_end,
-				      &reclaim_walk);
+		ret = walk_page_range(mm, vma->vm_start, vma->vm_end,
+				      &reclaim_walk_ops, &rp);
 		if (ret)
 			break;
 	}
