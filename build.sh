@@ -19,8 +19,6 @@ source ../settings.sh
 # export SHAB=hash commit for 5k battery
 #
 
-rm -rf out
-
 MAIN=/home/timisong
 
 KERNEL=$PWD
