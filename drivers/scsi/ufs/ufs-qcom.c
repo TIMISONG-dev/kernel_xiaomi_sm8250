@@ -1628,6 +1628,7 @@ static void ufs_qcom_pm_qos_req_start(struct ufs_hba *hba, struct request *req)
 	unsigned long flags;
 	struct ufs_qcom_host *host;
 	struct ufs_qcom_pm_qos_cpu_group *group;
+	int cpu;
 
 	if (!hba || !req)
 		return;
@@ -1636,7 +1637,9 @@ static void ufs_qcom_pm_qos_req_start(struct ufs_hba *hba, struct request *req)
 	if (!host->pm_qos.groups)
 		return;
 
-	group = &host->pm_qos.groups[ufs_qcom_cpu_to_group(host, req->cpu)];
+	cpu = raw_smp_processor_id();
+
+	group = &host->pm_qos.groups[ufs_qcom_cpu_to_group(host, cpu)];
 
 	spin_lock_irqsave(hba->host->host_lock, flags);
 	if (!host->pm_qos.is_enabled)
@@ -1675,13 +1678,16 @@ static void ufs_qcom_pm_qos_req_end(struct ufs_hba *hba, struct request *req,
 	bool should_lock)
 {
 	unsigned long flags = 0;
+	int cpu;
 
 	if (!hba || !req)
 		return;
 
+	cpu = raw_smp_processor_id();
+
 	if (should_lock)
 		spin_lock_irqsave(hba->host->host_lock, flags);
-	__ufs_qcom_pm_qos_req_end(ufshcd_get_variant(hba), req->cpu);
+	__ufs_qcom_pm_qos_req_end(ufshcd_get_variant(hba), cpu);
 	if (should_lock)
 		spin_unlock_irqrestore(hba->host->host_lock, flags);
 }
