@@ -57,7 +57,7 @@ SCHED_FEAT(CACHE_HOT_BUDDY, false)
 SCHED_FEAT(DELAY_DEQUEUE, true)
 SCHED_FEAT(DELAY_ZERO, true)
 
-#define SCHED_FEAT_PARANOID_AVG 0
+SCHED_FEAT(PARANOID_AVG, false)
 
 /*
  * Allow wakeup-time preemption of the current task:
