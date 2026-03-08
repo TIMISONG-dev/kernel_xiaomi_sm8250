@@ -632,6 +632,7 @@ static void
 sum_w_vruntime_add_paranoid(struct cfs_rq *cfs_rq, struct sched_entity *se)
 {
 	unsigned long weight;
+	struct rb_node *node;
 	s64 key, tmp;
 
 again:
@@ -662,7 +663,7 @@ overflow:
 	cfs_rq->sum_w_vruntime = 0;
 	cfs_rq->sum_weight = 0;
 
-	for (struct rb_node *node = cfs_rq->tasks_timeline.rb_leftmost;
+	for (node = cfs_rq->tasks_timeline.rb_leftmost;
 	     node; node = rb_next(node))
 		__sum_w_vruntime_add(cfs_rq, __node_2_se(node));
 
