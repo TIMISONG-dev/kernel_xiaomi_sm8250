@@ -10,8 +10,10 @@
 
 static const char * const task_name[] = {
 	"com.miui.home",
+	"s.nexuslauncher"
 	"ndroid.systemui",
 	"surfaceflinger",
+	"droid.launcher3",
 };
 static const char *cameraserver = "cameraserver";
 static const char *RenderThread = "RenderThread";
