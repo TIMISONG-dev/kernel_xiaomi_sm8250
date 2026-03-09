@@ -55,7 +55,7 @@ struct netns_xfrm {
 	struct xfrm_policy_hthresh policy_hthresh;
 
 
-	struct sock		*nlsk;
+	struct sock		__rcu *nlsk;
 	struct sock		*nlsk_stash;
 
 	u32			sysctl_aevent_etime;
