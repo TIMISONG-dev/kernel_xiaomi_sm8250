@@ -9906,7 +9906,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
 			 * to: load_i * capacity_j > load_j * capacity_i;  where j is
 			 * our previous maximum.
 			 */
-			if (load * busiest_capacity >= busiest_load * capacity) {
+			if (load * busiest_capacity > busiest_load * capacity) {
 				busiest_load = load;
 				busiest_capacity = capacity;
 				busiest = rq;
