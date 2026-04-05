@@ -17673,14 +17673,14 @@ static int wlan_hdd_add_key_sta(struct hdd_adapter *adapter,
 	if (!vdev)
 		return -EINVAL;
 
-#if IS_ENABLED(CONFIG_BOARD_ELISH) || IS_ENABLED(CONFIG_BOARD_ENUMA) || IS_ENABLED(CONFIG_BOARD_DAGU)
+#if IS_ENABLED(CONFIG_MACH_XIAOMI_ELISH) || IS_ENABLED(CONFIG_MACH_XIAOMI_ENUMA) || IS_ENABLED(CONFIG_MACH_XIAOMI_DAGU)
 	hdd_start_install_key(adapter);
 #endif
 	errno = wlan_cfg80211_crypto_add_key(vdev, (pairwise ?
 					     WLAN_CRYPTO_KEY_TYPE_UNICAST :
 					     WLAN_CRYPTO_KEY_TYPE_GROUP),
 					     key_index, true);
-#if IS_ENABLED(CONFIG_BOARD_ELISH) || IS_ENABLED(CONFIG_BOARD_ENUMA) || IS_ENABLED(CONFIG_BOARD_DAGU)
+#if IS_ENABLED(CONFIG_MACH_XIAOMI_ELISH) || IS_ENABLED(CONFIG_MACH_XIAOMI_ENUMA) || IS_ENABLED(CONFIG_MACH_XIAOMI_DAGU)
 	if (!errno)
 		errno = hdd_wait_for_install_key_complete(adapter);
 #endif
