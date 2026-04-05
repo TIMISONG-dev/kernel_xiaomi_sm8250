@@ -1510,9 +1510,9 @@ static int smb5_usb_get_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		if (smblib_get_fastcharge_mode(chg))
-    	#if defined(CONFIG_BOARD_CAS) || defined(CONFIG_BOARD_MUNCH)
+    #if defined(CONFIG_MACH_XIAOMI_CAS) || defined(CONFIG_MACH_XIAOMI_MUNCH)
 			val->intval = 12000000;
-	#elif defined CONFIG_BOARD_CMI
+	#elif defined CONFIG_MACH_XIAOMI_CMI
 			val->intval = 10000000;
 	#else
 			val->intval = 6000000;
