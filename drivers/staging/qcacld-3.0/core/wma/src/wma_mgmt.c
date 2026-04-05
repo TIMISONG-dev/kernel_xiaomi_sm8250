@@ -836,7 +836,7 @@ void wma_set_sta_keep_alive(tp_wma_handle wma, uint8_t vdev_id,
 	wmi_unified_set_sta_keep_alive_cmd(wma->wmi_handle, &params);
 }
 
-#if IS_ENABLED(CONFIG_BOARD_ELISH) || IS_ENABLED(CONFIG_BOARD_ENUMA) || IS_ENABLED(CONFIG_BOARD_DAGU)
+#if IS_ENABLED(CONFIG_MACH_XIAOMI_ELISH) || IS_ENABLED(CONFIG_MACH_XIAOMI_ENUMA) || IS_ENABLED(CONFIG_MACH_XIAOMI_DAGU)
 void wma_register_install_key_complete_cb(wma_install_key_complete_cb cb)
 {
 	tp_wma_handle wma_handle = cds_get_context(QDF_MODULE_ID_WMA);
