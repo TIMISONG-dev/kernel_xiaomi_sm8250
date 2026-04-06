@@ -1119,9 +1119,8 @@ static int bq2597x_get_adc_data(struct bq2597x *bq, int channel,  int *result)
 		t |= (val >> 8) & 0xFF;
 		*result = t;
 
-		if (bq->chip_vendor == SC8551) {
+		if (bq->chip_vendor == SC8551)
 			*result = (u64)t * (u64)sc8551_adc_lsb[channel] / 10000000;
-		}
 	}
 
 	return 0;
