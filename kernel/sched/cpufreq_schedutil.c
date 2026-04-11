@@ -248,10 +248,7 @@ static inline unsigned long apply_dvfs_headroom(unsigned long util, int cpu)
 	/*
 	 * Perform 12.5% boost in < 50% load and 25% boost in >= 50% load
 	 */
-	if (util < (capacity >> 1))
-		headroom = util >> 3;
-	else
-		headroom = util >> 2;
+	headroom = (util < (capacity >> 1)) ? (util >> 3) : (util >> 2);
 
 	/*
 	 * Ensure the total boosted utilization does not exceed the CPU's
