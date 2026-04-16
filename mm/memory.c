@@ -2861,6 +2861,7 @@ vm_fault_t do_swap_page(struct vm_fault *vmf)
 	struct swap_info_struct *si;
 	bool skip_swapcache = false;
 	pte_t pte;
+	gfp_t alloc_flags = GFP_HIGHUSER_MOVABLE | __GFP_CMA | __GFP_NOWARN;
 	int locked;
 	int exclusive = 0;
 	vm_fault_t ret = 0;
@@ -2910,8 +2911,7 @@ vm_fault_t do_swap_page(struct vm_fault *vmf)
 
 	if (!page) {
 		if (skip_swapcache) {
-			page = alloc_page_vma(GFP_HIGHUSER_MOVABLE | __GFP_CMA,
-					      vma, vmf->address);
+			page = alloc_page_vma(alloc_flags, vma, vmf->address);
 			if (page) {
 				__SetPageLocked(page);
 				__SetPageSwapBacked(page);
@@ -2920,8 +2920,7 @@ vm_fault_t do_swap_page(struct vm_fault *vmf)
 				swap_readpage(page, true);
 			}
 		} else {
-			page = swapin_readahead(entry, GFP_HIGHUSER_MOVABLE | __GFP_CMA,
-						vmf);
+			page = swapin_readahead(entry, alloc_flags, vmf);
 			swapcache = page;
 		}
 
