@@ -9,6 +9,7 @@
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/string.h>
+#include <linux/mm.h>
 #include <linux/soc/qcom/qmi.h>
 
 #define QMI_ENCDEC_ENCODE_TLV(type, length, p_dst) do { \
@@ -764,7 +765,7 @@ void *qmi_encode_message(int type, unsigned int msg_id, size_t *len,
 		}
 	}
 
-	msg = kzalloc(sizeof(*hdr) + *len, GFP_KERNEL);
+	msg = kvzalloc(sizeof(*hdr) + *len, GFP_KERNEL);
 	if (!msg)
 		return ERR_PTR(-ENOMEM);
 
@@ -772,7 +773,7 @@ void *qmi_encode_message(int type, unsigned int msg_id, size_t *len,
 	if (c_struct) {
 		msglen = qmi_encode(ei, msg + sizeof(*hdr), c_struct, *len, 1);
 		if (msglen < 0) {
-			kfree(msg);
+			kvfree(msg);
 			return ERR_PTR(msglen);
 		}
 	}
