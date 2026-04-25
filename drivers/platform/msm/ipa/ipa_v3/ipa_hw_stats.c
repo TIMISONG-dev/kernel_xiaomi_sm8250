@@ -864,7 +864,7 @@ int ipa_get_teth_stats(void)
 		goto destroy_imm;
 	}
 
-	stats_all = kzalloc(sizeof(*stats_all), GFP_KERNEL);
+	stats_all = kvzalloc(sizeof(*stats_all), GFP_KERNEL);
 	if (!stats_all) {
 		IPADBG("failed to alloc memory\n");
 		ret = -ENOMEM;
@@ -945,7 +945,7 @@ int ipa_get_teth_stats(void)
 
 	ret = 0;
 free_stats:
-	kfree(stats_all);
+	kvfree(stats_all);
 	stats = NULL;
 destroy_imm:
 	for (i = 0; i < num_cmd; i++)
