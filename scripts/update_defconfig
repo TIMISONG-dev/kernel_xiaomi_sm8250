@@ -15,7 +15,7 @@ export KERNEL_CFG
 export OUT_DIR
 
 # Set compiler PATH
-CLANG=~/evo/prebuilts/clang/host/linux-x86/clang-r563880c/bin/
+CLANG=/home/timisong/clang/bin/
 export PATH=$CLANG:$PATH
 export ARCH=arm64
 export CLANG_TRIPLE="aarch64-linux-gnu-"
@@ -40,7 +40,7 @@ export BUILD
 cd "$KERNEL_TOP" || exit
 
 # These values must be changed for forks!
-KERNEL_DEFCONFIG_URL="https://github.com/PocoF3Releases/kernel_xiaomi_sm8250"
+KERNEL_DEFCONFIG_URL="https://github.com/TIMISONG-dev/kernel_xiaomi_sm8250"
 KERNEL_DEFCONFIG_HEAD=$(git -C ${KERNEL_CFG} rev-parse HEAD)
 
 SOC="kona"
@@ -80,6 +80,9 @@ if [ -n  "$*" ]; then
       DEVICE=$1;
     ;;
     psyche)
+      DEVICE=$1;
+    ;;
+    pipa)
       DEVICE=$1;
     ;;
   esac
@@ -134,7 +137,7 @@ HEAD of the project used to prepare this commit:
 ${KERNEL_DEFCONFIG_URL}/tree/${KERNEL_DEFCONFIG_HEAD}
 EOM
 
-  DEVICES="alioth apollo cas cmi dagu elish enuma lmi munch umi thyme psyche"
+  DEVICES="alioth apollo cas cmi dagu elish enuma lmi munch umi thyme psyche pipa"
 
   for device in $DEVICES; do \
 
@@ -173,6 +176,9 @@ EOM
         DEVICE=$device;
       ;;
       psyche)
+        DEVICE=$device;
+      ;;
+      pipa)
         DEVICE=$device;
       ;;
     esac
