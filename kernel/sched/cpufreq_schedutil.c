@@ -46,6 +46,9 @@ struct sugov_policy {
 
 	bool			limits_changed;
 	bool			need_freq_update;
+
+	u64			dvfs_headroom_lut_delay;
+	u16			dvfs_headroom_lut[SCHED_CAPACITY_SCALE + 1];
 };
 
 struct sugov_cpu {
@@ -303,6 +306,25 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 }
 
 /*
+ * Precompute the DVFS headroom lookup table when delay is one scheduler
+ * tick rate.
+ */
+static void sugov_build_dvfs_headroom_lut(struct sugov_policy *sg_policy)
+{
+	unsigned int cpu = cpumask_first(sg_policy->policy->cpus);
+	unsigned int i;
+	u64 delay;
+
+	delay = TICK_USEC;
+	delay = max_t(u64, delay, per_cpu(dvfs_update_delay, cpu));
+
+	sg_policy->dvfs_headroom_lut_delay = delay;
+
+	for (i = 0; i <= SCHED_CAPACITY_SCALE; i++)
+		sg_policy->dvfs_headroom_lut[i] = (u16)approximate_util_avg(i, delay);
+}
+
+/*
  * DVFS decision are made at discrete points. If CPU stays busy, the util will
  * continue to grow, which means it could need to run at a higher frequency
  * before the next decision point was reached. IOW, we can't follow the util as
@@ -320,8 +342,10 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 static inline unsigned long sugov_apply_dvfs_headroom(unsigned long util, int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
-	u64 delay;
+	struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
+	struct sugov_policy *sg_policy = sg_cpu->sg_policy;
 	unsigned long cap, approx, h_max, growth, decay;
+	u64 delay;
 
 	if (!util)
 		return 0;
@@ -335,6 +359,14 @@ static inline unsigned long sugov_apply_dvfs_headroom(unsigned long util, int cp
 	else
 		delay = TICK_USEC;
 	delay = max(delay, per_cpu(dvfs_update_delay, cpu));
+
+	if (likely(delay == sg_policy->dvfs_headroom_lut_delay)) {
+		approx = sg_policy->dvfs_headroom_lut[util];
+		h_max = sg_policy->dvfs_headroom_lut[0];
+	} else {
+		approx = approximate_util_avg(util, delay);
+		h_max = approximate_util_avg(0, delay);
+	}
 
 	/*
 	 * Capacity-aware DVFS headroom based on PELT for H_ideal = (C - util) * alpha
@@ -350,8 +382,6 @@ static inline unsigned long sugov_apply_dvfs_headroom(unsigned long util, int cp
 	 * Derived from accumulate_sum() and approximate_util_avg() in pelt.c.
 	 */
 	cap = capacity_orig_of(cpu);
-	approx = approximate_util_avg(util, delay);
-	h_max = approximate_util_avg(0, delay);
 	growth = mult_frac(h_max, cap, SCHED_CAPACITY_SCALE);
 	decay = h_max + util - approx;
 
@@ -747,6 +777,8 @@ rate_limit_us_store(struct gov_attr_set *attr_set, const char *buf, size_t count
 
 		for_each_cpu(cpu, sg_policy->policy->cpus)
 			per_cpu(dvfs_update_delay, cpu) = rate_limit_us;
+
+		sugov_build_dvfs_headroom_lut(sg_policy);
 	}
 
 	return count;
@@ -1040,6 +1072,9 @@ else
 
 		cpufreq_add_update_util_hook(cpu, &sg_cpu->update_util, uu);
 	}
+
+	sugov_build_dvfs_headroom_lut(sg_policy);
+
 	return 0;
 }
 
