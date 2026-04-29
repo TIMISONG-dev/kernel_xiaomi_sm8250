@@ -321,6 +321,7 @@ static inline unsigned long sugov_apply_dvfs_headroom(unsigned long util, int cp
 {
 	struct rq *rq = cpu_rq(cpu);
 	u64 delay;
+	unsigned long cap, approx, h_max, growth, decay;
 
 	if (!util)
 		return 0;
@@ -335,7 +336,29 @@ static inline unsigned long sugov_apply_dvfs_headroom(unsigned long util, int cp
 		delay = TICK_USEC;
 	delay = max(delay, per_cpu(dvfs_update_delay, cpu));
 
-	return approximate_util_avg(util, delay);
+	/*
+	 * Capacity-aware DVFS headroom based on PELT for H_ideal = (C - util) * alpha
+	 *
+	 * alpha = h_max / 1024, where h_max = approximate_util_avg(0, delay) is the
+	 * maximum growth possible for this delay on a 1024-capacity core.
+	 *
+	 * To avoid division, rewrite (C - util) * alpha as:
+	 *   growth = h_max * C / 1024 (= C * alpha)
+	 *   decay  = h_max + util - approx (= util * alpha)
+	 *   H_ideal = growth - decay
+	 *
+	 * Derived from accumulate_sum() and approximate_util_avg() in pelt.c.
+	 */
+	cap = capacity_orig_of(cpu);
+	approx = approximate_util_avg(util, delay);
+	h_max = approximate_util_avg(0, delay);
+	growth = mult_frac(h_max, cap, SCHED_CAPACITY_SCALE);
+	decay = h_max + util - approx;
+
+	if (growth > decay)
+		return util + growth - decay;
+
+	return util;
 }
 
 unsigned long sugov_effective_cpu_perf(int cpu, unsigned long actual,
