@@ -323,15 +323,6 @@ extern void dl_change_utilization(struct task_struct *p, u64 new_bw);
 unsigned long approximate_util_avg(unsigned long util, u64 delta);
 u64 approximate_runtime(unsigned long util);
 
-/*
- * Any governor that relies on util signal to drive DVFS, must populate these
- * percpu dvfs_update_delay variables.
- *
- * It should describe the rate/delay at which the governor sends DVFS freq
- * update to the hardware in us.
- */
-DECLARE_PER_CPU_READ_MOSTLY(u64, dvfs_update_delay);
-
 extern void init_dl_bw(struct dl_bw *dl_b);
 extern int  sched_dl_global_validate(void);
 extern void sched_dl_do_global(void);
