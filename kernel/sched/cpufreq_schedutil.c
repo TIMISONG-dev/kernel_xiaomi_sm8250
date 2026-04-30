@@ -322,6 +322,9 @@ static inline unsigned long sugov_apply_dvfs_headroom(unsigned long util, int cp
 	struct rq *rq = cpu_rq(cpu);
 	u64 delay;
 
+	if (!util)
+		return 0;
+
 	/*
 	 * What is the possible worst case scenario for updating util_avg, ctx
 	 * switch or TICK?
