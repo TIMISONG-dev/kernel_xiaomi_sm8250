@@ -24,6 +24,7 @@
 #include <linux/module.h>
 #include <linux/suspend.h>
 #include <linux/tick.h>
+#include <linux/fie.h>
 #include <trace/events/power.h>
 
 #include "cpuidle.h"
@@ -231,6 +232,7 @@ int __nocfi cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_drive
 	sched_idle_set_state(target_state, index);
 
 	trace_cpu_idle(index, dev->cpu);
+	fie_idle_enter();
 	time_start = ns_to_ktime(local_clock());
 
 	stop_critical_timings();
@@ -244,6 +246,7 @@ int __nocfi cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_drive
 	sched_clock_idle_wakeup_event();
 	time_end = ns_to_ktime(local_clock());
 	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
+	fie_idle_exit();
 
 	/* The cpu is no longer idle or about to enter idle. */
 	sched_idle_set_state(NULL, -1);
