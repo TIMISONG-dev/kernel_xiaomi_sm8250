@@ -12,7 +12,6 @@
 #include <asm/arch_timer.h>
 #include <asm/cputype.h>
 #include <asm/perf_event.h>
-#include <trace/hooks/cpuidle.h>
 #include "sched.h"
 
 /*
@@ -787,8 +786,12 @@ void fie_update_rq_clock(struct rq *rq)
  * window to ensure that only the latest measurements from a CPU in a CPU domain
  * are used.
  */
-static void fie_tick_entry(void *data, struct rq *rq)
+void fie_tick_entry(void)
 {
+	/* Don't race with reboot or probe, since this isn't a vendor hook */
+	if (!static_branch_unlikely(&fie_ready))
+		return;
+
 	update_cpu_hw_throttle();
 }
 
@@ -836,14 +839,12 @@ static void fie_cpu_idle(int cpu, bool idle)
 	}
 }
 
-static void fie_idle_enter(void *data, int *state,
-			   struct cpuidle_device *dev)
+void fie_idle_enter(void)
 {
 	fie_cpu_idle(raw_smp_processor_id(), true);
 }
 
-static void fie_idle_exit(void *data, int state,
-			  struct cpuidle_device *dev)
+void fie_idle_exit(void)
 {
 	fie_cpu_idle(raw_smp_processor_id(), false);
 }
@@ -990,16 +991,6 @@ static int __init fie_init(void)
 
 	/* Precompute arithmetic to convert between ticks and nanoseconds */
 	calc_cntpct_arith();
-
-	/*
-	 * Register the cpuidle callback for frequency-invariant counting needed
-	 * to set the CPU frequency scale correctly in update_freq_scale().
-	 */
-	BUG_ON(register_trace_android_vh_cpu_idle_enter(fie_idle_enter, NULL));
-	BUG_ON(register_trace_android_vh_cpu_idle_exit(fie_idle_exit, NULL));
-
-	/* Install the scheduler tick entry hook to detect CPU HW throttling */
-	BUG_ON(register_trace_android_rvh_tick_entry(fie_tick_entry, NULL));
 
 	/* Begin updating CPU scheduler statistics from update_rq_clock() */
 	static_branch_enable(&fie_ready);
