@@ -12,6 +12,7 @@
 #include <asm/arch_timer.h>
 #include <asm/cputype.h>
 #include <asm/perf_event.h>
+#include <asm/sysreg.h>
 #include "sched.h"
 
 /*
@@ -310,8 +311,8 @@ fie_amu_const_read(struct pmu_stat *stat)
 
 	asm volatile("isb\n\t"
 		     "mrs %0, cntpct_el0\n\t"
-		     "mrs %1, amevcntr01_el0\n\t"
-		     "mrs %2, amevcntr00_el0\n\t"
+		     __mrs_s("%1", SYS_AMEVCNTR0_CONST_EL0)
+		     __mrs_s("%2", SYS_AMEVCNTR0_CORE_EL0)
 		     "isb"
 		     : "=r" (cntpct), "=r" (const_cyc), "=r" (cpu_cyc));
 
@@ -325,7 +326,7 @@ fie_amu_read(struct pmu_stat *stat)
 
 	asm volatile("isb\n\t"
 		     "mrs %0, cntpct_el0\n\t"
-		     "mrs %1, amevcntr00_el0\n\t"
+		     __mrs_s("%1", SYS_AMEVCNTR0_CORE_EL0)
 		     "isb"
 		     : "=r" (cntpct), "=r" (cpu_cyc));
 
@@ -873,20 +874,7 @@ static int fie_cpuhp_up(unsigned int cpu)
 	has_amu = false;
 #endif
 	per_cpu(cpu_has_amu, cpu) = has_amu;
-
-	/*
-	 * Cortex-A510 is affected by ARM erratum 2457168 which causes the AMU
-	 * constant cycles counter to stop working after a CPU hotplug.
-	 */
-	if (has_amu) {
-		u32 midr = read_cpuid_id();
-
-		per_cpu(cpu_has_amu_const, cpu) =
-			!(MIDR_IMPLEMENTOR(midr) == ARM_CPU_IMP_ARM &&
-			  MIDR_PARTNUM(midr) == ARM_CPU_PART_CORTEX_A510);
-	} else {
-		per_cpu(cpu_has_amu_const, cpu) = false;
-	}
+	per_cpu(cpu_has_amu_const, cpu) = has_amu;
 
 	if (!has_amu) {
 		ret = create_perf_events(cpu);
