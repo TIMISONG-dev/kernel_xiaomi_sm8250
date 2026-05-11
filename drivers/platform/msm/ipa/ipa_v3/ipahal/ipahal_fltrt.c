@@ -807,12 +807,12 @@ static int ipa_flt_generate_eq(enum ipa_ip_type ipt,
 
 	if (ipt == IPA_IP_v4) {
 		if (ipa_flt_generate_eq_ip4(ipt, attrib, eq_atrb)) {
-			IPAHAL_ERR("failed to build ipv4 flt eq rule\n");
+			IPAHAL_ERR_RL("failed to build ipv4 flt eq rule\n");
 			return -EPERM;
 		}
 	} else if (ipt == IPA_IP_v6) {
 		if (ipa_flt_generate_eq_ip6(ipt, attrib, eq_atrb)) {
-			IPAHAL_ERR("failed to build ipv6 flt eq rule\n");
+			IPAHAL_ERR_RL("failed to build ipv6 flt eq rule\n");
 			return -EPERM;
 		}
 	} else {
