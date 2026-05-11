@@ -120,6 +120,7 @@
 		ipa3_dec_client_disable_clks_no_block(&log_info); \
 	} while (0)
 
+#ifdef IPA_DEBUG
 /*
  * Printing one warning message in 5 seconds if multiple warning messages
  * are coming back to back.
@@ -135,6 +136,9 @@
 	if (unlikely(rtn && __ratelimit(&_rs)))			\
 		WARN_ON(rtn);					\
 })
+#else
+#define WARN_ON_RATELIMIT_IPA(condition) ((void)0)
+#endif
 
 /*
  * Printing one error message in 5 seconds if multiple error messages
