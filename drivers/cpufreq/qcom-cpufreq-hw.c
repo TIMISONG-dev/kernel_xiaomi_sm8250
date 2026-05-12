@@ -18,6 +18,7 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/units.h>
+#include <linux/fie.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/dcvsh.h>
@@ -273,7 +274,8 @@ static int qcom_cpufreq_hw_cpu_init(struct cpufreq_policy *policy)
 {
 	struct cpufreq_qcom *c;
 	struct device *cpu_dev;
-	int ret;
+	unsigned int max_freq;
+	int i, ret;
 
 	cpu_dev = get_cpu_device(policy->cpu);
 	if (!cpu_dev) {
@@ -295,6 +297,20 @@ static int qcom_cpufreq_hw_cpu_init(struct cpufreq_policy *policy)
 		dev_err(cpu_dev, "OPP table is not ready\n");
 
 	policy->freq_table = c->table;
+
+	/*
+	 * Register this frequency domain with FIE now that the freq table is
+	 * populated. Scan the table for the max frequency since cpuinfo.max_freq
+	 * isn't set until after cpu_init returns.
+	 */
+	max_freq = 0;
+	for (i = 0; policy->freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
+		if (policy->freq_table[i].frequency != CPUFREQ_ENTRY_INVALID &&
+		    policy->freq_table[i].frequency > max_freq)
+			max_freq = policy->freq_table[i].frequency;
+	}
+	fie_init_cpu_domain(policy->cpus, max_freq);
+
 	policy->driver_data = c->base;
 	policy->fast_switch_possible = true;
 	policy->dvfs_possible_from_any_cpu = true;
