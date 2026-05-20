@@ -434,6 +434,7 @@ struct kgsl_context {
  * @priv: Internal flags, use KGSL_PROCESS_* values
  * @pid: Identification structure for the task owner of the process
  * @comm: task name of the process
+ * @mm: Address space that opened the device; other address spaces cannot mmap
  * @mem_lock: Spinlock to protect the process memory lists
  * @refcount: kref object for reference counting the process
  * @idr: Iterator for assigning IDs to memory allocations
@@ -452,6 +453,7 @@ struct kgsl_process_private {
 	unsigned long priv;
 	struct pid *pid;
 	char comm[TASK_COMM_LEN];
+	struct mm_struct *mm;
 	spinlock_t mem_lock;
 	struct kref refcount;
 	struct idr mem_idr;
