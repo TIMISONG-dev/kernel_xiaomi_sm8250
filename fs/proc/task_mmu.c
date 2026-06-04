@@ -1683,7 +1683,7 @@ static inline bool can_reclaim(short before_reclaim_adj,
 	if (running_state == false ||
 			fatal_signal_pending(task) ||
 			task->flags & PF_EXITING ||
-			!list_empty(&mm->mmap_sem.wait_list)) {
+			!list_empty(&mm->mmap_lock.wait_list)) {
 		pr_info("stop reclaim: force\n");
 
 		return false;
