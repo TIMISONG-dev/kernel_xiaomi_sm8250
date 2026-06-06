@@ -1438,9 +1438,11 @@ void *__xa_cmpxchg(struct xarray *xa, unsigned long index,
 
 	do {
 		curr = xas_load(&xas);
+		if (curr == XA_ZERO_ENTRY)
+			curr = NULL;
 		if (curr == old) {
 			xas_store(&xas, entry);
-			if (xa_track_free(xa) && entry && !curr)
+			if (xa_track_free(xa) && entry)
 				xas_clear_mark(&xas, XA_FREE_MARK);
 		}
 	} while (__xas_nomem(&xas, gfp));
