@@ -706,7 +706,9 @@ static int shmem_free_swap(struct address_space *mapping,
 {
 	void *old;
 
-	old = xa_cmpxchg_irq(&mapping->i_pages, index, radswap, NULL, 0);
+	xa_lock_irq(&mapping->i_pages);
+	old = __xa_cmpxchg(&mapping->i_pages, index, radswap, NULL, 0);
+	xa_unlock_irq(&mapping->i_pages);
 	if (old != radswap)
 		return -ENOENT;
 	free_swap_and_cache(radix_to_swp_entry(radswap));
