@@ -238,9 +238,10 @@ void *idr_get_next_ul(struct idr *idr, unsigned long *nextid)
 		entry = rcu_dereference_raw(*slot);
 		if (!entry)
 			continue;
-		if (!xa_is_internal(entry))
+		if (!radix_tree_deref_retry(entry))
 			break;
-		if (slot != &idr->idr_rt.xa_head && !xa_is_retry(entry))
+		if (slot != (void *)&idr->idr_rt.rnode &&
+				entry != (void *)RADIX_TREE_INTERNAL_NODE)
 			break;
 		slot = radix_tree_iter_retry(&iter);
 	}
