@@ -1142,27 +1142,34 @@ static void shmem_evict_inode(struct inode *inode)
 	clear_inode(inode);
 }
 
-static unsigned long find_swap_entry(struct xarray *xa, void *item)
+static unsigned long find_swap_entry(struct radix_tree_root *root, void *item)
 {
-	XA_STATE(xas, xa, 0);
+	struct radix_tree_iter iter;
+	void __rcu **slot;
+	unsigned long found = -1;
 	unsigned int checked = 0;
-	void *entry;
 
 	rcu_read_lock();
-	xas_for_each(&xas, entry, ULONG_MAX) {
-		if (xas_retry(&xas, entry))
+	radix_tree_for_each_slot(slot, root, &iter, 0) {
+		void *entry = radix_tree_deref_slot(slot);
+
+		if (radix_tree_deref_retry(entry)) {
+			slot = radix_tree_iter_retry(&iter);
 			continue;
-		if (entry == item)
+		}
+		if (entry == item) {
+			found = iter.index;
 			break;
+		}
 		checked++;
-		if ((checked % XA_CHECK_SCHED) != 0)
+		if ((checked % 4096) != 0)
 			continue;
-		xas_pause(&xas);
+		slot = radix_tree_iter_resume(slot, &iter);
 		cond_resched_rcu();
 	}
-	rcu_read_unlock();
 
-	return entry ? xas.xa_index : -1;
+	rcu_read_unlock();
+	return found;
 }
 
 /*
