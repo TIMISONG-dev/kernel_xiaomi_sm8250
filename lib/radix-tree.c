@@ -701,14 +701,6 @@ static inline bool radix_tree_shrink(struct radix_tree_root *root,
 		if (!radix_tree_is_internal_node(child) && node->shift)
 			break;
 
-		/*
-		 * For an IDR, we must not shrink entry 0 into the root in
-		 * case somebody calls idr_replace() with a pointer that
-		 * appears to be an internal entry
-		 */
-		if (!node->shift && is_idr(root))
-			break;
-
 		if (radix_tree_is_internal_node(child))
 			entry_to_node(child)->parent = NULL;
 
@@ -881,8 +873,8 @@ static void radix_tree_free_nodes(struct radix_tree_node *node)
 
 	for (;;) {
 		void *entry = rcu_dereference_raw(child->slots[offset]);
-		if (radix_tree_is_internal_node(entry) && child->shift &&
-				!is_sibling_entry(child, entry)) {
+		if (radix_tree_is_internal_node(entry) &&
+					!is_sibling_entry(child, entry)) {
 			child = entry_to_node(entry);
 			offset = 0;
 			continue;
@@ -1055,8 +1047,6 @@ void *__radix_tree_lookup(const struct radix_tree_root *root,
 		parent = entry_to_node(node);
 		offset = radix_tree_descend(parent, &node, index);
 		slot = parent->slots + offset;
-		if (parent->shift == 0)
-			break;
 	}
 
 	if (nodep)
@@ -1131,6 +1121,9 @@ static inline void replace_sibling_entries(struct radix_tree_node *node,
 static void replace_slot(void __rcu **slot, void *item,
 		struct radix_tree_node *node, int count, int exceptional)
 {
+	if (WARN_ON_ONCE(radix_tree_is_internal_node(item)))
+		return;
+
 	if (node && (count || exceptional)) {
 		node->count += count;
 		node->exceptional += exceptional;
@@ -1788,7 +1781,7 @@ void __rcu **radix_tree_next_chunk(const struct radix_tree_root *root,
 			goto restart;
 		if (child == RADIX_TREE_RETRY)
 			break;
-	} while (node->shift && radix_tree_is_internal_node(child));
+	} while (radix_tree_is_internal_node(child));
 
 	/* Update the iterator state */
 	iter->index = (index &~ node_maxindex(node)) | (offset << node->shift);
@@ -2154,8 +2147,6 @@ void __rcu **idr_get_free(struct radix_tree_root *root,
 		shift = error;
 		child = rcu_dereference_raw(root->rnode);
 	}
-	if (start == 0 && shift == 0)
-		shift = RADIX_TREE_MAP_SHIFT;
 
 	while (shift) {
 		shift -= RADIX_TREE_MAP_SHIFT;
