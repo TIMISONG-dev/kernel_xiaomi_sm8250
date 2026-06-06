@@ -32,6 +32,7 @@ void item_kill_tree(struct radix_tree_root *root);
 int tag_tagged_items(struct radix_tree_root *, pthread_mutex_t *,
 			unsigned long start, unsigned long end, unsigned batch,
 			unsigned iftag, unsigned thentag);
+unsigned long find_item(struct radix_tree_root *, void *item);
 
 void xarray_tests(void);
 void tag_check(void);
