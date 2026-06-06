@@ -748,9 +748,9 @@ static bool delete_node(struct radix_tree_root *root,
  *
  *	Returns -ENOMEM, or 0 for success.
  */
-static int __radix_tree_create(struct radix_tree_root *root,
-		unsigned long index, unsigned order,
-		struct radix_tree_node **nodep, void __rcu ***slotp)
+int __radix_tree_create(struct radix_tree_root *root, unsigned long index,
+			unsigned order, struct radix_tree_node **nodep,
+			void __rcu ***slotp)
 {
 	struct radix_tree_node *node = NULL, *child;
 	void __rcu **slot = (void __rcu **)&root->xa_head;
