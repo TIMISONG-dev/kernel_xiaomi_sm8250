@@ -497,13 +497,12 @@ void *__xa_erase(struct xarray *, unsigned long index);
 void *__xa_store(struct xarray *, unsigned long index, void *entry, gfp_t);
 void *__xa_cmpxchg(struct xarray *, unsigned long index, void *old,
 		void *entry, gfp_t);
-int __must_check __xa_insert(struct xarray *, unsigned long index,
-		void *entry, gfp_t);
+int __xa_insert(struct xarray *, unsigned long index, void *entry, gfp_t);
 int __must_check __xa_alloc(struct xarray *, u32 *id, void *entry,
 		struct xa_limit, gfp_t);
 int __must_check __xa_alloc_cyclic(struct xarray *, u32 *id, void *entry,
 		struct xa_limit, u32 *next, gfp_t);
-int __must_check __xa_reserve(struct xarray *, unsigned long index, gfp_t);
+int __xa_reserve(struct xarray *, unsigned long index, gfp_t);
 void __xa_set_mark(struct xarray *, unsigned long index, xa_mark_t);
 void __xa_clear_mark(struct xarray *, unsigned long index, xa_mark_t);
 
@@ -705,8 +704,8 @@ static inline void *xa_cmpxchg_irq(struct xarray *xa, unsigned long index,
  * Return: 0 if the store succeeded.  -EBUSY if another entry was present.
  * -ENOMEM if memory could not be allocated.
  */
-static inline int __must_check xa_insert(struct xarray *xa,
-		unsigned long index, void *entry, gfp_t gfp)
+static inline int xa_insert(struct xarray *xa, unsigned long index,
+		void *entry, gfp_t gfp)
 {
 	int err;
 
@@ -734,8 +733,8 @@ static inline int __must_check xa_insert(struct xarray *xa,
  * Return: 0 if the store succeeded.  -EBUSY if another entry was present.
  * -ENOMEM if memory could not be allocated.
  */
-static inline int __must_check xa_insert_bh(struct xarray *xa,
-		unsigned long index, void *entry, gfp_t gfp)
+static inline int xa_insert_bh(struct xarray *xa, unsigned long index,
+		void *entry, gfp_t gfp)
 {
 	int err;
 
@@ -763,8 +762,8 @@ static inline int __must_check xa_insert_bh(struct xarray *xa,
  * Return: 0 if the store succeeded.  -EBUSY if another entry was present.
  * -ENOMEM if memory could not be allocated.
  */
-static inline int __must_check xa_insert_irq(struct xarray *xa,
-		unsigned long index, void *entry, gfp_t gfp)
+static inline int xa_insert_irq(struct xarray *xa, unsigned long index,
+		void *entry, gfp_t gfp)
 {
 	int err;
 
@@ -979,7 +978,7 @@ static inline int xa_alloc_cyclic_irq(struct xarray *xa, u32 *id, void *entry,
  * May sleep if the @gfp flags permit.
  * Return: 0 if the reservation succeeded or -ENOMEM if it failed.
  */
-static inline __must_check
+static inline
 int xa_reserve(struct xarray *xa, unsigned long index, gfp_t gfp)
 {
 	int ret;
@@ -1003,7 +1002,7 @@ int xa_reserve(struct xarray *xa, unsigned long index, gfp_t gfp)
  * disabling softirqs.
  * Return: 0 if the reservation succeeded or -ENOMEM if it failed.
  */
-static inline __must_check
+static inline
 int xa_reserve_bh(struct xarray *xa, unsigned long index, gfp_t gfp)
 {
 	int ret;
@@ -1027,7 +1026,7 @@ int xa_reserve_bh(struct xarray *xa, unsigned long index, gfp_t gfp)
  * disabling interrupts.
  * Return: 0 if the reservation succeeded or -ENOMEM if it failed.
  */
-static inline __must_check
+static inline
 int xa_reserve_irq(struct xarray *xa, unsigned long index, gfp_t gfp)
 {
 	int ret;
