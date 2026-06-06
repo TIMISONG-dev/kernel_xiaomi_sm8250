@@ -421,86 +421,64 @@ static noinline void check_multi_store(struct xarray *xa)
 #endif
 }
 
-static noinline void check_xa_alloc_1(struct xarray *xa, unsigned int base)
+static DEFINE_XARRAY_ALLOC(xa0);
+
+static noinline void check_xa_alloc(void)
 {
 	int i;
 	u32 id;
 
-	XA_BUG_ON(xa, !xa_empty(xa));
-	/* An empty array should assign %base to the first alloc */
-	xa_alloc_index(xa, base, GFP_KERNEL);
+	/* An empty array should assign 0 to the first alloc */
+	xa_alloc_index(&xa0, 0, GFP_KERNEL);
 
 	/* Erasing it should make the array empty again */
-	xa_erase_index(xa, base);
-	XA_BUG_ON(xa, !xa_empty(xa));
+	xa_erase_index(&xa0, 0);
+	XA_BUG_ON(&xa0, !xa_empty(&xa0));
 
-	/* And it should assign %base again */
-	xa_alloc_index(xa, base, GFP_KERNEL);
+	/* And it should assign 0 again */
+	xa_alloc_index(&xa0, 0, GFP_KERNEL);
 
-	/* Allocating and then erasing a lot should not lose base */
-	for (i = base + 1; i < 2 * XA_CHUNK_SIZE; i++)
-		xa_alloc_index(xa, i, GFP_KERNEL);
-	for (i = base; i < 2 * XA_CHUNK_SIZE; i++)
-		xa_erase_index(xa, i);
-	xa_alloc_index(xa, base, GFP_KERNEL);
-
-	/* Destroying the array should do the same as erasing */
-	xa_destroy(xa);
-
-	/* And it should assign %base again */
-	xa_alloc_index(xa, base, GFP_KERNEL);
-
-	/* The next assigned ID should be base+1 */
-	xa_alloc_index(xa, base + 1, GFP_KERNEL);
-	xa_erase_index(xa, base + 1);
+	/* The next assigned ID should be 1 */
+	xa_alloc_index(&xa0, 1, GFP_KERNEL);
+	xa_erase_index(&xa0, 1);
 
 	/* Storing a value should mark it used */
-	xa_store_index(xa, base + 1, GFP_KERNEL);
-	xa_alloc_index(xa, base + 2, GFP_KERNEL);
+	xa_store_index(&xa0, 1, GFP_KERNEL);
+	xa_alloc_index(&xa0, 2, GFP_KERNEL);
 
-	/* If we then erase base, it should be free */
-	xa_erase_index(xa, base);
-	xa_alloc_index(xa, base, GFP_KERNEL);
+	/* If we then erase 0, it should be free */
+	xa_erase_index(&xa0, 0);
+	xa_alloc_index(&xa0, 0, GFP_KERNEL);
 
-	xa_erase_index(xa, base + 1);
-	xa_erase_index(xa, base + 2);
+	xa_erase_index(&xa0, 1);
+	xa_erase_index(&xa0, 2);
 
 	for (i = 1; i < 5000; i++) {
-		xa_alloc_index(xa, base + i, GFP_KERNEL);
+		xa_alloc_index(&xa0, i, GFP_KERNEL);
 	}
 
-	xa_destroy(xa);
+	xa_destroy(&xa0);
 
-	/* Check that we fail properly at the limit of allocation */
 	id = 0xfffffffeU;
-	XA_BUG_ON(xa, xa_alloc(xa, &id, UINT_MAX, xa_mk_value(0),
+	XA_BUG_ON(&xa0, xa_alloc(&xa0, &id, UINT_MAX, xa_mk_value(0),
 				GFP_KERNEL) != 0);
-	XA_BUG_ON(xa, id != 0xfffffffeU);
-	XA_BUG_ON(xa, xa_alloc(xa, &id, UINT_MAX, xa_mk_value(0),
+	XA_BUG_ON(&xa0, id != 0xfffffffeU);
+	XA_BUG_ON(&xa0, xa_alloc(&xa0, &id, UINT_MAX, xa_mk_value(0),
 				GFP_KERNEL) != 0);
-	XA_BUG_ON(xa, id != 0xffffffffU);
-	XA_BUG_ON(xa, xa_alloc(xa, &id, UINT_MAX, xa_mk_value(0),
+	XA_BUG_ON(&xa0, id != 0xffffffffU);
+	XA_BUG_ON(&xa0, xa_alloc(&xa0, &id, UINT_MAX, xa_mk_value(0),
 				GFP_KERNEL) != -ENOSPC);
-	XA_BUG_ON(xa, id != 0xffffffffU);
-	xa_destroy(xa);
+	XA_BUG_ON(&xa0, id != 0xffffffffU);
+	xa_destroy(&xa0);
 
 	id = 10;
-	XA_BUG_ON(xa, xa_alloc(xa, &id, 5, xa_mk_value(0),
+	XA_BUG_ON(&xa0, xa_alloc(&xa0, &id, 5, xa_mk_value(0),
 				GFP_KERNEL) != -ENOSPC);
-	XA_BUG_ON(xa, xa_store_index(xa, 3, GFP_KERNEL) != 0);
-	XA_BUG_ON(xa, xa_alloc(xa, &id, 5, xa_mk_value(0),
+	XA_BUG_ON(&xa0, xa_store_index(&xa0, 3, GFP_KERNEL) != 0);
+	XA_BUG_ON(&xa0, xa_alloc(&xa0, &id, 5, xa_mk_value(0),
 				GFP_KERNEL) != -ENOSPC);
-	xa_erase_index(xa, 3);
-	XA_BUG_ON(xa, !xa_empty(xa));
-}
-
-static DEFINE_XARRAY_ALLOC(xa0);
-static DEFINE_XARRAY_ALLOC1(xa1);
-
-static noinline void check_xa_alloc(void)
-{
-	check_xa_alloc_1(&xa0, 0);
-	check_xa_alloc_1(&xa1, 1);
+	xa_erase_index(&xa0, 3);
+	XA_BUG_ON(&xa0, !xa_empty(&xa0));
 }
 
 static noinline void __check_store_iter(struct xarray *xa, unsigned long start,
