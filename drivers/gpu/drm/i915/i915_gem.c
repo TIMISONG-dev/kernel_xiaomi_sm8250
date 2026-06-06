@@ -6164,8 +6164,7 @@ i915_gem_object_get_sg(struct drm_i915_gem_object *obj,
 	count = __sg_page_count(sg);
 
 	while (idx + count <= n) {
-		void *entry;
-		unsigned long i;
+		unsigned long exception, i;
 		int ret;
 
 		/* If we cannot allocate and insert this entry, or the
@@ -6180,9 +6179,12 @@ i915_gem_object_get_sg(struct drm_i915_gem_object *obj,
 		if (ret && ret != -EEXIST)
 			goto scan;
 
-		entry = xa_mk_value(idx);
+		exception =
+			RADIX_TREE_EXCEPTIONAL_ENTRY |
+			idx << RADIX_TREE_EXCEPTIONAL_SHIFT;
 		for (i = 1; i < count; i++) {
-			ret = radix_tree_insert(&iter->radix, idx + i, entry);
+			ret = radix_tree_insert(&iter->radix, idx + i,
+						(void *)exception);
 			if (ret && ret != -EEXIST)
 				goto scan;
 		}
@@ -6220,14 +6222,15 @@ lookup:
 	GEM_BUG_ON(!sg);
 
 	/* If this index is in the middle of multi-page sg entry,
-	 * the radix tree will contain a value entry that points
+	 * the radixtree will contain an exceptional entry that points
 	 * to the start of that range. We will return the pointer to
 	 * the base page and the offset of this page within the
 	 * sg entry's range.
 	 */
 	*offset = 0;
-	if (unlikely(xa_is_value(sg))) {
-		unsigned long base = xa_to_value(sg);
+	if (unlikely(radix_tree_exception(sg))) {
+		unsigned long base =
+			(unsigned long)sg >> RADIX_TREE_EXCEPTIONAL_SHIFT;
 
 		sg = radix_tree_lookup(&iter->radix, base);
 		GEM_BUG_ON(!sg);
