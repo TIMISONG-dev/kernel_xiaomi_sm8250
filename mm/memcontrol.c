@@ -4874,7 +4874,7 @@ static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
 		/* Keep swap address spaces alive until the page is pinned. */
 		rcu_read_lock();
 		page = find_get_entry(mapping, pgoff);
-		if (xa_is_value(page)) {
+		if (radix_tree_exceptional_entry(page)) {
 			swp_entry_t swp = radix_to_swp_entry(page);
 			struct address_space *spaces;
 
