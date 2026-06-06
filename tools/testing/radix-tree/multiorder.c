@@ -192,13 +192,13 @@ static void multiorder_shrink(unsigned long index, int order)
 
 	assert(item_insert_order(&tree, 0, order) == 0);
 
-	node = tree.xa_head;
+	node = tree.rnode;
 
 	assert(item_insert(&tree, index) == 0);
-	assert(node != tree.xa_head);
+	assert(node != tree.rnode);
 
 	assert(item_delete(&tree, index) != 0);
-	assert(node == tree.xa_head);
+	assert(node == tree.rnode);
 
 	for (i = 0; i < max; i++) {
 		struct item *item = item_lookup(&tree, i);
