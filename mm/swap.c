@@ -1072,7 +1072,7 @@ void pagevec_remove_exceptionals(struct pagevec *pvec)
 
 	for (i = 0, j = 0; i < pagevec_count(pvec); i++) {
 		struct page *page = pvec->pages[i];
-		if (!xa_is_value(page))
+		if (!radix_tree_exceptional_entry(page))
 			pvec->pages[j++] = page;
 	}
 	pvec->nr = j;
