@@ -200,27 +200,6 @@ static inline int xa_err(void *entry)
 	return 0;
 }
 
-/**
- * struct xa_limit - Represents a range of IDs.
- * @min: The lowest ID to allocate (inclusive).
- * @max: The maximum ID to allocate (inclusive).
- *
- * This structure is used either directly or via the XA_LIMIT() macro
- * to communicate the range of IDs that are valid for allocation.
- * Two common ranges are predefined for you:
- *  * xa_limit_32b	- [0 - UINT_MAX]
- *  * xa_limit_31b	- [0 - INT_MAX]
- */
-struct xa_limit {
-	u32 max;
-	u32 min;
-};
-
-#define XA_LIMIT(_min, _max) (struct xa_limit) { .min = _min, .max = _max }
-
-#define xa_limit_32b	XA_LIMIT(0, UINT_MAX)
-#define xa_limit_31b	XA_LIMIT(0, INT_MAX)
-
 typedef unsigned __bitwise xa_mark_t;
 #define XA_MARK_0		((__force xa_mark_t)0U)
 #define XA_MARK_1		((__force xa_mark_t)1U)
@@ -497,8 +476,7 @@ void *__xa_store(struct xarray *, unsigned long index, void *entry, gfp_t);
 void *__xa_cmpxchg(struct xarray *, unsigned long index, void *old,
 		void *entry, gfp_t);
 int __xa_insert(struct xarray *, unsigned long index, void *entry, gfp_t);
-int __must_check __xa_alloc(struct xarray *, u32 *id, void *entry,
-		struct xa_limit, gfp_t);
+int __xa_alloc(struct xarray *, u32 *id, u32 max, void *entry, gfp_t);
 int __xa_reserve(struct xarray *, unsigned long index, gfp_t);
 void __xa_set_mark(struct xarray *, unsigned long index, xa_mark_t);
 void __xa_clear_mark(struct xarray *, unsigned long index, xa_mark_t);
@@ -775,26 +753,26 @@ static inline int xa_insert_irq(struct xarray *xa, unsigned long index,
  * xa_alloc() - Find somewhere to store this entry in the XArray.
  * @xa: XArray.
  * @id: Pointer to ID.
+ * @max: Maximum ID to allocate (inclusive).
  * @entry: New entry.
- * @limit: Range of ID to allocate.
  * @gfp: Memory allocation flags.
  *
- * Finds an empty entry in @xa between @limit.min and @limit.max,
- * stores the index into the @id pointer, then stores the entry at
- * that index.  A concurrent lookup will not see an uninitialised @id.
+ * Allocates an unused ID in the range specified by @id and @max.
+ * Updates the @id pointer with the index, then stores the entry at that
+ * index.  A concurrent lookup will not see an uninitialised @id.
  *
- * Context: Any context.  Takes and releases the xa_lock.  May sleep if
+ * Context: Process context.  Takes and releases the xa_lock.  May sleep if
  * the @gfp flags permit.
- * Return: 0 on success, -ENOMEM if memory could not be allocated or
- * -EBUSY if there are no free entries in @limit.
+ * Return: 0 on success, -ENOMEM if memory allocation fails or -ENOSPC if
+ * there is no more space in the XArray.
  */
-static inline __must_check int xa_alloc(struct xarray *xa, u32 *id,
-		void *entry, struct xa_limit limit, gfp_t gfp)
+static inline int xa_alloc(struct xarray *xa, u32 *id, u32 max, void *entry,
+		gfp_t gfp)
 {
 	int err;
 
 	xa_lock(xa);
-	err = __xa_alloc(xa, id, entry, limit, gfp);
+	err = __xa_alloc(xa, id, max, entry, gfp);
 	xa_unlock(xa);
 
 	return err;
@@ -804,26 +782,26 @@ static inline __must_check int xa_alloc(struct xarray *xa, u32 *id,
  * xa_alloc_bh() - Find somewhere to store this entry in the XArray.
  * @xa: XArray.
  * @id: Pointer to ID.
+ * @max: Maximum ID to allocate (inclusive).
  * @entry: New entry.
- * @limit: Range of ID to allocate.
  * @gfp: Memory allocation flags.
  *
- * Finds an empty entry in @xa between @limit.min and @limit.max,
- * stores the index into the @id pointer, then stores the entry at
- * that index.  A concurrent lookup will not see an uninitialised @id.
+ * Allocates an unused ID in the range specified by @id and @max.
+ * Updates the @id pointer with the index, then stores the entry at that
+ * index.  A concurrent lookup will not see an uninitialised @id.
  *
  * Context: Any context.  Takes and releases the xa_lock while
  * disabling softirqs.  May sleep if the @gfp flags permit.
- * Return: 0 on success, -ENOMEM if memory could not be allocated or
- * -EBUSY if there are no free entries in @limit.
+ * Return: 0 on success, -ENOMEM if memory allocation fails or -ENOSPC if
+ * there is no more space in the XArray.
  */
-static inline int __must_check xa_alloc_bh(struct xarray *xa, u32 *id,
-		void *entry, struct xa_limit limit, gfp_t gfp)
+static inline int xa_alloc_bh(struct xarray *xa, u32 *id, u32 max, void *entry,
+		gfp_t gfp)
 {
 	int err;
 
 	xa_lock_bh(xa);
-	err = __xa_alloc(xa, id, entry, limit, gfp);
+	err = __xa_alloc(xa, id, max, entry, gfp);
 	xa_unlock_bh(xa);
 
 	return err;
@@ -833,26 +811,26 @@ static inline int __must_check xa_alloc_bh(struct xarray *xa, u32 *id,
  * xa_alloc_irq() - Find somewhere to store this entry in the XArray.
  * @xa: XArray.
  * @id: Pointer to ID.
+ * @max: Maximum ID to allocate (inclusive).
  * @entry: New entry.
- * @limit: Range of ID to allocate.
  * @gfp: Memory allocation flags.
  *
- * Finds an empty entry in @xa between @limit.min and @limit.max,
- * stores the index into the @id pointer, then stores the entry at
- * that index.  A concurrent lookup will not see an uninitialised @id.
+ * Allocates an unused ID in the range specified by @id and @max.
+ * Updates the @id pointer with the index, then stores the entry at that
+ * index.  A concurrent lookup will not see an uninitialised @id.
  *
  * Context: Process context.  Takes and releases the xa_lock while
  * disabling interrupts.  May sleep if the @gfp flags permit.
- * Return: 0 on success, -ENOMEM if memory could not be allocated or
- * -EBUSY if there are no free entries in @limit.
+ * Return: 0 on success, -ENOMEM if memory allocation fails or -ENOSPC if
+ * there is no more space in the XArray.
  */
-static inline int __must_check xa_alloc_irq(struct xarray *xa, u32 *id,
-		void *entry, struct xa_limit limit, gfp_t gfp)
+static inline int xa_alloc_irq(struct xarray *xa, u32 *id, u32 max, void *entry,
+		gfp_t gfp)
 {
 	int err;
 
 	xa_lock_irq(xa);
-	err = __xa_alloc(xa, id, entry, limit, gfp);
+	err = __xa_alloc(xa, id, max, entry, gfp);
 	xa_unlock_irq(xa);
 
 	return err;
