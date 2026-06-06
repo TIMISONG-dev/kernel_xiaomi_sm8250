@@ -296,12 +296,10 @@ static noinline void check_reserve(struct xarray *xa)
 	xa_erase_index(xa, 12345678);
 	XA_BUG_ON(xa, !xa_empty(xa));
 
-	/* But xa_insert does not */
+	/* And so does xa_insert */
 	xa_reserve(xa, 12345678, GFP_KERNEL);
-	XA_BUG_ON(xa, xa_insert(xa, 12345678, xa_mk_value(12345678), 0) !=
-			-EEXIST);
-	XA_BUG_ON(xa, xa_empty(xa));
-	XA_BUG_ON(xa, xa_erase(xa, 12345678) != NULL);
+	XA_BUG_ON(xa, xa_insert(xa, 12345678, xa_mk_value(12345678), 0) != 0);
+	xa_erase_index(xa, 12345678);
 	XA_BUG_ON(xa, !xa_empty(xa));
 
 	/* Can iterate through a reserved entry */
