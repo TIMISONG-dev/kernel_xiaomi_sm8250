@@ -549,7 +549,7 @@ static void exit_mm(void)
 	enter_lazy_tlb(mm, current);
 	local_irq_enable();
 	task_unlock(current);
-	up_read(&mm->mmap_sem);
+	up_read(&mm->mmap_lock);
 	mm_update_next_owner(mm);
 	mmput(mm);
 	if (test_thread_flag(TIF_MEMDIE))
