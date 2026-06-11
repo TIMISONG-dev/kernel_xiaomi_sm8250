@@ -1495,7 +1495,7 @@ static size_t a6xx_snapshot_gmu_mem(struct kgsl_device *device,
 
 	memset(mem_hdr, 0, sizeof(*mem_hdr));
 	mem_hdr->type = desc->type;
-	mem_hdr->hostaddr = (uintptr_t)desc->memdesc->hostptr;
+	mem_hdr->hostaddr = 0;
 	mem_hdr->gmuaddr = desc->memdesc->gmuaddr;
 	mem_hdr->gpuaddr = 0;
 
