@@ -8377,7 +8377,7 @@ static void check_preempt_wakeup_fair(struct rq *rq, struct task_struct *p, int 
 	 * prevents us from potentially nominating it as a false LAST_BUDDY
 	 * below.
 	 */
-	if (test_tsk_need_resched(curr))
+	if (!sched_feat(PREEMPT_SHORT) && test_tsk_need_resched(curr))
 		return;
 
 	/* Idle tasks are by definition preempted by non-idle tasks. */
