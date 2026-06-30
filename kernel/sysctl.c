@@ -125,10 +125,12 @@ static int sixty = 60;
 #endif
 
 static int __maybe_unused neg_one = -1;
+static int __maybe_unused neg_three = -3;
 
 static int zero;
 static int __maybe_unused one = 1;
 static int __maybe_unused two = 2;
+static int __maybe_unused three = 3;
 static int __maybe_unused four = 4;
 static int int_max = INT_MAX;
 static unsigned long zero_ul;
@@ -142,6 +144,7 @@ static int ten_thousand = 10000;
 #ifdef CONFIG_PERF_EVENTS
 static int six_hundred_forty_kb = 640 * 1024;
 #endif
+static int two_hundred_fifty_five = 255;
 static int __maybe_unused two_hundred_million = 200000000;
 static int __maybe_unused max_kswapd_threads = MAX_KSWAPD_THREADS;
 
