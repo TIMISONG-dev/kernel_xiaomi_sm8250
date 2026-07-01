@@ -11210,7 +11210,6 @@ static void _nohz_idle_balance(struct rq *this_rq, unsigned int flags,
 	int this_cpu = this_rq->cpu;
 	int balance_cpu;
 	struct rq *rq;
-	cpumask_t cpus;
 
 	SCHED_WARN_ON((flags & NOHZ_KICK_MASK) == NOHZ_BALANCE_KICK);
 
