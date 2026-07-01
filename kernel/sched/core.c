@@ -3917,14 +3917,12 @@ void scheduler_tick(void)
 	struct rq *rq = cpu_rq(cpu);
 	struct task_struct *curr = rq->curr;
 	struct rq_flags rf;
-	u64 wallclock;
 	unsigned int flag = 0;
 
 	sched_clock_tick();
 
 	rq_lock(rq, &rf);
 
-	wallclock = sched_ktime_clock();
 	update_rq_clock(rq);
 	curr->sched_class->task_tick(rq, curr, 0);
 	calc_global_load_tick(rq);
