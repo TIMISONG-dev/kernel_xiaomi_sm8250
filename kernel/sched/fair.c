@@ -8483,6 +8483,13 @@ static void check_preempt_wakeup_fair(struct rq *rq, struct task_struct *p, int 
 		goto update;
 
 	/*
+	 * Do not preempt for tasks that are sched_delayed as it would violate
+	 * EEVDF to forcibly queue an ineligible task.
+	 */
+	if (pse->sched_delayed)
+		goto update;
+
+	/*
 	 * If @p has a shorter slice than current and @p is eligible, override
 	 * current's slice protection in order to allow preemption.
 	 */
@@ -8493,11 +8500,9 @@ static void check_preempt_wakeup_fair(struct rq *rq, struct task_struct *p, int 
 
 	/*
 	 * Ignore wakee preemption on WF_FORK as it is less likely that
-	 * there is shared data as exec often follow fork. Do not
-	 * preempt for tasks that are sched_delayed as it would violate
-	 * EEVDF to forcibly queue an ineligible task.
+	 * there is shared data as exec often follow fork.
 	 */
-	if ((wake_flags & WF_FORK) || pse->sched_delayed)
+	if (wake_flags & WF_FORK)
 		goto update;
 
 	/* Prefer picking wakee soon if appropriate. */
