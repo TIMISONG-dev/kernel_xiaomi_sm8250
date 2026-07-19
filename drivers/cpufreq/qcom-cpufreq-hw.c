@@ -342,7 +342,21 @@ qcom_cpufreq_hw_fast_switch(struct cpufreq_policy *policy,
 {
 	int index;
 
-	index = policy->cached_resolved_idx;
+	/*
+	 * Do not trust policy->cached_resolved_idx here: it is only
+	 * refreshed inside cpufreq_driver_resolve_freq() and is never
+	 * invalidated when policy->max changes (cpufreq_set_policy()
+	 * clears cached_target_freq but not cached_resolved_idx). If
+	 * fast_switch() races a limits update, the cache can still
+	 * point at an index above the current policy->max, letting a
+	 * single fast_switch call briefly select a frequency above the
+	 * user-configured ceiling (observed: transient jumps to the
+	 * top-of-LUT frequency on the Prime domain). Re-clamp and
+	 * re-resolve against the live policy on every call instead.
+	 */
+	target_freq = clamp_val(target_freq, policy->min, policy->max);
+	index = cpufreq_frequency_table_target(policy, target_freq,
+						CPUFREQ_RELATION_L);
 	if (index < 0)
 		return 0;
 
