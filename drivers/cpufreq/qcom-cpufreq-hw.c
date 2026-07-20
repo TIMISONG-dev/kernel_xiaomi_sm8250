@@ -144,12 +144,23 @@ static unsigned long limits_mitigation_notify(struct cpufreq_qcom *c,
 				GENMASK(7, 0);
 		freq = DIV_ROUND_CLOSEST_ULL(freq * c->xo_rate, 1000);
 	} else {
+		/*
+		 * On mitigation clear, restore to the currently configured
+		 * policy ceiling (policy->max), not the raw hardware ceiling
+		 * (policy->cpuinfo.max_freq). Using cpuinfo.max_freq here
+		 * discards any user/QoS-configured limit (e.g. a lower
+		 * scaling_max_freq) every time DCVSH mitigation clears,
+		 * which showed up live as policy->max cycling between the
+		 * configured limit and the top-of-LUT frequency roughly
+		 * every 1-3 seconds (confirmed via cpu_frequency_limits
+		 * ftrace events on the Prime domain).
+		 */
 		cpu = cpumask_first(&c->related_cpus);
 		policy = cpufreq_cpu_get_raw(cpu);
 		if (!policy)
 			freq = U32_MAX;
 		else
-			freq = policy->cpuinfo.max_freq;
+			freq = policy->max;
 	}
 
 	sched_update_cpu_freq_min_max(&c->related_cpus, 0, freq);
