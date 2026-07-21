@@ -625,6 +625,10 @@ static void binder_wakeup_thread_ilocked(struct binder_proc *proc,
 {
 	assert_spin_locked(&proc->inner_lock);
 
+	/* Force sync wakeup when the sender is a critical task */
+	if (task_is_critical())
+		sync = true;
+
 	if (thread) {
 		if (sync)
 			wake_up_interruptible_sync(&thread->wait);
