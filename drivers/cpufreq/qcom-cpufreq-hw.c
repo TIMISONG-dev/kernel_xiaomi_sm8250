@@ -189,7 +189,6 @@ static void qcom_lmh_dcvs_notify(struct cpufreq_qcom *c)
 	trace_dcvsh_freq(cpu, requested_freq, throttled_freq, thermal_pressure);
 
 	/* Update thermal pressure (boost frequencies are accepted). */
-	arch_update_thermal_pressure(&c->related_cpus, thermal_pressure);
 	c->dcvsh_freq_limit = thermal_pressure;
 
 out:
@@ -469,7 +468,7 @@ static int qcom_cpufreq_hw_cpu_offline(struct cpufreq_policy *policy)
 	if (!irqd_irq_disabled(irq_get_irq_data(c->dcvsh_irq)))
 		disable_irq(c->dcvsh_irq);
 
-	arch_update_thermal_pressure(&c->related_cpus, policy->cpuinfo.max_freq);
+	fie_cpufreq_pressure(cpumask_first(policy->related_cpus), UINT_MAX);
 	trace_dcvsh_throttle(cpumask_first(&c->related_cpus), 0);
 
 	return 0;
