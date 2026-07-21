@@ -56,6 +56,7 @@
 #include <linux/rbtree.h>
 #include <linux/sched/signal.h>
 #include <linux/sched/mm.h>
+#include <linux/oom.h>
 #include <linux/seq_file.h>
 #include <linux/string.h>
 #include <linux/uaccess.h>
@@ -869,7 +870,8 @@ static void binder_transaction_priority(struct binder_thread *thread,
 
 	t->set_priority_called = true;
 
-	if (!node->inherit_rt && is_rt_policy(desired.sched_policy)) {
+	if (!task_is_critical() &&
+		!node->inherit_rt && is_rt_policy(desired.sched_policy)) {
 		/*
 		 * MIUI MOD:
 		 * We boost some app process to FIFO, but binder out thread
@@ -914,7 +916,10 @@ static void binder_transaction_priority(struct binder_thread *thread,
 	}
 	spin_unlock(&thread->prio_lock);
 
-	binder_set_priority(thread, &desired);
+	if (task_is_critical())
+		binder_do_set_priority(thread, &desired, false);
+	else
+		binder_set_priority(thread, &desired);
 }
 
 static struct binder_node *binder_get_node_ilocked(struct binder_proc *proc,
