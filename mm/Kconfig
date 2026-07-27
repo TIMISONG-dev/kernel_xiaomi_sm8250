@@ -833,3 +833,9 @@ config MULTIPLE_KSWAPD
 	 (echo <num> > /proc/sys/vm/kswapd_threads)
 
 	 Values not in the range of 1..16 are ignored.
+
+config KSHRINK_SLABD
+	bool "Allow asynchronous shrink slab"
+	default n
+	help
+	  Asynchronous shrink slab memload optimization feature.

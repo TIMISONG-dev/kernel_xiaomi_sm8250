@@ -696,12 +696,20 @@ static unsigned long shrink_slab_memcg(gfp_t gfp_mask, int nid,
  *
  * Returns the number of reclaimed slab objects.
  */
-static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+unsigned long shrink_slab(gfp_t gfp_mask, int nid,
 				 struct mem_cgroup *memcg,
 				 int priority)
 {
 	unsigned long ret, freed = 0;
 	struct shrinker *shrinker;
+#ifdef CONFIG_KSHRINK_SLABD
+	bool bypass = false;
+
+	should_shrink_async(gfp_mask, nid, memcg, priority, &bypass);
+	if (bypass)
+		return 0;
+#endif /* CONFIG_KSHRINK_SLABD */
+
 
 	if (task_is_critical())
 		return 0;
