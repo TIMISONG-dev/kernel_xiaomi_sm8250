@@ -63,15 +63,21 @@ struct binder_features {
 	bool freeze_notification;
 };
 
-static const struct constant_table binderfs_param_stats[] = {
-	{ "global", binderfs_stats_mode_global },
+static const struct fs_parameter_enum binderfs_param_stats[] = {
+	{ Opt_stats_mode, "global", binderfs_stats_mode_global },
 	{}
 };
 
-static const struct fs_parameter_spec binderfs_fs_parameters[] = {
+static const struct fs_parameter_spec binderfs_param_specs[] = {
 	fsparam_u32("max",	Opt_max),
-	fsparam_enum("stats",	Opt_stats_mode, binderfs_param_stats),
+	fsparam_enum("stats",	Opt_stats_mode),
 	{}
+};
+
+static const struct fs_parameter_description binderfs_fs_parameters = {
+	.name	= "binderfs",
+	.specs	= binderfs_param_specs,
+	.enums	= binderfs_param_stats,
 };
 
 static struct binder_features binder_features = {
@@ -285,14 +291,14 @@ static int binderfs_fs_context_parse_param(struct fs_context *fc,
 	struct binderfs_mount_opts *ctx = fc->fs_private;
 	struct fs_parse_result result;
 
-	opt = fs_parse(fc, binderfs_fs_parameters, param, &result);
+	opt = fs_parse(fc, &binderfs_fs_parameters, param, &result);
 	if (opt < 0)
 		return opt;
 
 	switch (opt) {
 	case Opt_max:
 		if (result.uint_32 > BINDERFS_MAX_MINOR)
-			return invalfc(fc, "Bad value for '%s'", param->key);
+			return -EINVAL;
 
 		ctx->max = result.uint_32;
 		break;
@@ -303,7 +309,7 @@ static int binderfs_fs_context_parse_param(struct fs_context *fc,
 		ctx->stats_mode = result.uint_32;
 		break;
 	default:
-		return invalfc(fc, "Unsupported parameter '%s'", param->key);
+		return -EINVAL;
 	}
 
 	return 0;
@@ -315,7 +321,7 @@ static int binderfs_fs_context_reconfigure(struct fs_context *fc)
 	struct binderfs_info *info = BINDERFS_SB(fc->root->d_sb);
 
 	if (info->mount_opts.stats_mode != ctx->stats_mode)
-		return invalfc(fc, "Binderfs stats mode cannot be changed during a remount");
+		return -EINVAL;
 
 	info->mount_opts.stats_mode = ctx->stats_mode;
 	info->mount_opts.max = ctx->max;
@@ -786,7 +792,7 @@ static int binderfs_init_fs_context(struct fs_context *fc)
 static struct file_system_type binder_fs_type = {
 	.name			= "binder",
 	.init_fs_context	= binderfs_init_fs_context,
-	.parameters		= binderfs_fs_parameters,
+	.parameters		= &binderfs_fs_parameters,
 	.kill_sb		= kill_litter_super,
 	.fs_flags		= FS_USERNS_MOUNT,
 };
