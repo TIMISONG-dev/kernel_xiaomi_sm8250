@@ -147,17 +147,16 @@ void reservation_object_add_shared_fence(struct reservation_object *obj,
 					 struct dma_fence *fence)
 {
 	struct reservation_object_list *fobj;
-	unsigned int i, count;
+	unsigned int i;
 
 	dma_fence_get(fence);
 
 	fobj = reservation_object_get_list(obj);
-	count = fobj->shared_count;
 
 	preempt_disable();
 	write_seqcount_begin(&obj->seq);
 
-	for (i = 0; i < count; ++i) {
+	for (i = 0; i < fobj->shared_count; ++i) {
 		struct dma_fence *old_fence;
 
 		old_fence = rcu_dereference_protected(fobj->shared[i],
@@ -170,13 +169,14 @@ void reservation_object_add_shared_fence(struct reservation_object *obj,
 	}
 
 	BUG_ON(fobj->shared_count >= fobj->shared_max);
-	count++;
+	fobj->shared_count++;
 
 replace:
+	/*
+	 * memory barrier is added by write_seqcount_begin,
+	 * fobj->shared_count is protected by this lock too
+	 */
 	RCU_INIT_POINTER(fobj->shared[i], fence);
-	/* pointer update must be visible before we extend the shared_count */
-	smp_store_mb(fobj->shared_count, count);
-
 	write_seqcount_end(&obj->seq);
 	preempt_enable();
 }
