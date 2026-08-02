@@ -408,10 +408,8 @@ static long dma_buf_set_name(struct dma_buf *dmabuf, const char __user *buf)
 		kfree(name);
 		goto out_unlock;
 	}
-	spin_lock(&dmabuf->name_lock);
 	kfree(dmabuf->name);
 	dmabuf->name = name;
-	spin_unlock(&dmabuf->name_lock);
 
 out_unlock:
 	spin_unlock(&dmabuf->name_lock);
@@ -625,7 +623,6 @@ struct dma_buf *dma_buf_export(const struct dma_buf_export_info *exp_info)
 	dmabuf->size = exp_info->size;
 	dmabuf->exp_name = exp_info->exp_name;
 	dmabuf->owner = exp_info->owner;
-	spin_lock_init(&dmabuf->name_lock);
 	init_waitqueue_head(&dmabuf->poll);
 	dmabuf->cb_excl.poll = dmabuf->cb_shared.poll = &dmabuf->poll;
 	dmabuf->cb_excl.active = dmabuf->cb_shared.active = 0;

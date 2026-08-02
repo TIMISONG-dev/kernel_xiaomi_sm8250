@@ -449,7 +449,7 @@ struct dma_buf {
 	void *vmap_ptr;
 	const char *exp_name;
 	const char *name;
-	spinlock_t name_lock; /* spinlock to protect name access */
+	spinlock_t name_lock;
 #if defined(CONFIG_DEBUG_FS)
 	ktime_t ktime;
 #endif
