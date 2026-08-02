@@ -156,12 +156,9 @@ int dma_fence_signal_locked(struct dma_fence *fence)
 		trace_dma_fence_signaled(fence);
 	}
 
-	if (!list_empty(&fence->cb_list)) {
-		list_for_each_entry_safe(cur, tmp, &fence->cb_list, node) {
-			INIT_LIST_HEAD(&cur->node);
-			cur->func(fence, cur);
-		}
-		INIT_LIST_HEAD(&fence->cb_list);
+	list_for_each_entry_safe(cur, tmp, &fence->cb_list, node) {
+		list_del_init(&cur->node);
+		cur->func(fence, cur);
 	}
 	return ret;
 }
