@@ -53,15 +53,6 @@ struct dma_buf_attachment;
  */
 struct dma_buf_ops {
 	/**
-	  * @cache_sgt_mapping:
-	  *
-	  * If true the framework will cache the first mapping made for each
-	  * attachment. This avoids creating mappings for attachments multiple
-	  * times.
-	  */
-	bool cache_sgt_mapping;
-
-	/**
 	 * @attach:
 	 *
 	 * This is called from dma_buf_attach() to make sure that a given
@@ -479,8 +470,6 @@ struct dma_buf {
  * @dmabuf: buffer for this attachment.
  * @dev: device attached to the buffer.
  * @node: list of dma_buf_attachment.
- * @sgt: cached mapping.
- * @dir: direction of cached mapping.
  * @priv: exporter specific attachment data.
  * @dma_map_attrs: DMA attributes to be used when the exporter maps the buffer
  * through dma_buf_map_attachment.
@@ -498,8 +487,6 @@ struct dma_buf_attachment {
 	struct dma_buf *dmabuf;
 	struct device *dev;
 	struct list_head node;
-	struct sg_table *sgt;
-	enum dma_data_direction dir;
 	void *priv;
 	unsigned long dma_map_attrs;
 };
