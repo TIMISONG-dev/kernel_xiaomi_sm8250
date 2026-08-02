@@ -194,8 +194,7 @@ err_put_pages:
 	while (pgbuf > 0)
 		put_page(ubuf->pages[--pgbuf]);
 err_free_ubuf:
-	if (memfd)
-		fput(memfd);
+	fput(memfd);
 	kfree(ubuf->pages);
 	kfree(ubuf);
 	return ret;
