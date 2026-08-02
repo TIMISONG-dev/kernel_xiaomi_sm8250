@@ -240,7 +240,7 @@ struct shrinker pool_shrinker = {
 	.batch = 0,
 };
 
-static int dmabuf_page_pool_init_shrinker(void)
+int dmabuf_page_pool_init_shrinker(void)
 {
 	return register_shrinker(&pool_shrinker);
 }
