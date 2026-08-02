@@ -163,7 +163,7 @@ int reservation_object_reserve_shared(struct reservation_object *obj,
 			max = max(old->shared_count + num_fences,
 				  old->shared_max * 2);
 	} else {
-		max = max(4ul, roundup_pow_of_two(num_fences));
+		max = 4;
 	}
 
 	new = reservation_object_list_alloc(max);
