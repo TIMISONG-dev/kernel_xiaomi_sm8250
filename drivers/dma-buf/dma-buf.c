@@ -167,8 +167,8 @@ static int dma_buf_fs_init_context(struct fs_context *fc)
 	struct pseudo_fs_context *ctx;
 
 	ctx = init_pseudo(fc, DMA_BUF_MAGIC);
-	if (!ctx)
-		return -ENOMEM;
+		if (!ctx)
+			return -ENOMEM;
 	ctx->dops = &dma_buf_dentry_ops;
 	return 0;
 }
