@@ -40,12 +40,4 @@ config DEBUG_DMA_BUF_REF
 	  matching the get/put call stacks.  This feature consumes extra memory
 	  in order to save the stack traces using STACKDEPOT.
 
-config UDMABUF
-	bool "userspace dmabuf misc driver"
-	default n
-	depends on DMA_SHARED_BUFFER
-	help
-	  A driver to let userspace turn memfd regions into dma-bufs.
-	  Qemu can use this to create host dmabufs for guest framebuffers.
-
 endmenu
