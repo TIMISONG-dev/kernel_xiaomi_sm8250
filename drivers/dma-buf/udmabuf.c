@@ -51,24 +51,25 @@ static struct sg_table *map_udmabuf(struct dma_buf_attachment *at,
 {
 	struct udmabuf *ubuf = at->dmabuf->priv;
 	struct sg_table *sg;
-	int ret;
 
 	sg = kzalloc(sizeof(*sg), GFP_KERNEL);
 	if (!sg)
-		return ERR_PTR(-ENOMEM);
-	ret = sg_alloc_table_from_pages(sg, ubuf->pages, ubuf->pagecount,
-					0, ubuf->pagecount << PAGE_SHIFT,
-					GFP_KERNEL);
-	if (ret < 0)
-		goto err;
+		goto err1;
+	if (sg_alloc_table_from_pages(sg, ubuf->pages, ubuf->pagecount,
+				      0, ubuf->pagecount << PAGE_SHIFT,
+				      GFP_KERNEL) < 0)
+		goto err2;
 	if (!dma_map_sg(at->dev, sg->sgl, sg->nents, direction))
-		goto err;
+		goto err3;
+
 	return sg;
 
-err:
+err3:
 	sg_free_table(sg);
+err2:
 	kfree(sg);
-	return ERR_PTR(ret);
+err1:
+	return ERR_PTR(-ENOMEM);
 }
 
 static void unmap_udmabuf(struct dma_buf_attachment *at,
