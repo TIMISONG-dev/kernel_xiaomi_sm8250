@@ -459,6 +459,13 @@ int reservation_object_get_fences_rcu(struct reservation_object *obj,
 				if (!dma_fence_get_rcu(shared[i]))
 					break;
 			}
+
+			if (!pfence_excl && fence_excl) {
+				shared[i] = fence_excl;
+				fence_excl = NULL;
+				++i;
+				++shared_count;
+			}
 		}
 
 		if (i != shared_count || read_seqcount_retry(&obj->seq, seq)) {
@@ -473,11 +480,6 @@ unlock:
 		rcu_read_unlock();
 	} while (ret);
 
-	if (pfence_excl)
-		*pfence_excl = fence_excl;
-	else if (fence_excl)
-		shared[++shared_count] = fence_excl;
-
 	if (!shared_count) {
 		kfree(shared);
 		shared = NULL;
@@ -485,6 +487,9 @@ unlock:
 
 	*pshared_count = shared_count;
 	*pshared = shared;
+	if (pfence_excl)
+		*pfence_excl = fence_excl;
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(reservation_object_get_fences_rcu);
