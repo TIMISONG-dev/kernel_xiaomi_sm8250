@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2019, The Linux Foundation. All rights reserved.
  */
 
 #define pr_fmt(fmt)	"[drm:%s:%d] " fmt, __func__, __LINE__
@@ -289,7 +289,8 @@ void sde_fence_prepare(struct sde_fence_context *ctx)
 	}
 }
 
-static void _sde_fence_trigger(struct sde_fence_context *ctx, bool error)
+static void _sde_fence_trigger(struct sde_fence_context *ctx,
+		ktime_t ts, bool error)
 {
 	unsigned long flags;
 	struct sde_fence *fc, *next;
@@ -305,8 +306,8 @@ static void _sde_fence_trigger(struct sde_fence_context *ctx, bool error)
 
 	list_for_each_entry_safe(fc, next, &ctx->fence_list_head, fence_list) {
 		spin_lock_irqsave(&ctx->lock, flags);
-		if (error)
-			dma_fence_set_error(&fc->base, -EBUSY);
+		fc->base.error = error ? -EBUSY : 0;
+		fc->base.timestamp = ts;
 		is_signaled = dma_fence_is_signaled_locked(&fc->base);
 		spin_unlock_irqrestore(&ctx->lock, flags);
 
@@ -397,7 +398,7 @@ void sde_fence_signal(struct sde_fence_context *ctx, ktime_t ts,
 	SDE_EVT32(ctx->drm_id, ctx->done_count, ctx->commit_count,
 			ktime_to_us(ts));
 
-	_sde_fence_trigger(ctx, (fence_event == SDE_FENCE_SIGNAL_ERROR));
+	_sde_fence_trigger(ctx, ts, (fence_event == SDE_FENCE_SIGNAL_ERROR));
 }
 
 void sde_fence_timeline_status(struct sde_fence_context *ctx,
