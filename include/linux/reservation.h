@@ -179,8 +179,7 @@ reservation_object_unlock(struct reservation_object *obj)
  * @obj: the reservation object
  *
  * Returns the exclusive fence (if any).  Does NOT take a
- * reference. Writers must hold obj->lock, readers may only
- * hold a RCU read side lock.
+ * reference.  The obj->lock must be held.
  *
  * RETURNS
  * The exclusive fence or NULL
