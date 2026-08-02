@@ -799,8 +799,6 @@ struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
 	}
 	list_add(&attach->node, &dmabuf->attachments);
 
-	mutex_unlock(&dmabuf->lock);
-
 	return attach;
 
 err_attach:
