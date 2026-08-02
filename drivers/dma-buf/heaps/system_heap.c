@@ -535,13 +535,13 @@ static int system_heap_create(void)
 	for (i = 0; i < NUM_ORDERS; i++) {
 		pools[i] = dmabuf_page_pool_create(order_flags[i], orders[i]);
 
-		if (!pools[i]) {
+		if (IS_ERR(pools[i])) {
 			int j;
 
 			pr_err("%s: page pool creation failed!\n", __func__);
 			for (j = 0; j < i; j++)
 				dmabuf_page_pool_destroy(pools[j]);
-			return -ENOMEM;
+			return PTR_ERR(pools[i]);
 		}
 	}
 
