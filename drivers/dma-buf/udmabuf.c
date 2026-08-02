@@ -12,9 +12,6 @@
 #include <linux/slab.h>
 #include <linux/udmabuf.h>
 
-static const u32    list_limit = 1024;  /* udmabuf_create_list->count limit */
-static const size_t size_limit_mb = 64; /* total dmabuf size, in megabytes  */
-
 struct udmabuf {
 	pgoff_t pagecount;
 	struct page **pages;
@@ -126,7 +123,7 @@ static long udmabuf_create(const struct udmabuf_create_list *head,
 	struct file *memfd = NULL;
 	struct udmabuf *ubuf;
 	struct dma_buf *buf;
-	pgoff_t pgoff, pgcnt, pgidx, pgbuf, pglimit;
+	pgoff_t pgoff, pgcnt, pgidx, pgbuf;
 	struct page *page;
 	int seals, ret = -EINVAL;
 	u32 i, flags;
@@ -135,15 +132,12 @@ static long udmabuf_create(const struct udmabuf_create_list *head,
 	if (!ubuf)
 		return -ENOMEM;
 
-	pglimit = (size_limit_mb * 1024 * 1024) >> PAGE_SHIFT;
 	for (i = 0; i < head->count; i++) {
 		if (!IS_ALIGNED(list[i].offset, PAGE_SIZE))
 			goto err_free_ubuf;
 		if (!IS_ALIGNED(list[i].size, PAGE_SIZE))
 			goto err_free_ubuf;
 		ubuf->pagecount += list[i].size >> PAGE_SHIFT;
-		if (ubuf->pagecount > pglimit)
-			goto err_free_ubuf;
 	}
 	ubuf->pages = kmalloc_array(ubuf->pagecount, sizeof(struct page *),
 				    GFP_KERNEL);
@@ -233,7 +227,7 @@ static long udmabuf_ioctl_create_list(struct file *filp, unsigned long arg)
 
 	if (copy_from_user(&head, (void __user *)arg, sizeof(head)))
 		return -EFAULT;
-	if (head.count > list_limit)
+	if (head.count > 1024)
 		return -EINVAL;
 	lsize = sizeof(struct udmabuf_create_item) * head.count;
 	list = memdup_user((void __user *)(arg + sizeof(head)), lsize);
