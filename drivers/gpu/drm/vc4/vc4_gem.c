@@ -638,7 +638,7 @@ retry:
 	for (i = 0; i < exec->bo_count; i++) {
 		bo = to_vc4_bo(&exec->bo[i]->base);
 
-		ret = reservation_object_reserve_shared(bo->resv, 1);
+		ret = reservation_object_reserve_shared(bo->resv);
 		if (ret) {
 			vc4_unlock_bo_reservations(dev, exec, acquire_ctx);
 			return ret;

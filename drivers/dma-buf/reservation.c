@@ -56,10 +56,9 @@ const char reservation_seqcount_string[] = "reservation_seqcount";
 EXPORT_SYMBOL(reservation_seqcount_string);
 
 /**
- * reservation_object_reserve_shared - Reserve space to add shared fences to
- * a reservation_object.
+ * reservation_object_reserve_shared - Reserve space to add a shared
+ * fence to a reservation_object.
  * @obj: reservation object
- * @num_fences: number of fences we want to add
  *
  * Should be called before reservation_object_add_shared_fence().  Must
  * be called with obj->lock held.
@@ -67,8 +66,7 @@ EXPORT_SYMBOL(reservation_seqcount_string);
  * RETURNS
  * Zero for success, or -errno
  */
-int reservation_object_reserve_shared(struct reservation_object *obj,
-				      unsigned int num_fences)
+int reservation_object_reserve_shared(struct reservation_object *obj)
 {
 	struct reservation_object_list *old, *new;
 	unsigned int i, j, k, max;
@@ -76,11 +74,10 @@ int reservation_object_reserve_shared(struct reservation_object *obj,
 	old = reservation_object_get_list(obj);
 
 	if (old && old->shared_max) {
-		if ((old->shared_count + num_fences) <= old->shared_max)
+		if (old->shared_count < old->shared_max)
 			return 0;
 		else
-			max = max(old->shared_count + num_fences,
-				  old->shared_max * 2);
+			max = old->shared_max * 2;
 	} else {
 		max = 4;
 	}

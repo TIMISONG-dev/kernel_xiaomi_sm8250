@@ -261,8 +261,7 @@ reservation_object_get_excl_rcu(struct reservation_object *obj)
 	return fence;
 }
 
-int reservation_object_reserve_shared(struct reservation_object *obj,
-				      unsigned int num_fences);
+int reservation_object_reserve_shared(struct reservation_object *obj);
 void reservation_object_add_shared_fence(struct reservation_object *obj,
 					 struct dma_fence *fence);
 
