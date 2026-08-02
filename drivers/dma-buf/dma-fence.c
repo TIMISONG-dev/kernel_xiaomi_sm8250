@@ -136,7 +136,6 @@ EXPORT_SYMBOL(dma_fence_context_alloc);
 int dma_fence_signal_locked(struct dma_fence *fence)
 {
 	struct dma_fence_cb *cur, *tmp;
-	struct list_head cb_list;
 
 	lockdep_assert_held(fence->lock);
 
@@ -144,16 +143,16 @@ int dma_fence_signal_locked(struct dma_fence *fence)
 				      &fence->flags)))
 		return -EINVAL;
 
-	/* Stash the cb_list before replacing it with the timestamp */
-	list_replace(&fence->cb_list, &cb_list);
-
 	fence->timestamp = ktime_get();
 	set_bit(DMA_FENCE_FLAG_TIMESTAMP_BIT, &fence->flags);
 	trace_dma_fence_signaled(fence);
 
-	list_for_each_entry_safe(cur, tmp, &cb_list, node) {
-		INIT_LIST_HEAD(&cur->node);
-		cur->func(fence, cur);
+	if (!list_empty(&fence->cb_list)) {
+		list_for_each_entry_safe(cur, tmp, &fence->cb_list, node) {
+			INIT_LIST_HEAD(&cur->node);
+			cur->func(fence, cur);
+		}
+		INIT_LIST_HEAD(&fence->cb_list);
 	}
 
 	return 0;
@@ -239,8 +238,7 @@ void dma_fence_release(struct kref *kref)
 
 	trace_dma_fence_destroy(fence);
 
-	if (WARN(!list_empty(&fence->cb_list) &&
-		 !test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags),
+	if (WARN(!list_empty(&fence->cb_list),
 		 "Fence %s:%s:%llx:%llx released with pending signals!\n",
 		 fence->ops->get_driver_name(fence),
 		 fence->ops->get_timeline_name(fence),
