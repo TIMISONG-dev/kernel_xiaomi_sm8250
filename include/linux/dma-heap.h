@@ -16,12 +16,12 @@ struct dma_heap;
 
 /**
  * struct dma_heap_ops - ops to operate on a given heap
- * @allocate:		allocate dmabuf and return struct dma_buf ptr
+ * @allocate:		allocate dmabuf and return fd
  *
- * allocate returns dmabuf on success, ERR_PTR(-errno) on error.
+ * allocate returns dmabuf fd  on success, -errno on error.
  */
 struct dma_heap_ops {
-	struct dma_buf *(*allocate)(struct dma_heap *heap,
+	int (*allocate)(struct dma_heap *heap,
 			unsigned long len,
 			unsigned long fd_flags,
 			unsigned long heap_flags);
