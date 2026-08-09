@@ -9736,13 +9736,18 @@ capacity_from_percent(char *buf)
 }
 
 #ifdef CONFIG_UCLAMP_ASSIST
-static void cpu_uclamp_write_wrapper(struct cgroup_subsys_state *css, char *buf,
+static void cpu_uclamp_write_wrapper(struct cgroup_subsys_state *css,
+				     const char *buf,
 					enum uclamp_id clamp_id)
 {
 	struct uclamp_request req;
 	struct task_group *tg;
+	char uclamp_buf[sizeof("100.00")];
 
-	req = capacity_from_percent(buf);
+	if (strscpy(uclamp_buf, buf, sizeof(uclamp_buf)) < 0)
+		return;
+
+	req = capacity_from_percent(uclamp_buf);
 	if (req.ret)
 		return;
 
@@ -9876,9 +9881,9 @@ static u64 cpu_uclamp_ls_read_u64(struct cgroup_subsys_state *css,
 
 #ifdef CONFIG_UCLAMP_ASSIST
 struct uclamp_param {
-	char *name;
-	char uclamp_min[3];
-	char uclamp_max[3];
+	const char *name;
+	const char *uclamp_min;
+	const char *uclamp_max;
 	u64  uclamp_latency_sensitive;
 };
 
