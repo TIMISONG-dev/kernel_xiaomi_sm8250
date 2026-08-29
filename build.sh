@@ -15,6 +15,7 @@ source ../settings.sh
 # export TYPE="test or early"
 # export LEVEL=1
 # export EXTRA=""
+# export ONLY=""
 # export SHAK=hash commit for squash revert KSU
 # export SHAB=hash commit for 5k battery
 #
@@ -234,14 +235,44 @@ if [ "$TYPE" = "test" ]; then
 	    "apollo:magictime-miui:no_ksu:stk:Mi 10T MIUI without KSU:MIUI-NONKSU"
     )
 
+    if [ -n "$ONLY" ]; then
+        TARGET_CONFIGS=()
+
+        if [[ "$ONLY" =~ ^[0-9]+$ ]]; then
+            IDX_ONLY=$((ONLY - 1))
+            if [ "$IDX_ONLY" -ge 0 ] && [ "$IDX_ONLY" -lt "${#CONFIGS[@]}" ]; then
+                TARGET_CONFIGS+=("${CONFIGS[$IDX_ONLY]}")
+            else
+                echo "Ошибка: ONLY=$ONLY выходит за массив (элементов: ${#CONFIGS[@]})"
+                exit 1
+            fi
+        else
+            for cfg in "${CONFIGS[@]}"; do
+                if [[ "$cfg" == *"$ONLY"* ]]; then
+                    TARGET_CONFIGS+=("$cfg")
+                fi
+            done
+        fi
+
+        if [ "${#TARGET_CONFIGS[@]}" -eq 0 ]; then
+            echo "Ошибка: Нет конфигураций, соответствующих ONLY='$ONLY'"
+            exit 1
+        fi
+
+        CONFIGS=("${TARGET_CONFIGS[@]}")
+        LEVEL=1
+    fi
+
     while true; do
         IDX=$((LEVEL - 1))
 
         if [ "$IDX" -ge "${#CONFIGS[@]}" ]; then
-            LEVEL=1
-            EXTRA=""
-            sed -i "s/LEVEL=.*/LEVEL=1/" ../settings.sh
-            sed -i "s/EXTRA=.*/EXTRA=\"\"/ " ../settings.sh
+            if [ -z "$ONLY" ]; then
+                LEVEL=1
+                EXTRA=""
+                sed -i "s/LEVEL=.*/LEVEL=1/" ../settings.sh
+                sed -i "s/EXTRA=.*/EXTRA=\"\"/ " ../settings.sh
+            fi
             git checkout magictime-new >/dev/null 2>&1
             git reset --hard origin/magictime-new >/dev/null 2>&1
             clear
