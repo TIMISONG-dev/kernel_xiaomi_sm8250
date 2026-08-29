@@ -140,13 +140,13 @@ build() {
         echo Общее время выполнения: $ELAPSED секунд
 
         cd $MAGICTIME
-        
+
         if [ "$TYPE" = "test" ]; then
             7z a -mx9 MagicTime-$DEVICE-$FILE.zip * -x!*.zip
         else
             7z a -mx9 MagicTime-$DEVICE-$BUILD_DATE.zip * -x!*.zip
         fi
-        
+
         curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendMessage \
         -d chat_id=@magictimekernel \
         -d text="Компиляция завершилась успешно! Время выполнения: $ELAPSED секунд" \
@@ -163,7 +163,7 @@ build() {
             -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${DESC}) branch: ${BRANCH}" \
             -F message_thread_id=38153
         fi
-        
+
         curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
         -F document=@../changelog.txt \
         -F caption="Latest changes" \
@@ -186,7 +186,7 @@ build() {
 }
 
 check_and_wget $CLANG \
-    https://github.com/ZyCromerZ/Clang/releases/download/20.0.0git-20250129-release/Clang-20.0.0git-20250129.tar.gz
+    https://github.com/liliumproject/clang/releases/download/20250912/lilium_clang-20250912.tar.gz
 check_and_clone $GCC_ARM \
     https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 \
         arm-linux-androideabi-4.9
