@@ -2203,95 +2203,103 @@ error:
 
 static int mi_dsi_update_lhbm_cmd_b2reg(struct dsi_panel *panel, bool dc_status)
 {
+	struct dsi_display *display = to_dsi_display(panel->host);
+	struct dsi_display_mode *mode;
 	struct dsi_display_mode_priv_info *priv_info;
 	struct dsi_cmd_desc *cmds = NULL;
 	struct dsi_panel_mi_cfg *mi_cfg  = NULL;
 	u32 count;
 	u8 *tx_buf;
+	int total_modes, i;
 	int retval = 0;
 
-	if (!panel || !panel->cur_mode || !panel->cur_mode->priv_info) {
+	if (!panel || !panel->host || !display) {
 		pr_err("invalid params\n");
 		return -EINVAL;
 	}
 
 	mi_cfg = &panel->mi_cfg;
-	priv_info = panel->cur_mode->priv_info;
 
 	if (mi_cfg->fod_lhbm_87reg_ctrl_flag == false) {
 		pr_info("fod_lhbm_87reg_ctrl_flag = false not suport mi_dsi_update_lhbm_cmd_b2reg\n");
 		return 0;
 	}
 
-	cmds = priv_info->cmd_sets[DSI_CMD_SET_MI_FOD_LHBM_WHITE_1000NIT].cmds;
-	count = priv_info->cmd_sets[DSI_CMD_SET_MI_FOD_LHBM_WHITE_1000NIT].count;
-	if (cmds && count >= mi_cfg->fod_lhbm_white_1000nit_b2reg_index) {
-		tx_buf = (u8 *)cmds[mi_cfg->fod_lhbm_white_1000nit_b2reg_index].msg.tx_buf;
-		if (dc_status == true)
-			tx_buf[1] = 0x98;
-		else
-			tx_buf[1] = 0x18;
-	} else {
-		pr_err("please check 60hz mi,mdss-dsi-fod-lhbm-while-1000nit-command update parameter index configuration\n");
-		retval = -EAGAIN;
-		goto error;
+	total_modes = panel->num_display_modes;
+	for (i = 0; i < total_modes; i++) {
+		mode = &display->modes[i];
+		if (!mode || !mode->priv_info)
+			continue;
+
+		priv_info = mode->priv_info;
+
+		cmds = priv_info->cmd_sets[DSI_CMD_SET_MI_FOD_LHBM_WHITE_1000NIT].cmds;
+		count = priv_info->cmd_sets[DSI_CMD_SET_MI_FOD_LHBM_WHITE_1000NIT].count;
+		if (cmds && count >= mi_cfg->fod_lhbm_white_1000nit_b2reg_index) {
+			tx_buf = (u8 *)cmds[mi_cfg->fod_lhbm_white_1000nit_b2reg_index].msg.tx_buf;
+			if (dc_status == true)
+				tx_buf[1] = 0x98;
+			else
+				tx_buf[1] = 0x18;
+		}
+
+		cmds = priv_info->cmd_sets[DSI_CMD_SET_MI_FOD_LHBM_WHITE_110NIT].cmds;
+		count = priv_info->cmd_sets[DSI_CMD_SET_MI_FOD_LHBM_WHITE_110NIT].count;
+		if (cmds && count >= mi_cfg->fod_lhbm_white_110nit_b2reg_index) {
+			tx_buf = (u8 *)cmds[mi_cfg->fod_lhbm_white_110nit_b2reg_index].msg.tx_buf;
+			if (dc_status == true)
+				tx_buf[1] = 0x98;
+			else
+				tx_buf[1] = 0x18;
+		}
 	}
 
-	cmds = priv_info->cmd_sets[DSI_CMD_SET_MI_FOD_LHBM_WHITE_110NIT].cmds;
-	count = priv_info->cmd_sets[DSI_CMD_SET_MI_FOD_LHBM_WHITE_110NIT].count;
-	if (cmds && count >= mi_cfg->fod_lhbm_white_110nit_b2reg_index) {
-		tx_buf = (u8 *)cmds[mi_cfg->fod_lhbm_white_110nit_b2reg_index].msg.tx_buf;
-		if (dc_status == true)
-			tx_buf[1] = 0x98;
-		else
-			tx_buf[1] = 0x18;
-	} else {
-		pr_err("please check 60hz mi,mdss-dsi-fod-lhbm-while-110nit-command update parameter index configuration\n");
-		retval = -EAGAIN;
-		goto error;
-	}
-
-error:
 	return retval;
 }
 
 static int mi_dsi_update_nolp_b2reg(struct dsi_panel *panel, bool dc_status)
 {
+	struct dsi_display *display = to_dsi_display(panel->host);
+	struct dsi_display_mode *mode;
 	struct dsi_display_mode_priv_info *priv_info;
 	struct dsi_cmd_desc *cmds = NULL;
 	struct dsi_panel_mi_cfg *mi_cfg  = NULL;
 	u32 count;
 	u8 *tx_buf;
+	int total_modes, i;
 	int retval = 0;
 
-	if (!panel || !panel->cur_mode || !panel->cur_mode->priv_info) {
+	if (!panel || !panel->host || !display) {
 		pr_err("invalid params\n");
 		return -EINVAL;
 	}
 
 	mi_cfg = &panel->mi_cfg;
-	priv_info = panel->cur_mode->priv_info;
 
 	if (mi_cfg->nolp_b2reg_ctrl_flag == false) {
 		pr_info("nolp_b2reg_ctrl_flag = false not suport mi_dsi_update_nolp_b2reg\n");
 		return 0;
 	}
 
-	cmds = priv_info->cmd_sets[DSI_CMD_SET_NOLP].cmds;
-	count = priv_info->cmd_sets[DSI_CMD_SET_NOLP].count;
-	if (cmds && count >= mi_cfg->nolp_b2reg_index) {
-		tx_buf = (u8 *)cmds[mi_cfg->nolp_b2reg_index].msg.tx_buf;
-		if (dc_status == true)
-			tx_buf[1] = 0x98;
-		else
-			tx_buf[1] = 0x18;
-	} else {
-		pr_err("please check 60hz qcom,mdss-dsi-nolp-command update parameter index configuration\n");
-		retval = -EAGAIN;
-		goto error;
+	total_modes = panel->num_display_modes;
+	for (i = 0; i < total_modes; i++) {
+		mode = &display->modes[i];
+		if (!mode || !mode->priv_info)
+			continue;
+
+		priv_info = mode->priv_info;
+
+		cmds = priv_info->cmd_sets[DSI_CMD_SET_NOLP].cmds;
+		count = priv_info->cmd_sets[DSI_CMD_SET_NOLP].count;
+		if (cmds && count >= mi_cfg->nolp_b2reg_index) {
+			tx_buf = (u8 *)cmds[mi_cfg->nolp_b2reg_index].msg.tx_buf;
+			if (dc_status == true)
+				tx_buf[1] = 0x98;
+			else
+				tx_buf[1] = 0x18;
+		}
 	}
 
-error:
 	return retval;
 }
 
@@ -2656,7 +2664,10 @@ int mi_dsi_panel_read_and_update_dc_param_v2(struct dsi_panel *panel)
 				tx_buf = (u8 *)cmds[dc_cfg[DC_LUT_D2]->update_dc_on_reg_index].msg.tx_buf;
 				tx_len = cmds[dc_cfg[DC_LUT_D2]->update_dc_on_reg_index].msg.tx_len;
 				param_len = min(sizeof(dc_cfg[DC_LUT_D2]->enter_dc_lut), tx_len - 1);
-				memcpy(&tx_buf[1], dc_cfg[DC_LUT_D2]->enter_dc_lut, param_len);
+				if (mode->timing.refresh_rate == 120)
+					memcpy(&tx_buf[1], dc_cfg[DC_LUT_D2]->exit_dc_lut, param_len);
+				else
+					memcpy(&tx_buf[1], dc_cfg[DC_LUT_D2]->enter_dc_lut, param_len);
 			} else {
 				pr_info("please check %dhz dc on update parameter d2 index configuration\n", mode->timing.refresh_rate);
 				continue;
@@ -2667,7 +2678,10 @@ int mi_dsi_panel_read_and_update_dc_param_v2(struct dsi_panel *panel)
 				tx_buf = (u8 *)cmds[dc_cfg[DC_LUT_D4]->update_dc_on_reg_index].msg.tx_buf;
 				tx_len = cmds[dc_cfg[DC_LUT_D4]->update_dc_on_reg_index].msg.tx_len;
 				param_len = min(sizeof(dc_cfg[DC_LUT_D4]->enter_dc_lut), tx_len - 1);
-				memcpy(&tx_buf[1], dc_cfg[DC_LUT_D4]->enter_dc_lut, param_len);
+				if (mode->timing.refresh_rate == 120)
+					memcpy(&tx_buf[1], dc_cfg[DC_LUT_D4]->exit_dc_lut, param_len);
+				else
+					memcpy(&tx_buf[1], dc_cfg[DC_LUT_D4]->enter_dc_lut, param_len);
 			} else {
 				pr_info("please check %dhz dc on update parameter d4 index configuration\n", mode->timing.refresh_rate);
 				continue;
