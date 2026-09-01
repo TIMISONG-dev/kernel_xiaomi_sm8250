@@ -8398,12 +8398,6 @@ int dsi_display_enable(struct dsi_display *display)
 	}
 
 	if (mode->dsi_mode_flags & DSI_MODE_FLAG_DMS) {
-		if ((mode->timing.refresh_rate != 60)
-			&& ((display->panel->mi_cfg.panel_id >> 8) == 0x4C3341004202)
-				&& (display->panel->mi_cfg.dc_enable == true)) {
-			mi_dsi_panel_dc_switch(display->panel, false);
-		}
-
 		rc = dsi_panel_post_switch(display->panel);
 		if (rc) {
 			DSI_ERR("[%s] failed to switch DSI panel mode, rc=%d\n",
