@@ -862,6 +862,7 @@ skip_dimlayer_parse:
 	mi_cfg->in_aod = false;
 	mi_cfg->fod_hbm_off_time = ktime_get();
 	mi_cfg->fod_backlight_off_time = ktime_get();
+	mi_cfg->dc_requested = false;
 	mi_cfg->dc_enable = false;
 	mi_cfg->bl_enable = true;
 	mi_cfg->panel_dead_flag = false;
@@ -4406,6 +4407,7 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 		break;
 	case DISPPARAM_DC_ON:
 		pr_info("DC on\n");
+		mi_cfg->dc_requested = true;
 		if (mi_cfg->dc_type == 0) {
 			rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_DC_ON);
 			if (rc)
@@ -4422,6 +4424,7 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 		break;
 	case DISPPARAM_DC_OFF:
 		pr_info("DC off\n");
+		mi_cfg->dc_requested = false;
 		if (mi_cfg->dc_type == 0) {
 			rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_DC_OFF);
 			if (rc)
