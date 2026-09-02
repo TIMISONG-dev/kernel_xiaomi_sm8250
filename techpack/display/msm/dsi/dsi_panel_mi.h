@@ -272,6 +272,7 @@ struct dsi_panel_mi_cfg {
 	/* set doze hbm/lbm only in AOD */
 	bool in_aod;
 	u32 dc_threshold;
+	bool dc_requested;
 	bool dc_enable;
 	u32 dc_type;
 	u32 hbm_brightness;
