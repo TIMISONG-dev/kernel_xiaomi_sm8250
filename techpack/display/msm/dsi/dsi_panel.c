@@ -882,12 +882,14 @@ bool dc_skip_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 {
 	struct dsi_panel_mi_cfg *mi_cfg = &panel->mi_cfg;
 /* 1. dc enable is 1;
- * 2. bl lvl should less than dc theshold;
- * 3. bl lvl not 0, we should not skip set 0;
- * 4. dc type is 1 means need backlight control here, 0 means IC can switch automatically.
- * When meet all the 4 conditions at the same time, skip set this bl.
+ * 2. the previous backlight level is not 0;
+ * 3. bl lvl should less than dc theshold;
+ * 4. bl lvl not 0, we should not skip set 0;
+ * 5. dc type is 1 means need backlight control here, 0 means IC can switch automatically.
+ * When meet all the 5 conditions at the same time, skip set this bl.
  */
-	if (mi_cfg->dc_enable && bl_lvl < mi_cfg->dc_threshold && bl_lvl != 0 && mi_cfg->dc_type) {
+	if (mi_cfg->dc_enable && mi_cfg->last_bl_level != 0 &&
+			bl_lvl < mi_cfg->dc_threshold && bl_lvl != 0 && mi_cfg->dc_type) {
 		return true;
 	} else {
 		return false;
@@ -1049,10 +1051,6 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 	if (bl_lvl > 0 && mi_cfg->last_bl_level == 0 && mi_cfg->dc_type) {
 		DSI_INFO("crc off\n");
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_CRC_OFF);
-	}
-	if (bl_lvl == 0 && mi_cfg->dc_type) {
-		DSI_INFO("DC off\n");
-		mi_cfg->dc_enable = false;
 	}
 	mi_cfg->last_bl_level = bl_lvl;
 	if (bl_lvl)
@@ -5296,11 +5294,17 @@ int dsi_panel_enable(struct dsi_panel *panel)
 		}
 	}
 
-	if (mi_cfg->dc_type == 0 && mi_cfg->dc_enable) {
-		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_DC_ON);
-		if (rc)
-			DSI_ERR("[%s] failed to send DSI_CMD_SET_MI_DC_ON cmd, rc=%d\n",
-				panel->name, rc);
+	if (mi_cfg->dc_requested && panel->panel_initialized) {
+		if (mi_cfg->dc_type == 0) {
+			rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_DC_ON);
+			if (rc)
+				DSI_ERR("[%s] failed to send DSI_CMD_SET_MI_DC_ON cmd, rc=%d\n",
+					panel->name, rc);
+			else
+				mi_cfg->dc_enable = true;
+		} else {
+			mi_cfg->dc_enable = true;
+		}
 	}
 
 	host = panel->host;
@@ -5548,10 +5552,7 @@ int dsi_panel_disable(struct dsi_panel *panel)
 	mi_cfg->request_gir_status = false;
 	mi_cfg->local_hbm_cur_status = false;
 	mi_cfg->bl_enable = true;
-	if (mi_cfg->dc_type)
-		mi_cfg->dc_enable = false;
-
-
+	mi_cfg->dc_enable = false;
 	mutex_unlock(&panel->panel_lock);
 	display_utc_time_marker("DSI_CMD_SET_OFF");
 	return rc;
