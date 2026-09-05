@@ -121,6 +121,10 @@ build() {
     END=$(date +%s)
     ELAPSED=$((END - START))
 
+    CAPTION="MagicTime ${VERSION}${PREFIX}${BUILD}"
+    CAPTION="${CAPTION}"$'\n'"desc: (${DESC})"$'\n'"branch: ${BRANCH}"$'\n'"Длительность: $ELAPSED секунд"
+    CHANGELOG="../changelog.txt"
+
     if grep -q -E "Ошибка 2|Error 2" build.log; then
         echo Ошибка: Сборка завершилась с ошибкой
 
@@ -147,27 +151,24 @@ build() {
             7z a -mx9 MagicTime-$DEVICE-$BUILD_DATE.zip * -x!*.zip
         fi
 
-        curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendMessage \
-        -d chat_id=@magictimekernel \
-        -d text="Компиляция завершилась успешно! Время выполнения: $ELAPSED секунд" \
-        -d message_thread_id=38153
-
         if [ "$TYPE" = "test" ]; then
             curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
             -F document=@./MagicTime-$DEVICE-$FILE.zip \
-            -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${DESC}) branch: ${BRANCH}" \
+            -F caption="${CAPTION}" \
             -F message_thread_id=38153
         else
             curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
             -F document=@./MagicTime-$DEVICE-$BUILD_DATE.zip \
-            -F caption="MagicTime ${VERSION}${PREFIX}${BUILD} (${DESC}) branch: ${BRANCH}" \
+            -F caption="${CAPTION}" \
             -F message_thread_id=38153
         fi
 
-        curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
-        -F document=@../changelog.txt \
-        -F caption="Latest changes" \
-        -F message_thread_id=38153
+        if [ "$TYPE" = "early" ] && [ -s "$CHANGELOG" ]; then
+            curl -s -X POST https://api.telegram.org/bot$TGTOKEN/sendDocument?chat_id=@magictimekernel \
+            -F document=@"$CHANGELOG" \
+            -F caption="Changelog" \
+            -F message_thread_id=38153
+        fi
 
         if [ "$TYPE" = "test" ]; then
             rm -rf MagicTime-$DEVICE-$FILE.zip
