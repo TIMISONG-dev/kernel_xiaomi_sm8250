@@ -62,11 +62,7 @@ build() {
 
     MAGICTIME=$MAIN/MagicTime-$DEVICE
 
-    if [ $DEVICE = pipa ]; then
-        ANYKERNEL_LINK=https://github.com/TIMISONG-dev/MagicTime-pipa
-    else
-        ANYKERNEL_LINK=https://github.com/TIMISONG-dev/MagicTime-alioth
-    fi
+    ANYKERNEL_LINK=https://github.com/TIMISONG-dev/MagicTime-$DEVICE
 
     if [ ! -d $MAGICTIME ]; then
         mkdir -p $MAGICTIME
