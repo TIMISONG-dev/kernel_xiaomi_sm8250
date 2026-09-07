@@ -309,7 +309,7 @@ static void mhi_arch_esoc_ops_mdm_error(void *priv)
 static char sdx55m_cpuid[SERIAL_NUM_LEN] = {"\0"};
 static char sdx55m_fuse[64] = {"\0"};
 
-static int secureboot_proc_show(struct seq_file *m, void *v)
+static int cpuid_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%s\n", sdx55m_cpuid);
 	return 0;
@@ -317,7 +317,7 @@ static int secureboot_proc_show(struct seq_file *m, void *v)
 
 static int sdx55m_cpuid_open(struct inode *inode, struct file *file)
 {
-	return single_open(file, secureboot_proc_show, NULL);
+	return single_open(file, cpuid_proc_show, NULL);
 }
 
 static const struct file_operations proc_sdx55m_cpuid_operations = {
@@ -329,12 +329,12 @@ static const struct file_operations proc_sdx55m_cpuid_operations = {
 
 static int __init proc_sdx55m_cpuid_init(void)
 {
-	proc_create("sdx55m_cpuid", 0, NULL, &proc_sdx55m_cpuid_operations);
+	proc_create("sdx55m_cpuid", 0444, NULL, &proc_sdx55m_cpuid_operations);
 	return 0;
 }
 fs_initcall(proc_sdx55m_cpuid_init);
 
-static int fuse_proc_show(struct seq_file *m, void *v)
+static int secureboot_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%s\n", sdx55m_fuse);
 	return 0;
@@ -342,7 +342,7 @@ static int fuse_proc_show(struct seq_file *m, void *v)
 
 static int sdx55m_fuse_open(struct inode *inode, struct file *file)
 {
-	return single_open(file, fuse_proc_show, NULL);
+	return single_open(file, secureboot_proc_show, NULL);
 }
 
 static const struct file_operations proc_sdx55m_fuse_operations = {
@@ -354,7 +354,7 @@ static const struct file_operations proc_sdx55m_fuse_operations = {
 
 static int __init proc_sdx55m_fuse_init(void)
 {
-	proc_create("sdx55m_secureboot", 0, NULL, &proc_sdx55m_fuse_operations);
+	proc_create("sdx55m_secureboot", 0444, NULL, &proc_sdx55m_fuse_operations);
 	return 0;
 }
 fs_initcall(proc_sdx55m_fuse_init);
@@ -366,26 +366,55 @@ static void mhi_bl_dl_cb(struct mhi_device *mhi_device,
 	struct mhi_dev *mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
 	struct arch_info *arch_info = mhi_dev->arch_info;
 	char *buf = mhi_result->buf_addr;
-	char *const_serial_number = "0x00786134 = ";
-	char *const_sdx55m_fuse = "Secure Boot: ";
-	char *pSerial_number = NULL;
+	const char *const_serial_number = "0x00786134 = ";
+	const char *const_sdx55m_fuse = "Secure Boot: ";
+	char *p;
 
 	char *token, *delim = "\n";
+
+	if (!buf || mhi_result->bytes_xferd == 0)
+		return;
 
 	/* force a null at last character */
 	buf[mhi_result->bytes_xferd - 1] = 0;
 
-	pSerial_number = strnstr(buf, const_serial_number, sizeof(buf));
-	if (pSerial_number != NULL)
-		strscpy(sdx55m_cpuid,
-			pSerial_number + strlen(const_serial_number),
-			strlen("0x3de665bd"));
+	p = strstr(buf, const_serial_number);
+	if (p) {
+		char *end;
+		size_t len;
 
-	pSerial_number = strnstr(buf, const_sdx55m_fuse, sizeof(buf));
-	if (pSerial_number != NULL)
-		strscpy(sdx55m_fuse,
-			pSerial_number + strlen(const_sdx55m_fuse),
-			strlen("Off"));
+		p += strlen(const_serial_number);
+		while (*p == ' ')
+			p++;
+		end = p;
+		while (*end && *end != '\r' && *end != '\n' && *end != ' ')
+			end++;
+		len = min_t(size_t, (size_t)(end - p), sizeof(sdx55m_cpuid) - 1);
+		if (len > 0) {
+			memcpy(sdx55m_cpuid, p, len);
+			sdx55m_cpuid[len] = '\0';
+			pr_info("mhi: SDX55M CPUID: %s\n", sdx55m_cpuid);
+		}
+	}
+
+	p = strstr(buf, const_sdx55m_fuse);
+	if (p) {
+		char *end;
+		size_t len;
+
+		p += strlen(const_sdx55m_fuse);
+		while (*p == ' ')
+			p++;
+		end = p;
+		while (*end && *end != '\r' && *end != '\n' && *end != ' ')
+			end++;
+		len = min_t(size_t, (size_t)(end - p), sizeof(sdx55m_fuse) - 1);
+		if (len > 0) {
+			memcpy(sdx55m_fuse, p, len);
+			sdx55m_fuse[len] = '\0';
+			pr_info("mhi: SDX55M Secure Boot: %s\n", sdx55m_fuse);
+		}
+	}
 
 	if (mhi_result->bytes_xferd >= MAX_MSG_SIZE) {
 		do {
