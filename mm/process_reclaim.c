@@ -4,6 +4,7 @@
  */
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/math64.h>
 #include <linux/mm.h>
 #include <linux/swap.h>
 #include <linux/sort.h>
@@ -120,7 +121,10 @@ static void swap_fn(struct work_struct *work)
 	int nr_to_reclaim;
 	int efficiency;
 
-	if (!tsk_nomap_swap_sz && !per_swap_size)
+	/* Both knobs non-positive means the feature is disabled. A negative
+	 * per_swap_size is not a page count, so it counts as disabled too.
+	 */
+	if (!tsk_nomap_swap_sz && per_swap_size <= 0)
 		return;
 
 	rcu_read_lock();
@@ -186,11 +190,22 @@ static void swap_fn(struct work_struct *work)
 	rcu_read_unlock();
 
 	while (si--) {
-		if (!per_swap_size)
+		/* A negative per_swap_size is not a page count; treat it
+		 * as the feature being disabled, same as zero.
+		 */
+		if (per_swap_size <= 0)
 			goto nomap;
 
-		nr_to_reclaim =
-			(selected[si].tasksize * per_swap_size) / total_sz;
+		/*
+		 * tasksize is one process's anon page count and per_swap_size
+		 * is user-writable, so their product overflows int for any
+		 * large process and hands reclaim_task_anon() a bogus, often
+		 * negative, scan count. Compute in 64 bits: total_sz is a
+		 * positive sum of tasksizes (checked above) and the quotient
+		 * is bounded by per_swap_size, so the result still fits in int.
+		 */
+		nr_to_reclaim = div_s64((s64)selected[si].tasksize *
+					per_swap_size, total_sz);
 		/* scan atleast a page */
 		if (!nr_to_reclaim)
 			nr_to_reclaim = 1;
