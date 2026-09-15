@@ -860,6 +860,8 @@ __initcall(init_sched_debug_procfs);
 #define __PN(F) __PSN(#F, F)
 #define   PN(F) __PSN(#F, p->F)
 
+#define __PS(S, F) SEQ_printf(m, "%-45s:%21Ld\n", S, (long long)(F))
+#define   PM(F, M) __PS(#F, p->F & (M))
 
 #ifdef CONFIG_NUMA_BALANCING
 void print_numa_stats(struct seq_file *m, int node, unsigned long tsf,
