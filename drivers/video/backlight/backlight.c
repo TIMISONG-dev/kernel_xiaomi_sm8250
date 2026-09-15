@@ -375,7 +375,14 @@ static int bd_cdev_get_cur_brightness(struct thermal_cooling_device *cdev,
 {
 	struct backlight_device *bd = (struct backlight_device *)cdev->devdata;
 
+#ifdef CONFIG_MACH_XIAOMI
+	if (bd->thermal_brightness_limit == bd->props.max_brightness)
+		*state = 0;
+	else
+		*state = bd->thermal_brightness_limit;
+#else
 	*state = bd->props.max_brightness - bd->thermal_brightness_limit;
+#endif
 
 	return 0;
 }
@@ -389,7 +396,14 @@ static int bd_cdev_set_cur_brightness(struct thermal_cooling_device *cdev,
 	if (state > bd->props.max_brightness)
 		return -EINVAL;
 
+#ifdef CONFIG_MACH_XIAOMI
+	if (state == 0)
+		brightness_lvl = bd->props.max_brightness;
+	else
+		brightness_lvl = state;
+#else
 	brightness_lvl = bd->props.max_brightness - state;
+#endif
 	if (brightness_lvl == bd->thermal_brightness_limit)
 		return 0;
 
