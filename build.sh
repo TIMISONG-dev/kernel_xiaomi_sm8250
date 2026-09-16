@@ -17,7 +17,6 @@ source ../settings.sh
 # export EXTRA=""
 # export ONLY=""
 # export SHAK=hash commit for squash revert KSU
-# export SHAB=hash commit for 5k battery
 #
 
 MAIN=/home/timisong
@@ -227,12 +226,8 @@ if [ "$TYPE" = "test" ]; then
     CONFIGS=(
         "alioth:magictime-new:ksu:stk:POCO F3 AOSP:AOSP-KSU"
         "alioth:magictime-new:no_ksu:stk:POCO F3 AOSP without KSU:AOSP-NONKSU"
-        "alioth:magictime-new:ksu:5k:POCO F3 AOSP 5k battery:AOSP-KSU-5K"
-        "alioth:magictime-new:no_ksu:5k:POCO F3 AOSP without KSU 5k battery:AOSP-NONKSU-5K"
         "alioth:magictime-miui:ksu:stk:POCO F3 MIUI:MIUI-KSU"
         "alioth:magictime-miui:no_ksu:stk:POCO F3 MIUI without KSU:MIUI-NONKSU"
-        "alioth:magictime-miui:ksu:5k:POCO F3 MIUI 5k battery:MIUI-KSU-5K"
-        "alioth:magictime-miui:no_ksu:5k:POCO F3 MIUI without KSU 5k battery:MIUI-NONKSU-5K"
 
         "pipa:magictime-new:ksu:stk:Mi Pad 6 AOSP:AOSP-KSU"
         "pipa:magictime-new:no_ksu:stk:Mi Pad 6 AOSP without KSU:AOSP-NONKSU"
@@ -296,14 +291,6 @@ if [ "$TYPE" = "test" ]; then
         git checkout "$BRANCH" >/dev/null 2>&1
         git fetch origin "$BRANCH" >/dev/null 2>&1 || true
         git reset --hard "origin/$BRANCH" >/dev/null 2>&1
-
-        if [ "$MOD_BATTERY" = "5k" ]; then
-            git cherry-pick "$SHAB" >/dev/null 2>&1
-            if [ $? -ne 0 ]; then
-                git cherry-pick --abort >/dev/null 2>&1
-                exit 1
-            fi
-        fi
 
         if [ "$MOD_KSU" = "no_ksu" ]; then
             git cherry-pick "$SHAK" >/dev/null 2>&1
