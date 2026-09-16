@@ -529,6 +529,8 @@ this file is for attribution only of alioth
 	qcom,chg-term-current-ma = <(-220)>;
 	//qcom,step-charging-enable;
 	qcom,sw-jeita-enable;
+	/* Match JEITA to the gauge profile, not the shared 100 kOhm ID. */
+	qcom,jeita-use-bms-battery-type;
 	qcom,chg-warm-th= <480>;
 	qcom,chg-cool-th= <150>;
 	//qcom,suspend-input-on-debug-batt;
@@ -613,7 +615,7 @@ this file is for attribution only of alioth
 	qcom,soc-hi-res;
 	qcom,sun-profile-only;
 	qcom,k11a-batt-profile;
-        qcom,j3s-batt-profile;
+	qcom,j3s-batt-profile;
 	qcom,soc_decimal_rate = <
 		0  38
 		10 35

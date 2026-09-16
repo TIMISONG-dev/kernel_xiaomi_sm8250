@@ -2084,7 +2084,10 @@ static int fg_gen4_get_batt_profile(struct fg_dev *fg)
 	const char *data;
 	int rc, len, avail_age_level = 0;
 
-	batt_node = of_find_node_by_name(node, "qcom,battery-data");
+	batt_node = of_parse_phandle(node, "qcom,battery-data", 0);
+	/* Retain legacy trees without an explicit battery-data reference. */
+	if (!batt_node && !of_find_property(node, "qcom,battery-data", NULL))
+		batt_node = of_find_node_by_name(node, "qcom,battery-data");
 	if (!batt_node) {
 		pr_err("Batterydata not available\n");
 		return -ENXIO;
