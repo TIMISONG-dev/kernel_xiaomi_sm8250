@@ -7034,7 +7034,8 @@ static int
 find_idlest_group_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
 {
 	unsigned long load, min_load = ULONG_MAX;
-	unsigned int min_exit_latency = UINT_MAX;
+	u64 min_exit_latency = U64_MAX;
+	unsigned int nr_candidates = 0;
 	int least_loaded_cpu = this_cpu;
 	int shallowest_idle_cpu = -1;
 	int i;
@@ -7055,12 +7056,16 @@ find_idlest_group_cpu(struct sched_group *group, struct task_struct *p, int this
 
 		if (available_idle_cpu(i)) {
 			struct cpuidle_state *idle = idle_get_state(rq);
-			if (idle && idle->exit_latency < min_exit_latency) {
-				min_exit_latency = idle->exit_latency;
+			u64 exit_latency = idle ? idle->exit_latency : U64_MAX;
+
+			if (shallowest_idle_cpu == -1 || exit_latency < min_exit_latency) {
+				min_exit_latency = exit_latency;
 				shallowest_idle_cpu = i;
-			} else if ((!idle || idle->exit_latency == min_exit_latency) &&
-				   shallowest_idle_cpu == -1) {
-				shallowest_idle_cpu = i;
+				nr_candidates = 1;
+			} else if (exit_latency == min_exit_latency) {
+				nr_candidates++;
+				if (!reciprocal_scale(sched_rng(), nr_candidates))
+					shallowest_idle_cpu = i;
 			}
 		} else if (shallowest_idle_cpu == -1) {
 			load = cpu_load(cpu_rq(i));
