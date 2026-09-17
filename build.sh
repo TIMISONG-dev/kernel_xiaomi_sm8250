@@ -117,7 +117,7 @@ build() {
     ELAPSED=$((END - START))
 
     CAPTION="MagicTime ${VERSION}${PREFIX}${BUILD}"
-    CAPTION="${CAPTION}"$'\n'"desc: (${DESC})"$'\n'"branch: ${BRANCH}"$'\n'"Длительность: $ELAPSED секунд"
+    CAPTION="${CAPTION}"$'\n'"desc: ${DESC}"$'\n'"branch: ${BRANCH}"$'\n'"Длительность: $ELAPSED секунд"
     CHANGELOG="../changelog.txt"
 
     if grep -q -E "Ошибка 2|Error 2" build.log; then
