@@ -1666,9 +1666,10 @@ int kgsl_pwrctrl_init_sysfs(struct kgsl_device *device)
 		return ret;
 
 	device->gpu_sysfs_kobj = kobject_create_and_add("gpu", kernel_kobj);
-	if (IS_ERR_OR_NULL(device->gpu_sysfs_kobj))
-		return (device->gpu_sysfs_kobj == NULL) ?
-		-ENOMEM : PTR_ERR(device->gpu_sysfs_kobj);
+	if (!device->gpu_sysfs_kobj) {
+		sysfs_remove_files(&device->dev->kobj, pwrctrl_attr_list);
+		return -ENOMEM;
+	}
 
 	for (i = 0; i < ARRAY_SIZE(link_names); i++)
 		kgsl_gpu_sysfs_add_link(device->gpu_sysfs_kobj,
@@ -1680,6 +1681,8 @@ int kgsl_pwrctrl_init_sysfs(struct kgsl_device *device)
 
 void kgsl_pwrctrl_uninit_sysfs(struct kgsl_device *device)
 {
+	kobject_put(device->gpu_sysfs_kobj);
+	device->gpu_sysfs_kobj = NULL;
 	sysfs_remove_files(&device->dev->kobj, pwrctrl_attr_list);
 }
 
