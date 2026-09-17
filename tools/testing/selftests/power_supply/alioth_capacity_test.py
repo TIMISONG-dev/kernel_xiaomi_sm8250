@@ -294,7 +294,7 @@ def main():
         assert 'mutex_lock(&chip->cl->lock)' in profile
         dts = Path('arch/arm64/boot/dts/vendor/qcom/alioth-sm8250.dtsi').read_text()
         assert 'qcom,replacement-capacity-high-threshold-mah' not in dts
-        assert 'qcom,replacement-battery-type = "K11A_REPLACEMENT_SAFE"' in dts
+        assert 'qcom,replacement-battery-type = "K11A_custom"' in dts
         print('PASS: FG/DTS source invariants')
 
 

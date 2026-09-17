@@ -5059,6 +5059,46 @@ static ssize_t esr_fast_cal_en_show(struct device *dev, struct device_attribute
 static DEVICE_ATTR_RW(esr_fast_cal_en);
 
 
+/* Display-only name; battery_type remains the exact DT/JEITA lookup key. */
+static ssize_t fg_gen4_format_battery_model(char *buf, size_t size,
+		const char *profile, bool custom, const struct cap_learning *cl)
+{
+	if (!profile || !profile[0])
+		return -ENODATA;
+
+	/* Restored capacity alone does not establish a new learning result. */
+	if (custom && cl && cl->initialized && cl->successful_updates &&
+	    cl->learned_cap_uah >= 1000 && cl->learned_cap_uah <= INT_MAX &&
+	    (cl->dt.max_cap_uah <= 0 ||
+	     cl->learned_cap_uah <= cl->dt.max_cap_uah))
+		return scnprintf(buf, size, "%s_%lldmah\n", profile,
+			(long long)div64_s64(cl->learned_cap_uah, 1000));
+
+	return scnprintf(buf, size, "%s\n", profile);
+}
+
+static ssize_t battery_model_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct fg_gen4_chip *chip = dev_get_drvdata(dev);
+	ssize_t len;
+
+	if (!chip || !chip->cl)
+		return -ENODATA;
+
+	mutex_lock(&chip->cl->lock);
+	if (!chip->fg.profile_available || !chip->fg.soc_reporting_ready ||
+	    chip->fg.battery_missing)
+		len = -ENODATA;
+	else
+		len = fg_gen4_format_battery_model(buf, PAGE_SIZE,
+			chip->fg.bp.batt_type_str,
+			chip->replacement_profile_fallback, chip->cl);
+	mutex_unlock(&chip->cl->lock);
+	return len;
+}
+static DEVICE_ATTR_RO(battery_model);
+
 /* Read-only diagnostics; restored capacity is not a newly measured sample. */
 static ssize_t capacity_learning_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -5117,6 +5157,7 @@ static ssize_t cycle_count_info_show(struct device *dev,
 static DEVICE_ATTR_RO(cycle_count_info);
 
 static struct attribute *fg_attrs[] = {
+	&dev_attr_battery_model.attr,
 	&dev_attr_cycle_count_info.attr,
 	&dev_attr_capacity_learning.attr,
 	&dev_attr_profile_dump.attr,

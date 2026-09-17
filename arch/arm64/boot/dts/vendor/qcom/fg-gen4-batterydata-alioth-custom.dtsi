@@ -36,7 +36,7 @@ qcom,alioth_replacement_safe {
 	qcom,batt-id-kohm = <100>;
 	qcom,battery-beta = <4250>;
 	qcom,therm-room-temp = <100000>;
-	qcom,battery-type = "K11A_REPLACEMENT_SAFE";
+	qcom,battery-type = "K11A_custom";
 	qcom,therm-coefficients = <0x2318 0xd0c 0xdaf7 0xc556 0x848d>;
 	qcom,therm-center-offset = <0x70>;
 	qcom,therm-pull-up = <100>;

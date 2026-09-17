@@ -109,7 +109,7 @@ int main(void) {
 def check_voltage(root):
     fg = (root / 'drivers/power/supply/qcom/qpnp-fg-gen4.c').read_text()
     pd = (root / 'drivers/power/supply/ti/pd_policy_manager.c').read_text()
-    dts = (root / 'arch/arm64/boot/dts/vendor/qcom/fg-gen4-batterydata-alioth-replacement-safe.dtsi').read_text()
+    dts = (root / 'arch/arm64/boot/dts/vendor/qcom/fg-gen4-batterydata-alioth-custom.dtsi').read_text()
     def dt(name):
         m = re.search(re.escape(name) + r'\s*=\s*<(\d+)>;', dts)
         assert m, name

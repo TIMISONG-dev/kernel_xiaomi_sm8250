@@ -262,7 +262,7 @@ int main(void) {
     assert(fg_gen4_migrate_sdam(&chip)==0 && nw==0);
     assert(fg_gen4_restore_count(&chip,out,8)==0 && out[7]==1007);
     chip.fg.soc_reporting_ready=chip.fg.profile_available=true;
-    chip.dt.replacement_battery_type="K11A_REPLACEMENT_SAFE";
+    chip.dt.replacement_battery_type="K11A_custom";
     chip.replacement_profile_fallback=true;
     assert(restore_cycle_count(&c)==0);
     assert(fg_gen4_get_cycle_count(&chip,&v)==0 && v==1003);

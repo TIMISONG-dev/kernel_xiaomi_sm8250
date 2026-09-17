@@ -13,7 +13,7 @@ opts in. Resistance, learned capacity and shared authenticator IDs do not
 establish a physical battery model or its age.
 
 CHARGE_FULL_DESIGN remains the selected profile's nominal metadata (4520 mAh
-for K11A_REPLACEMENT_SAFE). CHARGE_FULL reports the stored learned estimate.
+for K11A_custom). CHARGE_FULL reports the stored learned estimate.
 The internal SRAM nominal value can differ from the metadata because the
 fallback reuses the FMT characterization blob. The replacement policy permits
 at most +2.0% per qualified successful learning update and caps the stored
@@ -69,3 +69,37 @@ resolving unsafe voltage readings or obtaining the replacement cell's ratings.
 
 The supplied Python host tests compile production function bodies using hardware
 stubs. They do not compile the complete target kernel or operate a real charger.
+
+## K11A_custom name and learned display label
+
+The replacement profile is now named K11A_custom. Its firmware profile data,
+4520 mAh nominal metadata, 4.45 V ceiling, current limits and learning policy
+are unchanged. The old DT property names remain supported.
+
+For Alioth with DS28E16 profile identification enabled, matching Xiaomi-format
+ROM metadata and vendor byte U select FMT, C/V select GY, and S/X select J3S
+when its board flag is enabled. A successful named lookup wins over fallback.
+The fallback means unidentified, not proven aftermarket: an original pack
+with unreadable or unsupported identification can also use K11A_custom.
+Likewise, reused or emulated identification does not certify an original cell.
+
+The stable power-supply battery_type remains K11A_custom. Do not append capacity
+to this lookup key: software JEITA selects an exact DT profile by that string.
+The separate read-only battery_model attribute on the FG platform device
+provides a display label. It uses K11A_custom until the initialized learning
+algorithm has accepted at least one qualified update in the current profile
+initialization. It then shows e.g. K11A_custom_4572mah using the accepted learned
+capacity, never an invented nominal rating. Known FMT/GY/J3S names are unchanged.
+
+This label is not a convergence certificate or a physical battery identity.
+Learning continues with use and aging. A restored number alone does not prove
+that the current physical cell was measured. The capacity remains persistent,
+but qualification of the display suffix is deliberately not persisted: after
+reboot/profile reinitialization the label returns to K11A_custom until another
+qualified update. No unallocated SDAM slot or guessed per-cell identifier is
+used. Failed or skipped updates do not manufacture a suffix.
+
+battery_model is a display/diagnostic attribute, not a changed Android API.
+The ROM must explicitly read it to display it. CHARGE_FULL and
+CHARGE_FULL_DESIGN retain their separate meanings. Neither the label nor a
+larger learned capacity authorizes a different charging voltage or current.
