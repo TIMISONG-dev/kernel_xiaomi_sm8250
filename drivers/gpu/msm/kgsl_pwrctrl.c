@@ -1676,6 +1676,10 @@ int kgsl_pwrctrl_init_sysfs(struct kgsl_device *device)
 			&device->dev->kobj, link_names[i].src,
 			link_names[i].dst);
 
+	/* Non-secure KGSL allocation bytes, not a dedicated VRAM capacity. */
+	kgsl_gpu_sysfs_add_link(device->gpu_sysfs_kobj,
+		&kgsl_driver.virtdev.kobj, "page_alloc", "gpu_memory");
+
 	return 0;
 }
 
