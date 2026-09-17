@@ -30,6 +30,28 @@ fails the mixed reserved/reclaimable count assertion. The test covers mixed
 page orders, count/scan races, no progress, zero and wide scan budgets, and
 teardown. Its stubbed page model is not a physical multi-gigabyte allocation.
 
+## Follow-up: keep each scan within its requested budget
+
+The original scan converted `nr_to_scan` to a target pool size using one
+snapshot, then `kgsl_pool_reduce()` took a second snapshot. Concurrent pool
+returns or consumption could change how much was reclaimed. In a host
+reproduction, requesting six pages reclaimed 106 after 100 pages were
+returned between the snapshots; consumption could instead skip reclaim
+although an eligible pool still held pages. This race predates the first
+reclaimable-count fix.
+
+Scan eligible pools directly using the remaining unsigned-long budget.
+Limit each pool request to its observed size before rounding to a whole
+compound page. Reserved-only pools, locking, teardown and the original
+count/progress fixes remain unchanged. The final compound page may exceed
+the remaining request by less than its size, as before; a concurrent pool
+return cannot inflate the original request by the returned page count.
+
+The expanded host regression injects pool returns/consumption at a size-read
+unlock and tests zero budgets and high-order rounding. The count-only fix
+passes the earlier cases but fails the new scan-growth assertion. This is
+a model of a legal interleaving, not a hardware frame-time measurement.
+
 ## Existing allocation behavior
 
 - `gpumem_alloc_entry()` and `kgsl_sharedmem_page_alloc_user()` do not impose a

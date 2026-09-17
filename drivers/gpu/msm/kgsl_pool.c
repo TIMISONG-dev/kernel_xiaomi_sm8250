@@ -451,12 +451,23 @@ static unsigned long
 kgsl_pool_shrink_scan_objects(struct shrinker *shrinker,
 					struct shrink_control *sc)
 {
-	unsigned long nr = sc->nr_to_scan;
-	unsigned long freed;
-	unsigned int total_pages = kgsl_pool_size_total();
-	unsigned int target_pages = nr > total_pages ? 0 : total_pages - nr;
+	unsigned long freed = 0;
+	int i;
 
-	freed = kgsl_pool_reduce(target_pages, false);
+	/* Reclaim against the budget, not two changing pool-size snapshots. */
+	for (i = kgsl_num_pools - 1; i >= 0 && freed < sc->nr_to_scan; i--) {
+		struct kgsl_page_pool *pool = &kgsl_pools[i];
+		unsigned long nr;
+
+		if (!pool->allocation_allowed)
+			continue;
+
+		nr = min_t(unsigned long, sc->nr_to_scan - freed,
+			   kgsl_pool_size(pool));
+		/* Preserve whole compound pages and bound rounding to this pool. */
+		nr = ALIGN(nr, 1UL << pool->pool_order);
+		freed += _kgsl_pool_shrink(pool, nr);
+	}
 
 	/* Pools may have been consumed since count_objects ran. */
 	return freed ? freed : SHRINK_STOP;

@@ -40,7 +40,7 @@ PRELUDE = r'''
 #define SHRINK_EMPTY (~0UL - 1)
 #define ALIGN(x, a) (((x) + (a) - 1) & ~((a) - 1))
 #define spin_lock(p) ((void)(p))
-#define spin_unlock(p) ((void)(p))
+#define min_t(t, x, y) ({ t _x = (x); t _y = (y); _x < _y ? _x : _y; })
 struct kgsl_page_pool {
     unsigned int pool_order;
     int page_count;
@@ -49,6 +49,16 @@ struct kgsl_page_pool {
 };
 static struct kgsl_page_pool kgsl_pools[4];
 static int kgsl_num_pools;
+/* Inject a concurrent return/consume after the first pool-size read. */
+static int pool_delta;
+static unsigned int size_reads;
+static void spin_unlock(int *lock)
+{
+    (void)lock;
+    if (++size_reads == 1)
+        kgsl_pools[0].page_count += pool_delta;
+}
+
 struct shrinker { int unused; };
 struct shrink_control { unsigned long nr_to_scan; };
 static struct { int mem_work; } kgsl_driver;
@@ -75,6 +85,8 @@ static void reset(void)
     kgsl_pools[3] = (struct kgsl_page_pool){8, 1, false, 0};
     work_requests = 0;
     deny_progress = false;
+    pool_delta = 0;
+    size_reads = 0;
 }
 #define CHECK(x) do { if (!(x)) { \
     fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #x); return 1; \
@@ -133,7 +145,35 @@ int main(void)
     sc.nr_to_scan = (1UL << 32) + 1;
     CHECK(kgsl_pool_shrink_scan_objects(&s, &sc) == 16);
 #endif
-    puts("PASS: reclaimable count, reserves, empty/raced pools, scan bounds and teardown");
+    /* Pool growth must not turn a six-page scan into a 106-page scan. */
+    reset();
+    sc.nr_to_scan = 6;
+    pool_delta = 100;
+    CHECK(kgsl_pool_shrink_scan_objects(&s, &sc) == 6);
+    CHECK(kgsl_pool_size_total() == 398);
+
+    /* Concurrent consumption must not hide pages in another eligible pool. */
+    reset();
+    pool_delta = -8;
+    CHECK(kgsl_pool_shrink_scan_objects(&s, &sc) == 6);
+    CHECK(kgsl_pools[1].page_count == 1);
+
+    /* A zero budget must not reclaim newly returned pool pages. */
+    reset();
+    pool_delta = 100;
+    sc.nr_to_scan = 0;
+    CHECK(kgsl_pool_shrink_scan_objects(&s, &sc) == SHRINK_STOP);
+    CHECK(kgsl_pools[0].page_count == 8);
+
+    /* Large compound pages may round up only the outstanding budget. */
+    reset();
+    kgsl_pools[2].allocation_allowed = true;
+    kgsl_pools[3].allocation_allowed = true;
+    sc.nr_to_scan = 257;
+    CHECK(kgsl_pool_shrink_scan_objects(&s, &sc) == 272);
+    CHECK(kgsl_pool_size_total() == 32);
+
+    puts("PASS: reclaimable count, reserves, scan races/budgets and teardown");
     return 0;
 }
 '''
