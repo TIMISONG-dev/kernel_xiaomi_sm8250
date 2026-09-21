@@ -315,7 +315,6 @@ qcom_cpufreq_hw_fast_switch(struct cpufreq_policy *policy,
 
 static int qcom_cpufreq_hw_cpu_init(struct cpufreq_policy *policy)
 {
-	struct em_data_callback em_cb = EM_DATA_CB(of_dev_pm_opp_get_cpu_power);
 	struct cpufreq_qcom *c;
 	struct device *cpu_dev;
 	int ret;
@@ -344,7 +343,7 @@ static int qcom_cpufreq_hw_cpu_init(struct cpufreq_policy *policy)
 	policy->driver_data = c;
 	policy->dvfs_possible_from_any_cpu = true;
 
-	em_register_perf_domain(policy->cpus, ret, &em_cb);
+	dev_pm_opp_of_register_em(policy->cpus);
 
 	if (c->dcvsh_irq > 0 && !c->is_irq_requested) {
 		snprintf(c->dcvsh_irq_name, sizeof(c->dcvsh_irq_name),
