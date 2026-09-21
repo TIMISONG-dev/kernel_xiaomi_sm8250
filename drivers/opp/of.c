@@ -1056,50 +1056,6 @@ struct device_node *dev_pm_opp_get_of_node(struct dev_pm_opp *opp)
 }
 EXPORT_SYMBOL_GPL(dev_pm_opp_get_of_node);
 
-int of_dev_pm_opp_get_cpu_power(unsigned long *mW, unsigned long *KHz, int cpu)
-{
-	unsigned long mV, Hz, MHz;
-	struct device *cpu_dev;
-	struct dev_pm_opp *opp;
-	struct device_node *np;
-	u32 cap;
-	u64 tmp;
-	int ret;
-
-	cpu_dev = get_cpu_device(cpu);
-	if (!cpu_dev)
-		return -ENODEV;
-
-	np = of_node_get(cpu_dev->of_node);
-	if (!np)
-		return -EINVAL;
-
-	ret = of_property_read_u32(np, "dynamic-power-coefficient", &cap);
-	of_node_put(np);
-	if (ret)
-		return -EINVAL;
-
-	Hz = *KHz * 1000;
-	opp = dev_pm_opp_find_freq_ceil(cpu_dev, &Hz);
-	if (IS_ERR(opp))
-		return -EINVAL;
-
-	mV = dev_pm_opp_get_voltage(opp) / 1000;
-	dev_pm_opp_put(opp);
-	if (!mV)
-		return -EINVAL;
-
-	MHz = Hz / 1000000;
-	tmp = (u64)cap * mV * mV * MHz;
-	do_div(tmp, 1000000000);
-
-	*mW = (unsigned long)tmp;
-	*KHz = Hz / 1000;
-
-	return 0;
-}
-EXPORT_SYMBOL_GPL(of_dev_pm_opp_get_cpu_power);
-
 /*
  * Callback function provided to the Energy Model framework upon registration.
  * This computes the power estimated by @CPU at @kHz if it is the frequency
