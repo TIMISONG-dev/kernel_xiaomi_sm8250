@@ -1225,10 +1225,8 @@ static ssize_t min_freq_store(struct device *dev, struct device_attribute *attr,
 	mutex_lock(&df->lock);
 
 	if (value) {
-		if (value > df->max_freq) {
-			ret = -EINVAL;
-			goto unlock;
-		}
+		if (value > df->max_freq)
+			value = df->max_freq;
 	} else {
 		unsigned long *freq_table = df->profile->freq_table;
 
@@ -1241,11 +1239,10 @@ static ssize_t min_freq_store(struct device *dev, struct device_attribute *attr,
 
 	df->min_freq = value;
 	update_devfreq(df);
-	ret = count;
-unlock:
+
 	mutex_unlock(&df->lock);
 	mutex_unlock(&df->event_lock);
-	return ret;
+	return count;
 }
 
 static ssize_t min_freq_show(struct device *dev, struct device_attribute *attr,
