@@ -16,9 +16,6 @@
 #include <linux/sched.h>
 #include <linux/cpu_cooling.h>
 
-#define CREATE_TRACE_POINTS
-#include <trace/events/dcvsh.h>
-
 #define LUT_MAX_ENTRIES			40U
 #define CORE_COUNT_VAL(val)		(((val) & (GENMASK(18, 16))) >> 16)
 #define LUT_ROW_SIZE			32
@@ -105,8 +102,6 @@ static unsigned long limits_mitigation_notify(struct cpufreq_qcom *c)
 		else {
 			sched_update_cpu_freq_min_max(&c->related_cpus, 0,
 					c->table[i].frequency);
-			trace_dcvsh_freq(cpumask_first(&c->related_cpus),
-						c->table[i].frequency);
 			return c->table[i].frequency;
 		}
 	}
