@@ -46,7 +46,6 @@ enum {
 };
 
 static unsigned int lut_row_size = LUT_ROW_SIZE;
-static unsigned int lut_max_entries = LUT_MAX_ENTRIES;
 static bool accumulative_counter;
 
 struct cpufreq_qcom {
@@ -111,7 +110,7 @@ static unsigned long limits_mitigation_notify(struct cpufreq_qcom *c)
 	max_vc = readl_relaxed(c->reg_bases[REG_LLM_DCVS_VC_VOTE]) &
 						GENMASK(13, 8);
 
-	for (i = 0; i < lut_max_entries; i++) {
+	for (i = 0; i < LUT_MAX_ENTRIES; i++) {
 		if (c->table[i].driver_data != max_vc)
 			continue;
 		else {
@@ -242,7 +241,7 @@ static unsigned int qcom_cpufreq_hw_get(unsigned int cpu)
 	c = policy->driver_data;
 
 	index = readl_relaxed(c->reg_bases[REG_PERF_STATE]);
-	index = min(index, lut_max_entries - 1);
+	index = min(index, LUT_MAX_ENTRIES - 1);
 
 	return policy->freq_table[index].frequency;
 }
@@ -378,7 +377,7 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 	u32 vc;
 	unsigned long cpu;
 
-	c->table = devm_kcalloc(dev, lut_max_entries + 1,
+	c->table = devm_kcalloc(dev, LUT_MAX_ENTRIES + 1,
 				sizeof(*c->table), GFP_KERNEL);
 	if (!c->table)
 		return -ENOMEM;
@@ -386,7 +385,7 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 	base_freq = c->reg_bases[REG_FREQ_LUT_TABLE];
 	base_volt = c->reg_bases[REG_VOLT_LUT_TABLE];
 
-	for (i = 0; i < lut_max_entries; i++) {
+	for (i = 0; i < LUT_MAX_ENTRIES; i++) {
 		data = readl_relaxed(base_freq + i * lut_row_size);
 		src = (data & GENMASK(31, 30)) >> 30;
 		lval = data & GENMASK(7, 0);
@@ -564,9 +563,6 @@ static int qcom_resources_init(struct platform_device *pdev)
 
 	of_property_read_u32(pdev->dev.of_node, "qcom,lut-row-size",
 			      &lut_row_size);
-
-	of_property_read_u32(pdev->dev.of_node, "qcom,lut-max-entries",
-			      &lut_max_entries);
 
 	for_each_possible_cpu(cpu) {
 		cpu_np = of_cpu_device_node_get(cpu);
