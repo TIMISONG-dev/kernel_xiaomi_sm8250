@@ -354,6 +354,7 @@
 	mi,mdss-dsi-panel-hbm-brightness = <1>;
 	mi,mdss-dsi-panel-dc-threshold = <440>;
 	mi,mdss-dsi-panel-max-brightness-clone = <4095>;
+	mi,mdss-dsi-panel-dc-type = <1>;
 	qcom,mdss-dsi-display-timings {
 		timing@0{
 			mi,mdss-dsi-dimmingon-command = [39 01 00 00 00 00 02 53 28];
