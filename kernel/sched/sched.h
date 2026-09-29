@@ -2260,7 +2260,7 @@ struct sched_class {
 	struct rq *(*find_lock_rq)(struct task_struct *p, struct rq *rq);
 #endif
 
-	void (*task_tick)(struct rq *rq, struct task_struct *p, int queued);
+	void (*task_tick)(struct rq *rq, struct task_struct *p, int hrtick);
 	void (*task_fork)(struct task_struct *p);
 	void (*task_dead)(struct task_struct *p);
 
