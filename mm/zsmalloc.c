@@ -390,7 +390,7 @@ static void zspage_read_unlock(struct zspage *zspage)
 {
 	struct zspage_lock *zsl = &zspage->zsl;
 
-	rwsem_release(&zsl->dep_map, 1, _RET_IP_);
+	rwsem_release(&zsl->dep_map, _RET_IP_);
 
 	spin_lock(&zsl->lock);
 	zsl->cnt--;
@@ -417,7 +417,7 @@ static void zspage_write_unlock(struct zspage *zspage)
 {
 	struct zspage_lock *zsl = &zspage->zsl;
 
-	rwsem_release(&zsl->dep_map, 1, _RET_IP_);
+	rwsem_release(&zsl->dep_map, _RET_IP_);
 
 	zsl->cnt = ZS_PAGE_UNLOCKED;
 	spin_unlock(&zsl->lock);
