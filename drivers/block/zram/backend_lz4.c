@@ -100,9 +100,9 @@ static int lz4_compress(struct zcomp_params *params, struct zcomp_ctx *ctx,
 	int ret;
 
 	if (!zctx->cstrm) {
-		ret = LZ4_compress_fast(req->src, req->dst, req->src_len,
-					req->dst_len, params->level,
-					zctx->mem);
+		ret = LZ4_compress_fast_extState(zctx->mem, req->src, req->dst,
+						  req->src_len, req->dst_len,
+						  params->level);
 	} else {
 		/* Cstrm needs to be reset */
 		memcpy(zctx->cstrm, params->drv_data, sizeof(*zctx->cstrm));
