@@ -113,6 +113,45 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 	if (brightness > display->panel->bl_config.brightness_max_level)
 		brightness = display->panel->bl_config.brightness_max_level;
 
+#ifdef CONFIG_MACH_XIAOMI
+	if (display->panel->mi_cfg.dc_type) {
+		u32 max_clone = display->panel->mi_cfg.max_brightness_clone;
+		u32 max_bright = display->panel->bl_config.brightness_max_level;
+
+		if (strcmp(current->comm, "displayeffect") != 0) {
+			u32 clone_val;
+			c_conn->canonical_brightness = brightness;
+
+			if (max_clone && max_bright) {
+				clone_val = (u32)DIV_ROUND_CLOSEST(
+					(u64)brightness * max_clone,
+					max_bright);
+			} else {
+				clone_val = brightness;
+			}
+
+			if (bd->thermal_brightness_clone_limit) {
+				clone_val = min_t(
+					u32, clone_val,
+					(u32)bd->thermal_brightness_clone_limit);
+			}
+
+			if (bd->props.brightness_clone != clone_val) {
+				bd->props.brightness_clone = clone_val;
+				if (clone_val != 0) {
+					bd->props.brightness_clone_backup =
+						clone_val;
+				}
+				sysfs_notify(&bd->dev.kobj, NULL,
+					     "brightness_clone");
+			}
+			bd->props.brightness = brightness;
+		} else {
+			bd->props.brightness = c_conn->canonical_brightness;
+		}
+	}
+#endif
+
 	if (brightness) {
 		int bl_min = display->panel->bl_config.bl_min_level ? : 1;
 		int bl_range = display->panel->bl_config.bl_max_level - bl_min;
@@ -181,7 +220,30 @@ static int sde_backlight_setup(struct sde_connector *c_conn,
 	bl_config = &display->panel->bl_config;
 	props.max_brightness = bl_config->brightness_max_level;
 	props.brightness = bl_config->brightness_init_level;
+#ifdef CONFIG_MACH_XIAOMI
+	if (display->panel->mi_cfg.dc_type) {
+		u32 max_clone = display->panel->mi_cfg.max_brightness_clone;
+		u32 max_bright = bl_config->brightness_max_level;
+		u32 init_clone;
+
+		if (max_clone && max_bright) {
+			init_clone = (u32)DIV_ROUND_CLOSEST(
+				(u64)bl_config->brightness_init_level *
+					max_clone,
+				max_bright);
+		} else {
+			init_clone = bl_config->brightness_init_level;
+		}
+
+		props.brightness_clone = init_clone;
+		props.brightness_clone_backup = init_clone ?: 307;
+		c_conn->canonical_brightness = bl_config->brightness_init_level;
+	} else {
+		props.brightness_clone_backup = 307;
+	}
+#else
 	props.brightness_clone_backup = 307;
+#endif
 	snprintf(bl_node_name, BL_NODE_NAME_SIZE, "panel%u-backlight",
 							display_count);
 	c_conn->bl_device = backlight_device_register(bl_node_name, dev->dev,

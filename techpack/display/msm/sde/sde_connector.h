@@ -511,6 +511,9 @@ struct sde_connector {
 	u32 bl_scale_sv;
 	u32 unset_bl_level;
 	bool allow_bl_update;
+#ifdef CONFIG_MACH_XIAOMI
+	u32 canonical_brightness;
+#endif
 
 	u32 qsync_mode;
 	bool qsync_updated;
