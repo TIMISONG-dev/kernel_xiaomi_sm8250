@@ -1414,29 +1414,6 @@ static void uclamp_fork(struct task_struct *p)
 	}
 }
 
-#ifdef CONFIG_SMP
-bool uclamp_boosted(struct task_struct *p)
-{
-	return uclamp_eff_value(p, UCLAMP_MIN) > 0;
-}
-
-bool uclamp_latency_sensitive(struct task_struct *p)
-{
-#ifdef CONFIG_UCLAMP_TASK_GROUP
-	struct cgroup_subsys_state *css = task_css(p, cpu_cgrp_id);
-	struct task_group *tg;
-
-	if (!css)
-		return false;
-	tg = container_of(css, struct task_group, css);
-
-	return tg->latency_sensitive;
-#else
-	return false;
-#endif
-}
-#endif /* CONFIG_SMP */
-
 static void uclamp_post_fork(struct task_struct *p)
 {
 	uclamp_update_util_min_rt_default(p);
@@ -1495,17 +1472,6 @@ static inline void uclamp_fork(struct task_struct *p) { }
 static inline void uclamp_post_fork(struct task_struct *p) { }
 static inline void init_uclamp(void) { }
 
-#ifdef CONFIG_SMP
-bool uclamp_boosted(struct task_struct *p)
-{
-	return false;
-}
-
-bool uclamp_latency_sensitive(struct task_struct *p)
-{
-	return false;
-}
-#endif /* CONFIG_SMP */
 #endif /* CONFIG_UCLAMP_TASK */
 
 static inline void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
@@ -2247,8 +2213,6 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
 	const struct cpumask *nodemask = NULL;
 	enum { cpuset, possible, fail } state = cpuset;
 	int dest_cpu;
-	int backup_cpu = -1;
-	unsigned int max_nr = UINT_MAX;
 
 	/*
 	 * If the node that the CPU is on has been offlined, cpu_to_node()
@@ -2262,18 +2226,9 @@ static int select_fallback_rq(int cpu, struct task_struct *p)
 		for_each_cpu(dest_cpu, nodemask) {
 			if (!cpu_active(dest_cpu))
 				continue;
-			if (cpumask_test_cpu(dest_cpu, p->cpus_ptr)) {
-				if (cpu_rq(dest_cpu)->nr_running < 32)
-					return dest_cpu;
-				if (cpu_rq(dest_cpu)->nr_running > max_nr)
-					continue;
-				backup_cpu = dest_cpu;
-				max_nr = cpu_rq(dest_cpu)->nr_running;
-			}
+			if (cpumask_test_cpu(dest_cpu, p->cpus_ptr))
+				return dest_cpu;
 		}
-
-		if (backup_cpu != -1)
-			return backup_cpu;
 	}
 
 	for (;;) {
@@ -3952,8 +3907,6 @@ unsigned long long task_sched_runtime(struct task_struct *p)
 	return ns;
 }
 
-unsigned int capacity_margin_freq = 1280; /* ~20% margin */
-
 /*
  * This function gets called by the timer code, with HZ frequency.
  * We call it with interrupts disabled.
@@ -3964,14 +3917,12 @@ void scheduler_tick(void)
 	struct rq *rq = cpu_rq(cpu);
 	struct task_struct *curr = rq->curr;
 	struct rq_flags rf;
-	u64 wallclock;
 	unsigned int flag = 0;
 
 	sched_clock_tick();
 
 	rq_lock(rq, &rf);
 
-	wallclock = sched_ktime_clock();
 	update_rq_clock(rq);
 	curr->sched_class->task_tick(rq, curr, 0);
 	calc_global_load_tick(rq);
@@ -4372,7 +4323,6 @@ static void __sched notrace __schedule(bool preempt)
 	struct rq_flags rf;
 	struct rq *rq;
 	int cpu;
-	u64 wallclock;
 
 	cpu = smp_processor_id();
 	rq = cpu_rq(cpu);
@@ -4420,7 +4370,6 @@ static void __sched notrace __schedule(bool preempt)
 	clear_tsk_need_resched(prev);
 	clear_preempt_need_resched();
 
-	wallclock = sched_ktime_clock();
 	if (likely(prev != next)) {
 
 		rq->nr_switches++;
@@ -6598,11 +6547,10 @@ void init_idle(struct task_struct *idle, int cpu)
 	struct rq *rq = cpu_rq(cpu);
 	unsigned long flags;
 
-	__sched_fork(0, idle);
-
 	raw_spin_lock_irqsave(&idle->pi_lock, flags);
 	raw_spin_lock(&rq->lock);
 
+	__sched_fork(0, idle);
 	idle->state = TASK_RUNNING;
 	idle->se.exec_start = sched_clock();
 	idle->flags |= PF_IDLE;
@@ -8583,7 +8531,3 @@ const u32 sched_prio_to_wmult[40] = {
  /*  10 */  39045157,  49367440,  61356676,  76695844,  95443717,
  /*  15 */ 119304647, 148102320, 186737708, 238609294, 286331153,
 };
-
-#undef CREATE_TRACE_POINTS
-
-__read_mostly bool sched_predl = 1;
