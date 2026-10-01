@@ -5,6 +5,14 @@ config BATT_VERIFY_BY_DS28E16
 	help
 		It needs a onewire physical controller to work.
 
+config DS28E16_CYCLE_PAGE1
+	bool
+	prompt "Store battery cycle count in DS28E16 Page 1"
+	depends on BATT_VERIFY_BY_DS28E16
+	default n
+	help
+		Store battery cycle count in Page 1 EEPROM instead of Page 2 decrement counter.
+
 config ONEWIRE_GPIO
 	bool
 	prompt "Support Onewire Driver."
