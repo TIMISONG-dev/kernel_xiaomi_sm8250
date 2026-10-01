@@ -530,35 +530,45 @@ static void aw869xx_haptic_misc_para_init(struct aw8697 *aw8697)
  * ram update
  *
  *****************************************************/
-static void aw8697_rtp_loaded(const struct firmware *cont, void *context)
+static int aw8697_rtp_loaded(const struct firmware *cont, void *context)
 {
 	struct aw8697 *aw8697 = context;
+	struct aw8697_container *rtp;
+
 	pr_debug("%s enter\n", __func__);
 
 	if (!cont) {
 		pr_err("%s: failed to read %s\n", __func__,
 		       aw8697_rtp_name[aw8697->rtp_file_num]);
-		release_firmware(cont);
-		return;
+		return -ENOENT;
 	}
 
-	pr_debug("%s: loaded %s - size: %zu\n", __func__,
-		aw8697_rtp_name[aw8697->rtp_file_num], cont ? cont->size : 0);
+	if (cont->size > INT_MAX - sizeof(int)) {
+		pr_err("%s: RTP firmware is too large: %zu\n", __func__,
+		       cont->size);
+		release_firmware(cont);
+		return -EFBIG;
+	}
 
-	/* aw8697 rtp update */
-	aw8697_rtp = vmalloc(cont->size + sizeof(int));
-	if (!aw8697_rtp) {
+	rtp = vmalloc(cont->size + sizeof(int));
+	if (!rtp) {
 		release_firmware(cont);
 		pr_err("%s: Error allocating memory\n", __func__);
-		return;
+		return -ENOMEM;
 	}
-	aw8697_rtp->len = cont->size;
-	pr_debug("%s: rtp size = %d\n", __func__, aw8697_rtp->len);
-	memcpy(aw8697_rtp->data, cont->data, cont->size);
+
+	rtp->len = cont->size;
+	memcpy(rtp->data, cont->data, cont->size);
 	release_firmware(cont);
 
+	mutex_lock(&aw8697->rtp_lock);
+	vfree(aw8697_rtp);
+	aw8697_rtp = rtp;
 	aw8697->rtp_init = 1;
-	pr_debug("%s: rtp update complete\n", __func__);
+	mutex_unlock(&aw8697->rtp_lock);
+
+	pr_debug("%s: rtp update complete, size=%d\n", __func__, rtp->len);
+	return 0;
 }
 
 static int aw8697_rtp_update(struct aw8697 *aw8697)
@@ -570,8 +580,8 @@ static int aw8697_rtp_update(struct aw8697 *aw8697)
 			       aw8697->dev);
 	if (ret < 0)
 		return ret;
-	aw8697_rtp_loaded(firmware, aw8697);
-	return 0;
+
+	return aw8697_rtp_loaded(firmware, aw8697);
 }
 
 static int aw8697_container_update(struct aw8697 *aw8697,
@@ -776,7 +786,7 @@ out_disable:
 	return ret;
 }
 
-static void aw8697_ram_loaded(const struct firmware *cont, void *context)
+static int aw8697_ram_loaded(const struct firmware *cont, void *context)
 {
 	struct aw8697 *aw8697 = context;
 	struct aw8697_container *aw8697_fw;
@@ -789,79 +799,75 @@ static void aw8697_ram_loaded(const struct firmware *cont, void *context)
 
 	if (!cont) {
 		pr_err("%s: failed to read %s\n", __func__, aw8697_ram_name);
-		release_firmware(cont);
-		return;
+		return -ENOENT;
 	}
 
-	pr_debug("%s: loaded %s - size: %zu\n", __func__, aw8697_ram_name,
-		 cont ? cont->size : 0);
-	/*
-	for(i=0; i<cont->size; i++) {
-		pr_debug("%s: addr:0x%04x, data:0x%02x\n", __func__, i, *(cont->data+i));
-	}
-	*/
-	pr_debug("%s: loaded %s - size: %zu bytes\n", __func__, aw8697_ram_name,
-		 cont ? cont->size : 0);
 	/* Two checksum bytes, two RAM address bytes and a nonempty payload. */
 	if (cont->size <= 4 || cont->size > INT_MAX - sizeof(int)) {
 		pr_err("%s: invalid RAM firmware size %zu\n", __func__,
 		       cont->size);
 		release_firmware(cont);
-		return;
+		return -EINVAL;
 	}
+
 	base_addr = (cont->data[2] << 8) | cont->data[3];
 	if (base_addr < 4 ||
 	    (base_addr >> 2) > (unsigned int)get_rb_max_size() ||
 	    cont->size - 4 > 0x10000 - base_addr) {
 		pr_err("%s: invalid RAM firmware address range\n", __func__);
 		release_firmware(cont);
-		return;
+		return -EINVAL;
 	}
-	/* check sum */
-	for (i = 2; i < cont->size; i++) {
+
+	for (i = 2; i < cont->size; i++)
 		check_sum += cont->data[i];
-	}
+
 	if (check_sum !=
-	    (unsigned short)((cont->data[0] << 8) | (cont->data[1]))) {
+	    (unsigned short)((cont->data[0] << 8) | cont->data[1])) {
 		pr_err("%s: check sum err: check_sum=0x%04x\n", __func__,
 		       check_sum);
 		release_firmware(cont);
-		return;
-	} else {
-		pr_debug("%s: check sum pass : 0x%04x\n", __func__, check_sum);
-		aw8697->ram.check_sum = check_sum;
+		return -EINVAL;
 	}
 
-	/* aw8697 ram update */
+	aw8697->ram.check_sum = check_sum;
 	aw8697_fw = kzalloc(cont->size + sizeof(int), GFP_KERNEL);
 	if (!aw8697_fw) {
 		release_firmware(cont);
 		pr_err("%s: Error allocating memory\n", __func__);
-		return;
+		return -ENOMEM;
 	}
+
 	aw8697_fw->len = cont->size;
 	memcpy(aw8697_fw->data, cont->data, cont->size);
 	release_firmware(cont);
 
-	if (aw8697->chip_version == AW8697_CHIP_9X) {
+	if (aw8697->chip_version == AW8697_CHIP_9X)
 		ret = aw8697_container_update(aw8697, aw8697_fw);
-	} else {
+	else
 		ret = aw869xx_container_update(aw8697, aw8697_fw);
-	}
+
 	if (ret < 0) {
 		pr_err("%s: RAM programming failed: %d\n", __func__, ret);
 		kfree(aw8697_fw);
-		return;
+		return ret;
 	}
 
 	aw8697->ram.len = aw8697_fw->len;
 	kfree(aw8697_fw);
-	pr_debug("%s: fw update complete\n", __func__);
+
 	if (aw8697->chip_version == AW8697_CHIP_9X) {
 		aw8697_haptic_trig_enable_config(aw8697);
-		aw8697_rtp_update(aw8697);
+		ret = aw8697_rtp_update(aw8697);
+		if (ret < 0) {
+			pr_err("%s: RTP preload failed: %d\n", __func__, ret);
+			return ret;
+		}
 	}
+
 	smp_store_release(&aw8697->ram_init, 1);
+	pr_debug("%s: fw update complete\n", __func__);
+	return 0;
 }
 
 static int aw8697_ram_update(struct aw8697 *aw8697)
@@ -870,12 +876,12 @@ static int aw8697_ram_update(struct aw8697 *aw8697)
 	int ret;
 
 	WRITE_ONCE(aw8697->ram_init, 0);
-	aw8697->rtp_init = 0;
+	WRITE_ONCE(aw8697->rtp_init, 0);
 	ret = request_firmware(&firmware, aw8697_ram_name, aw8697->dev);
 	if (ret < 0)
 		return ret;
-	aw8697_ram_loaded(firmware, aw8697);
-	return 0;
+
+	return aw8697_ram_loaded(firmware, aw8697);
 }
 
 #ifdef AWINIC_RAM_UPDATE_DELAY
@@ -884,10 +890,13 @@ static void aw8697_ram_work_routine(struct work_struct *work)
 	struct aw8697 *aw8697 =
 	    container_of(work, struct aw8697, ram_work.work);
 
+	int ret;
+
 	pr_debug("%s enter\n", __func__);
 
-	aw8697_ram_update(aw8697);
-
+	ret = aw8697_ram_update(aw8697);
+	if (ret < 0)
+		dev_err(aw8697->dev, "delayed RAM update failed: %d\n", ret);
 }
 #endif
 
@@ -4999,10 +5008,11 @@ static ssize_t aw8697_i2c_ram_store(struct device *dev,
 
 	unsigned int databuf[1] = { 0 };
 
-	if (1 == sscanf(buf, "%x", &databuf[0])) {
-		if (1 == databuf[0]) {
-			aw8697_ram_update(aw8697);
-		}
+	if (1 == sscanf(buf, "%x", &databuf[0]) && databuf[0] == 1) {
+		int ret = aw8697_ram_update(aw8697);
+
+		if (ret < 0)
+			return ret;
 	}
 
 	return count;
@@ -5411,7 +5421,9 @@ static ssize_t aw8697_ram_update_store(struct device *dev,
 		return rc;
 
 	if (val) {
-		aw8697_ram_update(aw8697);
+		rc = aw8697_ram_update(aw8697);
+		if (rc < 0)
+			return rc;
 	}
 	return count;
 }
@@ -6583,6 +6595,7 @@ static int aw8697_i2c_probe(struct i2c_client *i2c,
 	if (ret < 0) {
 		dev_err(&i2c->dev, "error creating vibrator sysfs: %d\n", ret);
 		input_unregister_device(input_dev);
+		input_dev = NULL;
 		goto quiesce;
 	}
 
@@ -6596,7 +6609,8 @@ static int aw8697_i2c_probe(struct i2c_client *i2c,
  destroy_queue:
 	destroy_workqueue(aw8697->work_queue);
  destroy_ff:
-	input_ff_destroy(input_dev);
+	if (input_dev)
+		input_ff_destroy(input_dev);
  free_irq:
 	if (gpio_is_valid(aw8697->irq_gpio))
 		devm_free_irq(&i2c->dev, gpio_to_irq(aw8697->irq_gpio), aw8697);
