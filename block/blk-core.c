@@ -1586,7 +1586,7 @@ retry:
 	goto retry;
 }
 
-/* flags: BLK_MQ_REQ_PREEMPT and/or BLK_MQ_REQ_NOWAIT. */
+/* flags: BLK_MQ_REQ_PREEMPT, BLK_MQ_REQ_PM and/or BLK_MQ_REQ_NOWAIT. */
 static struct request *blk_old_get_request(struct request_queue *q,
 				unsigned int op, blk_mq_req_flags_t flags)
 {
@@ -1629,7 +1629,8 @@ struct request *blk_get_request(struct request_queue *q, unsigned int op,
 	struct request *req;
 
 	WARN_ON_ONCE(op & REQ_NOWAIT);
-	WARN_ON_ONCE(flags & ~(BLK_MQ_REQ_NOWAIT | BLK_MQ_REQ_PREEMPT));
+	WARN_ON_ONCE(flags & ~(BLK_MQ_REQ_NOWAIT | BLK_MQ_REQ_PREEMPT |
+			       BLK_MQ_REQ_PM));
 
 	if (q->mq_ops) {
 		req = blk_mq_alloc_request(q, op, flags);
