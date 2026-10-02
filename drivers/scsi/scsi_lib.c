@@ -267,7 +267,7 @@ int __scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
 
 	req = blk_get_request(sdev->request_queue,
 			data_direction == DMA_TO_DEVICE ?
-			REQ_OP_SCSI_OUT : REQ_OP_SCSI_IN, BLK_MQ_REQ_PREEMPT);
+			REQ_OP_SCSI_OUT : REQ_OP_SCSI_IN, BLK_MQ_REQ_PM);
 	if (IS_ERR(req))
 		return ret;
 	rq = scsi_req(req);
@@ -1416,7 +1416,7 @@ scsi_prep_state_check(struct scsi_device *sdev, struct request *req)
 			/*
 			 * If the devices is blocked we defer normal commands.
 			 */
-			if (req && !(req->rq_flags & RQF_PREEMPT))
+			if (req && !(req->rq_flags & (RQF_PREEMPT | RQF_PM)))
 				ret = BLKPREP_DEFER;
 			break;
 		default:
@@ -1425,7 +1425,7 @@ scsi_prep_state_check(struct scsi_device *sdev, struct request *req)
 			 * special commands.  In particular any user initiated
 			 * command is not allowed.
 			 */
-			if (req && !(req->rq_flags & RQF_PREEMPT))
+			if (req && !(req->rq_flags & (RQF_PREEMPT | RQF_PM)))
 				ret = BLKPREP_KILL;
 			break;
 		}
