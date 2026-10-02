@@ -3759,12 +3759,6 @@ EXPORT_SYMBOL(blk_finish_plug);
  */
 void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
 {
-	/* Don't enable runtime PM for blk-mq until it is ready */
-	if (q->mq_ops) {
-		pm_runtime_disable(dev);
-		return;
-	}
-
 	q->dev = dev;
 	q->rpm_status = RPM_ACTIVE;
 	pm_runtime_set_autosuspend_delay(q->dev, -1);
@@ -3800,14 +3794,59 @@ int blk_pre_runtime_suspend(struct request_queue *q)
 	if (!q->dev)
 		return ret;
 
-	spin_lock_irq(q->queue_lock);
-	if (q->nr_pending) {
-		ret = -EBUSY;
-		pm_runtime_mark_last_busy(q->dev);
-	} else {
-		q->rpm_status = RPM_SUSPENDING;
+	WARN_ON_ONCE(q->rpm_status != RPM_ACTIVE);
+
+	if (!q->mq_ops) {
+		/*
+		 * Legacy queues: requests outlive generic_make_request(),
+		 * so q_usage_counter is not a busy tracker; nr_pending is.
+		 */
+		spin_lock_irq(q->queue_lock);
+		if (q->nr_pending) {
+			ret = -EBUSY;
+			pm_runtime_mark_last_busy(q->dev);
+		} else {
+			q->rpm_status = RPM_SUSPENDING;
+		}
+		spin_unlock_irq(q->queue_lock);
+		return ret;
 	}
+
+	spin_lock_irq(q->queue_lock);
+	q->rpm_status = RPM_SUSPENDING;
 	spin_unlock_irq(q->queue_lock);
+
+	/*
+	 * Increase the pm_only counter before checking whether any
+	 * non-PM blk_queue_enter() calls are in progress to avoid that any
+	 * new non-PM blk_queue_enter() calls succeed before the pm_only
+	 * counter is decreased again.
+	 */
+	blk_set_pm_only(q);
+	ret = -EBUSY;
+	/* Switch q_usage_counter from per-cpu to atomic mode. */
+	blk_freeze_queue_start(q);
+	/*
+	 * Wait until atomic mode has been reached.  Since that
+	 * involves calling call_rcu(), it is guaranteed that later
+	 * blk_queue_enter() calls see the pm-only state. See also
+	 * http://lwn.net/Articles/573497/.
+	 */
+	percpu_ref_switch_to_atomic_sync(&q->q_usage_counter);
+	if (percpu_ref_is_zero(&q->q_usage_counter))
+		ret = 0;
+	/* Switch q_usage_counter back to per-cpu mode. */
+	blk_mq_unfreeze_queue(q);
+
+	if (ret < 0) {
+		spin_lock_irq(q->queue_lock);
+		q->rpm_status = RPM_ACTIVE;
+		pm_runtime_mark_last_busy(q->dev);
+		spin_unlock_irq(q->queue_lock);
+
+		blk_clear_pm_only(q);
+	}
+
 	return ret;
 }
 EXPORT_SYMBOL(blk_pre_runtime_suspend);
@@ -3838,6 +3877,9 @@ void blk_post_runtime_suspend(struct request_queue *q, int err)
 		pm_runtime_mark_last_busy(q->dev);
 	}
 	spin_unlock_irq(q->queue_lock);
+
+	if (q->mq_ops && err)
+		blk_clear_pm_only(q);
 }
 EXPORT_SYMBOL(blk_post_runtime_suspend);
 
@@ -3882,16 +3924,33 @@ void blk_post_runtime_resume(struct request_queue *q, int err)
 	if (!q->dev)
 		return;
 
+	int old_status;
+
 	spin_lock_irq(q->queue_lock);
-	if (!err) {
+	old_status = q->rpm_status;
+	if (!q->mq_ops && err) {
+		/* legacy: keep the old error behaviour */
+		q->rpm_status = RPM_SUSPENDED;
+	} else {
 		q->rpm_status = RPM_ACTIVE;
-		__blk_run_queue(q);
+		if (!q->mq_ops)
+			__blk_run_queue(q);
 		pm_runtime_mark_last_busy(q->dev);
 		pm_request_autosuspend(q->dev);
-	} else {
-		q->rpm_status = RPM_SUSPENDED;
 	}
 	spin_unlock_irq(q->queue_lock);
+
+	if (q->mq_ops) {
+		/*
+		 * Kick dispatch regardless of the resume result: even on
+		 * failure the driver or the error handler needs to talk to
+		 * the device (upstream semantics).
+		 */
+		blk_mq_run_hw_queues(q, false);
+
+		if (old_status != RPM_ACTIVE)
+			blk_clear_pm_only(q);
+	}
 }
 EXPORT_SYMBOL(blk_post_runtime_resume);
 
