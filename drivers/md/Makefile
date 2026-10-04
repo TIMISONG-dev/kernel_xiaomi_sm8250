@@ -88,6 +88,3 @@ ifeq ($(CONFIG_DM_VERITY_AVB),y)
 dm-verity-objs			+= dm-verity-avb.o
 endif
 
-ifeq ($(CONFIG_DM_ANDROID_VERITY),y)
-dm-verity-objs			+= dm-android-verity.o
-endif
