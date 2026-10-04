@@ -400,7 +400,7 @@ struct page *__read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
 			 * across a SWAP_HAS_CACHE swap_map entry whose page
 			 * has not been brought into the swapcache yet.
 			 */
-			cond_resched();
+			schedule_timeout_uninterruptible(1);
 			continue;
 		} else if (err)		/* swp entry is obsolete ? */
 			break;
