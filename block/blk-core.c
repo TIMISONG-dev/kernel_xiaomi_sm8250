@@ -3921,10 +3921,10 @@ EXPORT_SYMBOL(blk_pre_runtime_resume);
  */
 void blk_post_runtime_resume(struct request_queue *q, int err)
 {
+	int old_status;
+
 	if (!q->dev)
 		return;
-
-	int old_status;
 
 	spin_lock_irq(q->queue_lock);
 	old_status = q->rpm_status;
