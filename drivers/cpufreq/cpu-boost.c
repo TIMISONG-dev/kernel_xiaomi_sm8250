@@ -54,6 +54,13 @@ show_one(input_boost_ms);
 store_one(input_boost_ms);
 cpu_boost_attr_rw(input_boost_ms);
 
+extern unsigned int sched_pelt_lshift;
+static unsigned int pelt_boost_on_input = 2; /* 2 = 16ms half-life, 4 = 8ms, 1 = disabled */
+show_one(pelt_boost_on_input);
+store_one(pelt_boost_on_input);
+cpu_boost_attr_rw(pelt_boost_on_input);
+static bool pelt_boost_active;
+
 static struct delayed_work input_boost_rem;
 static u64 last_input_time;
 #define MIN_INPUT_INTERVAL (150 * USEC_PER_MSEC)
@@ -187,14 +194,18 @@ static void do_input_boost_rem(struct work_struct *work)
 
 	/* Update policies for all online CPUs */
 	update_policy_online();
+
+    if (pelt_boost_active) {
+        WRITE_ONCE(sched_pelt_lshift, 0);
+        pelt_boost_active = false;
+		pr_debug("PELT boost ended: lshift: 0\n");
+    }
 }
 
 static void do_input_boost(struct work_struct *work)
 {
 	unsigned int i;
 	struct cpu_sync *i_sync_info;
-
-	cancel_delayed_work_sync(&input_boost_rem);
 
 	/* Set the input_boost_min for all CPUs in the system */
 	pr_debug("Setting input boost min for all CPUs\n");
@@ -206,7 +217,15 @@ static void do_input_boost(struct work_struct *work)
 	/* Update policies for all online CPUs */
 	update_policy_online();
 
-	queue_delayed_work(cpu_boost_wq, &input_boost_rem,
+    if (pelt_boost_on_input >= 2 && !pelt_boost_active) {
+		unsigned int lshift = pelt_boost_on_input >> 1;
+        WRITE_ONCE(sched_pelt_lshift, lshift);
+        pelt_boost_active = true;
+		pr_debug("PELT boosting: lshift: %u (mult x%u)\n",
+				lshift, pelt_boost_on_input);
+    }
+
+	mod_delayed_work(cpu_boost_wq, &input_boost_rem,
 					msecs_to_jiffies(input_boost_ms));
 }
 
@@ -219,14 +238,18 @@ static void cpuboost_input_event(struct input_handle *handle,
 		return;
 
 	now = ktime_to_us(ktime_get());
-	if (now - last_input_time < MIN_INPUT_INTERVAL)
-		return;
+	if (now - last_input_time < MIN_INPUT_INTERVAL) {
+		if (pelt_boost_active) {
+			mod_delayed_work(cpu_boost_wq, &input_boost_rem,
+				msecs_to_jiffies(input_boost_ms));
+		}
 
-	if (work_pending(&input_boost_work))
 		return;
+	}
+
+	last_input_time = now;
 
 	queue_work(cpu_boost_wq, &input_boost_work);
-	last_input_time = ktime_to_us(ktime_get());
 }
 
 static int cpuboost_input_connect(struct input_handler *handler,
@@ -331,6 +354,11 @@ static int cpu_boost_init(void)
 	ret = sysfs_create_file(cpu_boost_kobj, &input_boost_freq_attr.attr);
 	if (ret)
 		pr_err("Failed to create input_boost_freq node: %d\n", ret);
+
+	ret = sysfs_create_file(cpu_boost_kobj,
+                        &pelt_boost_on_input_attr.attr);
+	if (ret)
+		pr_err("Failed to create pelt_boost_on_input node: %d\n", ret);
 
 	ret = input_register_handler(&cpuboost_input_handler);
 	return 0;
