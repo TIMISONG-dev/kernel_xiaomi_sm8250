@@ -678,11 +678,11 @@ void psi_emergency_trigger(void)
 	 * In unlikely case that OOM was triggered while adding/
 	 * removing triggers.
 	 */
-	if (!mutex_trylock(&group->trigger_lock))
+	if (!mutex_trylock(&group->rtpoll_trigger_lock))
 		return;
 
 	now = sched_clock();
-	list_for_each_entry(t, &group->triggers, node) {
+	list_for_each_entry(t, &group->rtpoll_triggers, node) {
 		if (strcmp(t->comm, ULMK_MAGIC))
 			continue;
 		trace_psi_event(t->state, t->threshold);
@@ -695,7 +695,7 @@ void psi_emergency_trigger(void)
 		}
 		t->last_event_time = now;
 	}
-	mutex_unlock(&group->trigger_lock);
+	mutex_unlock(&group->rtpoll_trigger_lock);
 }
 
 /*
@@ -715,18 +715,18 @@ bool psi_is_trigger_active(void)
 	 * In unlikely case that OOM was triggered while adding/
 	 * removing triggers.
 	 */
-	if (!mutex_trylock(&group->trigger_lock))
+	if (!mutex_trylock(&group->rtpoll_trigger_lock))
 		return true;
 
 	now = sched_clock();
-	list_for_each_entry(t, &group->triggers, node) {
+	list_for_each_entry(t, &group->rtpoll_triggers, node) {
 		if (strcmp(t->comm, ULMK_MAGIC))
 			continue;
 
 		if (now <= t->last_event_time + t->win.size)
 			trigger_active = true;
 	}
-	mutex_unlock(&group->trigger_lock);
+	mutex_unlock(&group->rtpoll_trigger_lock);
 	return trigger_active;
 }
 
