@@ -198,7 +198,6 @@ static void do_input_boost_rem(struct work_struct *work)
     if (pelt_boost_active) {
         WRITE_ONCE(sched_pelt_lshift, 0);
         pelt_boost_active = false;
-		pr_debug("PELT boost ended: lshift: 0\n");
     }
 }
 
@@ -221,8 +220,6 @@ static void do_input_boost(struct work_struct *work)
 		unsigned int lshift = pelt_boost_on_input >> 1;
         WRITE_ONCE(sched_pelt_lshift, lshift);
         pelt_boost_active = true;
-		pr_debug("PELT boosting: lshift: %u (mult x%u)\n",
-				lshift, pelt_boost_on_input);
     }
 
 	mod_delayed_work(cpu_boost_wq, &input_boost_rem,
