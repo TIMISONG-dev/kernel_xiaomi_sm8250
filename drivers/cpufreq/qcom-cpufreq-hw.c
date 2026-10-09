@@ -71,7 +71,6 @@ struct cpufreq_qcom {
 	char dcvsh_irq_name[MAX_FN_SIZE];
 	bool is_irq_requested;
 	bool cancel_throttle;
-	unsigned long last_non_boost_freq;
 };
 
 struct cpufreq_counter {
@@ -165,15 +164,6 @@ static void qcom_lmh_dcvs_notify(struct cpufreq_qcom *c)
 		enable_irq(c->dcvsh_irq);
 		trace_dcvsh_throttle(cpu, 0);
 	} else {
-		/*
-		 * If the frequency is still at or above the highest non-boost
-		 * frequency, the shortfall is likely due to core-count boost
-		 * limitations rather than thermal. Don't penalise the scheduler
-		 * for that either.
-		 */
-		if (throttled_freq >= c->last_non_boost_freq)
-			thermal_pressure = policy->cpuinfo.max_freq;
-
 		mod_delayed_work(system_highpri_wq, &c->freq_poll_work,
 				 msecs_to_jiffies(LIMITS_POLLING_DELAY_MS));
 	}
@@ -495,7 +485,7 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 				    struct cpufreq_qcom *c, u32 max_cores)
 {
 	struct device *dev = &pdev->dev, *cpu_dev;
-	u32 data, src, lval, i, j, core_count, prev_cc, prev_freq, freq, volt;
+	u32 data, src, lval, i, core_count, prev_cc, prev_freq, freq, volt;
 	unsigned long cpu;
 
 	c->table = devm_kcalloc(dev, lut_max_entries + 1,
@@ -546,13 +536,6 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 	}
 
 	c->table[i].frequency = CPUFREQ_TABLE_END;
-
-	/* Record the highest non-boost frequency for thermal pressure gating. */
-	for (j = 0; j < lut_max_entries && c->table[j].frequency != CPUFREQ_TABLE_END; j++) {
-		if (c->table[j].flags == CPUFREQ_BOOST_FREQ)
-			break;
-		c->last_non_boost_freq = c->table[j].frequency;
-	}
 
 	if (cpu_dev)
 		dev_pm_opp_set_sharing_cpus(cpu_dev, &c->related_cpus);
