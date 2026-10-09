@@ -448,7 +448,6 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 {
 	struct device *dev = &pdev->dev, *cpu_dev;
 	u32 data, src, lval, i, j, core_count, prev_cc, prev_freq, freq, volt;
-	u32 max_cc = 0;
 	unsigned long cpu;
 
 	c->table = devm_kcalloc(dev, lut_max_entries + 1,
@@ -471,19 +470,6 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 		if (of_device_is_compatible(dev->of_node, "qcom,cpufreq-hw-epss"))
 			core_count = FIELD_GET(GENMASK(19, 16), data);
 
-		/*
-		 * Take the first LUT row's core_count as the non-boost
-		 * baseline and treat any row below it as CPUFREQ_BOOST_FREQ.
-		 * This is required on SoCs such as SM7325 where the
-		 * qcom,freq-domain DT cell uses a single fixed value (4)
-		 * for every cluster even though the big and the prime
-		 * cluster have 3 and 1 core respectively, which previously
-		 * caused every LUT row in those two clusters to be flagged
-		 * boost.
-		 */
-		if (i == 0)
-			max_cc = core_count;
-
 		data = readl_relaxed(c->base + offsets[REG_VOLT_LUT] +
 				      i * lut_row_size);
 		volt = FIELD_GET(LUT_VOLT, data) * 1000;
@@ -497,8 +483,8 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 		dev_dbg(dev, "index=%d freq=%d, core_count %d\n",
 				i, c->table[i].frequency, core_count);
 
-		if (core_count < max_cc)
-			c->table[i].flags  = CPUFREQ_BOOST_FREQ;
+		if (core_count != max_cores)
+			c->table[i].flags = CPUFREQ_BOOST_FREQ;
 
 		/* Two of the same frequencies means end of table. */
 		if (i > 0 && prev_freq == freq)
