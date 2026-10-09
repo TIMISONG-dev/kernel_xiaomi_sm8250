@@ -424,6 +424,10 @@ struct task_group {
 	struct uclamp_se	uclamp[UCLAMP_CNT];
 	/* Latency-sensitive flag used for a task group */
 	unsigned int		latency_sensitive;
+#ifdef CONFIG_UCLAMP_ASSIST
+	/* Track if uclamp value was explicitly set by userspace or schedtune shim */
+	bool			uclamp_user_has_set[UCLAMP_CNT];
+#endif
 #endif
 
 };
