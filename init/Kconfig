@@ -1312,8 +1312,17 @@ config RT_SOFTIRQ_AWARE_SCHED
 config UCLAMP_ASSIST
 	bool "UClamp configuration helper"
 	depends on ANDROID && UCLAMP_TASK && UCLAMP_TASK_GROUP
+	default y
 	help
 	  This option enabled in-kernel uclamp setting overrides
+
+config UCLAMP_ASSIST_SCHEDTUNE_SHIM
+	bool "Translate legacy Schedtune boost to Uclamp"
+	depends on UCLAMP_ASSIST
+	default y
+	help
+	  Intercept legacy Schedtune sysfs/cgroup writes and dynamically
+	  translate boost values into native uclamp.min requests.
 
 config SYSFS_DEPRECATED
 	bool "Enable deprecated sysfs features to support old userspace tools"
