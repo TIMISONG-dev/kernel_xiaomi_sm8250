@@ -1942,6 +1942,9 @@ static void __init init_uclamp(void)
 #ifdef CONFIG_UCLAMP_TASK_GROUP
 		root_task_group.uclamp_req[clamp_id] = uc_max;
 		root_task_group.uclamp[clamp_id] = uc_max;
+#ifdef CONFIG_UCLAMP_ASSIST
+		root_task_group.uclamp_user_has_set[clamp_id] = false;
+#endif
 #endif
 	}
 }
@@ -9425,6 +9428,10 @@ struct task_group *sched_create_group(struct task_group *parent)
 
 	alloc_uclamp_sched_group(tg, parent);
 
+#ifdef CONFIG_UCLAMP_ASSIST
+	memset(tg->uclamp_user_has_set, 0, sizeof(tg->uclamp_user_has_set));
+#endif
+
 	return tg;
 
 err:
@@ -9791,6 +9798,18 @@ static ssize_t cpu_uclamp_write(struct kernfs_open_file *of, char *buf,
 	rcu_read_lock();
 
 	tg = css_tg(of_css(of));
+
+#ifdef CONFIG_UCLAMP_ASSIST
+	tg->uclamp_user_has_set[clamp_id] = true;
+
+	if (of_css(of)->cgroup->kn) {
+		pr_info("Native write for %s: %s=%u (%u%%)\n",
+			of_css(of)->cgroup->kn->name,
+			clamp_id == UCLAMP_MIN ? "uclamp.min" : "uclamp.max",
+			req.util, req.percent);
+	}
+#endif
+
 	if (tg->uclamp_req[clamp_id].value != req.util)
 		uclamp_se_set(&tg->uclamp_req[clamp_id], req.util, false);
 
@@ -9889,6 +9908,7 @@ struct uclamp_param {
 
 static void uclamp_set(struct cgroup_subsys_state *css)
 {
+	struct task_group *tg = css_tg(css);
 	int i;
 
 	static struct uclamp_param tgts[] = {
@@ -9901,8 +9921,14 @@ static void uclamp_set(struct cgroup_subsys_state *css)
 		{"system-background",   "0",  "50",  0},
 	};
 
-        if(!css->cgroup->kn)
-                return;
+	if (!tg)
+		return;
+
+	if (tg->uclamp_user_has_set[UCLAMP_MIN] || tg->uclamp_user_has_set[UCLAMP_MAX])
+		return;
+
+	if (!css->cgroup->kn)
+        return;
 
 	for (i = 0; i < ARRAY_SIZE(tgts); i++) {
 		struct uclamp_param tgt = tgts[i];
@@ -9915,16 +9941,76 @@ static void uclamp_set(struct cgroup_subsys_state *css)
 			cpu_uclamp_ls_write_u64(css, NULL,
 						tgt.uclamp_latency_sensitive);
 
-			pr_info("uclamp_assist: setting values for %s: uclamp_min=%s uclamp_max=%s uclamp_latency_sensitive=%d\n",
+			pr_info(
+				"Setting values for %s: uclamp.min=%s uclamp.max=%s uclamp.latency_sensitive=%d\n",
 				tgt.name, tgt.uclamp_min, tgt.uclamp_max,tgt.uclamp_latency_sensitive);
+				
 			return;
 		}
 	}
-
 }
 #endif /* CONFIG_UCLAMP_ASSIST */
 
 #endif /* CONFIG_UCLAMP_TASK_GROUP */
+
+#ifdef CONFIG_UCLAMP_ASSIST_SCHEDTUNE_SHIM
+static ssize_t schedtune_boost_write(struct kernfs_open_file *of, char *buf,
+				     size_t nbytes, loff_t off)
+{
+	struct task_group *tg;
+	int boost_val;
+
+	if (kstrtoint(strstrip(buf), 10, &boost_val))
+		return -EINVAL;
+
+	/* Clamp boost value to 0..100% */
+	boost_val = clamp(boost_val, 0, 100);
+
+	mutex_lock(&uclamp_mutex);
+	rcu_read_lock();
+
+	tg = css_tg(of_css(of));
+
+	if (tg) {
+		/* Convert boost percentage to uclamp capacity scale (0..1024) */
+		unsigned int uclamp_min = (boost_val * SCHED_CAPACITY_SCALE) / 100;
+
+		if (tg->uclamp_req[UCLAMP_MIN].value != uclamp_min)
+			uclamp_se_set(&tg->uclamp_req[UCLAMP_MIN], uclamp_min, false);
+
+		/* Mark that userspace/schedtune shim has taken control */
+		tg->uclamp_user_has_set[UCLAMP_MIN] = true;
+
+		if (of_css(of)->cgroup->kn) {
+			pr_info("Schedtune shim intercept for %s: boost=%d%% -> uclamp.min=%u\n",
+				of_css(of)->cgroup->kn->name,
+				boost_val, uclamp_min);
+		}
+
+		/* Update effective utilization */
+		cpu_util_update_eff(of_css(of));
+	}
+
+	rcu_read_unlock();
+	mutex_unlock(&uclamp_mutex);
+
+	return nbytes;
+}
+
+static u64 schedtune_boost_read(struct cgroup_subsys_state *css, struct cftype *cft)
+{
+	struct task_group *tg = css_tg(css);
+	unsigned int uclamp_min;
+
+	if (!tg)
+		return 0;
+
+	uclamp_min = tg->uclamp_req[UCLAMP_MIN].value;
+
+	/* Convert uclamp capacity scale (0..1024) back to percentage (0..100) */
+	return (u64)((uclamp_min * 100) / SCHED_CAPACITY_SCALE);
+}
+#endif /* CONFIG_UCLAMP_ASSIST_SCHEDTUNE_SHIM */
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
 static int cpu_shares_write_u64(struct cgroup_subsys_state *css,
@@ -10572,6 +10658,13 @@ static struct cftype cpu_files[] = {
 		.flags = CFTYPE_NOT_ON_ROOT,
 		.read_u64 = cpu_uclamp_ls_read_u64,
 		.write_u64 = cpu_uclamp_ls_write_u64,
+	},
+#endif
+#ifdef CONFIG_UCLAMP_ASSIST_SCHEDTUNE_SHIM
+	{
+		.name = "schedtune.boost",
+		.read_u64 = schedtune_boost_read,
+		.write = schedtune_boost_write,
 	},
 #endif
 	{ }	/* terminate */
