@@ -42,6 +42,7 @@
 #include "cam_cdm_util.h"
 #include "cam_cdm.h"
 #include "ope_dev_intf.h"
+#include "ope_core.h"
 
 static struct cam_ope_hw_mgr *ope_hw_mgr;
 
@@ -242,7 +243,30 @@ static int cam_ope_req_timer_reset(struct cam_ope_ctx *ctx_data)
 	return 0;
 }
 
+static int cam_ope_validate_frame_params(struct ope_frame_process *frame_process)
+{
+	int i, rc = 0;
 
+	if (frame_process->batch_size > OPE_MAX_BATCH_SIZE) {
+		CAM_ERR(CAM_OPE, "Invalid batch: %d",
+			frame_process->batch_size);
+		return -EINVAL;
+	}
+
+	for (i = 0; i < frame_process->batch_size; i++) {
+		if (frame_process->num_cmd_bufs[i] > OPE_MAX_CMD_BUFS) {
+			CAM_ERR(CAM_OPE, "Invalid num of cmd bufs for batch %d %d",
+				i, frame_process->num_cmd_bufs[i]);
+			return -EINVAL;
+		}
+		if (frame_process->frame_set[i].num_io_bufs > OPE_MAX_IO_BUFS) {
+			CAM_ERR(CAM_OPE, "Invalid num of bufs for batch %d %d",
+				i, frame_process->frame_set[i].num_io_bufs);
+			return -EINVAL;
+		}
+	}
+	return rc;
+}
 static int cam_ope_mgr_reapply_config(struct cam_ope_hw_mgr *hw_mgr,
 	struct cam_ope_ctx *ctx_data,
 	struct cam_ope_request *ope_req)
@@ -460,11 +484,15 @@ static int cam_ope_dump_indirect(struct ope_cmd_buf_info *cmd_buf_info,
 
 	rc = cam_mem_get_cpu_buf(cmd_buf_info->mem_handle,
 		&cpu_addr, &buf_len);
-	if (rc || !cpu_addr) {
+	if (rc || !cpu_addr || !buf_len) {
 		CAM_ERR(CAM_OPE, "get cmd buf fail 0x%x",
 			cmd_buf_info->mem_handle);
 		return rc;
 	}
+	rc = ope_validate_buff_offset(buf_len, cmd_buf_info);
+	if (rc)
+		goto put_buf;
+
 	cpu_addr = cpu_addr + cmd_buf_info->offset;
 
 	num_dmi = cmd_buf_info->length /
@@ -477,6 +505,8 @@ static int cam_ope_dump_indirect(struct ope_cmd_buf_info *cmd_buf_info,
 			print_ptr += sizeof(struct cdm_dmi_cmd) /
 				sizeof(uint32_t);
 	}
+
+put_buf:
 	cam_mem_put_cpu_buf((int32_t) cmd_buf_info->mem_handle);
 	return rc;
 }
@@ -490,6 +520,9 @@ static int cam_ope_mgr_dump_cmd_buf(uintptr_t frame_process_addr,
 	struct ope_cmd_buf_info *cmd_buf;
 
 	frame_process = (struct ope_frame_process *)frame_process_addr;
+	rc = cam_ope_validate_frame_params(frame_process);
+	if (rc)
+		return rc;
 	for (i = 0; i < frame_process->batch_size; i++) {
 		for (j = 0; j < frame_process->num_cmd_bufs[i]; j++) {
 			cmd_buf = &frame_process->cmd_buf[i][j];
@@ -516,6 +549,9 @@ static int cam_ope_mgr_dump_frame_set(uintptr_t frame_process_addr,
 	struct cam_ope_output_info *output_info;
 
 	frame_process = (struct ope_frame_process *)frame_process_addr;
+	rc = cam_ope_validate_frame_params(frame_process);
+	if (rc)
+		return rc;
 	for (j = 0; j < frame_process->batch_size; j++) {
 		for (i = 0; i < frame_process->frame_set[j].num_io_bufs; i++) {
 			io_buf = &frame_process->frame_set[j].io_buf[i];
@@ -568,11 +604,19 @@ static int cam_ope_dump_frame_process(struct cam_packet *packet,
 			continue;
 		rc = cam_mem_get_cpu_buf(cmd_desc[i].mem_handle,
 			&cpu_addr, &len);
-		if (rc || !cpu_addr) {
+		if (rc || !cpu_addr || !len) {
 			CAM_ERR(CAM_OPE, "get cmd buf failed %x",
 				cmd_desc[i].mem_handle);
 			return rc;
 		}
+		if ((len <= cmd_desc[i].offset) ||
+			(cmd_desc[i].size < cmd_desc[i].length) ||
+			((len - cmd_desc[i].offset) <
+			cmd_desc[i].length)) {
+			CAM_ERR(CAM_OPE, "Invalid offset or length");
+			return -EINVAL;
+		}
+
 		cpu_addr = cpu_addr + cmd_desc[i].offset;
 		break;
 	}
@@ -2118,20 +2162,9 @@ static int cam_ope_mgr_process_cmd_buf_req(struct cam_ope_hw_mgr *hw_mgr,
 	bool is_kmd_buf_valid = false;
 
 	frame_process = (struct ope_frame_process *)frame_process_addr;
-
-	if (frame_process->batch_size > OPE_MAX_BATCH_SIZE) {
-		CAM_ERR(CAM_OPE, "Invalid batch: %d",
-			frame_process->batch_size);
-		return -EINVAL;
-	}
-
-	for (i = 0; i < frame_process->batch_size; i++) {
-		if (frame_process->num_cmd_bufs[i] > OPE_MAX_CMD_BUFS) {
-			CAM_ERR(CAM_OPE, "Invalid cmd bufs for batch %d %d",
-				i, frame_process->num_cmd_bufs[i]);
-			return -EINVAL;
-		}
-	}
+	rc = cam_ope_validate_frame_params(frame_process);
+	if (rc)
+		goto end;
 
 	CAM_DBG(CAM_OPE, "cmd buf for req id = %lld b_size = %d",
 		packet->header.request_id, frame_process->batch_size);
@@ -4205,4 +4238,3 @@ ope_ctx_bitmap_failed:
 
 	return rc;
 }
-
