@@ -2556,7 +2556,7 @@ static void adreno_dispatcher_work(struct kthread_work *work)
 			DRAWQUEUE(&adreno_dev->ringbuffers[i]);
 
 		adreno_dispatch_process_drawqueue(adreno_dev,
-			drawqueue);
+						  drawqueue);
 		if (dispatcher->inflight == 0)
 			break;
 	}
