@@ -2108,7 +2108,7 @@ static int kgsl_iommu_set_pt(struct kgsl_mmu *mmu, struct kgsl_pagetable *pt)
 {
 	struct kgsl_iommu *iommu = _IOMMU_PRIV(mmu);
 	struct kgsl_iommu_context *ctx = &iommu->ctx[KGSL_IOMMU_CONTEXT_USER];
-	uint64_t ttbr0;
+	u64 ttbr0;
 	unsigned int contextidr;
 	unsigned long wait_for_flush;
 
