@@ -3194,8 +3194,9 @@ static int fg_gen4_charge_full_update(struct fg_dev *fg)
 		msoc, bsoc, fg->health, fg->charge_status,
 		fg->charge_full);
 	if (fg->charge_done && !fg->charge_full) {
-		if (msoc >= 99 && (fg->health != POWER_SUPPLY_HEALTH_WARM &&
-					fg->health != POWER_SUPPLY_HEALTH_OVERHEAT)) {
+		if (msoc >= 99 &&
+		    fg->health != POWER_SUPPLY_HEALTH_WARM &&
+		    fg->health != POWER_SUPPLY_HEALTH_OVERHEAT) {
 			fg_dbg(fg, FG_STATUS, "Setting charge_full to true\n");
 			fg->charge_full = true;
 		} else {
@@ -3468,7 +3469,7 @@ static int fg_gen4_esr_fast_calib_config(struct fg_gen4_chip *chip, bool en)
 		/* Set ESR fast calibration timer to 50 seconds as default */
 		esr_fast_cal_ms = 50000;
 		if (chip->dt.esr_timer_chg_fast[TIMER_MAX] > 0 &&
-			chip->dt.delta_esr_disable_count > 0)
+		    chip->dt.delta_esr_disable_count > 0)
 			esr_fast_cal_ms = 3 * chip->dt.delta_esr_disable_count *
 				chip->dt.esr_timer_chg_fast[TIMER_MAX] * 1000;
 
@@ -4510,7 +4511,7 @@ static void battery_authentic_work(struct work_struct *work)
 
 	rc = power_supply_get_property(fg->fg_psy,
 					POWER_SUPPLY_PROP_AUTHENTIC, &pval);
-	if (rc < 0 || pval.intval != true) {
+	if (rc < 0 || pval.intval != 1) {
 		retry_battery_authentic_result++;
 		if (retry_battery_authentic_result < BATTERY_AUTHENTIC_COUNT_MAX) {
 			pr_err("battery authentic work begin to restart.\n");
