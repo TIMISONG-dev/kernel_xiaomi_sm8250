@@ -1381,7 +1381,7 @@ kgsl_sharedmem_find(struct kgsl_process_private *private, uint64_t gpuaddr)
 }
 EXPORT_SYMBOL(kgsl_sharedmem_find);
 
-struct kgsl_mem_entry * __must_check
+static struct kgsl_mem_entry * __must_check
 kgsl_sharedmem_find_id_flags(struct kgsl_process_private *process,
 		unsigned int id, uint64_t flags)
 {
