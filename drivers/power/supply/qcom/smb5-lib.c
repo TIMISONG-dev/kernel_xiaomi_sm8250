@@ -137,7 +137,7 @@ int smblib_read_iio_channel(struct smb_charger *chg, struct iio_channel *chan,
 	return rc;
 }
 
-int smblib_get_jeita_cc_delta(struct smb_charger *chg, int *cc_delta_ua)
+static int smblib_get_jeita_cc_delta(struct smb_charger *chg, int *cc_delta_ua)
 {
 	int rc, cc_minus_ua;
 	u8 stat;
@@ -710,7 +710,7 @@ int smblib_set_chg_freq(struct smb_chg_param *param,
 	return 0;
 }
 
-int smblib_set_opt_switcher_freq(struct smb_charger *chg, int fsw_khz)
+static int smblib_set_opt_switcher_freq(struct smb_charger *chg, int fsw_khz)
 {
 	union power_supply_propval pval = {0, };
 	int rc = 0;
@@ -1347,7 +1347,7 @@ int smblib_get_qc3_main_icl_offset(struct smb_charger *chg, int *offset_ua)
 	return 0;
 }
 
-int smblib_get_prop_from_bbc(struct smb_charger *chg,
+static int smblib_get_prop_from_bbc(struct smb_charger *chg,
         enum power_supply_property psp,
         union power_supply_propval *val)
 {
@@ -5464,13 +5464,10 @@ extern int rx_op_ble_flag(int en);
 int smblib_set_prop_bt_state(struct smb_charger *chg,
 				const union power_supply_propval *val)
 {
-	int bt_state = -2;
-
 	smblib_dbg(chg, PR_WLS, "bt_state raw is 0x%x\n", val->intval);
-	bt_state = val->intval;
 
 #if defined(CONFIG_IDT_P9415) || defined(CONFIG_RX1619)
-	switch (bt_state) {
+	switch (val->intval) {
 	case BLE_CONNECT:
 		if (chg->idtp_psy)
 			idtp_op_ble_flag(1);
@@ -5894,7 +5891,7 @@ int smblib_get_prop_vph_voltage_now(struct smb_charger *chg,
 	return 0;
 }
 
-bool smblib_rsbux_low(struct smb_charger *chg, int r_thr)
+static bool smblib_rsbux_low(struct smb_charger *chg, int r_thr)
 {
 	int r_sbu1, r_sbu2;
 	bool ret = false;
@@ -6632,7 +6629,7 @@ int smblib_set_prop_pd_current_max(struct smb_charger *chg,
 static int smblib_handle_usb_current(struct smb_charger *chg,
 					int usb_current)
 {
-	int rc = 0, typec_mode;
+	int rc = 0;
 	bool is_float = false;
 	union power_supply_propval val = {0, };
 
@@ -6666,7 +6663,7 @@ static int smblib_handle_usb_current(struct smb_charger *chg,
 				 * Valid FLOAT charger, report the current
 				 * based of Rp.
 				 */
-				typec_mode = smblib_get_prop_typec_mode(chg);
+				smblib_get_prop_typec_mode(chg);
 				rc = vote(chg->usb_icl_votable,
 						SW_ICL_MAX_VOTER, true, FLOAT_CHARGER_UA);
 				if (rc < 0)
@@ -6797,7 +6794,7 @@ int smblib_set_prop_usb_voltage_max_limit(struct smb_charger *chg,
 	return 0;
 }
 
-void smblib_typec_irq_config(struct smb_charger *chg, bool en)
+static void smblib_typec_irq_config(struct smb_charger *chg, bool en)
 {
 	if (en == chg->typec_irq_en)
 		return;
@@ -8243,7 +8240,7 @@ static void smblib_micro_usb_plugin(struct smb_charger *chg, bool vbus_rising)
 	}
 }
 
-void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
+static void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 {
 	int rc;
 	u8 stat;
@@ -8329,7 +8326,7 @@ void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 }
 
 #define PL_DELAY_MS	30000
-void smblib_usb_plugin_locked(struct smb_charger *chg)
+static void smblib_usb_plugin_locked(struct smb_charger *chg)
 {
 	int rc;
 	u8 stat;
@@ -9091,15 +9088,8 @@ static void smblib_handle_hvdcp_3p0_auth_done(struct smb_charger *chg,
 static void smblib_handle_hvdcp_check_timeout(struct smb_charger *chg,
 					      bool rising, bool qc_charger)
 {
-	u32 hvdcp_ua = 0;
-
 	if (rising) {
 		if (qc_charger) {
-			hvdcp_ua = (chg->real_charger_type ==
-					POWER_SUPPLY_TYPE_USB_HVDCP) ?
-					chg->chg_param.hvdcp2_max_icl_ua :
-					HVDCP_CURRENT_UA;
-
 			/* enable HDC and ICL irq for QC2/3 charger */
 			vote(chg->limited_irq_disable_votable,
 					CHARGER_TYPE_VOTER, false, 0);
@@ -9527,10 +9517,6 @@ static void typec_ra_ra_insertion(struct smb_charger *chg)
 	chg->ok_to_pd = false;
 	smblib_hvdcp_detect_enable(chg, true);
 }
-
-static const char * const dr_mode_text[] = {
-	"ufp", "dfp", "none"
-};
 
 static int smblib_force_dr_mode(struct smb_charger *chg, int mode)
 {
