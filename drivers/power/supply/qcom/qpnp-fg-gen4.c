@@ -4510,7 +4510,7 @@ static void battery_authentic_work(struct work_struct *work)
 
 	rc = power_supply_get_property(fg->fg_psy,
 					POWER_SUPPLY_PROP_AUTHENTIC, &pval);
-	if (pval.intval != true) {
+	if (rc < 0 || pval.intval != true) {
 		retry_battery_authentic_result++;
 		if (retry_battery_authentic_result < BATTERY_AUTHENTIC_COUNT_MAX) {
 			pr_err("battery authentic work begin to restart.\n");
