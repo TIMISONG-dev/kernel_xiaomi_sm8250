@@ -3156,7 +3156,7 @@ static int kgsl_setup_dma_buf(struct kgsl_device *device,
 	sg_table = dma_buf_map_attachment(attach, DMA_BIDIRECTIONAL);
 
 	if (IS_ERR_OR_NULL(sg_table)) {
-		ret = PTR_ERR(sg_table);
+		ret = sg_table ? PTR_ERR(sg_table) : -EINVAL;
 		goto out;
 	}
 
@@ -3191,9 +3191,16 @@ static int kgsl_setup_dma_buf(struct kgsl_device *device,
 
 out:
 	if (ret) {
+		if (meta->table)
+			dma_buf_unmap_attachment(attach, meta->table,
+				DMA_BIDIRECTIONAL);
+
 		if (!IS_ERR_OR_NULL(attach))
 			dma_buf_detach(dmabuf, attach);
 
+		entry->priv_data = NULL;
+		entry->memdesc.sgt = NULL;
+		entry->memdesc.size = 0;
 		kfree(meta);
 	}
 
