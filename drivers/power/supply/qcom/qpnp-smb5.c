@@ -2712,7 +2712,7 @@ static int smb5_get_prop_wirless_chip_ok(struct smb_charger *chg,
 	return rc;
 }
 
-int smblib_enable_aicl(struct smb_charger *chg, int enable)
+static int smblib_enable_aicl(struct smb_charger *chg, int enable)
 {
 	int rc = 0;
 	u8 mask = 0;
