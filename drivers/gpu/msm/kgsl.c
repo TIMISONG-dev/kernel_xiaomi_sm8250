@@ -3197,7 +3197,7 @@ out:
 	if (ret) {
 		if (meta->table)
 			dma_buf_unmap_attachment(attach, meta->table,
-				DMA_BIDIRECTIONAL);
+						 DMA_BIDIRECTIONAL);
 
 		if (!IS_ERR_OR_NULL(attach))
 			dma_buf_detach(dmabuf, attach);
