@@ -495,7 +495,7 @@ static int32_t adc_tm7_disable_chan_meas(struct adc_tm_chip *chip,
 					struct adc_tm_param *param)
 {
 	int ret, i;
-	uint32_t v_channel;
+	u32 v_channel;
 	struct adc_tm_client_info *client_info = NULL;
 
 	ret = adc_tm_is_valid(chip);
