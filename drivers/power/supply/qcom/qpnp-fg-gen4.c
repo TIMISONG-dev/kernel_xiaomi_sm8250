@@ -4194,8 +4194,8 @@ static void esr_calib_work(struct work_struct *work)
 	struct fg_gen4_chip *chip = container_of(work, struct fg_gen4_chip,
 				    esr_calib_work);
 	struct fg_dev *fg = &chip->fg;
-	int rc, fg_esr_meas_diff;
-	s16 esr_raw, esr_char_raw, esr_delta, esr_meas_diff, esr_filtered;
+	int rc, fg_esr_meas_diff, esr_delta, esr_meas_diff, esr_filtered;
+	s16 esr_raw, esr_char_raw;
 	u8 buf[2];
 
 	mutex_lock(&chip->esr_calib_lock);
@@ -4254,7 +4254,7 @@ static void esr_calib_work(struct work_struct *work)
 		pr_err("Error in reading ESR_DELTA_DISCHG, rc=%d\n", rc);
 		goto out;
 	}
-	esr_delta = buf[1] << 8 | buf[0];
+	esr_delta = (s16)(buf[1] << 8 | buf[0]);
 	fg_dbg(fg, FG_STATUS, "esr_raw: 0x%x esr_char_raw: 0x%x esr_meas_diff: 0x%x esr_delta: 0x%x\n",
 		esr_raw, esr_char_raw, esr_meas_diff, esr_delta);
 
