@@ -1348,8 +1348,8 @@ int smblib_get_qc3_main_icl_offset(struct smb_charger *chg, int *offset_ua)
 }
 
 static int smblib_get_prop_from_bbc(struct smb_charger *chg,
-        enum power_supply_property psp,
-        union power_supply_propval *val)
+				    enum power_supply_property psp,
+				    union power_supply_propval *val)
 {
     int rc;
 
@@ -4700,7 +4700,8 @@ static void smblib_plugin_check_time_work(struct work_struct *work)
 			chg->plugin_detch_check_time = plugin_time;
 			schedule_delayed_work(&chg->fake_plug_out_check_work,
 				msecs_to_jiffies(FAKE_PLUG_OUT_CHECK_DELAY_MS));
-			smblib_dbg(chg, PR_OEM, "%s fake plug out delta_us:%llu \n", __func__, delta_us);
+			smblib_dbg(chg, PR_OEM, "%s fake plug out delta_us:%llu\n",
+				   __func__, delta_us);
 		}
 
 		if (chg->fake_plug_out == false)
@@ -4715,7 +4716,8 @@ static void smblib_plugin_check_time_work(struct work_struct *work)
 			chg->plugin_attach_check_time = plugin_time;
 			if (chg->fake_plug_out == true)
 				chg->no_raise_vbus_status = true;
-			smblib_dbg(chg, PR_OEM, "%s in delta_us:%llu \n", __func__, delta_us);
+			smblib_dbg(chg, PR_OEM, "%s in delta_us:%llu\n",
+				   __func__, delta_us);
 		}
 	}
 }
@@ -4796,7 +4798,7 @@ static void smblib_after_ffc_chg_dis_work(struct work_struct *work)
 					msecs_to_jiffies(FFC_DISABLE_CHG_RECHECK_DELAY_1S));
 		} else {
 			smblib_dbg(chg, PR_OEM, "disable chg for :%llu ms when ffc charging\n",
-					FFC_DISABLE_CHG_ENABLE_DELAY_120S - (delta_us / 1000));
+				   FFC_DISABLE_CHG_ENABLE_DELAY_120S - (delta_us / 1000));
 			vote(chg->chg_disable_votable, AFTER_FFC_VOTER, true, 0);
 			schedule_delayed_work(&chg->after_ffc_chg_en_work,
 					msecs_to_jiffies(FFC_DISABLE_CHG_ENABLE_DELAY_120S - (delta_us / 1000)));
@@ -5356,7 +5358,7 @@ int smblib_set_prop_dc_reset(struct smb_charger *chg)
 	rc = smblib_write(chg, DCIN_CMD_PON_REG, DCIN_PON_BIT | MID_CHG_BIT);
 	if (rc < 0) {
 		smblib_err(chg, "Couldn't write %lu to DCIN_CMD_PON_REG rc=%d\n",
-			DCIN_PON_BIT | MID_CHG_BIT, rc);
+			   DCIN_PON_BIT | MID_CHG_BIT, rc);
 		return rc;
 	}
 
@@ -11956,7 +11958,7 @@ static void apsd_timer_cb(struct timer_list *tm)
 							apsd_timer);
 
 	smblib_dbg(chg, PR_MISC, "APSD Extented timer timeout at %u\n",
-			jiffies_to_msecs(jiffies));
+		   jiffies_to_msecs(jiffies));
 
 	chg->apsd_ext_timeout = true;
 }
