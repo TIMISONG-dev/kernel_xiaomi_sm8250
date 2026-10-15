@@ -10069,7 +10069,7 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 
 	case group_asym_packing:
 		/* Prefer to move from lowest priority CPU's work */
-		if (!sched_asym_prefer(sg->asym_prefer_cpu, sds->busiest->asym_prefer_cpu))
+		if (sched_asym_prefer(sg->asym_prefer_cpu, sds->busiest->asym_prefer_cpu))
 			return false;
 		break;
 
@@ -10599,13 +10599,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 		sg = sg->next;
 	} while (sg != env->sd->groups);
 
-	/*
-	 * Indicate that the child domain of the busiest group prefers tasks
-	 * go to a child's sibling domains first. NB the flags of a sched group
-	 * are those of the child domain.
-	 */
-	if (sds->busiest)
-		sds->prefer_sibling = child && child->flags & SD_PREFER_SIBLING;
+	sds->prefer_sibling = child && child->flags & SD_PREFER_SIBLING;
 
 	if (env->sd->flags & SD_NUMA)
 		env->fbq_type = fbq_classify_group(&sds->busiest_stat);
