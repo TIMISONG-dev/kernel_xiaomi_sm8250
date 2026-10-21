@@ -55,7 +55,6 @@
 int sysctl_panic_on_oom;
 int sysctl_oom_kill_allocating_task;
 int sysctl_oom_dump_tasks = 1;
-int sysctl_reap_mem_on_sigkill;
 
 /*
  * Serializes oom killer invocations (out_of_memory()) from all contexts to
@@ -1166,9 +1165,6 @@ void pagefault_out_of_memory(void)
 
 void add_to_oom_reaper(struct task_struct *p)
 {
-	if (!sysctl_reap_mem_on_sigkill)
-		return;
-
 	p = find_lock_task_mm(p);
 	if (!p)
 		return;
