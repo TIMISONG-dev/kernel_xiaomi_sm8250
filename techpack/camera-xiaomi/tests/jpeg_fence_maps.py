@@ -44,13 +44,14 @@ static int map(struct packet *packet, struct args *prepare_args,
 suffix = r"""
         return 0;
 }
-static void check(unsigned int capacity, unsigned int ni, unsigned int no,
+static void check(unsigned int input_capacity, unsigned int output_capacity,
+                  unsigned int ni, unsigned int no,
                   unsigned int reverse)
 {
         struct entry in[22], out[22];
         struct io io[44];
         struct packet packet = {ni + no};
-        struct args args = {0, 0, capacity, capacity, &in[1], &out[1]};
+        struct args args = {0, 0, input_capacity, output_capacity, &in[1], &out[1]};
         unsigned int i, n = 0;
         int rc;
 
@@ -65,10 +66,14 @@ static void check(unsigned int capacity, unsigned int ni, unsigned int no,
                 for (i = 0; i < no; i++)
                         io[n++] = (struct io){2, 200 + i, 2000 + i};
         rc = map(&packet, &args, io);
-        assert(rc == 0);
-        assert(args.num_in_map_entries == ni);
-        assert(args.num_out_map_entries == no);
-        for (i = 0; i < capacity + 2; i++) {
+        assert(rc == ((ni > input_capacity || no > output_capacity) ? -EINVAL : 0));
+        assert(args.num_in_map_entries <= input_capacity);
+        assert(args.num_out_map_entries <= output_capacity);
+        if (!rc) {
+                assert(args.num_in_map_entries == ni);
+                assert(args.num_out_map_entries == no);
+        }
+        for (i = 0; i < 22; i++) {
                 struct entry ei, eo;
                 memset(&ei, 0xa5, sizeof(ei));
                 memset(&eo, 0xa5, sizeof(eo));
@@ -82,11 +87,19 @@ static void check(unsigned int capacity, unsigned int ni, unsigned int no,
 }
 int main(void)
 {
-        unsigned int ni, no, reverse, cases = 0;
-        for (ni = 0; ni <= 20; ni++)
-                for (no = 0; no <= 20; no++)
-                        for (reverse = 0; reverse < 2; reverse++, cases++)
-                                check(20, ni, no, reverse);
+        unsigned int capacity, ni, no, reverse, cases = 0;
+        for (capacity = 0; capacity <= 20; capacity++)
+                for (ni = 0; ni <= capacity + 1; ni++)
+                        for (no = 0; no <= capacity + 1; no++)
+                                for (reverse = 0; reverse < 2; reverse++, cases++)
+                                        check(capacity, capacity, ni, no, reverse);
+        for (reverse = 0; reverse < 2; reverse++) {
+                check(0, 20, 0, 20, reverse);
+                check(20, 0, 20, 0, reverse);
+                check(0, 20, 1, 20, reverse);
+                check(20, 0, 20, 1, reverse);
+                cases += 4;
+        }
         printf("PASS: %u JPEG fence-map cases; metadata and guards checked\n", cases);
         return 0;
 }
