@@ -1072,12 +1072,14 @@ int cnss_pci_is_device_down(struct device *dev)
 EXPORT_SYMBOL(cnss_pci_is_device_down);
 
 void cnss_pci_lock_reg_window(struct device *dev, unsigned long *flags)
+	__acquires(&pci_reg_window_lock)
 {
 	spin_lock_bh(&pci_reg_window_lock);
 }
 EXPORT_SYMBOL(cnss_pci_lock_reg_window);
 
 void cnss_pci_unlock_reg_window(struct device *dev, unsigned long *flags)
+	__releases(&pci_reg_window_lock)
 {
 	spin_unlock_bh(&pci_reg_window_lock);
 }
@@ -5138,7 +5140,7 @@ static const struct dev_pm_ops cnss_pm_ops = {
 			   cnss_pci_runtime_idle)
 };
 
-struct pci_driver cnss_pci_driver = {
+static struct pci_driver cnss_pci_driver = {
 	.name     = "cnss_pci",
 	.id_table = cnss_pci_id_table,
 	.probe    = cnss_pci_probe,
