@@ -3621,6 +3621,7 @@ static inline void ufshcd_get_write_lock(struct ufs_hba *hba)
  * ufshcd_get_read_lock - synchronize between shutdown, scaling &
  * arrival of requests
  * @hba: ufs host
+ * @lun: logical unit receiving the request
  *
  * Returns 1 if acquired, < 0 on contention
  *
