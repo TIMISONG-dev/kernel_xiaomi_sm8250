@@ -1330,10 +1330,13 @@ int msm_vdec_set_seqchng_at_syncframe(struct msm_vidc_inst *inst)
 	struct hfi_device *hdev;
 	struct hfi_enable hfi_property;
 
-	if (!inst || !inst->core) {
+	if (!inst || !inst->core || !inst->core->platform_data) {
 		d_vpr_e("%s: invalid params %pK\n", __func__, inst);
 		return -EINVAL;
 	}
+	if (inst->core->platform_data->vpu_ver == VPU_VERSION_IRIS2)
+		return 0;
+
 	hdev = inst->core->device;
 	hfi_property.enable = is_low_latency_hint(inst);
 
