@@ -15,6 +15,7 @@
 void *cnss_ipc_log_context;
 void *cnss_ipc_log_long_context;
 
+#ifdef CONFIG_CNSS2_DEBUG
 static void cnss_print_hex_dump(const void *buf, int len)
 {
 	const u8 *ptr = buf;
@@ -891,7 +892,6 @@ static const struct file_operations cnss_wfc_call_status_debug_fops = {
 	.llseek		= seq_lseek,
 };
 
-#ifdef CONFIG_CNSS2_DEBUG
 static int cnss_create_debug_only_node(struct cnss_plat_data *plat_priv)
 {
 	struct dentry *root_dentry = plat_priv->root_dentry;
@@ -919,7 +919,7 @@ int cnss_debugfs_create(struct cnss_plat_data *plat_priv)
 	int ret = 0;
 	struct dentry *root_dentry;
 
-	root_dentry = debugfs_create_dir("cnss", 0);
+	root_dentry = debugfs_create_dir("cnss", NULL);
 	if (IS_ERR(root_dentry)) {
 		ret = PTR_ERR(root_dentry);
 		cnss_pr_err("Unable to create debugfs %d\n", ret);
