@@ -30,7 +30,7 @@ struct dst_ops {
 	struct dst_entry *	(*negative_advice)(struct dst_entry *);
 #else
 	void			(*negative_advice)(struct sock *,
-					   struct dst_entry *);
+						   struct dst_entry *);
 #endif
 	void			(*link_failure)(struct sk_buff *);
 	void			(*update_pmtu)(struct dst_entry *dst, struct sock *sk,
