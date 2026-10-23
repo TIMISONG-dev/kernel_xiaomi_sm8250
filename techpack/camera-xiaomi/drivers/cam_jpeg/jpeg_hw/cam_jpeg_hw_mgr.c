@@ -766,7 +766,7 @@ static int cam_jpeg_mgr_prepare_hw_update(void *hw_mgr_priv,
 				io_cfg_ptr[i].fence;
 			prepare_args->num_in_map_entries++;
 		} else {
-			prepare_args->in_map_entries[k].resource_handle =
+			prepare_args->out_map_entries[k].resource_handle =
 				io_cfg_ptr[i].resource_type;
 			prepare_args->out_map_entries[k++].sync_id =
 				io_cfg_ptr[i].fence;
