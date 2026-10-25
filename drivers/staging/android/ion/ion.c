@@ -473,7 +473,6 @@ struct dma_buf *ion_alloc_dmabuf(size_t len, unsigned int heap_id_mask,
         if (BIT(heap->id) & BIT(ION_CAMERA_HEAP_ID))
 			camera_heap_found = true;
     }
-	up_read(&idev->heap_rwsem);
 
 	get_task_comm(task_comm, current->group_leader);
 	if (strstr(task_comm, "provider@") || strstr(task_comm, ".android.camera")) {
@@ -481,7 +480,6 @@ struct dma_buf *ion_alloc_dmabuf(size_t len, unsigned int heap_id_mask,
 			heap_id_mask = BIT(ION_CAMERA_HEAP_ID);
 	}
 
-	down_read(&idev->heap_rwsem);
 	plist_for_each_entry(heap, &idev->heaps, node) {
 		if (BIT(heap->id) & heap_id_mask) {
 			buffer = ion_buffer_create(heap, len, flags);
