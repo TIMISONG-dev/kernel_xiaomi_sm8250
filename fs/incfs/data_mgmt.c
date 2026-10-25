@@ -455,7 +455,7 @@ static ssize_t zstd_decompress_safe(struct mount_info *mi,
 	}
 
 	/* Each IncFS block is an independent frame, including after errors. */
-	ZSTD_resetDStream(mi->mi_zstd_stream);
+	ZSTD_DCtx_reset(mi->mi_zstd_stream, ZSTD_reset_session_only);
 
 	result = ZSTD_decompressStream(mi->mi_zstd_stream, &outbuf, &inbuf) ?
 		-EBADMSG : outbuf.pos;
