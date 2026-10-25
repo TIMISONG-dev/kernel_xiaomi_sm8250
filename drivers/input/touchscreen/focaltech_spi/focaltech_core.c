@@ -476,7 +476,6 @@ static int fts_input_report_key(struct fts_ts_data *data, int index)
 static int fts_input_report_b(struct fts_ts_data *data)
 {
 	int i = 0;
-	int uppoint = 0;
 	int touchs = 0;
 	bool va_reported = false;
 	u32 max_touch_num = data->pdata->max_touch_number;
@@ -519,7 +518,6 @@ static int fts_input_report_b(struct fts_ts_data *data)
 			}
 		#endif
 		} else {
-			uppoint++;
 			input_mt_report_slot_state(data->input_dev,
 						   MT_TOOL_FINGER, false);
 			data->touchs &= ~BIT(events[i].id);
@@ -2411,14 +2409,15 @@ static int fts_set_cur_value(int mode, int value)
 
 static int fts_reset_mode(int mode)
 {
+	if (mode < 0 || mode >= Touch_Mode_NUM)
+		return -EINVAL;
+
 	if (mode == Touch_Game_Mode) {
 		fts_restore_normal_mode();
 		fts_data->gamemode_enabled = false;
 		fts_data->is_expert_mode = false;
-	} else if (mode < Touch_Mode_NUM) {
-		fts_restore_mode_value(mode, GET_DEF_VALUE);
 	} else {
-		FTS_ERROR("mode:%d don't support");
+		fts_restore_mode_value(mode, GET_DEF_VALUE);
 	}
 
 	FTS_INFO("mode:%d reset", mode);
@@ -2437,7 +2436,7 @@ static int fts_get_mode_value(int mode, int value_type)
 		FTS_INFO("mode:%d, value_type:%d, value:%d", mode, value_type,
 			 value);
 	} else {
-		FTS_ERROR("mode:%d don't support");
+		FTS_ERROR("mode:%d don't support", mode);
 	}
 
 	return value;
