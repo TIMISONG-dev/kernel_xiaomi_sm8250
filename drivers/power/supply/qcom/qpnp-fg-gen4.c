@@ -21,6 +21,7 @@
 #include "fg-core.h"
 #include "fg-reg.h"
 #include "fg-alg.h"
+#include "battery.h"
 /* add for get hw country */
 #include <soc/qcom/socinfo.h>
 
@@ -626,7 +627,7 @@ static struct fg_sram_param pm8150b_v2_sram_params[] = {
 
 /* All get functions below */
 
-struct bias_config id_table[3] = {
+static const struct bias_config id_table[3] = {
 	{0x65, 0x66, 400},
 	{0x6D, 0x6E, 100},
 	{0x75, 0x76, 30},
@@ -2094,7 +2095,7 @@ static int fg_gen4_get_batt_profile_dt_props(struct fg_gen4_chip *chip,
 }
 
 #ifdef CONFIG_BATT_VERIFY_BY_DS28E16
-int retry_batt_profile;
+static int retry_batt_profile;
 #define BATT_PROFILE_RETRY_COUNT_MAX 5
 #endif
 static int fg_gen4_get_batt_profile(struct fg_dev *fg)
@@ -4499,7 +4500,7 @@ static void pl_enable_work(struct work_struct *work)
 
 static int battery_authentic_period_ms = 1000;
 #define BATTERY_AUTHENTIC_COUNT_MAX 5
-int retry_battery_authentic_result;
+static int retry_battery_authentic_result;
 static void battery_authentic_work(struct work_struct *work)
 {
 	int rc;
@@ -4536,7 +4537,7 @@ static void battery_authentic_work(struct work_struct *work)
 }
 
 static int ds_romid_period_ms = 1000;
-int retry_ds_romid;
+static int retry_ds_romid;
 #define DS_ROMID_COUNT_MAX 5
 static void ds_romid_work(struct work_struct *work)
 {
@@ -4573,7 +4574,7 @@ static void ds_romid_work(struct work_struct *work)
 
 static int ds_status_period_ms = 1000;
 #define DS_STATUS_COUNT_MAX 5
-int retry_ds_status;
+static int retry_ds_status;
 static void ds_status_work(struct work_struct *work)
 {
 	int rc;
@@ -4609,7 +4610,7 @@ static void ds_status_work(struct work_struct *work)
 
 static int ds_page0_period_ms = 1000;
 #define DS_PAGE0_COUNT_MAX 5
-int retry_ds_page0;
+static int retry_ds_page0;
 static void ds_page0_work(struct work_struct *work)
 {
 	int rc;
@@ -7040,7 +7041,6 @@ static int fg_gen4_parse_dt(struct fg_gen4_chip *chip)
 #define DETAL_SOC 1
 //#define FFC_SYS_TERMI_CURRENT -1280000
 static int scale_count;
-extern bool off_charge_flag;
 
 #define SMOOTH_VOLT_LEN         4
 
