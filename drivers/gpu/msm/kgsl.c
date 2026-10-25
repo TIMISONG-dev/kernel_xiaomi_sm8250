@@ -5381,7 +5381,7 @@ int kgsl_of_property_read_ddrtype(struct device_node *node, const char *base,
 		ret = snprintf(str, sizeof(str), "%s-ddr%d", base, ddr);
 
 		/* WARN_ON() if the array size was too small for the string */
-		if (WARN_ON(ret > sizeof(str)))
+		if (WARN_ON(ret >= sizeof(str)))
 			return -ENOMEM;
 
 		/* Read the expanded string */
