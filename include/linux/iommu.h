@@ -326,6 +326,7 @@ struct iommu_device {
 	struct device *dev;
 };
 
+struct iommu_device *get_iommu_by_fwnode(struct fwnode_handle *fwnode);
 int  iommu_device_register(struct iommu_device *iommu);
 void iommu_device_unregister(struct iommu_device *iommu);
 int  iommu_device_sysfs_add(struct iommu_device *iommu,
