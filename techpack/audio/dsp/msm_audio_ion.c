@@ -362,6 +362,7 @@ static u32 msm_audio_ion_get_smmu_sid_mode32(void)
  * vaddr: virtual address to be assigned
  *
  * Returns 0 on success or error on failure
+ * @vaddr: Receives the kernel virtual mapping of the buffer
  */
 int msm_audio_ion_alloc(struct dma_buf **dma_buf, size_t bufsz,
 			dma_addr_t *paddr, size_t *plen, void **vaddr)
@@ -459,6 +460,7 @@ EXPORT_SYMBOL(msm_audio_ion_dma_map);
  * vaddr: virtual address to be assigned
  *
  * Returns 0 on success or error on failure
+ * @vaddr: Receives the kernel virtual mapping of the buffer
  */
 int msm_audio_ion_import(struct dma_buf **dma_buf, int fd,
 			unsigned long *ionflag, size_t bufsz,
