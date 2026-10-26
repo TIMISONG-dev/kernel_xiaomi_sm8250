@@ -1285,7 +1285,7 @@ static int wm_adsp2_raw_read(size_t maxbulk, struct regmap *map,
 
 static void wm_adsp2_show_fw_status(struct wm_adsp *dsp)
 {
-	u16 scratch[4];
+	__be16 scratch[4];
 	int ret;
 
 	ret = wm_adsp2_raw_read(MAXBULK, dsp->regmap, dsp->base + ADSP2_SCRATCH0,
@@ -1304,19 +1304,21 @@ static void wm_adsp2_show_fw_status(struct wm_adsp *dsp)
 
 static void wm_adsp2v2_show_fw_status(struct wm_adsp *dsp)
 {
+	__be32 raw[2];
 	u32 scratch[2];
 	int ret;
 
-	ret = wm_adsp2_raw_read(MAXBULK, dsp->regmap, dsp->base + ADSP2V2_SCRATCH0_1,
-			      scratch, sizeof(scratch));
+	ret = wm_adsp2_raw_read(MAXBULK, dsp->regmap,
+				dsp->base + ADSP2V2_SCRATCH0_1, raw,
+				sizeof(raw));
 
 	if (ret) {
 		adsp_err(dsp, "Failed to read SCRATCH regs: %d\n", ret);
 		return;
 	}
 
-	scratch[0] = be32_to_cpu(scratch[0]);
-	scratch[1] = be32_to_cpu(scratch[1]);
+	scratch[0] = be32_to_cpu(raw[0]);
+	scratch[1] = be32_to_cpu(raw[1]);
 
 	adsp_dbg(dsp, "FW SCRATCH 0:0x%x 1:0x%x 2:0x%x 3:0x%x\n",
 		 scratch[0] & 0xFFFF,
@@ -1327,7 +1329,7 @@ static void wm_adsp2v2_show_fw_status(struct wm_adsp *dsp)
 
 static void wm_halo_show_fw_status(struct wm_adsp *dsp)
 {
-	u32 scratch[4];
+	__be32 scratch[4];
 	int ret;
 
 	ret = wm_adsp2_raw_read(MAXBULK, dsp->regmap, dsp->base + HALO_SCRATCH1,
@@ -1396,7 +1398,7 @@ static int wm_coeff_write_acked_control(struct wm_coeff_ctl *ctl,
 					unsigned int event_id)
 {
 	struct wm_adsp *dsp = ctl->dsp;
-	u32 val = cpu_to_be32(event_id);
+	__be32 val = cpu_to_be32(event_id);
 	unsigned int reg;
 	int i, ret;
 
