@@ -3355,11 +3355,12 @@ long kgsl_ioctl_map_user_mem(struct kgsl_device_private *dev_priv,
 	param->gpuaddr = (unsigned long)
 		entry->memdesc.gpuaddr + (param->offset & PAGE_MASK);
 
-	KGSL_STATS_ADD(param->len, &kgsl_driver.stats.mapped,
-		&kgsl_driver.stats.mapped_max);
+	KGSL_STATS_ADD(entry->memdesc.size, &kgsl_driver.stats.mapped,
+		       &kgsl_driver.stats.mapped_max);
 
 	kgsl_process_add_stats(private,
-			kgsl_memdesc_usermem_type(&entry->memdesc), param->len);
+			kgsl_memdesc_usermem_type(&entry->memdesc),
+			entry->memdesc.size);
 
 	trace_kgsl_mem_map(entry, param->fd);
 
