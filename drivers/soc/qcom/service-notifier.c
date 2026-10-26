@@ -712,7 +712,7 @@ int service_notif_unregister_notifier(void *service_notif_handle,
 		return -EINVAL;
 
 	service_notif = (struct service_notif_info *)service_notif_handle;
-	if (service_notif < 0)
+	if (IS_ERR(service_notif))
 		return -EINVAL;
 
 	return srcu_notifier_chain_unregister(
