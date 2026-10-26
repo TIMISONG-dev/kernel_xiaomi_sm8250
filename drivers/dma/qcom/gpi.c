@@ -225,6 +225,7 @@ enum gpi_ch_state {
 	MAX_CH_STATES
 };
 
+#ifdef CONFIG_QCOM_GPI_DMA_DEBUG
 static const char *const gpi_ch_state_str[MAX_CH_STATES] = {
 	[CH_STATE_NOT_ALLOCATED] = "NOT ALLOCATED",
 	[CH_STATE_ALLOCATED] = "ALLOCATED",
@@ -236,6 +237,7 @@ static const char *const gpi_ch_state_str[MAX_CH_STATES] = {
 
 #define TO_GPI_CH_STATE_STR(state) ((state >= MAX_CH_STATES) ? \
 				    "INVALID" : gpi_ch_state_str[state])
+#endif
 
 enum gpi_cmd {
 	GPI_CH_CMD_BEGIN,
@@ -434,7 +436,7 @@ struct gpi_dev {
 	struct device *dev;
 	struct resource *res;
 	void __iomem *regs;
-	void *ee_base; /*ee register base address*/
+	void __iomem *ee_base; /*ee register base address*/
 	u32 max_gpii; /* maximum # of gpii instances available per gpi block */
 	u32 gpii_mask; /* gpii instances available for apps */
 	u32 ev_factor; /* ev ring length factor */
@@ -598,11 +600,11 @@ struct gpi_desc {
 #define GPI_SMMU_FAST BIT(2)
 #define GPI_SMMU_ATOMIC BIT(3)
 
-const u32 GPII_CHAN_DIR[MAX_CHANNELS_PER_GPII] = {
+static const u32 GPII_CHAN_DIR[MAX_CHANNELS_PER_GPII] = {
 	GPI_CHTYPE_DIR_OUT, GPI_CHTYPE_DIR_IN
 };
 
-struct dentry *pdentry;
+static struct dentry *pdentry;
 static irqreturn_t gpi_handle_irq(int irq, void *data);
 static void gpi_ring_recycle_ev_element(struct gpi_ring *ring);
 static int gpi_ring_add_element(struct gpi_ring *ring, void **wp);
@@ -1473,7 +1475,6 @@ static void gpi_process_imed_data_event(struct gpii_chan *gpii_chan,
 	struct gpii *gpii = gpii_chan->gpii;
 	struct gpi_ring *ch_ring = &gpii_chan->ch_ring;
 	struct virt_dma_desc *vd;
-	struct gpi_desc *gpi_desc;
 	void *tre = ch_ring->base +
 		(ch_ring->el_size * imed_event->tre_index);
 	struct msm_gpi_dma_async_tx_cb_param *tx_cb_param;
@@ -1516,7 +1517,6 @@ static void gpi_process_imed_data_event(struct gpii_chan *gpii_chan,
 				      __LINE__);
 		return;
 	}
-	gpi_desc = to_gpi_desc(vd);
 	spin_unlock_irqrestore(&gpii_chan->vc.lock, flags);
 
 
@@ -1590,7 +1590,6 @@ static void gpi_process_xfer_compl_event(struct gpii_chan *gpii_chan,
 	void *ev_rp = to_virtual(ch_ring, compl_event->ptr);
 	struct virt_dma_desc *vd;
 	struct msm_gpi_dma_async_tx_cb_param *tx_cb_param;
-	struct gpi_desc *gpi_desc;
 	unsigned long flags;
 	u32 chid;
 	struct gpii_chan *gpii_tx_chan = &gpii->gpii_chan[GPI_TX_CHAN];
@@ -1622,7 +1621,6 @@ static void gpi_process_xfer_compl_event(struct gpii_chan *gpii_chan,
 		return;
 	}
 
-	gpi_desc = to_gpi_desc(vd);
 	spin_unlock_irqrestore(&gpii_chan->vc.lock, flags);
 
 
@@ -1688,7 +1686,7 @@ gpi_free_desc:
 static void gpi_process_events(struct gpii *gpii)
 {
 	struct gpi_ring *ev_ring = &gpii->ev_ring;
-	phys_addr_t cntxt_rp, local_rp;
+	phys_addr_t cntxt_rp;
 	void *rp;
 	union gpi_event *gpi_event;
 	struct gpii_chan *gpii_chan;
@@ -1696,10 +1694,9 @@ static void gpi_process_events(struct gpii *gpii)
 
 	cntxt_rp = gpi_read_reg(gpii, gpii->ev_ring_rp_lsb_reg);
 	rp = to_virtual(ev_ring, cntxt_rp);
-	local_rp = to_physical(ev_ring, ev_ring->rp);
-
-	GPII_VERB(gpii, GPI_DBG_COMMON, "cntxt_rp:%pa local_rp:%pa\n",
-		  &cntxt_rp, &local_rp);
+	GPII_VERB(gpii, GPI_DBG_COMMON, "cntxt_rp:%pa local_rp:%llx\n",
+		  &cntxt_rp,
+		  (unsigned long long)to_physical(ev_ring, ev_ring->rp));
 
 	do {
 		while (rp != ev_ring->rp) {
@@ -1781,7 +1778,7 @@ static void gpi_ev_tasklet(unsigned long data)
 }
 
 /* marks all pending events for the channel as stale */
-void gpi_mark_stale_events(struct gpii_chan *gpii_chan)
+static void gpi_mark_stale_events(struct gpii_chan *gpii_chan)
 {
 	struct gpii *gpii = gpii_chan->gpii;
 	struct gpi_ring *ev_ring = &gpii->ev_ring;
@@ -1877,7 +1874,7 @@ static int gpi_alloc_chan(struct gpii_chan *gpii_chan, bool send_alloc_cmd)
 	int i;
 	int ret;
 	struct {
-		void *base;
+		void __iomem *base;
 		int offset;
 		u32 val;
 	} ch_reg[] = {
@@ -1971,7 +1968,7 @@ static int gpi_alloc_ev_chan(struct gpii *gpii)
 	int i;
 	int ret;
 	struct {
-		void *base;
+		void __iomem *base;
 		int offset;
 		u32 val;
 	} ev_reg[] = {
@@ -2196,7 +2193,7 @@ static void gpi_queue_xfer(struct gpii *gpii,
 }
 
 /* reset and restart transfer channel */
-int gpi_terminate_all(struct dma_chan *chan)
+static int gpi_terminate_all(struct dma_chan *chan)
 {
 	struct gpii_chan *gpii_chan = to_gpii_chan(chan);
 	struct gpii *gpii = gpii_chan->gpii;
@@ -2356,7 +2353,7 @@ static int gpi_resume(struct dma_chan *chan)
 	return 0;
 }
 
-void gpi_desc_free(struct virt_dma_desc *vd)
+static void gpi_desc_free(struct virt_dma_desc *vd)
 {
 	struct gpi_desc *gpi_desc = to_gpi_desc(vd);
 
@@ -2365,12 +2362,10 @@ void gpi_desc_free(struct virt_dma_desc *vd)
 }
 
 /* copy tre into transfer ring */
-struct dma_async_tx_descriptor *gpi_prep_slave_sg(struct dma_chan *chan,
-					struct scatterlist *sgl,
-					unsigned int sg_len,
-					enum dma_transfer_direction direction,
-					unsigned long flags,
-					void *context)
+static struct dma_async_tx_descriptor *
+gpi_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+		  unsigned int sg_len, enum dma_transfer_direction direction,
+		  unsigned long flags, void *context)
 {
 	struct gpii_chan *gpii_chan = to_gpii_chan(chan);
 	struct gpii *gpii = gpii_chan->gpii;
@@ -2921,8 +2916,7 @@ static int gpi_probe(struct platform_device *pdev)
 	if (ret)
 		GPI_LOG(gpi_dev, "No variable ee offset present\n");
 	else
-		gpi_dev->ee_base =
-		(void *)((u64)gpi_dev->ee_base - gpi_ee_offset);
+		gpi_dev->ee_base -= gpi_ee_offset;
 
 	ret = of_property_read_u32(gpi_dev->dev->of_node, "qcom,ev-factor",
 				   &gpi_dev->ev_factor);
