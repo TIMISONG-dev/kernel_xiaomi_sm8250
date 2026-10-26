@@ -70,7 +70,6 @@ DECLARE_PER_CPU(struct nmi_ctx, nmi_contexts);
 
 static inline void ack_bad_irq(unsigned int irq)
 {
-	extern unsigned long irq_err_count;
 	irq_err_count++;
 }
 

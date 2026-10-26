@@ -23,6 +23,9 @@
 /*
  * Records attributes of an individual CPU.
  */
+struct seq_operations;
+extern const struct seq_operations cpuinfo_op;
+
 struct cpuinfo_arm64 {
 	struct cpu	cpu;
 	struct kobject	kobj;

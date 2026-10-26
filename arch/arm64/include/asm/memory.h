@@ -183,6 +183,7 @@
 #include <linux/bitops.h>
 #include <linux/mmdebug.h>
 
+extern u16 memstart_offset_seed;
 extern s64			memstart_addr;
 /* PHYS_OFFSET - the physical address of the start of memory. */
 #define PHYS_OFFSET		({ VM_BUG_ON(memstart_addr & 1); memstart_addr; })
