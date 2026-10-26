@@ -324,7 +324,6 @@ static bool drm_dp_sideband_msg_build(struct drm_dp_sideband_msg_rx *msg,
 				      u8 *replybuf, u8 replybuflen, bool hdr)
 {
 	int ret;
-	u8 crc4;
 
 	if (hdr) {
 		u8 hdrlen;
@@ -373,8 +372,6 @@ static bool drm_dp_sideband_msg_build(struct drm_dp_sideband_msg_rx *msg,
 	}
 
 	if (msg->curchunk_idx >= msg->curchunk_len) {
-		/* do CRC */
-		crc4 = drm_dp_msg_data_crc4(msg->chunk, msg->curchunk_len - 1);
 		/* Guard against accumulated msg[] overflow */
 		if (msg->curlen + msg->curchunk_len - 1 > ARRAY_SIZE(msg->msg))
 			return false;
@@ -1072,20 +1069,21 @@ static u8 drm_dp_calculate_rad(struct drm_dp_mst_port *port,
  */
 static bool drm_dp_port_setup_pdt(struct drm_dp_mst_port *port)
 {
-	int ret;
 	u8 rad[6], lct;
 	bool send_link = false;
 	switch (port->pdt) {
 	case DP_PEER_DEVICE_DP_LEGACY_CONV:
 	case DP_PEER_DEVICE_SST_SINK:
 		/* add i2c over sideband */
-		ret = drm_dp_mst_register_i2c_bus(&port->aux);
+		if (drm_dp_mst_register_i2c_bus(&port->aux))
+			DRM_ERROR("Failed to register MST I2C bus\n");
 		break;
 	case DP_PEER_DEVICE_MST_BRANCHING:
 		/* SST-only branch should be treated as SST sink */
 		if (!port->input && !port->mcs) {
 			port->pdt = DP_PEER_DEVICE_SST_SINK;
-			ret = drm_dp_mst_register_i2c_bus(&port->aux);
+			if (drm_dp_mst_register_i2c_bus(&port->aux))
+				DRM_ERROR("Failed to register MST I2C bus\n");
 			break;
 		}
 
@@ -1125,6 +1123,8 @@ static void drm_dp_check_mstb_guid(struct drm_dp_mst_branch *mstb, u8 *guid)
 					mstb->guid,
 					16);
 		}
+		if (ret < 0)
+			DRM_ERROR("Failed to write MST branch GUID: %d\n", ret);
 	}
 }
 
@@ -1663,7 +1663,6 @@ static void drm_dp_queue_down_tx(struct drm_dp_mst_topology_mgr *mgr,
 static void drm_dp_send_link_address(struct drm_dp_mst_topology_mgr *mgr,
 				     struct drm_dp_mst_branch *mstb)
 {
-	int len;
 	struct drm_dp_sideband_msg_tx *txmsg;
 	int ret;
 
@@ -1672,7 +1671,7 @@ static void drm_dp_send_link_address(struct drm_dp_mst_topology_mgr *mgr,
 		return;
 
 	txmsg->dst = mstb;
-	len = build_link_address(txmsg);
+	build_link_address(txmsg);
 
 	mstb->link_address_sent = true;
 	drm_dp_queue_down_tx(mgr, txmsg);
@@ -1717,7 +1716,6 @@ static int drm_dp_send_enum_path_resources(struct drm_dp_mst_topology_mgr *mgr,
 					   struct drm_dp_mst_branch *mstb,
 					   struct drm_dp_mst_port *port)
 {
-	int len;
 	struct drm_dp_sideband_msg_tx *txmsg;
 	int ret;
 
@@ -1726,7 +1724,7 @@ static int drm_dp_send_enum_path_resources(struct drm_dp_mst_topology_mgr *mgr,
 		return -ENOMEM;
 
 	txmsg->dst = mstb;
-	len = build_enum_path_resources(txmsg, port->port_num);
+	build_enum_path_resources(txmsg, port->port_num);
 
 	drm_dp_queue_down_tx(mgr, txmsg);
 
@@ -1790,7 +1788,7 @@ static int drm_dp_payload_send_msg(struct drm_dp_mst_topology_mgr *mgr,
 {
 	struct drm_dp_sideband_msg_tx *txmsg;
 	struct drm_dp_mst_branch *mstb;
-	int len, ret, port_num;
+	int ret, port_num;
 	u8 sinks[DRM_DP_MAX_SDP_STREAMS];
 	int i;
 
@@ -1819,9 +1817,9 @@ static int drm_dp_payload_send_msg(struct drm_dp_mst_topology_mgr *mgr,
 		sinks[i] = i;
 
 	txmsg->dst = mstb;
-	len = build_allocate_payload(txmsg, port_num,
-				     id,
-				     pbn, port->num_sdp_streams, sinks);
+	build_allocate_payload(txmsg, port_num,
+			       id,
+			       pbn, port->num_sdp_streams, sinks);
 
 	drm_dp_queue_down_tx(mgr, txmsg);
 
@@ -1843,7 +1841,7 @@ int drm_dp_send_power_updown_phy(struct drm_dp_mst_topology_mgr *mgr,
 				 struct drm_dp_mst_port *port, bool power_up)
 {
 	struct drm_dp_sideband_msg_tx *txmsg;
-	int len, ret;
+	int ret;
 
 	port = drm_dp_get_validated_port_ref(mgr, port);
 	if (!port)
@@ -1856,7 +1854,7 @@ int drm_dp_send_power_updown_phy(struct drm_dp_mst_topology_mgr *mgr,
 	}
 
 	txmsg->dst = port->parent;
-	len = build_power_updown_phy(txmsg, port->port_num, power_up);
+	build_power_updown_phy(txmsg, port->port_num, power_up);
 	drm_dp_queue_down_tx(mgr, txmsg);
 
 	ret = drm_dp_mst_wait_tx_reply(port->parent, txmsg);
@@ -2091,7 +2089,6 @@ int drm_dp_send_dpcd_read(struct drm_dp_mst_topology_mgr *mgr,
 			  struct drm_dp_mst_port *port,
 			  int offset, int size, u8 *bytes)
 {
-	int len;
 	int ret;
 	struct drm_dp_sideband_msg_tx *txmsg;
 	struct drm_dp_mst_branch *mstb;
@@ -2108,7 +2105,7 @@ int drm_dp_send_dpcd_read(struct drm_dp_mst_topology_mgr *mgr,
 		goto fail_put;
 	}
 
-	len = build_dpcd_read(txmsg, port->port_num, offset, size);
+	build_dpcd_read(txmsg, port->port_num, offset, size);
 	txmsg->dst = mstb;
 
 	drm_dp_queue_down_tx(mgr, txmsg);
@@ -2147,7 +2144,6 @@ int drm_dp_send_dpcd_write(struct drm_dp_mst_topology_mgr *mgr,
 			   struct drm_dp_mst_port *port,
 			   int offset, int size, u8 *bytes)
 {
-	int len;
 	int ret;
 	struct drm_dp_sideband_msg_tx *txmsg;
 	struct drm_dp_mst_branch *mstb;
@@ -2162,7 +2158,7 @@ int drm_dp_send_dpcd_write(struct drm_dp_mst_topology_mgr *mgr,
 		goto fail_put;
 	}
 
-	len = build_dpcd_write(txmsg, port->port_num, offset, size, bytes);
+	build_dpcd_write(txmsg, port->port_num, offset, size, bytes);
 	txmsg->dst = mstb;
 
 	drm_dp_queue_down_tx(mgr, txmsg);
@@ -2438,7 +2434,7 @@ static bool drm_dp_get_one_sb_msg(struct drm_dp_mst_topology_mgr *mgr, bool up)
 {
 	int len;
 	u8 replyblock[32];
-	int replylen, origlen, curreply;
+	int replylen, curreply;
 	int ret;
 	struct drm_dp_sideband_msg_rx *msg;
 	int basereg = up ? DP_SIDEBAND_MSG_UP_REQ_BASE : DP_SIDEBAND_MSG_DOWN_REP_BASE;
@@ -2458,7 +2454,6 @@ static bool drm_dp_get_one_sb_msg(struct drm_dp_mst_topology_mgr *mgr, bool up)
 	}
 	replylen = msg->curchunk_len + msg->curchunk_hdrlen;
 
-	origlen = replylen;
 	replylen -= len;
 	curreply = len;
 	while (replylen > 0) {
@@ -3222,19 +3217,24 @@ void drm_dp_mst_dump_topology(struct seq_file *m,
 		int ret;
 
 		ret = drm_dp_dpcd_read(mgr->aux, DP_DPCD_REV, buf, DP_RECEIVER_CAP_SIZE);
-		seq_printf(m, "dpcd: %*ph\n", DP_RECEIVER_CAP_SIZE, buf);
+		if (ret == DP_RECEIVER_CAP_SIZE)
+			seq_printf(m, "dpcd: %*ph\n", DP_RECEIVER_CAP_SIZE, buf);
 		ret = drm_dp_dpcd_read(mgr->aux, DP_FAUX_CAP, buf, 2);
-		seq_printf(m, "faux/mst: %*ph\n", 2, buf);
+		if (ret == 2)
+			seq_printf(m, "faux/mst: %*ph\n", 2, buf);
 		ret = drm_dp_dpcd_read(mgr->aux, DP_MSTM_CTRL, buf, 1);
-		seq_printf(m, "mst ctrl: %*ph\n", 1, buf);
+		if (ret == 1)
+			seq_printf(m, "mst ctrl: %*ph\n", 1, buf);
 
 		/* dump the standard OUI branch header */
 		ret = drm_dp_dpcd_read(mgr->aux, DP_BRANCH_OUI, buf, DP_BRANCH_OUI_HEADER_SIZE);
-		seq_printf(m, "branch oui: %*phN devid: ", 3, buf);
-		for (i = 0x3; i < 0x8 && buf[i]; i++)
-			seq_printf(m, "%c", buf[i]);
-		seq_printf(m, " revision: hw: %x.%x sw: %x.%x\n",
-			   buf[0x9] >> 4, buf[0x9] & 0xf, buf[0xa], buf[0xb]);
+		if (ret == DP_BRANCH_OUI_HEADER_SIZE) {
+			seq_printf(m, "branch oui: %*phN devid: ", 3, buf);
+			for (i = 0x3; i < 0x8 && buf[i]; i++)
+				seq_printf(m, "%c", buf[i]);
+			seq_printf(m, " revision: hw: %x.%x sw: %x.%x\n",
+				   buf[0x9] >> 4, buf[0x9] & 0xf, buf[0xa], buf[0xb]);
+		}
 		if (dump_dp_payload_table(mgr, buf))
 			seq_printf(m, "payload table: %*ph\n", DP_PAYLOAD_TABLE_SIZE, buf);
 	}
