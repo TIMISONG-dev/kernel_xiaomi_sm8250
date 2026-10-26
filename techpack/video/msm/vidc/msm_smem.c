@@ -125,7 +125,7 @@ mem_map_failed:
 }
 
 static int msm_dma_put_device_address(u32 flags,
-	struct dma_mapping_info *mapping_info,
+				      struct dma_mapping_info *mapping_info,
 	enum hal_buffer buffer_type, u32 sid)
 {
 	int rc = 0;
@@ -224,7 +224,7 @@ int msm_smem_map_dma_buf(struct msm_vidc_inst *inst, struct msm_smem *smem)
 	rc = dma_buf_get_flags(dbuf, &ion_flags);
 	if (rc) {
 		s_vpr_e(inst->sid, "Failed to get dma buf flags: %d\n", rc);
-		goto exit;
+		goto fail_buf_get;
 	}
 	if (ion_flags & ION_FLAG_CACHED)
 		smem->flags |= SMEM_CACHED;
@@ -238,7 +238,7 @@ int msm_smem_map_dma_buf(struct msm_vidc_inst *inst, struct msm_smem *smem)
 			smem->flags & SMEM_SECURE ? "secure" : "non-secure",
 			inst->flags & VIDC_SECURE ? "secure" : "non-secure");
 		rc = -EINVAL;
-		goto exit;
+		goto fail_buf_get;
 	}
 	buffer_size = smem->size;
 
@@ -248,18 +248,28 @@ int msm_smem_map_dma_buf(struct msm_vidc_inst *inst, struct msm_smem *smem)
 			inst->sid);
 	if (rc) {
 		s_vpr_e(inst->sid, "Failed to get device address: %d\n", rc);
-		goto exit;
+		goto fail_buf_get;
 	}
 	temp = (u32)iova;
 	if ((dma_addr_t)temp != iova) {
 		s_vpr_e(inst->sid, "iova(%pa) truncated to %#x", &iova, temp);
 		rc = -EINVAL;
-		goto exit;
+		goto fail_device_map;
 	}
 
 	smem->device_addr = (u32)iova + smem->offset;
 
 	smem->refcount++;
+	goto exit;
+
+fail_device_map:
+	if (smem->mapping_info.attach)
+		msm_dma_put_device_address(smem->flags, &smem->mapping_info,
+					   smem->buffer_type, inst->sid);
+fail_buf_get:
+	msm_smem_put_dma_buf(dbuf, inst->sid);
+	smem->dma_buf = NULL;
+	smem->device_addr = 0;
 exit:
 	return rc;
 }
@@ -287,7 +297,7 @@ int msm_smem_unmap_dma_buf(struct msm_vidc_inst *inst, struct msm_smem *smem)
 		goto exit;
 
 	rc = msm_dma_put_device_address(smem->flags, &smem->mapping_info,
-		smem->buffer_type, inst->sid);
+					smem->buffer_type, inst->sid);
 	if (rc) {
 		s_vpr_e(inst->sid, "Failed to put device address: %d\n", rc);
 		goto exit;
@@ -414,6 +424,7 @@ static int alloc_dma_mem(size_t size, u32 align, u32 flags,
 	mem->size = size;
 	mem->dma_buf = dbuf;
 	mem->kvaddr = NULL;
+	mem->device_addr = 0;
 
 	rc = msm_dma_get_device_address(dbuf, align, &iova,
 			&buffer_size, flags, buffer_type,
@@ -427,11 +438,14 @@ static int alloc_dma_mem(size_t size, u32 align, u32 flags,
 	if ((dma_addr_t)mem->device_addr != iova) {
 		s_vpr_e(sid, "iova(%pa) truncated to %#x",
 			&iova, mem->device_addr);
-		goto fail_device_address;
+		rc = -EINVAL;
+		goto fail_device_map;
 	}
 
 	if (map_kernel) {
-		dma_buf_begin_cpu_access(dbuf, DMA_BIDIRECTIONAL);
+		rc = dma_buf_begin_cpu_access(dbuf, DMA_BIDIRECTIONAL);
+		if (rc)
+			goto fail_device_map;
 		mem->kvaddr = dma_buf_vmap(dbuf);
 		if (!mem->kvaddr) {
 			s_vpr_e(sid, "Failed to map shared mem in kernel\n");
@@ -449,8 +463,14 @@ static int alloc_dma_mem(size_t size, u32 align, u32 flags,
 fail_map:
 	if (map_kernel)
 		dma_buf_end_cpu_access(dbuf, DMA_BIDIRECTIONAL);
+fail_device_map:
+	if (mem->mapping_info.attach)
+		msm_dma_put_device_address(mem->flags, &mem->mapping_info,
+					   mem->buffer_type, sid);
+	mem->device_addr = 0;
 fail_device_address:
 	dma_buf_put(dbuf);
+	mem->dma_buf = NULL;
 fail_shared_mem_alloc:
 	return rc;
 }
@@ -462,11 +482,10 @@ static int free_dma_mem(struct msm_smem *mem, u32 sid)
 		__func__, mem->dma_buf, mem->device_addr, mem->size,
 		mem->kvaddr, mem->buffer_type);
 
-	if (mem->device_addr) {
+	if (mem->mapping_info.attach)
 		msm_dma_put_device_address(mem->flags,
-			&mem->mapping_info, mem->buffer_type, sid);
-		mem->device_addr = 0x0;
-	}
+					   &mem->mapping_info, mem->buffer_type, sid);
+	mem->device_addr = 0x0;
 
 	if (mem->kvaddr) {
 		dma_buf_vunmap(mem->dma_buf, mem->kvaddr);
