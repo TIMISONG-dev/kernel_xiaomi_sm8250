@@ -39,6 +39,47 @@ static LIST_HEAD(query_list);
 
 static DEFINE_RT_MUTEX(msm_bus_adhoc_lock);
 
+/* Serialize node and client-label reads with path updates and reallocation. */
+ssize_t msm_bus_format_node_bw(struct msm_bus_node_device_type *bus_node,
+			       char *buf)
+{
+	int i;
+	int off = 0;
+
+	rt_mutex_lock(&msm_bus_adhoc_lock);
+	if (!bus_node) {
+		off = -EINVAL;
+		goto out;
+	}
+
+	for (i = 0; i < bus_node->num_lnodes; i++) {
+		if (!bus_node->lnode_list[i].in_use)
+			continue;
+		off += scnprintf((buf + off), PAGE_SIZE - off,
+		"[%d]:%s:Act_IB %llu Act_AB %llu Slp_IB %llu Slp_AB %llu\n",
+			i, bus_node->lnode_list[i].cl_name,
+			bus_node->lnode_list[i].lnode_ib[ACTIVE_CTX],
+			bus_node->lnode_list[i].lnode_ab[ACTIVE_CTX],
+			bus_node->lnode_list[i].lnode_ib[DUAL_CTX],
+			bus_node->lnode_list[i].lnode_ab[DUAL_CTX]);
+	}
+	off += scnprintf((buf + off), PAGE_SIZE - off,
+	"Max_Act_IB %llu Sum_Act_AB %llu Act_Util_fact %d Act_Vrail_comp %d\n",
+		bus_node->node_bw[ACTIVE_CTX].max_ib,
+		bus_node->node_bw[ACTIVE_CTX].sum_ab,
+		bus_node->node_bw[ACTIVE_CTX].util_used,
+		bus_node->node_bw[ACTIVE_CTX].vrail_used);
+	off += scnprintf((buf + off), PAGE_SIZE - off,
+	"Max_Slp_IB %llu Sum_Slp_AB %llu Slp_Util_fact %d Slp_Vrail_comp %d\n",
+		bus_node->node_bw[DUAL_CTX].max_ib,
+		bus_node->node_bw[DUAL_CTX].sum_ab,
+		bus_node->node_bw[DUAL_CTX].util_used,
+		bus_node->node_bw[DUAL_CTX].vrail_used);
+out:
+	rt_mutex_unlock(&msm_bus_adhoc_lock);
+	return off;
+}
+
 static bool chk_bl_list(struct list_head *black_list, unsigned int id)
 {
 	struct msm_bus_node_device_type *bus_node = NULL;
