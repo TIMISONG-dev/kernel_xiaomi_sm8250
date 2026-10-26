@@ -369,7 +369,7 @@ static void gcm_final(struct aead_request *req, struct gcm_aes_ctx *ctx,
 		      u64 dg[], u8 tag[], int cryptlen)
 {
 	u8 mac[AES_BLOCK_SIZE];
-	u128 lengths;
+	be128 lengths;
 
 	lengths.a = cpu_to_be64(req->assoclen * 8);
 	lengths.b = cpu_to_be64(cryptlen * 8);
@@ -691,10 +691,12 @@ static void __exit ghash_ce_mod_exit(void)
 	crypto_unregister_aead(&gcm_aes_alg);
 }
 
+#ifdef MODULE
 static const struct cpu_feature ghash_cpu_feature[] = {
 	{ cpu_feature(PMULL) }, { }
 };
 MODULE_DEVICE_TABLE(cpu, ghash_cpu_feature);
+#endif
 
 module_init(ghash_ce_mod_init);
 module_exit(ghash_ce_mod_exit);
