@@ -3,6 +3,7 @@
  * Copyright (c) 2018-2020 The Linux Foundation. All rights reserved.
  */
 
+#include <linux/usb/usbpd.h>
 #include <linux/device.h>
 #include <linux/regmap.h>
 #include <linux/delay.h>
