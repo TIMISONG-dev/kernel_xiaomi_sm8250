@@ -295,24 +295,22 @@ static void qcrypto_init_req_control(struct crypto_engine *pce,
 static struct crypto_engine *_qrypto_find_pengine_device(struct crypto_priv *cp,
 			 unsigned int device)
 {
-	struct crypto_engine *entry = NULL;
+	struct crypto_engine *entry, *match = NULL;
 	unsigned long flags;
 
 	spin_lock_irqsave(&cp->lock, flags);
 	list_for_each_entry(entry, &cp->engine_list, elist) {
-		if (entry->ce_device == device)
+		if (entry->ce_device == device) {
+			match = entry;
 			break;
+		}
 	}
 	spin_unlock_irqrestore(&cp->lock, flags);
 
-	if (((entry != NULL) && (entry->ce_device != device)) ||
-		(entry == NULL)) {
-		pr_err("Device node for CE device %d NOT FOUND!!\n",
-				device);
-		return NULL;
-	}
+	if (!match)
+		pr_err("Device node for CE device %d NOT FOUND!!\n", device);
 
-	return entry;
+	return match;
 }
 
 static struct crypto_engine *_qrypto_find_pengine_device_hw
@@ -320,26 +318,23 @@ static struct crypto_engine *_qrypto_find_pengine_device_hw
 			u32 device,
 			u32 hw_instance)
 {
-	struct crypto_engine *entry = NULL;
+	struct crypto_engine *entry, *match = NULL;
 	unsigned long flags;
 
 	spin_lock_irqsave(&cp->lock, flags);
 	list_for_each_entry(entry, &cp->engine_list, elist) {
 		if ((entry->ce_device == device) &&
-			(entry->ce_hw_instance == hw_instance))
+			(entry->ce_hw_instance == hw_instance)) {
+			match = entry;
 			break;
+		}
 	}
 	spin_unlock_irqrestore(&cp->lock, flags);
 
-	if (((entry != NULL) &&
-		((entry->ce_device != device)
-		|| (entry->ce_hw_instance != hw_instance)))
-		|| (entry == NULL)) {
-		pr_err("Device node for CE device %d NOT FOUND!!\n",
-						 device);
-		return NULL;
-	}
-	return entry;
+	if (!match)
+		pr_err("Device node for CE device %d NOT FOUND!!\n", device);
+
+	return match;
 }
 
 int qcrypto_get_num_engines(void)
