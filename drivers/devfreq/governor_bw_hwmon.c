@@ -291,7 +291,7 @@ int bw_hwmon_sample_end(struct bw_hwmon *hwmon)
 	return wake;
 }
 
-unsigned long to_mbps_zone(struct hwmon_node *node, unsigned long mbps)
+static unsigned long to_mbps_zone(struct hwmon_node *node, unsigned long mbps)
 {
 	int i;
 
