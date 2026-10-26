@@ -51,6 +51,7 @@
 #include <dsp/q6common.h>
 #include <dsp/apr_audio-v2.h>
 #include <dsp/msm-cirrus-playback.h>
+#include "q6_init.h"
 
 #undef CONFIG_OF
 
@@ -501,7 +502,7 @@ static int crus_afe_send_config(const char *data, int32_t length,
 	struct afe_custom_crus_set_config_v2_t *config = NULL;
 	struct crus_external_config_t *payload = NULL;
 	int size = sizeof(struct crus_external_config_t);
-	int chars_to_send, mem_size, sent = 0, ret = 0;
+	int chars_to_send, sent = 0, ret = 0;
 	int index = afe_get_port_index(port);
 	uint32_t param = 0;
 
@@ -517,11 +518,6 @@ static int crus_afe_send_config(const char *data, int32_t length,
 		pr_err("CRUS_SP: Received invalid port parameter %d\n", port);
 		return -EINVAL;
 	}
-
-	if (length > APR_CHUNK_SIZE)
-		mem_size = APR_CHUNK_SIZE;
-	else
-		mem_size = length;
 
 	config = crus_gen_afe_set_header(size, port, module, param);
 	if (config == NULL) {
@@ -575,16 +571,11 @@ static int crus_afe_send_delta(const char *data, uint32_t length)
 	int port = this_ctrl.ff_port;
 	int param = CRUS_PARAM_RX_SET_DELTA_CONFIG;
 	int module = CIRRUS_SP;
-	int chars_to_send, mem_size, sent = 0, ret = 0;
+	int chars_to_send, sent = 0, ret = 0;
 	int index = afe_get_port_index(port);
 
 	pr_info("CRUS_SP: (send_delta) module = 0x%08x, port = 0x%08x\n",
 		module, port);
-
-	if (length > APR_CHUNK_SIZE)
-		mem_size = APR_CHUNK_SIZE;
-	else
-		mem_size = length;
 
 	config = crus_gen_afe_set_header(size, port, module, param);
 	if (config == NULL) {
@@ -648,10 +639,8 @@ extern int crus_afe_callback(void* payload, int size)
 	return 0;
 }
 
-
-
-int msm_routing_cirrus_fbport_put(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
+static int msm_routing_cirrus_fbport_put(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
 {
 	this_ctrl.fb_port_index = ucontrol->value.integer.value[0];
 	pr_info("%s: %d\n", __func__, this_ctrl.fb_port);
@@ -682,8 +671,8 @@ int msm_routing_cirrus_fbport_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-int msm_routing_cirrus_fbport_get(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
+static int msm_routing_cirrus_fbport_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
 {
 	pr_debug("%s: this_ctrl.fb_port = %d", __func__, this_ctrl.fb_port);
 	ucontrol->value.integer.value[0] = this_ctrl.fb_port_index;
