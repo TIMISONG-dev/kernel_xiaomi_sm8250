@@ -1069,11 +1069,13 @@ static int a6xx_gmu_fw_start(struct kgsl_device *device,
 		/* Turn on TCM retention */
 		gmu_core_regwrite(device, A6XX_GMU_GENERAL_7, 1);
 
-		if (!test_and_set_bit(GMU_BOOT_INIT_DONE,
-			&device->gmu_core.flags))
+		if (!test_bit(GMU_BOOT_INIT_DONE, &device->gmu_core.flags)) {
 			ret = _load_gmu_rpmh_ucode(device);
-		else
+			if (!ret)
+				set_bit(GMU_BOOT_INIT_DONE, &device->gmu_core.flags);
+		} else {
 			ret = a6xx_rpmh_power_on_gpu(device);
+		}
 		if (ret)
 			return ret;
 
