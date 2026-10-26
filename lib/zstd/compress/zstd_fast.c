@@ -746,7 +746,7 @@ size_t ZSTD_compressBlock_fast_extDict_generic(
     U32 offcode;
     const BYTE* match0;
     size_t mLength;
-    const BYTE* matchEnd = 0; /* initialize to avoid warning, assert != 0 later */
+    const BYTE* matchEnd = NULL; /* initialize to avoid warning, assert != 0 later */
 
     size_t step;
     const BYTE* nextStep;
