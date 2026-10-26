@@ -113,16 +113,21 @@ struct rand_data {
 #include "jitterentropy.h"
 
 /**
+ * jent_loop_shuffle - Update the next entropy collection loop count
+ * @ec: Entropy collector, or NULL
+ * @bits: Number of low timer bits to consider
+ * @min: Minimum loop count shift
+ *
  * Update of the loop count used for the next round of
  * an entropy collection.
  *
  * Input:
- * @ec entropy collector struct -- may be NULL
- * @bits is the number of low bits of the timer to consider
- * @min is the number of bits we shift the timer value to the right at
+ * ec: entropy collector struct -- may be NULL
+ * bits: is the number of low bits of the timer to consider
+ * min: is the number of bits we shift the timer value to the right at
  *	the end to make sure we have a guaranteed minimum value
  *
- * @return Newly calculated loop counter
+ * Return: Newly calculated loop counter
  */
 static __u64 jent_loop_shuffle(struct rand_data *ec,
 			       unsigned int bits, unsigned int min)
@@ -160,6 +165,12 @@ static __u64 jent_loop_shuffle(struct rand_data *ec,
  ***************************************************************************/
 
 /**
+ * jent_fold_time - Fold a time stamp into the entropy pool
+ * @ec: Entropy collector, or NULL
+ * @time: Time stamp to fold
+ * @folded: Output of the folding operation
+ * @loop_cnt: Loop count override, or zero to choose a count
+ *
  * CPU Jitter noise source -- this is the noise source based on the CPU
  *			      execution time jitter
  *
@@ -183,15 +194,15 @@ static __u64 jent_loop_shuffle(struct rand_data *ec,
  * this function implies that careful retesting must be done.
  *
  * Input:
- * @ec entropy collector struct -- may be NULL
- * @time time stamp to be folded
- * @loop_cnt if a value not equal to 0 is set, use the given value as number of
+ * ec: entropy collector struct -- may be NULL
+ * time: time stamp to be folded
+ * loop_cnt: if a value not equal to 0 is set, use the given value as number of
  *	     loops to perform the folding
  *
  * Output:
- * @folded result of folding operation
+ * folded: result of folding operation
  *
- * @return Number of loops the folding operation is performed
+ * Return: Number of loops the folding operation is performed
  */
 static __u64 jent_fold_time(struct rand_data *ec, __u64 time,
 			    __u64 *folded, __u64 loop_cnt)
@@ -224,6 +235,10 @@ static __u64 jent_fold_time(struct rand_data *ec, __u64 time,
 }
 
 /**
+ * jent_memaccess - Add memory access timing variations
+ * @ec: Entropy collector containing the memory access state
+ * @loop_cnt: Loop count override, or zero to choose a count
+ *
  * Memory Access noise source -- this is a noise source based on variations in
  *				 memory access times
  *
@@ -242,13 +257,13 @@ static __u64 jent_fold_time(struct rand_data *ec, __u64 time,
  * large which is usually not desirable.
  *
  * Input:
- * @ec Reference to the entropy collector with the memory access data -- if
+ * ec: Reference to the entropy collector with the memory access data -- if
  *     the reference to the memory block to be accessed is NULL, this noise
  *     source is disabled
- * @loop_cnt if a value not equal to 0 is set, use the given value as number of
+ * loop_cnt: if a value not equal to 0 is set, use the given value as number of
  *	     loops to perform the folding
  *
- * @return Number of memory access operations
+ * Return: Number of memory access operations
  */
 static unsigned int jent_memaccess(struct rand_data *ec, __u64 loop_cnt)
 {
@@ -295,6 +310,10 @@ static unsigned int jent_memaccess(struct rand_data *ec, __u64 loop_cnt)
  ***************************************************************************/
 
 /**
+ * jent_stuck - Record whether a jitter measurement is stuck
+ * @ec: Entropy collector containing the stuck-test state
+ * @current_delta: Current jitter time delta
+ *
  * Stuck test by checking the:
  *	1st derivation of the jitter measurement (time delta)
  *	2nd derivation of the jitter measurement (delta of time deltas)
@@ -303,12 +322,10 @@ static unsigned int jent_memaccess(struct rand_data *ec, __u64 loop_cnt)
  * All values must always be non-zero.
  *
  * Input:
- * @ec Reference to entropy collector
- * @current_delta Jitter time delta
+ * ec: Reference to entropy collector
+ * current_delta: Jitter time delta
  *
- * @return
- *	0 jitter measurement not stuck (good bit)
- *	1 jitter measurement stuck (reject bit)
+ * Sets ec->stuck when a zero delta or derivative is detected.
  */
 static void jent_stuck(struct rand_data *ec, __u64 current_delta)
 {
@@ -323,6 +340,9 @@ static void jent_stuck(struct rand_data *ec, __u64 current_delta)
 }
 
 /**
+ * jent_measure_jitter - Measure and fold a CPU jitter time delta
+ * @ec: Entropy collector with a primed previous time stamp
+ *
  * This is the heart of the entropy generation: calculate time deltas and
  * use the CPU jitter in the time deltas. The jitter is folded into one
  * bit. You can call this function the "random bit generator" as it
@@ -333,9 +353,9 @@ static void jent_stuck(struct rand_data *ec, __u64 current_delta)
  *	    and not using its result.
  *
  * Input:
- * @entropy_collector Reference to entropy collector
+ * entropy_collector: Reference to entropy collector
  *
- * @return One random bit
+ * Return: One random bit
  */
 static __u64 jent_measure_jitter(struct rand_data *ec)
 {
@@ -368,6 +388,9 @@ static __u64 jent_measure_jitter(struct rand_data *ec)
 }
 
 /**
+ * jent_unbiased_bit - Generate a bit using Von Neumann unbiasing
+ * @entropy_collector: Entropy collector
+ *
  * Von Neuman unbias as explained in RFC 4086 section 4.2. As shown in the
  * documentation of that RNG, the bits from jent_measure_jitter are considered
  * independent which implies that the Von Neuman unbias operation is applicable.
@@ -376,9 +399,9 @@ static __u64 jent_measure_jitter(struct rand_data *ec)
  * generators", version 2.0 by Werner Schindler, section 5.4.1.
  *
  * Input:
- * @entropy_collector Reference to entropy collector
+ * entropy_collector: Reference to entropy collector
  *
- * @return One random bit
+ * Return: One random bit
  */
 static __u64 jent_unbiased_bit(struct rand_data *entropy_collector)
 {
@@ -396,6 +419,9 @@ static __u64 jent_unbiased_bit(struct rand_data *entropy_collector)
 }
 
 /**
+ * jent_stir_pool - Mix a bijective value into the entropy pool
+ * @entropy_collector: Entropy collector
+ *
  * Shuffle the pool a bit by mixing some value with a bijective function (XOR)
  * into the pool.
  *
@@ -410,7 +436,7 @@ static __u64 jent_unbiased_bit(struct rand_data *entropy_collector)
  * operation, it can also not destroy any entropy present in the entropy pool.
  *
  * Input:
- * @entropy_collector Reference to entropy collector
+ * entropy_collector: Reference to entropy collector
  */
 static void jent_stir_pool(struct rand_data *entropy_collector)
 {
@@ -460,11 +486,14 @@ static void jent_stir_pool(struct rand_data *entropy_collector)
 }
 
 /**
+ * jent_gen_entropy - Generate a 64-bit random value in the entropy pool
+ * @ec: Entropy collector
+ *
  * Generator of one 64 bit random number
  * Function fills rand_data->data
  *
  * Input:
- * @ec Reference to entropy collector
+ * ec: Reference to entropy collector
  */
 static void jent_gen_entropy(struct rand_data *ec)
 {
@@ -529,12 +558,13 @@ static void jent_gen_entropy(struct rand_data *ec)
 }
 
 /**
+ * jent_fips_test - Run the continuous FIPS 140-2 test
+ * @ec: Entropy collector containing the previous output
+ *
  * The continuous test required by FIPS 140-2 -- the function automatically
  * primes the test if needed.
  *
- * Return:
- * 0 if FIPS test passed
- * < 0 if FIPS test failed
+ * Panics if two consecutive output values are identical.
  */
 static void jent_fips_test(struct rand_data *ec)
 {
@@ -554,6 +584,11 @@ static void jent_fips_test(struct rand_data *ec)
 }
 
 /**
+ * jent_read_entropy - Obtain entropy for the caller
+ * @ec: Entropy collector
+ * @data: Caller-provided output buffer
+ * @len: Requested number of bytes and size of the output buffer
+ *
  * Entry function: Obtain entropy for the caller.
  *
  * This function invokes the entropy gathering logic as often to generate
@@ -564,13 +599,13 @@ static void jent_fips_test(struct rand_data *ec)
  * size specified by the caller.
  *
  * Input:
- * @ec Reference to entropy collector
- * @data pointer to buffer for storing random data -- buffer must already
+ * ec: Reference to entropy collector
+ * data: pointer to buffer for storing random data -- buffer must already
  *	 exist
- * @len size of the buffer, specifying also the requested number of random
+ * len: size of the buffer, specifying also the requested number of random
  *	in bytes
  *
- * @return 0 when request is fulfilled or an error
+ * Return: 0 when request is fulfilled or an error
  *
  * The following error codes can occur:
  *	-1	entropy_collector is NULL
@@ -659,7 +694,6 @@ int jent_entropy_init(void)
 	__u64 delta_sum = 0;
 	__u64 old_delta = 0;
 	int time_backwards = 0;
-	int count_var = 0;
 	int count_mod = 0;
 
 	/* We could perform statistical tests here, but the problem is
@@ -738,8 +772,6 @@ int jent_entropy_init(void)
 		 * the old_data value
 		 */
 		if (i) {
-			if (delta != old_delta)
-				count_var++;
 			if (delta > old_delta)
 				delta_sum += (delta - old_delta);
 			else
