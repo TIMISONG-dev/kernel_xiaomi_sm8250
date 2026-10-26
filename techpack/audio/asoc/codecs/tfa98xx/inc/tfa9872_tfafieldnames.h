@@ -1173,7 +1173,8 @@ enum TFA9872_irq {
 	TFA9872_irq_max = 40,
 	TFA9872_irq_all = -1 /* all irqs */};
 
-#define TFA9872_IRQ_NAMETABLE static tfaIrqName_t Tfa9872IrqNames[]= {\
+#define TFA9872_IRQ_NAMETABLE
+static tfaIrqName_t Tfa9872IrqNames[]= {\
 	{ 0, "STVDDS"},\
 	{ 1, "STPLLS"},\
 	{ 2, "STOTDS"},\
