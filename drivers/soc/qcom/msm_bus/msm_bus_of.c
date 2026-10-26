@@ -178,7 +178,7 @@ err:
  * msm_bus_cl_get_pdata() - Generate bus client data from device tree
  * provided by clients.
  *
- * of_node: Device tree node to extract information from
+ * @pdev: Platform device whose node provides the bus client data
  *
  * The function returns a valid pointer to the allocated bus-scale-pdata
  * if the vectors were correctly read from the client's device node.
@@ -210,7 +210,7 @@ EXPORT_SYMBOL(msm_bus_cl_get_pdata);
  * msm_bus_cl_get_pdata_from_dev() - Generate bus client data from device tree
  * provided by clients.
  *
- * of_node: Device tree node to extract information from
+ * @dev: Device whose node provides the bus client data
  *
  * The function returns a valid pointer to the allocated bus-scale-pdata
  * if the vectors were correctly read from the client's device node.
@@ -238,15 +238,15 @@ struct msm_bus_scale_pdata *msm_bus_cl_get_pdata_from_dev(struct device *dev)
 EXPORT_SYMBOL(msm_bus_cl_get_pdata_from_dev);
 
 /**
- * msm_bus_cl_pdata_from_node() - Generate bus client data from device tree
+ * msm_bus_pdata_from_node() - Generate bus client data from device tree
  * node provided by clients. This function should be used when a client
  * driver needs to register multiple bus-clients from a single device-tree
  * node associated with the platform-device.
  *
- * of_node: The subnode containing information about the bus scaling
+ * @of_node: The subnode containing information about the bus scaling
  * data
  *
- * pdev: Platform device associated with the device-tree node
+ * @pdev: Platform device associated with the device-tree node
  *
  * The function returns a valid pointer to the allocated bus-scale-pdata
  * if the vectors were correctly read from the client's device node.

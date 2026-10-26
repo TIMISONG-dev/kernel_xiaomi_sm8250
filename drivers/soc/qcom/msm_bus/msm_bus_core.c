@@ -92,6 +92,7 @@ err:
 /**
  * msm_bus_fabric_device_unregister() - Unregisters the fabric
  * devices from the msm bus
+ * @fabdev: Fabric device to unregister
  */
 void msm_bus_fabric_device_unregister(struct msm_bus_fabric_device *fabdev)
 {

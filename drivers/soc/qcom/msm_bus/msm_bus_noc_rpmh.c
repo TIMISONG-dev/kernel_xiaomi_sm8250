@@ -123,8 +123,11 @@ static int noc_div(uint64_t *a, uint32_t b)
 }
 
 /**
- * Calculates bw hardware is using from register values
- * bw returned is in bytes/sec
+ * noc_bw() - Calculate bandwidth from the hardware register value
+ * @bw_field: Encoded bandwidth register field
+ * @qos_freq: QoS clock frequency
+ *
+ * Return: Bandwidth in bytes per second.
  */
 static uint64_t noc_bw(uint32_t bw_field, uint32_t qos_freq)
 {
@@ -139,13 +142,18 @@ static uint64_t noc_bw(uint32_t bw_field, uint32_t qos_freq)
 }
 
 /**
- * Calculate the max BW in Bytes/s for a given time-base.
+ * MAX_BW() - Calculate the maximum bandwidth for a given time base
+ * @timebase: QoS clock frequency passed to noc_bw_ceil()
  */
 #define MAX_BW(timebase) noc_bw_ceil(MAX_BW_FIELD, (timebase))
 
 /**
- * Calculates ws hardware is using from register values
- * ws returned is in nanoseconds
+ * noc_ws() - Calculate the window size from register values
+ * @bw: Bandwidth in bytes per second
+ * @sat: Encoded saturation register field
+ * @qos_freq: QoS clock frequency
+ *
+ * Return: Window size in nanoseconds.
  */
 static uint32_t noc_ws(uint64_t bw, uint32_t sat, uint32_t qos_freq)
 {

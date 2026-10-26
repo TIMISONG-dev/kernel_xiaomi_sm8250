@@ -1952,8 +1952,8 @@ exit_register:
 	return client;
 }
 /**
- *  msm_bus_arb_setops_adhoc() : Setup the bus arbitration ops
- *  @ arb_ops: pointer to the arb ops.
+ * msm_bus_arb_setops_adhoc() - Set up the bus arbitration operations
+ * @arb_ops: Operations structure to populate with the arbitration callbacks
  */
 void msm_bus_arb_setops_adhoc(struct msm_bus_arb_ops *arb_ops)
 {
