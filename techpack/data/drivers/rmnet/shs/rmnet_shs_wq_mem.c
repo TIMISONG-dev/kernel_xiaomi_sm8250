@@ -15,6 +15,7 @@
 
 #include "rmnet_shs_wq_mem.h"
 #include <linux/proc_fs.h>
+#include <linux/module.h>
 #include <linux/refcount.h>
 
 MODULE_LICENSE("GPL v2");
@@ -37,118 +38,84 @@ static struct rmnet_shs_mmap_info *ssflow_shared;
 static struct rmnet_shs_mmap_info *netdev_shared;
 
 /* Static Functions and Definitions */
+static void rmnet_shs_mmap_info_put(struct rmnet_shs_mmap_info *info)
+{
+	if (!info)
+		return;
+
+	rmnet_shs_wq_ep_lock_bh();
+	if (refcount_dec_and_test(&info->refcnt)) {
+		if (cap_shared == info)
+			cap_shared = NULL;
+		if (gflow_shared == info)
+			gflow_shared = NULL;
+		if (ssflow_shared == info)
+			ssflow_shared = NULL;
+		if (netdev_shared == info)
+			netdev_shared = NULL;
+		free_page((unsigned long)info->data);
+		kfree(info);
+	}
+	rmnet_shs_wq_ep_unlock_bh();
+}
+
 static void rmnet_shs_vm_open(struct vm_area_struct *vma)
 {
-	return;
+	struct rmnet_shs_mmap_info *info = vma->vm_private_data;
+
+	/* The original VMA pins both the object and its callback module. */
+	__module_get(THIS_MODULE);
+	refcount_inc(&info->refcnt);
 }
 
 static void rmnet_shs_vm_close(struct vm_area_struct *vma)
 {
-	return;
+	struct rmnet_shs_mmap_info *info = vma->vm_private_data;
+
+	vma->vm_private_data = NULL;
+	rmnet_shs_mmap_info_put(info);
+	module_put(THIS_MODULE);
+}
+
+static vm_fault_t rmnet_shs_vm_fault(struct vm_fault *vmf,
+				     struct rmnet_shs_mmap_info **shared)
+{
+	struct rmnet_shs_mmap_info *info = vmf->vma->vm_private_data;
+	struct page *page;
+
+	rmnet_shs_wq_ep_lock_bh();
+	/* A retired mapping must not borrow a newly opened generation. */
+	if (!info || *shared != info || !info->data) {
+		rmnet_shs_wq_ep_unlock_bh();
+		return VM_FAULT_SIGSEGV;
+	}
+
+	page = virt_to_page(info->data);
+	get_page(page);
+	vmf->page = page;
+	rmnet_shs_wq_ep_unlock_bh();
+	return 0;
 }
 
 static vm_fault_t rmnet_shs_vm_fault_caps(struct vm_fault *vmf)
 {
-	struct page *page = NULL;
-	struct rmnet_shs_mmap_info *info;
-
-	rmnet_shs_wq_ep_lock_bh();
-	if (cap_shared) {
-		info = (struct rmnet_shs_mmap_info *) vmf->vma->vm_private_data;
-		if (info->data) {
-			page = virt_to_page(info->data);
-			get_page(page);
-			vmf->page = page;
-		} else {
-			rmnet_shs_wq_ep_unlock_bh();
-			return VM_FAULT_SIGSEGV;
-		}
-	} else {
-		rmnet_shs_wq_ep_unlock_bh();
-		return VM_FAULT_SIGSEGV;
-	}
-	rmnet_shs_wq_ep_unlock_bh();
-
-	return 0;
+	return rmnet_shs_vm_fault(vmf, &cap_shared);
 }
-
 
 static vm_fault_t rmnet_shs_vm_fault_g_flows(struct vm_fault *vmf)
 {
-	struct page *page = NULL;
-	struct rmnet_shs_mmap_info *info;
-
-	rmnet_shs_wq_ep_lock_bh();
-	if (gflow_shared) {
-		info = (struct rmnet_shs_mmap_info *) vmf->vma->vm_private_data;
-		if (info->data) {
-			page = virt_to_page(info->data);
-			get_page(page);
-			vmf->page = page;
-		} else {
-			rmnet_shs_wq_ep_unlock_bh();
-			return VM_FAULT_SIGSEGV;
-		}
-	} else {
-		rmnet_shs_wq_ep_unlock_bh();
-		return VM_FAULT_SIGSEGV;
-
-	}
-	rmnet_shs_wq_ep_unlock_bh();
-
-	return 0;
+	return rmnet_shs_vm_fault(vmf, &gflow_shared);
 }
 
 static vm_fault_t rmnet_shs_vm_fault_ss_flows(struct vm_fault *vmf)
 {
-	struct page *page = NULL;
-	struct rmnet_shs_mmap_info *info;
-
-	rmnet_shs_wq_ep_lock_bh();
-	if (ssflow_shared) {
-		info = (struct rmnet_shs_mmap_info *) vmf->vma->vm_private_data;
-		if (info->data) {
-			page = virt_to_page(info->data);
-			get_page(page);
-			vmf->page = page;
-		} else {
-			rmnet_shs_wq_ep_unlock_bh();
-			return VM_FAULT_SIGSEGV;
-		}
-	} else {
-		rmnet_shs_wq_ep_unlock_bh();
-		return VM_FAULT_SIGSEGV;
-	}
-	rmnet_shs_wq_ep_unlock_bh();
-
-	return 0;
+	return rmnet_shs_vm_fault(vmf, &ssflow_shared);
 }
 
 static vm_fault_t rmnet_shs_vm_fault_netdev(struct vm_fault *vmf)
 {
-	struct page *page = NULL;
-	struct rmnet_shs_mmap_info *info;
-
-	rmnet_shs_wq_ep_lock_bh();
-	if (netdev_shared) {
-		info = (struct rmnet_shs_mmap_info *) vmf->vma->vm_private_data;
-		if (info->data) {
-			page = virt_to_page(info->data);
-			get_page(page);
-			vmf->page = page;
-		} else {
-			rmnet_shs_wq_ep_unlock_bh();
-			return VM_FAULT_SIGSEGV;
-		}
-	} else {
-		rmnet_shs_wq_ep_unlock_bh();
-		return VM_FAULT_SIGSEGV;
-	}
-	rmnet_shs_wq_ep_unlock_bh();
-
-	return 0;
+	return rmnet_shs_vm_fault(vmf, &netdev_shared);
 }
-
 
 static const struct vm_operations_struct rmnet_shs_vm_ops_caps = {
 	.close = rmnet_shs_vm_close,
@@ -174,40 +141,42 @@ static const struct vm_operations_struct rmnet_shs_vm_ops_netdev = {
 	.fault = rmnet_shs_vm_fault_netdev,
 };
 
+static int rmnet_shs_mmap(struct file *filp, struct vm_area_struct *vma,
+			  const struct vm_operations_struct *ops)
+{
+	struct rmnet_shs_mmap_info *info = filp->private_data;
+
+	if (!info)
+		return -EINVAL;
+	if (!try_module_get(THIS_MODULE))
+		return -ENODEV;
+
+	/* proc_reg_mmap protects the open-file reference until we return. */
+	refcount_inc(&info->refcnt);
+	vma->vm_ops = ops;
+	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
+	vma->vm_private_data = info;
+	return 0;
+}
+
 static int rmnet_shs_mmap_caps(struct file *filp, struct vm_area_struct *vma)
 {
-	vma->vm_ops = &rmnet_shs_vm_ops_caps;
-	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-	vma->vm_private_data = filp->private_data;
-
-	return 0;
+	return rmnet_shs_mmap(filp, vma, &rmnet_shs_vm_ops_caps);
 }
 
 static int rmnet_shs_mmap_g_flows(struct file *filp, struct vm_area_struct *vma)
 {
-	vma->vm_ops = &rmnet_shs_vm_ops_g_flows;
-	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-	vma->vm_private_data = filp->private_data;
-
-	return 0;
+	return rmnet_shs_mmap(filp, vma, &rmnet_shs_vm_ops_g_flows);
 }
 
 static int rmnet_shs_mmap_ss_flows(struct file *filp, struct vm_area_struct *vma)
 {
-	vma->vm_ops = &rmnet_shs_vm_ops_ss_flows;
-	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-	vma->vm_private_data = filp->private_data;
-
-	return 0;
+	return rmnet_shs_mmap(filp, vma, &rmnet_shs_vm_ops_ss_flows);
 }
 
 static int rmnet_shs_mmap_netdev(struct file *filp, struct vm_area_struct *vma)
 {
-	vma->vm_ops = &rmnet_shs_vm_ops_netdev;
-	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
-	vma->vm_private_data = filp->private_data;
-
-	return 0;
+	return rmnet_shs_mmap(filp, vma, &rmnet_shs_vm_ops_netdev);
 }
 
 static int rmnet_shs_open_caps(struct inode *inode, struct file *filp)
@@ -383,93 +352,41 @@ static ssize_t rmnet_shs_write(struct file *filp, const char __user *buf, size_t
 
 static int rmnet_shs_release_caps(struct inode *inode, struct file *filp)
 {
-	struct rmnet_shs_mmap_info *info;
+	struct rmnet_shs_mmap_info *info = filp->private_data;
 
-	rm_err("%s", "SHS_MEM: rmnet_shs_release - entry\n");
-
-	rmnet_shs_wq_ep_lock_bh();
-	if (cap_shared) {
-		info = filp->private_data;
-		if (refcount_read(&info->refcnt) <= 1) {
-			free_page((unsigned long)info->data);
-			kfree(info);
-			cap_shared = NULL;
-			filp->private_data = NULL;
-		} else {
-			refcount_dec(&info->refcnt);
-		}
-	}
-	rmnet_shs_wq_ep_unlock_bh();
-
+	/* Procfs rundown may release the file while its VMAs still exist. */
+	filp->private_data = NULL;
+	rmnet_shs_mmap_info_put(info);
 	return 0;
 }
 
 static int rmnet_shs_release_g_flows(struct inode *inode, struct file *filp)
 {
-	struct rmnet_shs_mmap_info *info;
+	struct rmnet_shs_mmap_info *info = filp->private_data;
 
-	rm_err("%s", "SHS_MEM: rmnet_shs_release - entry\n");
-
-	rmnet_shs_wq_ep_lock_bh();
-	if (gflow_shared) {
-		info = filp->private_data;
-		if (refcount_read(&info->refcnt) <= 1) {
-			free_page((unsigned long)info->data);
-			kfree(info);
-			gflow_shared = NULL;
-			filp->private_data = NULL;
-		} else {
-			refcount_dec(&info->refcnt);
-		}
-	}
-	rmnet_shs_wq_ep_unlock_bh();
-
+	/* Procfs rundown may release the file while its VMAs still exist. */
+	filp->private_data = NULL;
+	rmnet_shs_mmap_info_put(info);
 	return 0;
 }
 
 static int rmnet_shs_release_ss_flows(struct inode *inode, struct file *filp)
 {
-	struct rmnet_shs_mmap_info *info;
+	struct rmnet_shs_mmap_info *info = filp->private_data;
 
-	rm_err("%s", "SHS_MEM: rmnet_shs_release - entry\n");
-
-	rmnet_shs_wq_ep_lock_bh();
-	if (ssflow_shared) {
-		info = filp->private_data;
-		if (refcount_read(&info->refcnt) <= 1) {
-			free_page((unsigned long)info->data);
-			kfree(info);
-			ssflow_shared = NULL;
-			filp->private_data = NULL;
-		} else {
-			refcount_dec(&info->refcnt);
-		}
-	}
-	rmnet_shs_wq_ep_unlock_bh();
-
+	/* Procfs rundown may release the file while its VMAs still exist. */
+	filp->private_data = NULL;
+	rmnet_shs_mmap_info_put(info);
 	return 0;
 }
 
 static int rmnet_shs_release_netdev(struct inode *inode, struct file *filp)
 {
-	struct rmnet_shs_mmap_info *info;
+	struct rmnet_shs_mmap_info *info = filp->private_data;
 
-	rm_err("%s", "SHS_MEM: rmnet_shs_release netdev - entry\n");
-
-	rmnet_shs_wq_ep_lock_bh();
-	if (netdev_shared) {
-		info = filp->private_data;
-		if (refcount_read(&info->refcnt) <= 1) {
-			free_page((unsigned long)info->data);
-			kfree(info);
-			netdev_shared = NULL;
-			filp->private_data = NULL;
-		} else {
-			refcount_dec(&info->refcnt);
-		}
-	}
-	rmnet_shs_wq_ep_unlock_bh();
-
+	/* Procfs rundown may release the file while its VMAs still exist. */
+	filp->private_data = NULL;
+	rmnet_shs_mmap_info_put(info);
 	return 0;
 }
 
