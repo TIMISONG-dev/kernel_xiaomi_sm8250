@@ -537,8 +537,10 @@ out_free_iova:
 	__fast_smmu_free_iova(mapping, dma_addr, size);
 	spin_unlock_irqrestore(&mapping->lock, flags);
 out_free_page:
-	coherent ? __free_pages(page, get_order(size)) :
-		   __free_from_pool(addr, size);
+	if (coherent)
+		__free_pages(page, get_order(size));
+	else
+		__free_from_pool(addr, size);
 	return NULL;
 }
 
