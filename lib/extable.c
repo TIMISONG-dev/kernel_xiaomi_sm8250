@@ -10,6 +10,7 @@
  */
 
 #include <linux/bsearch.h>
+#include <linux/extable.h>
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/sort.h>
