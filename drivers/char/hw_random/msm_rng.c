@@ -502,6 +502,7 @@ static int __init msm_rng_init(void)
 	if (ret) {
 		pr_err("%s: crypto_register_algs error:%d\n",
 			__func__, ret);
+		platform_driver_unregister(&rng_driver);
 		goto err_exit;
 	}
 
