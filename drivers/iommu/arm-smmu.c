@@ -6119,15 +6119,12 @@ static void qsmmuv500_tbu_resume(struct qsmmuv500_tbu_device *tbu)
 	spin_unlock_irqrestore(&tbu->halt_lock, flags);
 }
 
-static int qsmmuv500_ecats_lock(struct arm_smmu_domain *smmu_domain,
-				struct qsmmuv500_tbu_device *tbu,
-				unsigned long *flags)
+static int qsmmuv500_ecats_wait_ready(struct qsmmuv500_tbu_device *tbu)
 {
 	struct arm_smmu_device *smmu = tbu->smmu;
 	struct qsmmuv500_archdata *data = get_qsmmuv500_archdata(smmu);
 	u32 val;
 
-	spin_lock_irqsave(&smmu->atos_lock, *flags);
 	/* The status register is not accessible on version 1.0 */
 	if (data->version == 0x01000000)
 		return 0;
@@ -6136,16 +6133,13 @@ static int qsmmuv500_ecats_lock(struct arm_smmu_domain *smmu_domain,
 					val, (val == 0x1), 0,
 					TBU_DBG_TIMEOUT_US)) {
 		dev_err(tbu->dev, "ECATS hw busy!\n");
-		spin_unlock_irqrestore(&smmu->atos_lock, *flags);
 		return  -ETIMEDOUT;
 	}
 
 	return 0;
 }
 
-static void qsmmuv500_ecats_unlock(struct arm_smmu_domain *smmu_domain,
-					struct qsmmuv500_tbu_device *tbu,
-					unsigned long *flags)
+static void qsmmuv500_ecats_release(struct qsmmuv500_tbu_device *tbu)
 {
 	struct arm_smmu_device *smmu = tbu->smmu;
 	struct qsmmuv500_archdata *data = get_qsmmuv500_archdata(smmu);
@@ -6153,7 +6147,6 @@ static void qsmmuv500_ecats_unlock(struct arm_smmu_domain *smmu_domain,
 	/* The status register is not accessible on version 1.0 */
 	if (data->version != 0x01000000)
 		writel_relaxed(0, tbu->status_reg);
-	spin_unlock_irqrestore(&smmu->atos_lock, *flags);
 }
 
 /*
@@ -6224,9 +6217,13 @@ static phys_addr_t qsmmuv500_iova_to_phys(
 	}
 
 	/* Only one concurrent atos operation */
-	ret = qsmmuv500_ecats_lock(smmu_domain, tbu, &flags);
-	if (ret)
+	spin_lock_irqsave(&smmu->atos_lock, flags);
+	ret = qsmmuv500_ecats_wait_ready(tbu);
+	if (ret) {
+		writel_relaxed(sctlr_orig, cb_base + ARM_SMMU_CB_SCTLR);
+		spin_unlock_irqrestore(&smmu->atos_lock, flags);
 		goto out_resume;
+	}
 
 redo:
 	/* Set address and stream-id */
@@ -6318,7 +6315,8 @@ redo:
 		goto redo;
 
 	writel_relaxed(sctlr_orig, cb_base + ARM_SMMU_CB_SCTLR);
-	qsmmuv500_ecats_unlock(smmu_domain, tbu, &flags);
+	qsmmuv500_ecats_release(tbu);
+	spin_unlock_irqrestore(&smmu->atos_lock, flags);
 
 out_resume:
 	qsmmuv500_tbu_resume(tbu);
