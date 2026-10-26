@@ -695,7 +695,7 @@ static void fastrpc_buf_free(struct fastrpc_buf *buf, int cache)
 		VERIFY(err, cid >= ADSP_DOMAIN_ID && cid < NUM_CHANNELS);
 		if (err) {
 			err = -ECHRNG;
-			pr_err("invalid channel 0x%zx set for session\n",
+			pr_err("invalid channel 0x%x set for session\n",
 				cid);
 			goto bail;
 		}
@@ -881,7 +881,6 @@ static void fastrpc_mmap_free(struct fastrpc_mmap *map, uint32_t flags)
 	struct fastrpc_apps *me = &gfa;
 	struct fastrpc_file *fl;
 	int vmid, cid = -1, err = 0;
-	struct fastrpc_session_ctx *sess;
 
 	if (!map)
 		return;
@@ -946,11 +945,6 @@ static void fastrpc_mmap_free(struct fastrpc_mmap *map, uint32_t flags)
 	} else {
 		int destVM[1] = {VMID_HLOS};
 		int destVMperm[1] = {PERM_READ | PERM_WRITE | PERM_EXEC};
-
-		if (map->secure)
-			sess = fl->secsctx;
-		else
-			sess = fl->sctx;
 
 		vmid = fl->apps->channel[cid].vmid;
 		if (vmid && map->phys) {
@@ -1031,7 +1025,7 @@ static int fastrpc_mmap_create(struct fastrpc_file *fl, int fd,
 		map->va = (uintptr_t)region_vaddr;
 	} else if (mflags == FASTRPC_DMAHANDLE_NOMAP) {
 		if (map->attr & FASTRPC_ATTR_KEEP_MAP) {
-			pr_err("adsprpc: %s: Invalid attribute 0x%x for fd %d\n",
+			pr_err("adsprpc: %s: Invalid attribute 0x%lx for fd %d\n",
 				__func__, map->attr, fd);
 			err = -EINVAL;
 			goto bail;
@@ -1777,7 +1771,6 @@ static int get_args(uint32_t kernel, struct smq_invoke_ctx *ctx)
 	int err = 0, j = 0;
 	int mflags = 0;
 	uint64_t *fdlist;
-	uint32_t *crclist;
 	uint32_t earlyHint;
 	int64_t *perf_counter = NULL;
 
@@ -1965,7 +1958,6 @@ static int get_args(uint32_t kernel, struct smq_invoke_ctx *ctx)
 	}
 	mutex_unlock(&ctx->fl->map_mutex);
 	fdlist = (uint64_t *)&pages[bufs + handles];
-	crclist = (uint32_t *)&fdlist[M_FDLIST];
 	/* reset fds, crc and early wakeup hint memory */
 	/* remote process updates these values before responding */
 	memset(fdlist, 0, sizeof(uint64_t)*M_FDLIST +
@@ -2039,7 +2031,7 @@ static int get_args(uint32_t kernel, struct smq_invoke_ctx *ctx)
 						DMA_TO_DEVICE);
 					dma_buf_end_cpu_access(map->buf,
 						DMA_TO_DEVICE);
-					pr_debug("Debug: adsprpc: %s: %s: sc 0x%x pv 0x%llx, mend 0x%llx mstart 0x%llx, len %zu size %zu\n",
+					pr_debug("Debug: adsprpc: %s: %s: sc 0x%x pv 0x%llx, mend 0x%lx mstart 0x%lx, len %llu size %zu\n",
 					current->comm, __func__, sc,
 					rpra[i].buf.pv, ctx->overps[oix]->mend,
 					ctx->overps[oix]->mstart,
@@ -2048,6 +2040,7 @@ static int get_args(uint32_t kernel, struct smq_invoke_ctx *ctx)
 					uintptr_t offset;
 					uint64_t flush_len;
 					struct vm_area_struct *vma;
+					unsigned long vm_start;
 
 					down_read(&current->mm->mmap_lock);
 					VERIFY(err, NULL != (vma = find_vma(
@@ -2068,6 +2061,7 @@ static int get_args(uint32_t kernel, struct smq_invoke_ctx *ctx)
 						ctx->overps[oix]->mend -
 						ctx->overps[oix]->mstart;
 					}
+					vm_start = vma->vm_start;
 					up_read(&current->mm->mmap_lock);
 					dma_buf_begin_cpu_access_partial(
 						map->buf, DMA_TO_DEVICE, offset,
@@ -2075,9 +2069,9 @@ static int get_args(uint32_t kernel, struct smq_invoke_ctx *ctx)
 					dma_buf_end_cpu_access_partial(
 						map->buf, DMA_TO_DEVICE, offset,
 						flush_len);
-					pr_debug("Debug: adsprpc: %s: %s: sc 0x%x vm_start 0x%llx pv 0x%llx, offset 0x%llx, mend 0x%llx mstart 0x%llx, len %zu size %zu\n",
+					pr_debug("Debug: adsprpc: %s: %s: sc 0x%x vm_start 0x%lx pv 0x%llx, offset 0x%lx, mend 0x%lx mstart 0x%lx, len %llu size %zu\n",
 					current->comm, __func__, sc,
-					vma->vm_start, rpra[i].buf.pv, offset,
+					vm_start, rpra[i].buf.pv, offset,
 					ctx->overps[oix]->mend,
 					ctx->overps[oix]->mstart,
 					rpra[i].buf.len, map->size);
@@ -2202,7 +2196,7 @@ static void inv_args(struct smq_invoke_ctx *ctx)
 						DMA_TO_DEVICE);
 					dma_buf_end_cpu_access(map->buf,
 						DMA_FROM_DEVICE);
-					pr_debug("Debug: adsprpc: %s: %s: sc 0x%x pv 0x%llx, mend 0x%llx mstart 0x%llx, len %zu size %zu\n",
+					pr_debug("Debug: adsprpc: %s: %s: sc 0x%x pv 0x%llx, mend 0x%lx mstart 0x%lx, len %llu size %zu\n",
 					current->comm, __func__, sc,
 					rpra[over].buf.pv, ctx->overps[i]->mend,
 					ctx->overps[i]->mstart,
@@ -2211,6 +2205,7 @@ static void inv_args(struct smq_invoke_ctx *ctx)
 					uintptr_t offset;
 					uint64_t inv_len;
 					struct vm_area_struct *vma;
+					unsigned long vm_start;
 
 					mmap_read_lock(current->mm);
 					VERIFY(err, NULL != (vma = find_vma(
@@ -2232,6 +2227,7 @@ static void inv_args(struct smq_invoke_ctx *ctx)
 							ctx->overps[i]->mend -
 							ctx->overps[i]->mstart;
 					}
+					vm_start = vma->vm_start;
 					mmap_read_unlock(current->mm);
 					dma_buf_begin_cpu_access_partial(
 						map->buf, DMA_TO_DEVICE, offset,
@@ -2239,9 +2235,9 @@ static void inv_args(struct smq_invoke_ctx *ctx)
 					dma_buf_end_cpu_access_partial(map->buf,
 						DMA_FROM_DEVICE, offset,
 						inv_len);
-					pr_debug("Debug: adsprpc: %s: %s: sc 0x%x vm_start 0x%llx pv 0x%llx, offset 0x%llx, mend 0x%llx mstart 0x%llx, len %zu size %zu\n",
+					pr_debug("Debug: adsprpc: %s: %s: sc 0x%x vm_start 0x%lx pv 0x%llx, offset 0x%lx, mend 0x%lx mstart 0x%lx, len %llu size %zu\n",
 					current->comm, __func__, sc,
-					vma->vm_start, rpra[over].buf.pv,
+					vm_start, rpra[over].buf.pv,
 					offset, ctx->overps[i]->mend,
 					ctx->overps[i]->mstart,
 					rpra[over].buf.len, map->size);
@@ -2304,7 +2300,7 @@ static int fastrpc_invoke_send(struct smq_invoke_ctx *ctx,
 	trace_fastrpc_rpmsg_send(cid, (uint64_t)ctx, msg->invoke.header.ctx,
 		handle, ctx->sc, msg->invoke.page.addr, msg->invoke.page.size);
 	LOG_FASTRPC_GLINK_MSG(channel_ctx->ipc_log_ctx,
-		"sent pkt %pK (sz %d): ctx 0x%llx, handle 0x%x, sc 0x%x (rpmsg err %d)",
+		"sent pkt %pK (sz %zu): ctx 0x%llx, handle 0x%x, sc 0x%x (rpmsg err %d)",
 		(void *)msg, sizeof(*msg),
 		msg->invoke.header.ctx, handle, ctx->sc, err);
 	mutex_unlock(&channel_ctx->rpmsg_mutex);
@@ -2958,7 +2954,7 @@ static int fastrpc_send_cpuinfo_to_dsp(struct fastrpc_file *fl)
 	VERIFY(err, cid >= ADSP_DOMAIN_ID && cid < NUM_CHANNELS);
 	if (err) {
 		err = -ECHRNG;
-		pr_err("invalid channel 0x%zx set for session\n\n",
+		pr_err("invalid channel 0x%x set for session\n\n",
 			cid);
 		goto bail;
 	}
@@ -3240,7 +3236,7 @@ static int fastrpc_mmap_on_dsp(struct fastrpc_file *fl, uint32_t flags,
 		VERIFY(err, cid >= ADSP_DOMAIN_ID && cid < NUM_CHANNELS);
 		if (err) {
 			err = -ECHRNG;
-			pr_err("invalid channel 0x%zx set for session\n",
+			pr_err("invalid channel 0x%x set for session\n",
 			cid);
 			goto bail;
 		}
@@ -3287,7 +3283,7 @@ static int fastrpc_munmap_on_dsp_rh(struct fastrpc_file *fl, uint64_t phys,
 	VERIFY(err, cid >= ADSP_DOMAIN_ID && cid < NUM_CHANNELS);
 	if (err) {
 		err = -ECHRNG;
-		pr_err("invalid channel 0x%zx set for session\n",
+		pr_err("invalid channel 0x%x set for session\n",
 			cid);
 		goto bail;
 	}
@@ -3687,7 +3683,7 @@ static int fastrpc_session_alloc_locked(struct fastrpc_channel_ctx *chan,
 		}
 		if (idx >= chan->sesscount) {
 			err = EUSERS;
-			pr_err("adsprpc: ERROR %d: %s: max concurrent sessions limit (%d) already reached on %s\n",
+			pr_err("adsprpc: ERROR %d: %s: max concurrent sessions limit (%llu) already reached on %s\n",
 				err, __func__, chan->sesscount, chan->subsys);
 			goto bail;
 		}
@@ -4009,13 +4005,13 @@ static ssize_t fastrpc_debugfs_read(struct file *filp, char __user *buffer,
 			len += scnprintf(fileinfo + len,
 				DEBUGFS_SIZE - len, "%-7s", chan->subsys);
 			len += scnprintf(fileinfo + len,
-				DEBUGFS_SIZE - len, "|%-10u",
+				DEBUGFS_SIZE - len, "|%-10llu",
 				chan->sesscount);
 			len += scnprintf(fileinfo + len,
 				DEBUGFS_SIZE - len, "|%-15d",
 				chan->subsystemstate);
 			len += scnprintf(fileinfo + len,
-				DEBUGFS_SIZE - len, "|%-9u",
+				DEBUGFS_SIZE - len, "|%-9llu",
 				chan->ssrcount);
 			for (j = 0; j < chan->sesscount; j++) {
 				sess_used += chan->session[j].used;
@@ -4075,7 +4071,7 @@ static ssize_t fastrpc_debugfs_read(struct file *filp, char __user *buffer,
 		len += scnprintf(fileinfo + len, DEBUGFS_SIZE - len,
 			"%s %7s %d\n", "sessionid", ":", fl->sessionid);
 		len += scnprintf(fileinfo + len, DEBUGFS_SIZE - len,
-			"%s %8s %u\n", "ssrcount", ":", fl->ssrcount);
+			"%s %8s %llu\n", "ssrcount", ":", fl->ssrcount);
 		len += scnprintf(fileinfo + len, DEBUGFS_SIZE - len,
 			"%s %14s %d\n", "pd", ":", fl->pd);
 		len += scnprintf(fileinfo + len, DEBUGFS_SIZE - len,
@@ -5024,7 +5020,7 @@ static int fastrpc_cb_probe(struct device *dev)
 	struct of_phandle_args iommuspec;
 	struct fastrpc_apps *me = &gfa;
 	const char *name;
-	int err = 0, cid = -1, i = 0;
+	int err = 0, i = 0;
 	u32 sharedcb_count = 0, j = 0;
 	uint32_t dma_addr_pool[2] = {0, 0};
 
@@ -5042,7 +5038,6 @@ static int fastrpc_cb_probe(struct device *dev)
 	VERIFY(err, i < NUM_CHANNELS);
 	if (err)
 		goto bail;
-	cid = i;
 	chan = &gcinfo[i];
 	VERIFY(err, chan->sesscount < NUM_SESSIONS);
 	if (err)
@@ -5114,7 +5109,7 @@ bail:
 static int fastrpc_cb_legacy_probe(struct device *dev)
 {
 	struct fastrpc_channel_ctx *chan;
-	struct fastrpc_session_ctx *first_sess = NULL, *sess = NULL;
+	struct fastrpc_session_ctx *sess = NULL;
 	struct fastrpc_apps *me = &gfa;
 	const char *name;
 	unsigned int *sids = NULL, sids_size = 0;
@@ -5141,8 +5136,6 @@ static int fastrpc_cb_legacy_probe(struct device *dev)
 	VERIFY(err, chan->sesscount < NUM_SESSIONS);
 	if (err)
 		goto bail;
-
-	first_sess  = &chan->session[chan->sesscount];
 
 	VERIFY(err, NULL != of_get_property(dev->of_node,
 				"sids", &sids_size));
@@ -5561,7 +5554,7 @@ static int __init fastrpc_device_init(void)
 							gcinfo[i].subsys,
 							&me->channel[i].nb);
 		if (IS_ERR_OR_NULL(me->channel[i].handle))
-			pr_warn("adsprpc: %s: SSR notifier register failed for %s with err %d\n",
+			pr_warn("adsprpc: %s: SSR notifier register failed for %s with err %ld\n",
 				__func__, gcinfo[i].subsys,
 				PTR_ERR(me->channel[i].handle));
 		else
