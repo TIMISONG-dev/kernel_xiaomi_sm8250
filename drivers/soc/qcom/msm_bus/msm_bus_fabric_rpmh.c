@@ -50,7 +50,7 @@ struct msm_bus_rsc_client {
 	struct device *client;
 };
 
-struct msm_bus_rsc_client rsc_clients[MSM_BUS_RSC_COUNT];
+static struct msm_bus_rsc_client rsc_clients[MSM_BUS_RSC_COUNT];
 
 struct bcm_db {
 	uint32_t unit_size;
@@ -59,7 +59,7 @@ struct bcm_db {
 	uint8_t reserved;
 };
 
-ssize_t bw_show(struct device *dev, struct device_attribute *attr,
+static ssize_t bw_show(struct device *dev, struct device_attribute *attr,
 			  char *buf)
 {
 	struct msm_bus_node_info_type *node_info = NULL;
@@ -99,13 +99,13 @@ ssize_t bw_show(struct device *dev, struct device_attribute *attr,
 	return off;
 }
 
-ssize_t bw_store(struct device *dev, struct device_attribute *attr,
+static ssize_t bw_store(struct device *dev, struct device_attribute *attr,
 			   const char *buf, size_t count)
 {
 	return count;
 }
 
-DEVICE_ATTR_RW(bw);
+static DEVICE_ATTR_RW(bw);
 
 struct static_rules_type {
 	int num_rules;
@@ -1791,7 +1791,7 @@ static int msm_bus_free_dev(struct device *dev, void *data)
 	return 0;
 }
 
-int msm_bus_device_remove(struct platform_device *pdev)
+static int msm_bus_device_remove(struct platform_device *pdev)
 {
 	bus_for_each_dev(&msm_bus_type, NULL, NULL, msm_bus_free_dev);
 	return 0;
@@ -1916,7 +1916,7 @@ exit_rules_probe:
 	return 0;
 }
 
-int msm_bus_device_rules_remove(struct platform_device *pdev)
+static int msm_bus_device_rules_remove(struct platform_device *pdev)
 {
 	struct static_rules_type *static_rules = NULL;
 
@@ -1954,7 +1954,7 @@ static int msm_bus_rsc_probe(struct platform_device *pdev)
 	return 0;
 }
 
-int msm_bus_rsc_remove(struct platform_device *pdev)
+static int msm_bus_rsc_remove(struct platform_device *pdev)
 {
 	int i;
 
@@ -2007,7 +2007,7 @@ static struct platform_driver msm_bus_rsc_driver = {
 	},
 };
 
-int __init msm_bus_rsc_init_driver(void)
+static int __init msm_bus_rsc_init_driver(void)
 {
 	int rc;
 
@@ -2019,7 +2019,7 @@ int __init msm_bus_rsc_init_driver(void)
 }
 
 
-int __init msm_bus_device_init_driver(void)
+static int __init msm_bus_device_init_driver(void)
 {
 	int rc;
 
@@ -2033,7 +2033,7 @@ int __init msm_bus_device_init_driver(void)
 	return platform_driver_register(&msm_bus_rules_driver);
 }
 
-int __init msm_bus_device_late_init(void)
+static int __init msm_bus_device_late_init(void)
 {
 	commit_late_init_data(true);
 	MSM_BUS_ERR("msm_bus_late_init: Remove handoff bw requests\n");
