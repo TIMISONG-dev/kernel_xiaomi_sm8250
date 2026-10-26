@@ -20,6 +20,8 @@
  * memory allocation overhead reasonable.
  */
 #define SCS_SIZE	1024UL
+
+extern unsigned long init_shadow_call_stack[SCS_SIZE / sizeof(long)];
 #define GFP_SCS		(GFP_KERNEL | __GFP_ZERO)
 
 /*
