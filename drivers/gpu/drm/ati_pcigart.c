@@ -101,7 +101,8 @@ int drm_ati_pcigart_init(struct drm_device *dev, struct drm_ati_pcigart_info *ga
 	struct drm_sg_mem *entry = dev->sg;
 	void *address = NULL;
 	unsigned long pages;
-	u32 *pci_gart = NULL, page_base, gart_idx;
+	__le32 *pci_gart = NULL;
+	u32 page_base, gart_idx;
 	dma_addr_t bus_address = 0;
 	int i, j, ret = 0;
 	int max_ati_pages, max_real_pages;

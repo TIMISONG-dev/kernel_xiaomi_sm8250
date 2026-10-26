@@ -151,7 +151,7 @@ static struct lt9611_timing_info lt9611_supp_timing_cfg[] = {
 	{0xffff, 0xffff, 0xff, 0xff, 0xff},
 };
 
-void lt9611_hpd_work(struct work_struct *work)
+static void lt9611_hpd_work(struct work_struct *work)
 {
 	char name[32], status[32];
 	char *envp[5];
@@ -305,7 +305,7 @@ static int lt9611_read(struct lt9611 *pdata, u8 reg, char *buf, u32 size)
 	return 0;
 }
 
-void lt9611_config(struct lt9611 *pdata)
+static void lt9611_config(struct lt9611 *pdata)
 {
 	struct lt9611_reg_cfg reg_cfg[] = {
 		{0xFF, 0x80},
@@ -320,7 +320,7 @@ void lt9611_config(struct lt9611 *pdata)
 	lt9611_write_array(pdata, reg_cfg, ARRAY_SIZE(reg_cfg));
 }
 
-u8 lt9611_get_version(struct lt9611 *pdata)
+static u8 lt9611_get_version(struct lt9611 *pdata)
 {
 	u8 revison = 0;
 
@@ -340,7 +340,7 @@ u8 lt9611_get_version(struct lt9611 *pdata)
 	return revison;
 }
 
-void lt9611_flash_write_en(struct lt9611 *pdata)
+static void lt9611_flash_write_en(struct lt9611 *pdata)
 {
 	struct lt9611_reg_cfg reg_cfg0[] = {
 		{0xFF, 0x81},
@@ -360,7 +360,7 @@ void lt9611_flash_write_en(struct lt9611 *pdata)
 	lt9611_write_array(pdata, reg_cfg1, ARRAY_SIZE(reg_cfg1));
 }
 
-void lt9611_block_erase(struct lt9611 *pdata)
+static void lt9611_block_erase(struct lt9611 *pdata)
 {
 	struct lt9611_reg_cfg reg_cfg[] = {
 		{0xFF, 0x80},
@@ -379,7 +379,7 @@ void lt9611_block_erase(struct lt9611 *pdata)
 	msleep(3000);
 }
 
-void lt9611_flash_read_addr_set(struct lt9611 *pdata, u32 addr)
+static void lt9611_flash_read_addr_set(struct lt9611 *pdata, u32 addr)
 {
 	struct lt9611_reg_cfg reg_cfg[] = {
 		{0x5E, 0x5F},
@@ -396,7 +396,7 @@ void lt9611_flash_read_addr_set(struct lt9611 *pdata, u32 addr)
 	lt9611_write_array(pdata, reg_cfg, ARRAY_SIZE(reg_cfg));
 }
 
-void lt9611_fw_read_back(struct lt9611 *pdata, u8 *buff, int size)
+static void lt9611_fw_read_back(struct lt9611 *pdata, u8 *buff, int size)
 {
 	u8 page_data[32];
 	int page_number = 0, i = 0, addr = 0;
@@ -426,7 +426,7 @@ void lt9611_fw_read_back(struct lt9611 *pdata, u8 *buff, int size)
 	}
 }
 
-void lt9611_flash_write_config(struct lt9611 *pdata)
+static void lt9611_flash_write_config(struct lt9611 *pdata)
 {
 	struct lt9611_reg_cfg reg_cfg[] = {
 		{0xFF, 0x80},
@@ -440,7 +440,7 @@ void lt9611_flash_write_config(struct lt9611 *pdata)
 	lt9611_write_array(pdata, reg_cfg, ARRAY_SIZE(reg_cfg));
 }
 
-void lt9611_flash_write_addr_set(struct lt9611 *pdata, u32 addr)
+static void lt9611_flash_write_addr_set(struct lt9611 *pdata, u32 addr)
 {
 	struct lt9611_reg_cfg reg_cfg[] = {
 		{0x5B, (addr & 0xFF0000) >> 16},
@@ -453,8 +453,8 @@ void lt9611_flash_write_addr_set(struct lt9611 *pdata, u32 addr)
 	lt9611_write_array(pdata, reg_cfg, ARRAY_SIZE(reg_cfg));
 }
 
-void lt9611_firmware_write(struct lt9611 *pdata, const u8 *f_data,
-		int size)
+static void lt9611_firmware_write(struct lt9611 *pdata, const u8 *f_data,
+				  int size)
 {
 	u8 last_buf[32];
 	int i = 0, page_size = 32;
@@ -487,8 +487,8 @@ void lt9611_firmware_write(struct lt9611 *pdata, const u8 *f_data,
 		size, total_page, rest_data);
 }
 
-void lt9611_firmware_upgrade(struct lt9611 *pdata,
-			const struct firmware *cfg)
+static void lt9611_firmware_upgrade(struct lt9611 *pdata,
+				    const struct firmware *cfg)
 {
 	int i = 0;
 	u8 *fw_read_data = NULL;
