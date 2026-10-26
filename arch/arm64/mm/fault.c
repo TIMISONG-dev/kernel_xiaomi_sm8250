@@ -821,8 +821,6 @@ asmlinkage void __exception do_sp_pc_abort(unsigned long addr,
 	arm64_notify_die("SP/PC alignment exception", regs, &info, esr);
 }
 
-int __init early_brk64(unsigned long addr, unsigned int esr,
-		       struct pt_regs *regs);
 
 /*
  * __refdata because early_brk64 is __init, but the reference to it is

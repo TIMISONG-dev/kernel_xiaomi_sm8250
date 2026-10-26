@@ -35,6 +35,15 @@
 #include <linux/cpumask.h>
 #include <linux/thread_info.h>
 
+extern int cpus_stuck_in_kernel;
+extern bool va52mismatch;
+extern volatile unsigned long secondary_holding_pen_release;
+struct pt_regs;
+struct task_struct;
+DECLARE_PER_CPU(struct task_struct *, __entry_task);
+DECLARE_PER_CPU(bool, pending_ipi);
+DECLARE_PER_CPU(struct pt_regs, regs_before_stop);
+
 DECLARE_PER_CPU_READ_MOSTLY(int, cpu_number);
 
 /*

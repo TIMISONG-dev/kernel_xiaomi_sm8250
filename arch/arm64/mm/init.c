@@ -45,6 +45,7 @@
 #include <linux/memblock.h>
 
 #include <asm/boot.h>
+#include <asm/memblock.h>
 #include <asm/fixmap.h>
 #include <asm/kasan.h>
 #include <asm/kernel-pgtable.h>
@@ -554,7 +555,6 @@ void __init arm64_memblock_init(void)
 	}
 
 	if (IS_ENABLED(CONFIG_RANDOMIZE_BASE)) {
-		extern u16 memstart_offset_seed;
 		u64 range = linear_region_size -
 			   (bootloader_memory_limit - memblock_start_of_DRAM());
 

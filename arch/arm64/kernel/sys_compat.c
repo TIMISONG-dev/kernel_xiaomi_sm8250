@@ -31,6 +31,7 @@
 #include <asm/system_misc.h>
 #include <asm/tlbflush.h>
 #include <asm/unistd.h>
+#include <asm/syscall.h>
 
 static long
 __do_compat_cache_op(unsigned long start, unsigned long end)
