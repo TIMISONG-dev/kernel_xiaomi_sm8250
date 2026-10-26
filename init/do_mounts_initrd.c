@@ -43,7 +43,6 @@ static void __init handle_initrd(void)
 {
 	struct subprocess_info *info;
 	static char *argv[] = { "linuxrc", NULL, };
-	extern char *envp_init[];
 	int error;
 
 	real_root_dev = new_encode_dev(ROOT_DEV);
@@ -62,7 +61,8 @@ static void __init handle_initrd(void)
 	 */
 	current->flags |= PF_FREEZER_SKIP;
 
-	info = call_usermodehelper_setup("/linuxrc", argv, envp_init,
+	/* The legacy UMH interface does not modify the environment strings. */
+	info = call_usermodehelper_setup("/linuxrc", argv, (char **)envp_init,
 					 GFP_KERNEL, init_linuxrc, NULL, NULL);
 	if (!info)
 		return;
