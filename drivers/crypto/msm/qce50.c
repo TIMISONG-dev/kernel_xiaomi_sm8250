@@ -2701,7 +2701,7 @@ ret:
 }
 
 /**
- * Allocate and Connect a CE peripheral's SPS endpoint
+ * qce_sps_init_ep_conn - Allocate and connect a CE peripheral's SPS endpoint
  *
  * This function allocates endpoint context and
  * connect it with memory endpoint by calling
@@ -2713,12 +2713,11 @@ ret:
  * This function should only be called once typically
  * during driver probe.
  *
- * @pce_dev - Pointer to qce_device structure
- * @ep   - Pointer to sps endpoint data structure
- * @is_produce - 1 means Producer endpoint
- *		 0 means Consumer endpoint
+ * @pce_dev: Pointer to qce_device structure
+ * @ep: Pointer to SPS endpoint data structure
+ * @is_producer: True for the producer endpoint, false for the consumer
  *
- * @return - 0 if successful else negative value.
+ * Return: 0 on success or a negative error code.
  *
  */
 static int qce_sps_init_ep_conn(struct qce_device *pce_dev,
@@ -2849,7 +2848,7 @@ out:
 }
 
 /**
- * Disconnect and Deallocate a CE peripheral's SPS endpoint
+ * qce_sps_exit_ep_conn - Disconnect and free a CE peripheral's SPS endpoint
  *
  * This function disconnect endpoint and deallocates
  * endpoint context.
@@ -2857,8 +2856,8 @@ out:
  * This function should only be called once typically
  * during driver remove.
  *
- * @pce_dev - Pointer to qce_device structure
- * @ep   - Pointer to sps endpoint data structure
+ * @pce_dev: Pointer to qce_device structure
+ * @ep: Pointer to SPS endpoint data structure
  *
  */
 static void qce_sps_exit_ep_conn(struct qce_device *pce_dev,
@@ -3016,7 +3015,7 @@ ret:
 	return rc;
 }
 /**
- * Initialize SPS HW connected with CE core
+ * qce_sps_init - Initialize SPS hardware connected with the CE core
  *
  * This function register BAM HW resources with
  * SPS driver and then initialize 2 SPS endpoints
@@ -3024,9 +3023,9 @@ ret:
  * This function should only be called once typically
  * during driver probe.
  *
- * @pce_dev - Pointer to qce_device structure
+ * @pce_dev: Pointer to qce_device structure
  *
- * @return - 0 if successful else negative value.
+ * Return: 0 on success or a negative error code.
  *
  */
 static int qce_sps_init(struct qce_device *pce_dev)
@@ -3256,7 +3255,7 @@ static void _sps_producer_callback(struct sps_event_notify *notify)
 }
 
 /**
- * De-initialize SPS HW connected with CE core
+ * qce_sps_exit - Deinitialize SPS hardware connected with the CE core
  *
  * This function deinitialize SPS endpoints and then
  * deregisters BAM resources from SPS driver.
@@ -3264,7 +3263,7 @@ static void _sps_producer_callback(struct sps_event_notify *notify)
  * This function should only be called once typically
  * during driver remove.
  *
- * @pce_dev - Pointer to qce_device structure
+ * @pce_dev: Pointer to qce_device structure
  *
  */
 static void qce_sps_exit(struct qce_device *pce_dev)
