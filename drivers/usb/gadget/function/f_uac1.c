@@ -1057,7 +1057,6 @@ static ssize_t f_uac1_opts_speaker_volume_show(struct config_item *item,
 {
 	struct f_uac1_opts *opts = to_f_uac1_opts(item);
 	struct f_uac1 *uac1 = opts->uac1;
-	int result;
 	struct usb_audio_control_selector *cs;
 	struct usb_audio_control *con;
 	int value;
@@ -1070,23 +1069,21 @@ static ssize_t f_uac1_opts_speaker_volume_show(struct config_item *item,
 			list_for_each_entry(con, &cs->control, list) {
 				if (con->type == UAC_FU_VOLUME && con->get) {
 					value = con->get(con, UAC__CUR);
-					break;
+					return scnprintf(page, PAGE_SIZE,
+							 "%u\n", value);
 				}
 			}
 			break;
 		}
 	}
 
-	result = scnprintf(page, PAGE_SIZE, "%u\n", value);
-
-	return result;
+	return -ENODATA;
 }
 
 static ssize_t f_uac1_opts_mic_volume_show(struct config_item *item, char *page)
 {
 	struct f_uac1_opts *opts = to_f_uac1_opts(item);
 	struct f_uac1 *uac1 = opts->uac1;
-	int result;
 	struct usb_audio_control_selector *cs;
 	struct usb_audio_control *con;
 	int value;
@@ -1099,16 +1096,15 @@ static ssize_t f_uac1_opts_mic_volume_show(struct config_item *item, char *page)
 			list_for_each_entry(con, &cs->control, list) {
 				if (con->type == UAC_FU_VOLUME && con->get) {
 					value = con->get(con, UAC__CUR);
-					break;
+					return scnprintf(page, PAGE_SIZE,
+							 "%u\n", value);
 				}
 			}
 			break;
 		}
 	}
 
-	result = scnprintf(page, PAGE_SIZE, "%u\n", value);
-
-	return result;
+	return -ENODATA;
 }
 
 static ssize_t f_uac1_opts_speaker_mute_show(struct config_item *item,
@@ -1116,7 +1112,6 @@ static ssize_t f_uac1_opts_speaker_mute_show(struct config_item *item,
 {
 	struct f_uac1_opts *opts = to_f_uac1_opts(item);
 	struct f_uac1 *uac1 = opts->uac1;
-	int result;
 	struct usb_audio_control_selector *cs;
 	struct usb_audio_control *con;
 	int value;
@@ -1129,23 +1124,21 @@ static ssize_t f_uac1_opts_speaker_mute_show(struct config_item *item,
 			list_for_each_entry(con, &cs->control, list) {
 				if (con->type == UAC_FU_MUTE && con->get) {
 					value = con->get(con, UAC__CUR);
-					break;
+					return scnprintf(page, PAGE_SIZE,
+							 "%u\n", value);
 				}
 			}
 			break;
 		}
 	}
 
-	result = scnprintf(page, PAGE_SIZE, "%u\n", value);
-
-	return result;
+	return -ENODATA;
 }
 
 static ssize_t f_uac1_opts_mic_mute_show(struct config_item *item, char *page)
 {
 	struct f_uac1_opts *opts = to_f_uac1_opts(item);
 	struct f_uac1 *uac1 = opts->uac1;
-	int result;
 	struct usb_audio_control_selector *cs;
 	struct usb_audio_control *con;
 	int value;
@@ -1158,16 +1151,15 @@ static ssize_t f_uac1_opts_mic_mute_show(struct config_item *item, char *page)
 			list_for_each_entry(con, &cs->control, list) {
 				if (con->type == UAC_FU_MUTE && con->get) {
 					value = con->get(con, UAC__CUR);
-					break;
+					return scnprintf(page, PAGE_SIZE,
+							 "%u\n", value);
 				}
 			}
 			break;
 		}
 	}
 
-	result = scnprintf(page, PAGE_SIZE, "%u\n", value);
-
-	return result;
+	return -ENODATA;
 }
 
 CONFIGFS_ATTR_RO(f_uac1_opts_, speaker_volume);
