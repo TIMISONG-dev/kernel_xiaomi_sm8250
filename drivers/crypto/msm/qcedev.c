@@ -2284,10 +2284,11 @@ static int qcedev_remove(struct platform_device *pdev)
 	if (!podev)
 		return 0;
 
-	qcedev_ce_high_bw_req(podev, true);
+	/* qce_close() manages its clocks and frees the QCE handle. */
+	msm_bus_scale_client_update_request(podev->bus_scale_handle, 1);
 	if (podev->qce)
 		qce_close(podev->qce);
-	qcedev_ce_high_bw_req(podev, false);
+	msm_bus_scale_client_update_request(podev->bus_scale_handle, 0);
 
 	if (podev->platform_support.bus_scale_table != NULL)
 		msm_bus_scale_unregister_client(podev->bus_scale_handle);
