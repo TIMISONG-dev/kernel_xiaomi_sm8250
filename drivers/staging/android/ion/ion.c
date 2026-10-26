@@ -452,8 +452,8 @@ static const struct dma_buf_ops ion_dma_buf_ops = {
 	.get_flags = ion_dma_buf_get_flags
 };
 
-struct dma_buf *ion_alloc_dmabuf(size_t len, unsigned int heap_id_mask,
-				 unsigned int flags)
+static struct dma_buf *ion_alloc_dmabuf(size_t len, unsigned int heap_id_mask,
+					unsigned int flags)
 {
 	struct ion_device *idev = &ion_dev;
 	struct dma_buf_export_info exp_info;

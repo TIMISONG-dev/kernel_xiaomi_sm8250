@@ -29,7 +29,7 @@ static gfp_t low_order_gfp_flags  = GFP_HIGHUSER | __GFP_ZERO;
 static bool pool_auto_refill_en  __read_mostly =
 		IS_ENABLED(CONFIG_ION_POOL_AUTO_REFILL);
 
-int camera_order_to_index(unsigned int order)
+static int camera_order_to_index(unsigned int order)
 {
 	int i;
 
@@ -67,7 +67,7 @@ struct pages_mem {
 	u32 size;
 };
 
-int ion_heap_is_camera_heap_type(enum ion_heap_type type)
+static int ion_heap_is_camera_heap_type(enum ion_heap_type type)
 {
 	return type == ((enum ion_heap_type)ION_HEAP_TYPE_CAMERA);
 }
@@ -347,13 +347,13 @@ static int ion_camera_heap_allocate(struct ion_heap *heap,
 				i = process_info(info, sg, sg_sync, &data, i);
 				sg_sync = sg_next(sg_sync);
 			} else {
-				i = process_info(tmp_info, sg, 0, 0, i);
+				i = process_info(tmp_info, sg, NULL, NULL, i);
 			}
 		} else if (info) {
 			i = process_info(info, sg, sg_sync, &data, i);
 			sg_sync = sg_next(sg_sync);
 		} else if (tmp_info) {
-			i = process_info(tmp_info, sg, 0, 0, i);
+			i = process_info(tmp_info, sg, NULL, NULL, i);
 		}
 		sg = sg_next(sg);
 
@@ -405,7 +405,7 @@ err:
 	return ret;
 }
 
-void ion_camera_heap_free(struct ion_buffer *buffer)
+static void ion_camera_heap_free(struct ion_buffer *buffer)
 {
 	struct ion_heap *heap = buffer->heap;
 	struct ion_camera_heap *sys_heap = container_of(heap,
@@ -490,10 +490,15 @@ static void ion_camera_heap_destroy_pools(struct ion_page_pool **pools)
 
 /**
  * ion_camera_heap_create_pools - Creates pools for all orders
+ * @sys_heap: Heap owning these page pools
+ * @pools: Output array receiving one pool per supported order
+ * @cached: Whether the pools provide cached pages
  *
  * If this fails you don't need to destroy any pools. It's all or
  * nothing. If it succeeds you'll eventually need to use
  * ion_camera_heap_destroy_pools to destroy the pools.
+ *
+ * Return: Zero on success or -ENOMEM after unwinding partial allocation.
  */
 static int ion_camera_heap_create_pools(struct ion_camera_heap *sys_heap, struct ion_page_pool **pools,
 					bool cached)
