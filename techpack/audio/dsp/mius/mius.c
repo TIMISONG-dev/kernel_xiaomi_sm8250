@@ -1,4 +1,6 @@
 /**
+ * DOC: MIUS ultrasound character interface
+ *
 * Copyright MI
 *
 */
@@ -211,7 +213,6 @@ int mius_data_initialize(struct mius_data
 
 int mius_data_cleanup(struct mius_data *mius_data)
 {
-	spin_unlock(&mius_data->fifo_isr_spinlock);
 	kfifo_free(&mius_data->fifo_isr);
 	return 0;
 }
@@ -351,9 +352,10 @@ int mius_data_push(int deviceid,
 				continue;
 			}
 		} else if (data_source == MIUS_DATA_PUSH_FROM_USERSPACE) {
-			copy_from_user_result = kfifo_from_user(
-				&mius_data->fifo_isr, buffer,
-				buffer_size, &copied_from_user);
+			copy_from_user_result =
+				kfifo_from_user(&mius_data->fifo_isr,
+						(const void __user *)buffer,
+						buffer_size, &copied_from_user);
 
 			if (-EFAULT == copy_from_user_result) {
 				spin_unlock_irqrestore(
@@ -430,11 +432,16 @@ int32_t mius_data_write(uint32_t message_id,
 
 
 /**
-*
-* @return Number of bytes read.
-*/
-static ssize_t device_read(struct file *fp, char __user *buff,
-	size_t length, loff_t *ppos)
+ * device_read - Read ultrasound data into userspace
+ * @fp: Open character-device file
+ * @buff: Userspace data buffer
+ * @length: Requested byte count
+ * @ppos: File position supplied by the VFS
+ *
+ * Return: Number of bytes read or a negative error
+ */
+static ssize_t device_read(struct file *fp, char __user *buff, size_t length,
+			   loff_t *ppos)
 {
 	ssize_t bytes_read = 0;
 	struct mius_device *mius_device;
@@ -449,20 +456,31 @@ static ssize_t device_read(struct file *fp, char __user *buff,
 }
 
 /**
-*
-* @return number of bytes actually written
-*/
-static ssize_t device_write(struct file *fp, const char *buff,
-	size_t length, loff_t *ppos)
+ * device_write - Submit ultrasound parameters from userspace
+ * @fp: Open character-device file
+ * @buff: Userspace data buffer
+ * @length: Requested byte count
+ * @ppos: File position supplied by the VFS
+ *
+ * Return: Number of bytes written or a negative error
+ */
+static ssize_t device_write(struct file *fp, const char __user *buff,
+			    size_t length, loff_t *ppos)
 {
-	ssize_t ret_val;
+	char *data;
+	int ret;
 
-	ret_val = 0;
-	if ((buff != NULL) && (length != 0))
-		ret_val = mius_data_io_write(MIUS_ULTRASOUND_SET_PARAMS,
-			buff, length);
-
-	return ret_val >= 0 ? (ssize_t)length : 0;
+	if (!length)
+		return 0;
+	if (length > U16_MAX)
+		return -EINVAL;
+	data = memdup_user(buff, length);
+	if (IS_ERR(data))
+		return PTR_ERR(data);
+	ret = mius_data_io_write(MIUS_ULTRASOUND_SET_PARAMS,
+				    data, length);
+	kfree(data);
+	return ret < 0 ? ret : length;
 }
 
 
@@ -473,7 +491,9 @@ static long device_ioctl(struct file *fp, unsigned int number,
 	struct mius_data *mius_data;
 	int err;
 	unsigned int mirror_tag, mirror_payload_size;
-	unsigned char *data_ptr;
+	u32 mirror_header[2];
+	unsigned char __user *data_ptr;
+	char *data;
 
 	device = (struct mius_device *)(fp->private_data);
 	mius_data = &device->el_data;
@@ -486,18 +506,21 @@ static long device_ioctl(struct file *fp, unsigned int number,
 		break;
 
 	case IOCTL_MIUS_DATA_IO_MIRROR:
-		data_ptr = (unsigned char *)param;
-		mirror_tag = *(unsigned int *)data_ptr;
-		mirror_payload_size = *((unsigned int *)data_ptr + 1);
+		data_ptr = (unsigned char __user *)param;
+		if (copy_from_user(mirror_header, data_ptr, sizeof(mirror_header)))
+			return -EFAULT;
+		mirror_tag = mirror_header[0];
+		mirror_payload_size = mirror_header[1];
 
-		if ((mirror_tag == MIRROR_TAG) &&
-			(mirror_payload_size != 0) &&
-			(mirror_payload_size <=
-			(MIUS_SET_PARAMS_SIZE * 4))) {
-
-			err = mius_data_io_write(
-				MIUS_ULTRASOUND_SET_PARAMS,
-				(data_ptr + 8), mirror_payload_size);
+		if ((mirror_tag == MIRROR_TAG) && (mirror_payload_size != 0) &&
+		    (mirror_payload_size <= (MIUS_SET_PARAMS_SIZE * 4))) {
+			data = memdup_user(data_ptr + sizeof(mirror_header),
+					   mirror_payload_size);
+			if (IS_ERR(data))
+				return PTR_ERR(data);
+			err = mius_data_io_write(MIUS_ULTRASOUND_SET_PARAMS,
+						 data, mirror_payload_size);
+			kfree(data);
 
 			if (err != 0) {
 				MI_PRINT_E("mius_data_io_write failed");
@@ -518,11 +541,10 @@ static long device_ioctl(struct file *fp, unsigned int number,
 	return 0;
 }
 
-
-static unsigned int device_poll(struct file *file,
-	struct poll_table_struct *poll_table)
+static __poll_t device_poll(struct file *file,
+				struct poll_table_struct *poll_table)
 {
-	unsigned int mask;
+	__poll_t mask;
 
 	struct mius_device *device;
 	struct mius_data *mius_data;
@@ -534,7 +556,7 @@ static unsigned int device_poll(struct file *file,
 	poll_wait(file, &mius_data->fifo_isr_not_empty, poll_table);
 
 	if (!kfifo_is_empty(&mius_data->fifo_isr))
-		mask = POLLIN | POLLRDNORM;
+		mask = EPOLLIN | EPOLLRDNORM;
 
 	return mask;
 }
