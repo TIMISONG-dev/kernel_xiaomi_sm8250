@@ -581,7 +581,7 @@ int sps_bam_device_init(struct sps_bam *dev)
 		SPS_ERR(dev, "sps:%s:NULL BAM virtual address\n", __func__);
 		return SPS_ERROR;
 	}
-	dev->base = (void *) dev->props.virt_addr;
+	dev->base = dev->props.virt_addr;
 
 	if (dev->props.num_pipes == 0) {
 		/* Assume max number of pipes until BAM registers can be read */
