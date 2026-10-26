@@ -412,7 +412,7 @@ static ssize_t measured_fps_show(struct device *device,
 	fps_int = (uint64_t) sde_crtc->fps_info.measured_fps;
 	fps_decimal = do_div(fps_int, 10);
 	return scnprintf(buf, PAGE_SIZE,
-	"fps: %d.%d duration:%d frame_count:%lld\n", fps_int, fps_decimal,
+	"fps: %llu.%llu duration:%d frame_count:%llu\n", fps_int, fps_decimal,
 			sde_crtc->fps_info.fps_periodic_duration, frame_count);
 }
 
@@ -1291,7 +1291,6 @@ static int _sde_crtc_validate_src_split_order(struct drm_crtc *crtc,
 			continue;
 
 		stage = cur_pstate->stage;
-
 		left_pid = prv_pstate->sde_pstate->base.plane->base.id;
 		POPULATE_RECT(&left_rect, prv_pstate->drm_pstate->crtc_x,
 			prv_pstate->drm_pstate->crtc_y,
@@ -1349,7 +1348,6 @@ static void _sde_crtc_set_src_split_order(struct drm_crtc *crtc,
 	struct sde_kms *sde_kms;
 	struct sde_rect left_rect, right_rect;
 	int32_t left_pid, right_pid;
-	int32_t stage;
 	int i;
 
 	sde_kms = _sde_crtc_get_kms(crtc);
@@ -1377,8 +1375,6 @@ static void _sde_crtc_set_src_split_order(struct drm_crtc *crtc,
 
 			continue;
 		}
-
-		stage = cur_pstate->stage;
 
 		left_pid = prv_pstate->sde_pstate->base.plane->base.id;
 		POPULATE_RECT(&left_rect, prv_pstate->drm_pstate->crtc_x,
@@ -1860,6 +1856,8 @@ static void _sde_drm_fb_transactions(
  * need to be performed before transitioning to secure state
  * This function should be called after swapping the new state
  * @crtc: Pointer to drm crtc structure
+ * @old_crtc_state: Previous CRTC state
+ * @old_valid_fb: Whether the previous state has a valid framebuffer
  * Returns the bitmask of operations need to be performed, -Error in
  * case of error cases
  */
@@ -1869,11 +1867,9 @@ int sde_crtc_get_secure_transition_ops(struct drm_crtc *crtc,
 {
 	struct drm_plane *plane;
 	struct drm_encoder *encoder;
-	struct sde_crtc *sde_crtc;
 	struct sde_kms *sde_kms;
 	struct sde_mdss_cfg *catalog;
 	struct sde_kms_smmu_state_data *smmu_state;
-	struct drm_device *dev;
 	uint32_t translation_mode = 0, secure_level;
 	int ops  = 0;
 	bool post_commit = false;
@@ -1892,10 +1888,8 @@ int sde_crtc_get_secure_transition_ops(struct drm_crtc *crtc,
 	smmu_state->prev_state = smmu_state->state;
 	smmu_state->prev_secure_level = smmu_state->secure_level;
 
-	sde_crtc = to_sde_crtc(crtc);
 	secure_level = sde_crtc_get_secure_level(crtc, crtc->state);
 	catalog = sde_kms->catalog;
-	dev = sde_kms->dev;
 
 	/*
 	 * Loop through encoder list to find out if clone mode is
@@ -1981,10 +1975,11 @@ int sde_crtc_get_secure_transition_ops(struct drm_crtc *crtc,
 }
 
 /**
- * _sde_crtc_setup_scaler3_lut - Set up scaler lut
+ * _sde_crtc_set_dest_scaler_lut - Set up scaler lut
  * LUTs are configured only once during boot
  * @sde_crtc: Pointer to sde crtc
  * @cstate: Pointer to sde crtc state
+ * @lut_idx: Scaler LUT property index
  */
 static int _sde_crtc_set_dest_scaler_lut(struct sde_crtc *sde_crtc,
 		struct sde_crtc_state *cstate, uint32_t lut_idx)
@@ -2409,7 +2404,6 @@ static void _sde_crtc_retire_event(struct drm_connector *connector,
 
 static void sde_crtc_frame_event_work(struct kthread_work *work)
 {
-	struct msm_drm_private *priv;
 	struct sde_crtc_frame_event *fevent;
 	struct drm_crtc *crtc;
 	struct sde_crtc *sde_crtc;
@@ -2439,7 +2433,6 @@ static void sde_crtc_frame_event_work(struct kthread_work *work)
 		SDE_ERROR("invalid kms handle\n");
 		return;
 	}
-	priv = sde_kms->dev->dev_private;
 	SDE_ATRACE_BEGIN("crtc_frame_event");
 
 	SDE_DEBUG("crtc%d event:%u ts:%lld\n", crtc->base.id, fevent->event,
@@ -2529,14 +2522,11 @@ static void sde_crtc_frame_event_work(struct kthread_work *work)
 void sde_crtc_complete_commit(struct drm_crtc *crtc,
 		struct drm_crtc_state *old_state)
 {
-	struct sde_crtc *sde_crtc;
-
 	if (!crtc || !crtc->state) {
 		SDE_ERROR("invalid crtc\n");
 		return;
 	}
 
-	sde_crtc = to_sde_crtc(crtc);
 	SDE_EVT32_VERBOSE(DRMID(crtc));
 
 	sde_core_perf_crtc_update(crtc, 0, false);
@@ -2577,7 +2567,8 @@ void _sde_crtc_clear_dim_layers_v1(struct drm_crtc_state *state)
 /**
  * _sde_crtc_set_dim_layer_v1 - copy dim layer settings from userspace
  * @cstate:      Pointer to sde crtc state
- * @user_ptr:    User ptr for sde_drm_dim_layer_v1 struct
+ * @crtc:        Pointer to drm crtc structure
+ * @usr_ptr:     User ptr for sde_drm_dim_layer_v1 struct
  */
 static void _sde_crtc_set_dim_layer_v1(struct drm_crtc *crtc,
 	struct sde_crtc_state *cstate, void __user *usr_ptr)
@@ -2836,11 +2827,12 @@ static int _sde_crtc_check_dest_scaler_cfg(struct drm_crtc *crtc,
 
 static int _sde_crtc_check_dest_scaler_validate_ds(struct drm_crtc *crtc,
 	struct sde_crtc *sde_crtc, struct sde_crtc_state *cstate,
-	struct drm_display_mode *mode, struct sde_hw_ds *hw_ds,
-	struct sde_hw_ds_cfg *cfg, u32 hdisplay, u32 *num_ds_enable,
+	struct drm_display_mode *mode, u32 hdisplay, u32 *num_ds_enable,
 	u32 prev_lm_width, u32 prev_lm_height, u32 max_in_width,
 	u32 max_out_width)
 {
+	struct sde_hw_ds *hw_ds;
+	struct sde_hw_ds_cfg *cfg;
 	int i, ret;
 	u32 lm_idx;
 
@@ -2900,9 +2892,9 @@ static int _sde_crtc_check_dest_scaler_validate_ds(struct drm_crtc *crtc,
 }
 
 static void _sde_crtc_check_dest_scaler_data_disable(struct drm_crtc *crtc,
-	struct sde_crtc_state *cstate, struct sde_hw_ds_cfg *cfg,
-	u32 num_ds_enable)
+	struct sde_crtc_state *cstate, u32 num_ds_enable)
 {
+	struct sde_hw_ds_cfg *cfg;
 	int i;
 
 	SDE_DEBUG("dest scaler status : %d -> %d\n",
@@ -2942,8 +2934,6 @@ static int _sde_crtc_check_dest_scaler_data(struct drm_crtc *crtc,
 	struct sde_crtc_state *cstate;
 	struct drm_display_mode *mode;
 	struct sde_kms *kms;
-	struct sde_hw_ds *hw_ds;
-	struct sde_hw_ds_cfg *cfg;
 	u32 ret = 0;
 	u32 num_ds_enable = 0, hdisplay = 0;
 	u32 max_in_width = 0, max_out_width = 0;
@@ -3013,15 +3003,15 @@ static int _sde_crtc_check_dest_scaler_data(struct drm_crtc *crtc,
 
 	/* Validate the DS data */
 	ret = _sde_crtc_check_dest_scaler_validate_ds(crtc, sde_crtc, cstate,
-			mode, hw_ds, cfg, hdisplay, &num_ds_enable,
+			mode, hdisplay, &num_ds_enable,
 			prev_lm_width, prev_lm_height,
 			max_in_width, max_out_width);
 	if (ret)
 		goto err;
 
 disable:
-	_sde_crtc_check_dest_scaler_data_disable(crtc, cstate, cfg,
-			num_ds_enable);
+	_sde_crtc_check_dest_scaler_data_disable(crtc, cstate,
+						 num_ds_enable);
 	return 0;
 
 err:
@@ -3600,7 +3590,6 @@ int sde_crtc_reset_hw(struct drm_crtc *crtc, struct drm_crtc_state *old_state,
 	struct drm_plane *plane;
 	struct drm_encoder *encoder;
 	struct sde_crtc *sde_crtc;
-	struct sde_crtc_state *cstate;
 	struct sde_hw_ctl *ctl;
 	signed int i, plane_count;
 	int rc;
@@ -3608,7 +3597,6 @@ int sde_crtc_reset_hw(struct drm_crtc *crtc, struct drm_crtc_state *old_state,
 	if (!crtc || !crtc->dev || !old_state || !crtc->state)
 		return -EINVAL;
 	sde_crtc = to_sde_crtc(crtc);
-	cstate = to_sde_crtc_state(crtc->state);
 
 	SDE_EVT32(DRMID(crtc), recovery_events, SDE_EVTLOG_FUNC_ENTRY);
 
@@ -3700,7 +3688,6 @@ void sde_crtc_commit_kickoff(struct drm_crtc *crtc,
 	struct drm_encoder *encoder;
 	struct drm_device *dev;
 	struct sde_crtc *sde_crtc;
-	struct msm_drm_private *priv;
 	struct sde_kms *sde_kms;
 	struct sde_crtc_state *cstate;
 	bool is_error = false;
@@ -3722,7 +3709,6 @@ void sde_crtc_commit_kickoff(struct drm_crtc *crtc,
 		return;
 	}
 
-	priv = sde_kms->dev->dev_private;
 	cstate = to_sde_crtc_state(crtc->state);
 
 	/*
@@ -3817,7 +3803,7 @@ void sde_crtc_commit_kickoff(struct drm_crtc *crtc,
  * @sde_crtc: Pointer to sde crtc structure
  * @enable: Whether to enable/disable vblanks
  *
- * @Return: error code
+ * Return: error code
  */
 static int _sde_crtc_vblank_enable_no_lock(
 		struct sde_crtc *sde_crtc, bool enable)
@@ -3871,7 +3857,7 @@ static int _sde_crtc_vblank_enable_no_lock(
 /**
  * sde_crtc_duplicate_state - state duplicate hook
  * @crtc: Pointer to drm crtc structure
- * @Returns: Pointer to new drm_crtc_state structure
+ * Return: Pointer to new drm_crtc_state structure
  */
 static struct drm_crtc_state *sde_crtc_duplicate_state(struct drm_crtc *crtc)
 {
@@ -3930,7 +3916,7 @@ static void sde_crtc_reset(struct drm_crtc *crtc)
 	/* remove previous state, if present */
 	if (crtc->state) {
 		sde_crtc_destroy_state(crtc, crtc->state);
-		crtc->state = 0;
+		crtc->state = NULL;
 	}
 
 	sde_crtc = to_sde_crtc(crtc);
@@ -4784,10 +4770,10 @@ static int _sde_crtc_check_get_pstates(struct drm_crtc *crtc,
 		struct drm_crtc_state *state,
 		struct drm_display_mode *mode,
 		struct plane_state *pstates,
-		struct drm_plane *plane,
 		struct sde_multirect_plane_states *multirect_plane,
 		int *cnt)
 {
+	struct drm_plane *plane;
 	struct sde_crtc *sde_crtc;
 	struct sde_crtc_state *cstate;
 	const struct drm_plane_state *pstate;
@@ -4979,7 +4965,6 @@ static int _sde_crtc_atomic_check_pstates(struct drm_crtc *crtc,
 	struct sde_crtc *sde_crtc;
 	struct sde_crtc_state *cstate;
 	struct sde_kms *kms;
-	struct drm_plane *plane;
 	struct drm_display_mode *mode;
 	int rc = 0, cnt = 0;
 
@@ -4996,7 +4981,7 @@ static int _sde_crtc_atomic_check_pstates(struct drm_crtc *crtc,
 
 	/* get plane state for all drm planes associated with crtc state */
 	rc = _sde_crtc_check_get_pstates(crtc, state, mode, pstates,
-			plane, multirect_plane, &cnt);
+			multirect_plane, &cnt);
 	if (rc)
 		return rc;
 
@@ -5031,7 +5016,6 @@ static int sde_crtc_atomic_check(struct drm_crtc *crtc,
 	struct sde_crtc *sde_crtc;
 	struct plane_state *pstates = NULL;
 	struct sde_crtc_state *cstate;
-	struct drm_display_mode *mode;
 	int rc = 0;
 	struct sde_multirect_plane_states *multirect_plane = NULL;
 	struct drm_connector *conn;
@@ -5064,7 +5048,6 @@ static int sde_crtc_atomic_check(struct drm_crtc *crtc,
 		goto end;
 	}
 
-	mode = &state->adjusted_mode;
 	SDE_DEBUG("%s: check", sde_crtc->name);
 
 	/* force a full mode set if active state changed */
@@ -5159,8 +5142,10 @@ static uint32_t _sde_crtc_config_mi_dim_layer_lapha(struct sde_crtc_state *cstat
 	return alpha;
 }
 
-void _sde_crtc_config_mi_dim_layer(struct sde_crtc *sde_crtc, struct sde_crtc_state *cstate,
-				struct drm_crtc_state *drm_state, uint32_t dim_layer_stage)
+static void _sde_crtc_config_mi_dim_layer(struct sde_crtc *sde_crtc,
+					  struct sde_crtc_state *cstate,
+					  struct drm_crtc_state *drm_state,
+					  uint32_t dim_layer_stage)
 {
 	uint32_t alpha;
 	struct sde_hw_mixer *lm;
@@ -5195,7 +5180,6 @@ int sde_crtc_mi_atomic_check(struct sde_crtc *sde_crtc, struct sde_crtc_state *c
 	uint32_t mi_plane;
 
 	uint32_t dim_layer_stage = 0x0;
-	uint32_t mi_aodlayer_index = 0x0;
 	uint32_t mi_iconlayer_index = 0x0;
 	uint32_t mi_pressed_Iconlayer_index = 0x0;
 	bool mi_dimlayer_switch_enable = true;
@@ -5217,7 +5201,6 @@ int sde_crtc_mi_atomic_check(struct sde_crtc *sde_crtc, struct sde_crtc_state *c
 			mi_iconlayer_index = i;
 			break;
 		case MI_LAYER_AOD:
-			mi_aodlayer_index = i;
 			break;
 
 		default:
@@ -5378,12 +5361,12 @@ static void _sde_crtc_install_cp_properties(struct sde_kms_info *info,
 /**
  * sde_crtc_install_properties - install all drm properties for crtc
  * @crtc: Pointer to drm crtc structure
+ * @catalog: Display hardware capabilities
  */
 static void sde_crtc_install_properties(struct drm_crtc *crtc,
 				struct sde_mdss_cfg *catalog)
 {
 	struct sde_crtc *sde_crtc;
-	struct drm_device *dev;
 	struct sde_kms_info *info;
 	struct sde_kms *sde_kms;
 	int i, j;
@@ -5412,7 +5395,6 @@ static void sde_crtc_install_properties(struct drm_crtc *crtc,
 	}
 
 	sde_crtc = to_sde_crtc(crtc);
-	dev = crtc->dev;
 	sde_kms = _sde_crtc_get_kms(crtc);
 
 	if (!sde_kms) {
@@ -5726,7 +5708,7 @@ static int _sde_crtc_get_output_fence(struct drm_crtc *crtc,
  * @state: Pointer to drm crtc state structure
  * @property: Pointer to targeted drm property
  * @val: Updated property value
- * @Returns: Zero on success
+ * Return: Zero on success
  */
 static int sde_crtc_atomic_set_property(struct drm_crtc *crtc,
 		struct drm_crtc_state *state,
@@ -5737,7 +5719,7 @@ static int sde_crtc_atomic_set_property(struct drm_crtc *crtc,
 	struct sde_crtc_state *cstate;
 	int idx, ret;
 	uint64_t fence_user_fd;
-	uint64_t __user prev_user_fd;
+	u64 prev_user_fd;
 
 	if (!crtc || !state || !property) {
 		SDE_ERROR("invalid argument(s)\n");
@@ -5857,7 +5839,7 @@ exit:
  * @state: Pointer to drm crtc state structure
  * @property: Pointer to targeted drm property
  * @val: Pointer to variable for receiving property value
- * @Returns: Zero on success
+ * Return: Zero on success
  */
 static int sde_crtc_atomic_get_property(struct drm_crtc *crtc,
 		const struct drm_crtc_state *state,
