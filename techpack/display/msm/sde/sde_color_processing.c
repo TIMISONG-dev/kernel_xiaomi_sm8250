@@ -249,7 +249,7 @@ static int set_dspp_vlut_feature(struct sde_hw_dspp *hw_dspp,
 extern struct drm_msm_pcc color_transform_pcc_cfg;
 static struct drm_msm_pcc pcc_cfg_clear;
 
-void sde_dspp_clear_pcc(struct sde_hw_cp_cfg *hw_cfg)
+static void sde_dspp_clear_pcc(struct sde_hw_cp_cfg *hw_cfg)
 {
 	if (!hw_cfg->payload) {
 		DRM_INFO("hw_cfg->payload in NULL\n");
@@ -277,23 +277,15 @@ static int set_dspp_pcc_feature(struct sde_hw_dspp *hw_dspp,
 				struct sde_crtc *hw_crtc)
 {
 	int ret = 0;
-	struct drm_msm_pcc *pcc_cfg;
 	DRM_INFO("layer_flag %d %d\n", hw_crtc->mi_dimlayer_type, hw_cfg->mi_dimlayer_type);
 
 	if (!hw_dspp || !hw_dspp->ops.setup_pcc)
 		ret = -EINVAL;
 	else {
-
-		if (hw_cfg->payload)
-			pcc_cfg = hw_cfg->payload;
-
 		if (hw_crtc->mi_dimlayer_type & MI_DIMLAYER_FOD_HBM_OVERLAY)
 			sde_dspp_clear_pcc(hw_cfg);
 		else
 			hw_cfg->payload_clear = NULL;
-
-		if (hw_cfg->payload_clear)
-			pcc_cfg = hw_cfg->payload_clear;
 
 		hw_dspp->ops.setup_pcc(hw_dspp, hw_cfg);
 	}
@@ -2501,15 +2493,16 @@ static void dspp_ltm_install_property(struct drm_crtc *crtc)
 	char feature_name[256];
 	struct sde_kms *kms = NULL;
 	struct sde_mdss_cfg *catalog = NULL;
-	u32 version = 0, ltm_sw_fuse = 0;
+	u32 version = 0;
 
 	kms = get_kms(crtc);
 	if (!kms || !kms->hw_sw_fuse) {
 		DRM_ERROR("!kms = %d\n", !kms);
 		return;
+		return;
 	}
 
-	ltm_sw_fuse = sde_hw_get_ltm_sw_fuse_value(kms->hw_sw_fuse);
+	sde_hw_get_ltm_sw_fuse_value(kms->hw_sw_fuse);
 	DRM_DEBUG_DRIVER("ltm_sw_fuse value: 0x%x\n", ltm_sw_fuse);
 	if (ltm_sw_fuse != SW_FUSE_ENABLE) {
 		pr_info("ltm_sw_fuse is not enabled: 0x%x\n", ltm_sw_fuse);
@@ -2874,7 +2867,6 @@ static void sde_cp_notify_ad_event(struct drm_crtc *crtc_drm, void *arg)
 	struct sde_crtc *crtc;
 	struct drm_event event;
 	int i;
-	struct msm_drm_private *priv;
 	struct sde_kms *kms;
 	int ret;
 
@@ -2899,7 +2891,6 @@ static void sde_cp_notify_ad_event(struct drm_crtc *crtc_drm, void *arg)
 		return;
 	}
 
-	priv = kms->dev->dev_private;
 	ret = pm_runtime_get_sync(kms->dev->dev);
 	if (ret < 0) {
 		SDE_ERROR("failed to enable power resource %d\n", ret);

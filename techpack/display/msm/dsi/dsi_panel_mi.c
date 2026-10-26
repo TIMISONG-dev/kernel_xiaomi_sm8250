@@ -2201,7 +2201,7 @@ error:
 	return retval;
 }
 
-int mi_dsi_update_lhbm_cmd_b2reg(struct dsi_panel *panel, bool dc_status)
+static int mi_dsi_update_lhbm_cmd_b2reg(struct dsi_panel *panel, bool dc_status)
 {
 	struct dsi_display_mode_priv_info *priv_info;
 	struct dsi_cmd_desc *cmds = NULL;
@@ -2255,7 +2255,7 @@ error:
 	return retval;
 }
 
-int mi_dsi_update_nolp_b2reg(struct dsi_panel *panel, bool dc_status)
+static int mi_dsi_update_nolp_b2reg(struct dsi_panel *panel, bool dc_status)
 {
 	struct dsi_display_mode_priv_info *priv_info;
 	struct dsi_cmd_desc *cmds = NULL;
@@ -2989,13 +2989,10 @@ int dsi_panel_write_cmd_set(struct dsi_panel *panel,
 	struct dsi_cmd_desc *cmds;
 	u32 count;
 	enum dsi_cmd_set_state state;
-	struct dsi_display_mode *mode;
 	const struct mipi_dsi_host_ops *ops = panel->host->ops;
 
 	if (!panel || !panel->cur_mode)
 		return -EINVAL;
-
-	mode = panel->cur_mode;
 
 	cmds = cmd_sets->cmds;
 	count = cmd_sets->count;
@@ -3183,7 +3180,7 @@ int dsi_panel_write_mipi_reg(struct dsi_panel *panel,
 			goto exit_free0;
 		}
 		if (tmp_data > sizeof(g_dsi_read_cfg.rbuf)) {
-			pr_err("read size exceeding the limit %d\n",
+			pr_err("read size exceeding the limit %lu\n",
 					sizeof(g_dsi_read_cfg.rbuf));
 			goto exit_free0;
 		}

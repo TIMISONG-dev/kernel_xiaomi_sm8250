@@ -462,4 +462,12 @@ ssize_t calc_hw_vsync_info(struct dsi_panel *panel,
 				char *buf);
 
 
+ssize_t dsi_panel_lockdown_info_read(unsigned char *plockdowninfo);
+
+int mi_mipi_dsi_dcs_set_pwm_value(u16 dbv_value);
+
+ssize_t dsi_panel_vendor_info_read(unsigned char *plockdowninfo);
+
+void dsi_panel_doubleclick_enable(bool on);
+
 #endif /* _DSI_PANEL_MI_H_ */
