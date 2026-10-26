@@ -1,9 +1,9 @@
 /**
- * \file drm_lock.c
+ * DOC: drm_lock.c
  * IOCTLs for locking
  *
- * \author Rickard E. (Rik) Faith <faith@valinux.com>
- * \author Gareth Hughes <gareth@valinux.com>
+ * Author: Rickard E. (Rik) Faith <faith@valinux.com>
+ * Author: Gareth Hughes <gareth@valinux.com>
  */
 
 /*
@@ -43,11 +43,11 @@
 static int drm_lock_take(struct drm_lock_data *lock_data, unsigned int context);
 
 /**
- * Take the heavyweight lock.
+ * drm_lock_take - try to take the hardware lock
+ * @lock_data: Heavyweight hardware lock state
+ * @context: Context handle that will own the hardware lock
  *
- * \param lock lock pointer.
- * \param context locking context.
- * \return one if the lock is held, or zero otherwise.
+ * Return: one if the lock is held, or zero otherwise.
  *
  * Attempt to mark the lock as held by the given context, via the \p cmpxchg instruction.
  */
@@ -90,13 +90,13 @@ int drm_lock_take(struct drm_lock_data *lock_data,
 }
 
 /**
- * This takes a lock forcibly and hands it to context.	Should ONLY be used
- * inside *_unlock to give lock to kernel before calling *_dma_schedule.
+ * drm_lock_transfer - transfer hardware lock ownership
+ * @lock_data: Heavyweight hardware lock state
+ * @context: Context handle that will own the hardware lock
  *
- * \param dev DRM device.
- * \param lock lock pointer.
- * \param context locking context.
- * \return always one.
+ * Use only inside *_unlock to give the lock to the kernel before DMA scheduling.
+ *
+ * Return: one if a held lock changed context, zero otherwise.
  *
  * Resets the lock file pointer.
  * Marks the lock as held by the given context, via the \p cmpxchg instruction.
@@ -147,13 +147,12 @@ static int drm_legacy_lock_free(struct drm_lock_data *lock_data,
 }
 
 /**
- * Lock ioctl.
+ * drm_legacy_lock - acquire the hardware lock
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_lock acquisition request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg user argument, pointing to a drm_lock structure.
- * \return zero on success or negative number on failure.
+ * Return: zero on success or negative number on failure.
  *
  * Add the current task to the lock wait queue, and attempt to take to lock.
  */
@@ -240,13 +239,12 @@ int drm_legacy_lock(struct drm_device *dev, void *data,
 }
 
 /**
- * Unlock ioctl.
+ * drm_legacy_unlock - release the hardware lock
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_lock release request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg user argument, pointing to a drm_lock structure.
- * \return zero on success or negative number on failure.
+ * Return: zero on success or negative number on failure.
  *
  * Transfer and free the lock.
  */
@@ -272,9 +270,11 @@ int drm_legacy_unlock(struct drm_device *dev, void *data, struct drm_file *file_
 }
 
 /**
- * This function returns immediately and takes the hw lock
- * with the kernel context if it is free, otherwise it gets the highest priority when and if
- * it is eventually released.
+ * drm_legacy_idlelock_take - request the kernel idle lock
+ * @lock_data: Heavyweight hardware lock state
+ *
+ * Return immediately and take the hardware lock for the kernel if it is free.
+ * Otherwise request priority when the current owner releases it.
  *
  * This guarantees that the kernel will _eventually_ have the lock _unless_ it is held
  * by a blocked process. (In the latter case an explicit wait for the hardware lock would cause

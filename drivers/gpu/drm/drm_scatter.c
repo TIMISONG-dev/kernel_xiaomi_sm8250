@@ -1,8 +1,8 @@
 /**
- * \file drm_scatter.c
+ * DOC: drm_scatter.c
  * IOCTLs to manage scatter/gather memory
  *
- * \author Gareth Hughes <gareth@valinux.com>
+ * Author: Gareth Hughes <gareth@valinux.com>
  */
 
 /*

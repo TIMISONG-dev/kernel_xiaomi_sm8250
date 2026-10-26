@@ -1739,12 +1739,12 @@ kgsl_iommu_unmap(struct kgsl_pagetable *pt, struct kgsl_memdesc *memdesc)
 
 /**
  * _iommu_map_guard_page - Map iommu guard page
- * @pt - Pointer to kgsl pagetable structure
- * @memdesc - memdesc to add guard page
- * @gpuaddr - GPU addr of guard page
- * @protflags - flags for mapping
+ * @pt: KGSL page table receiving the guard mapping
+ * @memdesc: Buffer descriptor whose footprint includes the guard range
+ * @gpuaddr: GPU address at which to map the guard page
+ * @protflags: IOMMU protection flags for the mapping
  *
- * Return 0 on success, error on map fail
+ * Return: Zero on success or a negative mapping error.
  */
 static int _iommu_map_guard_page(struct kgsl_pagetable *pt,
 				   struct kgsl_memdesc *memdesc,
