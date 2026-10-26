@@ -394,7 +394,8 @@ static bool build_perf_domains(const struct cpumask *cpu_map)
 	perf_domain_debug(cpu_map, pd);
 
 	/* Attach the new list of performance domains to the root domain. */
-	tmp = rd->pd;
+	tmp = rcu_dereference_protected(rd->pd,
+			lockdep_is_held(&sched_domains_mutex));
 	rcu_assign_pointer(rd->pd, pd);
 	if (tmp)
 		call_rcu(&tmp->rcu, destroy_perf_domain_rcu);
@@ -403,7 +404,8 @@ static bool build_perf_domains(const struct cpumask *cpu_map)
 
 free:
 	free_pd(pd);
-	tmp = rd->pd;
+	tmp = rcu_dereference_protected(rd->pd,
+			lockdep_is_held(&sched_domains_mutex));
 	rcu_assign_pointer(rd->pd, NULL);
 	if (tmp)
 		call_rcu(&tmp->rcu, destroy_perf_domain_rcu);
@@ -424,7 +426,8 @@ static void free_rootdomain(struct rcu_head *rcu)
 	free_cpumask_var(rd->rto_mask);
 	free_cpumask_var(rd->online);
 	free_cpumask_var(rd->span);
-	free_pd(rd->pd);
+	/* Unpublished, or the last reference and its RCU grace period are gone. */
+	free_pd(rcu_dereference_protected(rd->pd, 1));
 	kfree(rd);
 }
 
@@ -2248,7 +2251,7 @@ match2:
 	for (i = 0; i < ndoms_new; i++) {
 		for (j = 0; j < n; j++) {
 			if (cpumask_equal(doms_new[i], doms_cur[j]) &&
-			    cpu_rq(cpumask_first(doms_cur[j]))->rd->pd) {
+			    rcu_access_pointer(cpu_rq(cpumask_first(doms_cur[j]))->rd->pd)) {
 				has_eas = true;
 				goto match3;
 			}
