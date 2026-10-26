@@ -3561,7 +3561,7 @@ fill_util:
 }
 
 int walt_proc_group_thresholds_handler(struct ctl_table *table, int write,
-				       void __user *buffer, size_t *lenp,
+				       void *buffer, size_t *lenp,
 				       loff_t *ppos)
 {
 	int ret;
@@ -3667,7 +3667,7 @@ void walt_sched_init_rq(struct rq *rq)
 }
 
 int walt_proc_user_hint_handler(struct ctl_table *table,
-				int write, void __user *buffer, size_t *lenp,
+				int write, void *buffer, size_t *lenp,
 				loff_t *ppos)
 {
 	int ret;
@@ -3704,7 +3704,7 @@ static inline void sched_window_nr_ticks_change(void)
 }
 
 int sched_ravg_window_handler(struct ctl_table *table,
-				int write, void __user *buffer, size_t *lenp,
+				int write, void *buffer, size_t *lenp,
 				loff_t *ppos)
 {
 	int ret = -EPERM;
@@ -3788,7 +3788,7 @@ static void sched_update_updown_migrate_values(bool up)
 }
 
 int sched_updown_migrate_handler(struct ctl_table *table, int write,
-				void __user *buffer, size_t *lenp,
+				void *buffer, size_t *lenp,
 				loff_t *ppos)
 {
 	int ret, i;
