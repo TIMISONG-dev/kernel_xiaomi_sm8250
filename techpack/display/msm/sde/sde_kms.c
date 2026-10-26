@@ -3918,15 +3918,12 @@ end:
 
 struct msm_kms *sde_kms_init(struct drm_device *dev)
 {
-	struct msm_drm_private *priv;
 	struct sde_kms *sde_kms;
 
 	if (!dev || !dev->dev_private) {
 		SDE_ERROR("drm device node invalid\n");
 		return ERR_PTR(-EINVAL);
 	}
-
-	priv = dev->dev_private;
 
 	sde_kms = kzalloc(sizeof(*sde_kms), GFP_KERNEL);
 	if (!sde_kms) {
@@ -3997,4 +3994,3 @@ void sde_kms_trigger_early_wakeup(struct sde_kms *sde_kms,
 		sde_power_scale_reg_bus(&priv->phandle, VOTE_INDEX_HIGH, false);
 	SDE_ATRACE_END("sde_kms_trigger_early_wakeup");
 }
-
