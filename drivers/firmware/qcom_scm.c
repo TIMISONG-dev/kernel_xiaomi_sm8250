@@ -125,7 +125,7 @@ EXPORT_SYMBOL(qcom_scm_set_warm_boot_addr);
 
 /**
  * qcom_scm_cpu_power_down() - Power down the cpu
- * @flags - Flags to flush cache
+ * @flags: Flags to flush cache
  *
  * This is an end point to power down cpu. If there was a pending interrupt,
  * the control would return from this function, otherwise, the cpu jumps to the
