@@ -21,7 +21,7 @@
 #include "crypto-qti-platform.h"
 #include "crypto-qti-tz.h"
 
-unsigned int storage_type = SDCC_CE;
+static unsigned int storage_type = SDCC_CE;
 
 int crypto_qti_program_key(struct crypto_vops_qti_entry *ice_entry,
 			   const struct blk_crypto_key *key,
@@ -128,7 +128,7 @@ int crypto_qti_tz_raw_secret(const u8 *wrapped_key,
 
 	err = scm_call2(smc_id, &desc);
 	if (err) {
-		pr_err("%s failed to retrieve raw secret\n", __func__, err);
+		pr_err("%s failed to retrieve raw secret: %d\n", __func__, err);
 		return err;
 	}
 
