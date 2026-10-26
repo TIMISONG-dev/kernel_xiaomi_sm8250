@@ -8,6 +8,7 @@
 #include <linux/bitmap.h>
 #include <linux/export.h>
 #include <linux/list.h>
+#include <linux/radix-tree.h>
 #include <linux/slab.h>
 #include <linux/xarray.h>
 
@@ -243,10 +244,6 @@ void *xas_load(struct xa_state *xas)
 	return entry;
 }
 EXPORT_SYMBOL_GPL(xas_load);
-
-/* Move the radix tree node cache here */
-extern struct kmem_cache *radix_tree_node_cachep;
-extern void radix_tree_node_rcu_free(struct rcu_head *head);
 
 #define XA_RCU_FREE	((struct xarray *)1)
 
