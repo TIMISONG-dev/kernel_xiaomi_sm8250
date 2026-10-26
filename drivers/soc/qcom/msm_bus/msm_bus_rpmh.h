@@ -235,6 +235,8 @@ static inline struct msm_bus_node_device_type *to_msm_bus_node(struct device *d)
 
 int msm_bus_enable_limiter(struct msm_bus_node_device_type *nodedev,
 				int throttle_en, uint64_t lim_bw);
+ssize_t msm_bus_format_node_bw(struct msm_bus_node_device_type *bus_node,
+			       char *buf);
 int msm_bus_commit_data(struct list_head *clist);
 int bcm_remove_handoff_req(struct device *dev, void *data);
 int commit_late_init_data(bool lock);
