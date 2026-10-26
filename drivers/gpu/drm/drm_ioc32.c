@@ -191,7 +191,7 @@ static int compat_drm_getmap(struct file *file, unsigned int cmd,
 	m32.size = map.size;
 	m32.type = map.type;
 	m32.flags = map.flags;
-	m32.handle = ptr_to_compat((void __user *)map.handle);
+	m32.handle = (unsigned long)map.handle;
 	m32.mtrr = map.mtrr;
 	if (copy_to_user(argp, &m32, sizeof(m32)))
 		return -EFAULT;
@@ -222,8 +222,8 @@ static int compat_drm_addmap(struct file *file, unsigned int cmd,
 
 	m32.offset = map.offset;
 	m32.mtrr = map.mtrr;
-	m32.handle = ptr_to_compat((void __user *)map.handle);
-	if (map.handle != compat_ptr(m32.handle))
+	m32.handle = (unsigned long)map.handle;
+	if (map.handle != (void *)(unsigned long)m32.handle)
 		pr_err_ratelimited("compat_drm_addmap truncated handle %p for type %d offset %x\n",
 				   map.handle, m32.type, m32.offset);
 
@@ -242,7 +242,7 @@ static int compat_drm_rmmap(struct file *file, unsigned int cmd,
 
 	if (get_user(handle, &argp->handle))
 		return -EFAULT;
-	map.handle = compat_ptr(handle);
+	map.handle = (void *)(unsigned long)handle;
 	return drm_ioctl_kernel(file, drm_legacy_rmmap_ioctl, &map, DRM_AUTH);
 }
 
@@ -516,7 +516,7 @@ static int compat_drm_setsareactx(struct file *file, unsigned int cmd,
 		return -EFAULT;
 
 	request.ctx_id = req32.ctx_id;
-	request.handle = compat_ptr(req32.handle);
+	request.handle = (void *)(unsigned long)req32.handle;
 	return drm_ioctl_kernel(file, drm_legacy_setsareactx, &request,
 				DRM_AUTH|DRM_MASTER|DRM_ROOT_ONLY);
 }
