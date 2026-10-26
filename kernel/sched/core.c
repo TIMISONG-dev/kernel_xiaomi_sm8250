@@ -1367,8 +1367,6 @@ static void __setscheduler_uclamp(struct task_struct *p,
 				  const struct sched_attr *attr) { }
 static inline void uclamp_fork(struct task_struct *p) { }
 
-long schedtune_task_margin(struct task_struct *task);
-
 #ifdef CONFIG_SMP
 unsigned int uclamp_task(struct task_struct *p)
 {
@@ -6760,7 +6758,7 @@ static void migrate_tasks(struct rq *dead_rq, struct rq_flags *rf,
 void set_rq_online(struct rq *rq);
 void set_rq_offline(struct rq *rq);
 
-int do_isolation_work_cpu_stop(void *data)
+static int do_isolation_work_cpu_stop(void *data)
 {
 	unsigned int cpu = smp_processor_id();
 	struct rq *rq = cpu_rq(cpu);
@@ -6795,7 +6793,7 @@ int do_isolation_work_cpu_stop(void *data)
 	return 0;
 }
 
-int do_unisolation_work_cpu_stop(void *data)
+static int do_unisolation_work_cpu_stop(void *data)
 {
 	watchdog_enable(smp_processor_id());
 	return 0;
