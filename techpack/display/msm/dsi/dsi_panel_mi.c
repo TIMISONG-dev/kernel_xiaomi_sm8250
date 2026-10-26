@@ -34,7 +34,7 @@
 #define to_dsi_display(x) container_of(x, struct dsi_display, host)
 
 static struct dsi_read_config g_dsi_read_cfg;
-static struct dsi_panel *g_panel;
+struct dsi_panel *g_panel;
 static struct dsi_panel_cmd_set gamma_cmd_set[DSI_CMD_SET_MI_GAMMA_SWITCH_MAX];
 
 static struct calc_hw_vsync g_calc_hw_vsync[MAX_DSI_ACTIVE_DISPLAY];
