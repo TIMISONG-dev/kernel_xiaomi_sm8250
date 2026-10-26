@@ -10,7 +10,7 @@
 
 #include "sched.h"
 
-bool schedtune_initialized = false;
+static bool schedtune_initialized;
 extern struct reciprocal_value schedtune_spc_rdiv;
 
 /* We hold schedtune boost in effect for at least this long */
@@ -198,7 +198,7 @@ struct boost_groups {
 };
 
 /* Boost groups affecting each CPU in the system */
-DEFINE_PER_CPU(struct boost_groups, cpu_boost_groups);
+static DEFINE_PER_CPU(struct boost_groups, cpu_boost_groups);
 
 #ifdef CONFIG_SCHED_WALT
 static inline void init_sched_boost(struct schedtune *st)
@@ -440,7 +440,7 @@ void schedtune_enqueue_task(struct task_struct *p, int cpu)
 	raw_spin_unlock_irqrestore(&bg->lock, irq_flags);
 }
 
-int schedtune_can_attach(struct cgroup_taskset *tset)
+static int schedtune_can_attach(struct cgroup_taskset *tset)
 {
 	return 0;
 }
@@ -490,7 +490,7 @@ static inline void init_sched_boost(struct schedtune *st) { }
 
 #endif /* CONFIG_SCHED_WALT */
 
-void schedtune_cancel_attach(struct cgroup_taskset *tset)
+static void schedtune_cancel_attach(struct cgroup_taskset *tset)
 {
 	/* This can happen only if SchedTune controller is mounted with
 	 * other hierarchies ane one of them fails. Since usually SchedTune is
