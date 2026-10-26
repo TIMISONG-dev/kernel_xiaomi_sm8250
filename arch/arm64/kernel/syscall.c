@@ -8,13 +8,13 @@
 #include <linux/syscalls.h>
 
 #include <asm/daifflags.h>
+#include <asm/cpu_errata.h>
 #include <asm/debug-monitors.h>
 #include <asm/fpsimd.h>
 #include <asm/syscall.h>
 #include <asm/thread_info.h>
 #include <asm/unistd.h>
 
-long compat_arm_syscall(struct pt_regs *regs, int scno);
 long sys_ni_syscall(void);
 
 static long do_ni_syscall(struct pt_regs *regs, int scno)
@@ -61,11 +61,8 @@ static inline bool has_syscall_work(unsigned long flags)
 	return unlikely(flags & _TIF_SYSCALL_WORK);
 }
 
-int syscall_trace_enter(struct pt_regs *regs);
-void syscall_trace_exit(struct pt_regs *regs);
 
 #ifdef CONFIG_ARM64_ERRATUM_1463225
-DECLARE_PER_CPU(int, __in_cortex_a76_erratum_1463225_wa);
 
 static void cortex_a76_erratum_1463225_svc_handler(void)
 {

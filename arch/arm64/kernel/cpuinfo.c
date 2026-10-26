@@ -20,6 +20,7 @@
 #include <asm/cputype.h>
 #include <asm/cpufeature.h>
 #include <asm/fpsimd.h>
+#include <asm/system_misc.h>
 #include <asm/elf.h>
 
 #include <linux/bitops.h>

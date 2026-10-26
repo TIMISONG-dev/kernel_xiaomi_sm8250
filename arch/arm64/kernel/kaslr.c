@@ -8,6 +8,7 @@
 
 #include <linux/cache.h>
 #include <linux/crc32.h>
+#include <linux/elf.h>
 #include <linux/init.h>
 #include <linux/libfdt.h>
 #include <linux/mm_types.h>
@@ -16,9 +17,11 @@
 
 #include <asm/cacheflush.h>
 #include <asm/fixmap.h>
+#include <asm/boot.h>
 #include <asm/kernel-pgtable.h>
 #include <asm/memory.h>
 #include <asm/mmu.h>
+#include <asm/module.h>
 #include <linux/pgtable.h>
 #include <asm/sections.h>
 

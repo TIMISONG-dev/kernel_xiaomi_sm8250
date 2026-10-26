@@ -27,6 +27,13 @@ struct alt_instr {
 typedef void (*alternative_cb_t)(struct alt_instr *alt,
 				 __le32 *origptr, __le32 *updptr, int nr_inst);
 
+void arm64_update_smccc_conduit(struct alt_instr *alt, __le32 *origptr,
+				__le32 *updptr, int nr_inst);
+void arm64_enable_wa2_handling(struct alt_instr *alt, __le32 *origptr,
+			      __le32 *updptr, int nr_inst);
+void spectre_bhb_patch_loop_iter(struct alt_instr *alt, __le32 *origptr,
+				 __le32 *updptr, int nr_inst);
+
 void __init apply_alternatives_all(void);
 
 #ifdef CONFIG_MODULES

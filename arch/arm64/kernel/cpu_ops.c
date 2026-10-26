@@ -25,9 +25,7 @@
 #include <asm/cpu_ops.h>
 #include <asm/smp_plat.h>
 
-extern const struct cpu_operations smp_spin_table_ops;
 extern const struct cpu_operations acpi_parking_protocol_ops;
-extern const struct cpu_operations cpu_psci_ops;
 
 const struct cpu_operations *cpu_ops[NR_CPUS] __ro_after_init;
 

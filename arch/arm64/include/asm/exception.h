@@ -29,6 +29,29 @@
 #define __exception_irq_entry	__exception
 #endif
 
+struct pt_regs;
+
+/* C handlers reached from entry.S; keep external assembly linkage. */
+asmlinkage void do_sve_acc(unsigned int esr, struct pt_regs *regs);
+asmlinkage void do_fpsimd_acc(unsigned int esr, struct pt_regs *regs);
+asmlinkage void do_fpsimd_exc(unsigned int esr, struct pt_regs *regs);
+asmlinkage void do_mem_abort(unsigned long addr, unsigned int esr, struct pt_regs *regs);
+asmlinkage void do_el0_irq_bp_hardening(void);
+asmlinkage void do_el0_ia_bp_hardening(unsigned long addr, unsigned int esr, struct pt_regs *regs);
+asmlinkage void do_sp_pc_abort(unsigned long addr, unsigned int esr, struct pt_regs *regs);
+asmlinkage int do_debug_exception(unsigned long addr_if_watchpoint,
+				  unsigned int esr, struct pt_regs *regs);
+asmlinkage void do_undefinstr(struct pt_regs *regs);
+asmlinkage void do_sysinstr(unsigned int esr, struct pt_regs *regs);
+asmlinkage void do_cp15instr(unsigned int esr, struct pt_regs *regs);
+
+asmlinkage void do_notify_resume(struct pt_regs *regs, unsigned long thread_flags);
+asmlinkage void bad_mode(struct pt_regs *regs, int reason, unsigned int esr);
+asmlinkage void bad_el0_sync(struct pt_regs *regs, int reason, unsigned int esr);
+asmlinkage void handle_bad_stack(struct pt_regs *regs);
+asmlinkage void do_serror(struct pt_regs *regs, unsigned int esr);
+int early_brk64(unsigned long addr, unsigned int esr, struct pt_regs *regs);
+
 static inline u32 disr_to_esr(u64 disr)
 {
 	unsigned int esr = ESR_ELx_EC_SERROR << ESR_ELx_EC_SHIFT;
