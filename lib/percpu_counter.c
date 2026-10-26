@@ -73,6 +73,11 @@ void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
 EXPORT_SYMBOL(percpu_counter_set);
 
 /**
+ * percpu_counter_add_batch - add to a counter with a per-CPU batching threshold
+ * @fbc: Counter to update
+ * @amount: Value to add
+ * @batch: Threshold for folding the per-CPU count into the global count
+ *
  * This function is both preempt and irq safe. The former is due to explicit
  * preemption disable. The latter is guaranteed by the fact that the slow path
  * is explicitly protected by an irq-safe spinlock whereas the fast patch uses

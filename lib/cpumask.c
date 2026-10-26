@@ -101,6 +101,7 @@ EXPORT_SYMBOL(cpumask_next_wrap);
  * alloc_cpumask_var_node - allocate a struct cpumask on a given node
  * @mask: pointer to cpumask_var_t where the cpumask is returned
  * @flags: GFP_ flags
+ * @node: NUMA node to allocate from, or NUMA_NO_NODE
  *
  * Only defined when CONFIG_CPUMASK_OFFSTACK=y, otherwise is
  * a nop returning a constant 1 (in <linux/cpumask.h>)
