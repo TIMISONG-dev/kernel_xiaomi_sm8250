@@ -22,6 +22,8 @@
 #include <linux/kernel.h>
 
 extern unsigned long loops_per_jiffy;
+unsigned long calibrate_delay_is_known(void);
+void calibration_delay_done(void);
 
 #include <asm/delay.h>
 
