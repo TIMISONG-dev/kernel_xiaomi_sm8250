@@ -7035,8 +7035,13 @@ static irqreturn_t arm_smmu_debug_capture_bus_match(int irq, void *dev)
 	int i, j;
 	unsigned long val;
 
-	if (arm_smmu_power_on(smmu->pwr) || arm_smmu_power_on(tbu->pwr))
+	if (arm_smmu_power_on(smmu->pwr))
 		return IRQ_NONE;
+
+	if (arm_smmu_power_on(tbu->pwr)) {
+		arm_smmu_power_off(smmu->pwr);
+		return IRQ_NONE;
+	}
 
 	val = arm_smmu_debug_get_tnx_tcr_cntl(tbu_base);
 	arm_smmu_debug_get_mask_and_match(tbu_base, mask, match);
