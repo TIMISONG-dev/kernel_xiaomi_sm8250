@@ -2190,10 +2190,8 @@ static int qcedev_probe_device(struct platform_device *pdev)
 		goto exit_unregister_bus_scale;
 	}
 	handle = qce_open(pdev, &rc);
-	if (handle == NULL) {
-		rc = -ENODEV;
+	if (handle == NULL)
 		goto exit_scale_busbandwidth;
-	}
 	rc = msm_bus_scale_client_update_request(podev->bus_scale_handle, 0);
 	if (rc) {
 		pr_err("%s Unable to set to low bandwidth\n", __func__);
@@ -2224,6 +2222,7 @@ static int qcedev_probe_device(struct platform_device *pdev)
 
 	podev->mem_client = qcedev_mem_new_client(MEM_ION);
 	if (!podev->mem_client) {
+		rc = -ENOMEM;
 		pr_err("%s: err: qcedev_mem_new_client failed\n", __func__);
 		goto exit_qce_close;
 	}

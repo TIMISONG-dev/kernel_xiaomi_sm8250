@@ -6231,12 +6231,16 @@ void *qce_open(struct platform_device *pdev, int *rc)
 	pce_dev->iovec_memsize = TOTAL_IOVEC_SPACE_PER_PIPE *
 						MAX_QCE_ALLOC_BAM_REQ * 2;
 	pce_dev->iovec_vmem = kzalloc(pce_dev->iovec_memsize, GFP_KERNEL);
-	if (pce_dev->iovec_vmem == NULL)
+	if (pce_dev->iovec_vmem == NULL) {
+		*rc = -ENOMEM;
 		goto err_mem;
+	}
 
 	pce_dev->dummyreq_in_buf = kzalloc(DUMMY_REQ_DATA_LEN, GFP_KERNEL);
-	if (pce_dev->dummyreq_in_buf == NULL)
+	if (pce_dev->dummyreq_in_buf == NULL) {
+		*rc = -ENOMEM;
 		goto err_mem;
+	}
 
 	*rc = __qce_init_clk(pce_dev);
 	if (*rc)
