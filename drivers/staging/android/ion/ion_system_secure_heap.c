@@ -40,7 +40,7 @@ struct prefetch_info {
  */
 #define SHRINK_DELAY 1000
 
-int ion_heap_is_system_secure_heap_type(enum ion_heap_type type)
+static int ion_heap_is_system_secure_heap_type(enum ion_heap_type type)
 {
 	return type == ((enum ion_heap_type)ION_HEAP_TYPE_SYSTEM_SECURE);
 }
@@ -136,8 +136,8 @@ out1:
 /*
  * Since no lock is held, results are approximate.
  */
-size_t ion_system_secure_heap_page_pool_total(struct ion_heap *heap,
-					      int vmid_flags)
+static size_t ion_system_secure_heap_page_pool_total(struct ion_heap *heap,
+						     int vmid_flags)
 {
 	struct ion_system_heap *sys_heap;
 	struct ion_page_pool *pool;
@@ -270,9 +270,10 @@ static int __ion_system_secure_heap_resize(struct ion_heap *heap, void *ptr,
 		return -EINVAL;
 
 	for (i = 0; i < data->nr_regions; i++) {
-		struct ion_prefetch_regions *r;
+		struct ion_prefetch_regions __user *r;
 
-		r = (struct ion_prefetch_regions *)data->regions + i;
+		r = u64_to_user_ptr(data->regions);
+		r += i;
 		ret = alloc_prefetch_info(r, shrink, &items);
 		if (ret)
 			goto out_free;

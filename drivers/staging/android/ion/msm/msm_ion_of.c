@@ -198,7 +198,7 @@ static int msm_ion_get_heap_dt_data(struct device_node *node,
 
 static struct ion_platform_data *msm_ion_parse_dt(struct platform_device *pdev)
 {
-	struct ion_platform_data *pdata = 0;
+	struct ion_platform_data *pdata = NULL;
 	struct ion_platform_heap *heaps = NULL;
 	struct device_node *node;
 	struct platform_device *new_dev = NULL;
@@ -337,7 +337,7 @@ static int msm_ion_probe(struct platform_device *pdev)
 
 		heaps[i] = ion_heap_create(heap_data);
 		if (IS_ERR_OR_NULL(heaps[i])) {
-			heaps[i] = 0;
+			heaps[i] = NULL;
 			continue;
 		} else {
 			if (heap_data->size)
