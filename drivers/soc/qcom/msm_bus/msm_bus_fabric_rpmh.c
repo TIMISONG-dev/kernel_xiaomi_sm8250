@@ -62,7 +62,6 @@ struct bcm_db {
 static ssize_t bw_show(struct device *dev, struct device_attribute *attr,
 			  char *buf)
 {
-	struct msm_bus_node_info_type *node_info = NULL;
 	struct msm_bus_node_device_type *bus_node = NULL;
 	int i;
 	int off = 0;
@@ -70,8 +69,6 @@ static ssize_t bw_show(struct device *dev, struct device_attribute *attr,
 	bus_node = to_msm_bus_node(dev);
 	if (!bus_node)
 		return -EINVAL;
-
-	node_info = bus_node->node_info;
 
 	for (i = 0; i < bus_node->num_lnodes; i++) {
 		if (!bus_node->lnode_list[i].in_use)
@@ -554,7 +551,6 @@ exit_bcm_clist_add:
 int msm_bus_commit_data(struct list_head *clist)
 {
 	int ret = 0;
-	int bcm_cnt;
 	struct msm_bus_node_device_type *node = NULL;
 	struct msm_bus_node_device_type *node_tmp = NULL;
 	struct msm_bus_node_device_type *cur_bcm = NULL;
@@ -566,7 +562,6 @@ int msm_bus_commit_data(struct list_head *clist)
 	int n_active[VCD_MAX_CNT];
 	int n_wake[VCD_MAX_CNT];
 	int n_sleep[VCD_MAX_CNT];
-	int cnt_vcd = 0;
 	int cnt_active = 0;
 	int cnt_wake = 0;
 	int cnt_sleep = 0;
@@ -616,13 +611,12 @@ int msm_bus_commit_data(struct list_head *clist)
 				continue;
 			cnt_active++;
 		}
-		cnt_vcd++;
 	}
 
 	if (!cnt_active)
 		goto exit_msm_bus_commit_data;
 
-	bcm_cnt = tcs_cmd_list_gen(n_active, n_wake, n_sleep, cmdlist_active,
+	tcs_cmd_list_gen(n_active, n_wake, n_sleep, cmdlist_active,
 				cmdlist_wake, cmdlist_sleep, cur_bcm_clist);
 
 	tcs_cmd_n_shrink(n_active);
@@ -693,7 +687,6 @@ int msm_bus_query_gen(struct list_head *query_list,
 	struct msm_bus_node_device_type *node_tmp = NULL;
 	struct msm_bus_node_device_type *cur_bcm = NULL;
 	int *n_active = NULL;
-	int cnt_vcd = 0;
 	int cnt_active = 0;
 	int i = 0;
 
@@ -707,7 +700,6 @@ int msm_bus_query_gen(struct list_head *query_list,
 							query_link) {
 			cnt_active++;
 		}
-		cnt_vcd++;
 	}
 
 	tcs_usecase->num_cmds = cnt_active;
