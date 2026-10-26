@@ -426,6 +426,7 @@ int msm_gem_get_iova(struct drm_gem_object *obj,
 		struct page **pages;
 		struct device *dev;
 		struct dma_buf *dmabuf;
+		struct dma_buf_attachment *attach;
 		bool reattach = false;
 
 		dev = msm_gem_get_aspace_device(aspace);
@@ -438,17 +439,20 @@ int msm_gem_get_iova(struct drm_gem_object *obj,
 					obj->import_attach->dev, dev);
 			SDE_EVT32(obj->import_attach->dev, dev, msm_obj->sgt);
 
-			if (msm_obj->sgt)
-				dma_buf_unmap_attachment(obj->import_attach,
-					msm_obj->sgt, DMA_BIDIRECTIONAL);
-			dma_buf_detach(dmabuf, obj->import_attach);
-
-			obj->import_attach = dma_buf_attach(dmabuf, dev);
-			if (IS_ERR(obj->import_attach)) {
-				DRM_ERROR("dma_buf_attach failure, err=%ld\n",
-						PTR_ERR(obj->import_attach));
+			attach = dma_buf_attach(dmabuf, dev);
+			if (IS_ERR(attach)) {
+				ret = PTR_ERR(attach);
+				DRM_ERROR("dma_buf_attach failure, err=%d\n", ret);
 				goto unlock;
 			}
+
+			if (msm_obj->sgt) {
+				dma_buf_unmap_attachment(obj->import_attach,
+					msm_obj->sgt, DMA_BIDIRECTIONAL);
+				msm_obj->sgt = NULL;
+			}
+			dma_buf_detach(dmabuf, obj->import_attach);
+			obj->import_attach = attach;
 			msm_obj->obj_dirty = false;
 			reattach = true;
 		}
