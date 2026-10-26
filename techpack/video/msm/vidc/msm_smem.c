@@ -10,6 +10,7 @@
 #include <linux/msm_dma_iommu_mapping.h>
 #include <linux/msm_ion.h>
 #include <linux/ion_kernel.h>
+#include <linux/limits.h>
 #include <linux/slab.h>
 #include <linux/types.h>
 #include "msm_vidc.h"
@@ -251,8 +252,9 @@ int msm_smem_map_dma_buf(struct msm_vidc_inst *inst, struct msm_smem *smem)
 		goto fail_buf_get;
 	}
 	temp = (u32)iova;
-	if ((dma_addr_t)temp != iova) {
-		s_vpr_e(inst->sid, "iova(%pa) truncated to %#x", &iova, temp);
+	if ((dma_addr_t)temp != iova || smem->offset > U32_MAX - temp) {
+		s_vpr_e(inst->sid, "iova(%pa) plus offset %#x exceeds 32 bits",
+			&iova, smem->offset);
 		rc = -EINVAL;
 		goto fail_device_map;
 	}
