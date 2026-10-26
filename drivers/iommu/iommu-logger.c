@@ -7,6 +7,8 @@
 #include <linux/iommu.h>
 #include <linux/slab.h>
 
+#include "iommu-logger.h"
+
 static DEFINE_MUTEX(iommu_debug_attachments_lock);
 static LIST_HEAD(iommu_debug_attachments);
 
