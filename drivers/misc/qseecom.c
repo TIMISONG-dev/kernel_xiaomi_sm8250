@@ -2848,6 +2848,8 @@ static int qseecom_load_app(struct qseecom_dev_handle *data, void __user *argp)
 					pr_err("App %d (%s) ref_cnt overflow\n",
 						app_id, req.app_name);
 					ret = -EINVAL;
+					spin_unlock_irqrestore(
+						&qseecom.registered_app_list_lock, flags);
 					goto loadapp_err;
 				}
 				entry->ref_cnt++;
@@ -5063,7 +5065,7 @@ int qseecom_start_app(struct qseecom_handle **handle,
 				&data->sglistinfo_shm);
 	if (!data->sglistinfo_ptr) {
 		ret = -ENOMEM;
-		goto err;
+		goto err_free;
 	}
 
 	init_waitqueue_head(&data->abort_wq);
@@ -5088,6 +5090,8 @@ int qseecom_start_app(struct qseecom_handle **handle,
 					pr_err("App %d (%s) ref_cnt overflow\n",
 						app_id, app_ireq.app_name);
 					ret = -EINVAL;
+					spin_unlock_irqrestore(
+						&qseecom.registered_app_list_lock, flags);
 					goto err;
 				}
 				entry->ref_cnt++;
@@ -5169,10 +5173,11 @@ err:
 	if (va)
 		__qseecom_free_coherent_buf(size, va, pa);
 	__qseecom_free_tzbuf(&data->sglistinfo_shm);
+	mutex_unlock(&app_access_lock);
+err_free:
 	kfree(data);
 	kfree(*handle);
 	*handle = NULL;
-	mutex_unlock(&app_access_lock);
 	__wakeup_unload_app_kthread();
 	return ret;
 }
@@ -6024,6 +6029,8 @@ static int qseecom_query_app_loaded(struct qseecom_dev_handle *data,
 					pr_err("App %d (%s) ref_cnt overflow\n",
 						app_id, req.app_name);
 					ret = -EINVAL;
+					spin_unlock_irqrestore(
+						&qseecom.registered_app_list_lock, flags);
 					goto exit_free;
 				}
 				entry->ref_cnt++;
