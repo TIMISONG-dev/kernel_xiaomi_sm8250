@@ -1937,7 +1937,9 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 	asm_token.token = data->token;
 	if (q6asm_get_flag_from_token(&asm_token, ASM_CMD_NO_WAIT_OFFSET)) {
 		pr_debug("%s: No wait command opcode[0x%x] cmd_opcode:%x\n",
-			 __func__, data->opcode, payload ? payload[0] : 0);
+			 __func__, data->opcode,
+			 payload && data->payload_size >= sizeof(*payload) ?
+			 payload[0] : 0);
 		wakeup_flag = 0;
 	}
 
@@ -2230,6 +2232,13 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 	}
 	case ASM_STREAM_CMDRSP_GET_PP_PARAMS_V2:
 	case ASM_STREAM_CMDRSP_GET_PP_PARAMS_V3:
+		if (data->payload_size < sizeof(uint32_t)) {
+			dev_err(ac->dev, "%s: short get-params status reply: %u\n",
+				__func__, data->payload_size);
+			spin_unlock_irqrestore(&session[session_id].session_lock,
+					       flags);
+			return -EINVAL;
+		}
 		pr_debug("%s: ASM_STREAM_CMDRSP_GET_PP_PARAMS session %d opcode 0x%x token 0x%x src %d dest %d\n",
 			__func__, ac->session, data->opcode, data->token,
 			data->src_port, data->dest_port);
@@ -2492,6 +2501,13 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 		wake_up(&ac->cmd_wait);
 		break;
 	case ASM_SESSION_CMDRSP_GET_PATH_DELAY_V2:
+		if (data->payload_size < sizeof(uint32_t)) {
+			dev_err(ac->dev, "%s: short path-delay status reply: %u\n",
+				__func__, data->payload_size);
+			spin_unlock_irqrestore(&session[session_id].session_lock,
+					       flags);
+			return -EINVAL;
+		}
 		if (data->payload_size >= 3 * sizeof(uint32_t))
 			pr_debug("%s: ASM_SESSION_CMDRSP_GET_PATH_DELAY_V2 session %d status 0x%x msw %u lsw %u\n",
 					__func__, ac->session, payload[0], payload[2],
