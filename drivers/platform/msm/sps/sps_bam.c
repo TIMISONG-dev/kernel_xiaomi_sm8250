@@ -269,6 +269,9 @@ int sps_bam_enable(struct sps_bam *dev)
 	int result;
 	int rc;
 	int MTIenabled;
+	bool irq_registered = false;
+	bool irq_wake_enabled = false;
+	bool bam_initialized = false;
 
 	/* Is this BAM enabled? */
 	if ((dev->state & BAM_STATE_ENABLED))
@@ -288,25 +291,19 @@ int sps_bam_enable(struct sps_bam *dev)
 		dev->state &= ~BAM_STATE_IRQ;
 	} else {
 		/* Register BAM ISR */
-		if (dev->props.irq > 0) {
-			if (dev->props.options & SPS_BAM_RES_CONFIRM) {
-				result = request_irq(dev->props.irq,
-					(irq_handler_t) bam_isr,
-					IRQF_TRIGGER_RISING, "sps", dev);
-				SPS_DBG3(dev,
-					"sps:BAM %pa uses edge for IRQ# %d\n",
-					BAM_ID(dev), dev->props.irq);
-			} else {
-				result = request_irq(dev->props.irq,
-					(irq_handler_t) bam_isr,
-					IRQF_TRIGGER_HIGH, "sps", dev);
-				SPS_DBG3(dev,
-					"sps:BAM %pa uses level for IRQ# %d\n",
-					BAM_ID(dev), dev->props.irq);
-			}
-		} else {
+		if (dev->props.options & SPS_BAM_RES_CONFIRM) {
+			result = request_irq(dev->props.irq,
+				(irq_handler_t) bam_isr,
+				IRQF_TRIGGER_RISING, "sps", dev);
 			SPS_DBG3(dev,
-				"sps:BAM %pa does not have an valid IRQ# %d\n",
+				"sps:BAM %pa uses edge for IRQ# %d\n",
+				BAM_ID(dev), dev->props.irq);
+		} else {
+			result = request_irq(dev->props.irq,
+				(irq_handler_t) bam_isr,
+				IRQF_TRIGGER_HIGH, "sps", dev);
+			SPS_DBG3(dev,
+				"sps:BAM %pa uses level for IRQ# %d\n",
 				BAM_ID(dev), dev->props.irq);
 		}
 
@@ -315,6 +312,8 @@ int sps_bam_enable(struct sps_bam *dev)
 				BAM_ID(dev), dev->props.irq);
 			return SPS_ERROR;
 		}
+
+		irq_registered = true;
 
 		/* Enable the BAM interrupt */
 		irq_mask = BAM_IRQ_ALL;
@@ -328,8 +327,9 @@ int sps_bam_enable(struct sps_bam *dev)
 				SPS_ERR(dev,
 					"sps:Fail to enable wakeup irq for BAM %pa IRQ %d\n",
 					BAM_ID(dev), dev->props.irq);
-				return SPS_ERROR;
+				goto fail_enable;
 			}
+			irq_wake_enabled = true;
 			SPS_DBG3(dev,
 				"sps:Enable wakeup irq for BAM %pa IRQ %d\n",
 				BAM_ID(dev), dev->props.irq);
@@ -354,8 +354,10 @@ int sps_bam_enable(struct sps_bam *dev)
 	if (rc) {
 		SPS_ERR(dev, "sps:Fail to init BAM %pa IRQ %d\n",
 			BAM_ID(dev), dev->props.irq);
-		return SPS_ERROR;
+		goto fail_enable;
 	}
+
+	bam_initialized = !(dev->props.manage & SPS_BAM_MGR_DEVICE_REMOTE);
 
 	/* Check if this BAM supports MTIs (Message Triggered Interrupts) or
 	 * multiple EEs (Execution Environments).
@@ -374,7 +376,7 @@ int sps_bam_enable(struct sps_bam *dev)
 		SPS_ERR(dev,
 			"sps:%s:EE for satellite BAM must be set to non-zero.\n",
 			__func__);
-		return SPS_ERROR;
+		goto fail_enable;
 	}
 
 	/*
@@ -390,7 +392,7 @@ int sps_bam_enable(struct sps_bam *dev)
 			SPS_ERR(dev,
 				"sps:MTI destination address not specified for BAM %pa\n",
 				BAM_ID(dev));
-			return SPS_ERROR;
+			goto fail_enable;
 		}
 		dev->state |= BAM_STATE_MTI;
 	}
@@ -406,7 +408,7 @@ int sps_bam_enable(struct sps_bam *dev)
 	if (!MTIenabled && dev->props.ee >= SPS_BAM_NUM_EES) {
 		SPS_ERR(dev, "sps:Invalid EE BAM %pa: %d\n", BAM_ID(dev),
 				dev->props.ee);
-		return SPS_ERROR;
+		goto fail_enable;
 	}
 
 	/*
@@ -420,7 +422,7 @@ int sps_bam_enable(struct sps_bam *dev)
 			SPS_ERR(dev,
 				"sps:EE config table is not specified for BAM %pa\n",
 				BAM_ID(dev));
-			return SPS_ERROR;
+			goto fail_enable;
 		}
 
 		/*
@@ -449,7 +451,7 @@ int sps_bam_enable(struct sps_bam *dev)
 						SPS_ERR(dev,
 							"sps:Overlapping pipe assignments for BAM %pa: EEs %d and %d\n",
 							BAM_ID(dev), n, i);
-						return SPS_ERROR;
+						goto fail_enable;
 					}
 				}
 			}
@@ -514,6 +516,16 @@ int sps_bam_enable(struct sps_bam *dev)
 			dev->props.num_pipes);
 
 	return 0;
+
+fail_enable:
+	if (bam_initialized)
+		bam_exit(&dev->base, dev->props.ee);
+	if (irq_wake_enabled)
+		disable_irq_wake(dev->props.irq);
+	if (irq_registered)
+		free_irq(dev->props.irq, dev);
+	dev->state &= ~(BAM_STATE_IRQ | BAM_STATE_MTI);
+	return SPS_ERROR;
 }
 
 /**
