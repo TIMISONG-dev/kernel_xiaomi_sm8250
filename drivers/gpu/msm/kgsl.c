@@ -2784,7 +2784,7 @@ static int kgsl_setup_dmabuf_useraddr(struct kgsl_device *device,
 	mmap_read_lock(current->mm);
 	vma = find_vma(current->mm, hostptr);
 
-	if (vma && vma->vm_file) {
+	if (vma && hostptr >= vma->vm_start && vma->vm_file) {
 		int fd;
 
 		ret = check_vma_flags(vma, entry->memdesc.flags);
