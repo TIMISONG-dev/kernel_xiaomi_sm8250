@@ -21,7 +21,10 @@
 #include "pkcs7_parser.h"
 
 /**
- * Check the trust on one PKCS#7 SignedInfo block.
+ * pkcs7_validate_trust_one - Check trust on one PKCS#7 SignedInfo block
+ * @pkcs7: PKCS#7 message containing the signature and certificates
+ * @sinfo: SignedInfo block to validate
+ * @trust_keyring: Trusted keys against which to validate the chain
  */
 static int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
 				    struct pkcs7_signed_info *sinfo,
