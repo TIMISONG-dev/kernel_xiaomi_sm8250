@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <asm/unaligned.h>
 #include "../inc/dbgprint.h"
 #include "../inc/tfa_container.h"
 #include "../inc/tfa.h"
@@ -218,8 +219,12 @@ int tfacont_get_max_vstep(struct tfa_device *tfa, int prof_idx) {
  * Get the file contents associated with the device or profile
  * Search within the device tree, if not found, search within the profile
  * tree. There can only be one type of file within profile or device.
-  */
-nxpTfaFileDsc_t *tfacont_getfiledata(struct tfa_device *tfa, int prof_idx, enum nxpTfaHeaderType type)
+ * @prof_idx: Container profile index
+ * @tfa: TFA device instance
+ * @type: Container file or descriptor type
+ */
+nxpTfaFileDsc_t *tfacont_getfiledata(struct tfa_device *tfa, int prof_idx,
+				     enum nxpTfaHeaderType type)
 {
 	nxpTfaDeviceList_t *dev;
 	nxpTfaProfileList_t *prof;
@@ -447,7 +452,8 @@ static enum Tfa98xx_Error tfaContWriteVstepMax2_One(struct tfa_device *tfa, stru
 
 	if (partial) {
 		uint8_t offset = 0, i = 0;
-		uint16_t *change;
+		uint16_t change;
+		uint8_t *change_pos;
 		uint8_t *n = new_msg->ParameterData;
 		uint8_t *o = old_msg->ParameterData;
 		uint8_t *p = partial;
@@ -463,15 +469,15 @@ static enum Tfa98xx_Error tfaContWriteVstepMax2_One(struct tfa_device *tfa, stru
 			if ((offset == 0xff) ||
 			    (memcmp(n, o, 3 * sizeof(uint8_t)))) {
 				*p++ = offset;
-				change = (uint16_t*) p;
-				*change = 0;
+				change_pos = p;
+				change = 0;
 				p += 2;
 				
 				for (i = 0;
 				     (i < 16) && (o < (old_msg->ParameterData + len));
 				    i++, n += 3, o += 3) {
 					if (memcmp(n, o, 3 * sizeof(uint8_t))) {
-						*change |= BIT(i);
+						change |= BIT(i);
 						memcpy(p, n, 3);
 						p += 3;
 						trim = p;
@@ -479,7 +485,7 @@ static enum Tfa98xx_Error tfaContWriteVstepMax2_One(struct tfa_device *tfa, stru
 				}
 
 				offset = 0;
-				*change = cpu_to_be16(*change);
+				put_unaligned_be16(change, change_pos);
 			} else {
 				n += 3;
 				o += 3;
@@ -739,6 +745,9 @@ enum Tfa98xx_Error tfaContWriteFile(struct tfa_device *tfa,  nxpTfaFileDsc_t *fi
 
 /**
  * get the 1st of this dsc type this devicelist
+ * @cnt: TFA container header
+ * @dev_idx: Container device index
+ * @type: Container file or descriptor type
  */
 static nxpTfaDescPtr_t *tfa_cnt_get_dsc(nxpTfaContainer_t *cnt, nxpTfaDescriptorType_t type, int dev_idx)
 {
@@ -765,6 +774,8 @@ static nxpTfaDescPtr_t *tfa_cnt_get_dsc(nxpTfaContainer_t *cnt, nxpTfaDescriptor
  * get the device type from the patch in this devicelist
  *  - find the patch file for this devidx
  *  - return the devid from the patch or 0 if not found
+ * @cnt: TFA container header
+ * @dev_idx: Container device index
  */
 int tfa_cnt_get_devid(nxpTfaContainer_t *cnt, int dev_idx) 
 {
@@ -797,6 +808,7 @@ int tfa_cnt_get_devid(nxpTfaContainer_t *cnt, int dev_idx)
 
 /**
  * get the firmware version from the patch in this devicelist
+ * @tfa: TFA device instance
  */
 int tfa_cnt_get_patch_version(struct tfa_device *tfa)
 {
@@ -1148,6 +1160,10 @@ enum Tfa98xx_Error tfaContWritePatch(struct tfa_device *tfa)
 
 /**
  * Create a buffer which can be used to send to the dsp.
+ * @buffer: Destination DSP message buffer
+ * @msg: DSP command identifier and message words
+ * @size: Receives the encoded message size in bytes
+ * @tfa: TFA device instance
  */
 static void create_dsp_buffer_msg(struct tfa_device *tfa, nxpTfaMsg_t *msg, char *buffer, int *size)
 {
@@ -1976,6 +1992,8 @@ int tfaContGetCalProfile(struct tfa_device *tfa)
 
 /**
  * Is the profile a tap profile
+ * @prof_idx: Container profile index
+ * @tfa: TFA device instance
  */
 int tfaContIsTapProfile(struct tfa_device *tfa, int prof_idx)
 {
