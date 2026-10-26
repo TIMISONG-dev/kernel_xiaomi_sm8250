@@ -41,7 +41,7 @@ static struct msm_bus_scale_pdata *get_pdata(struct device *dev,
 	struct msm_bus_paths *usecase = NULL;
 	struct msm_bus_lat_vectors *usecase_lat = NULL;
 	int i = 0, j, ret, num_usecases = 0, num_paths, len;
-	const uint32_t *vec_arr = NULL;
+	const __be32 *vec_arr = NULL;
 	bool mem_err = false;
 
 	if (!dev) {
@@ -625,7 +625,6 @@ struct msm_bus_fabric_registration
 {
 	struct device_node *of_node;
 	struct msm_bus_fabric_registration *pdata;
-	bool mem_err = false;
 	int ret = 0;
 	const char *sel_str;
 	u32 temp;
@@ -639,7 +638,6 @@ struct msm_bus_fabric_registration
 	pdata = devm_kzalloc(&pdev->dev,
 			sizeof(struct msm_bus_fabric_registration), GFP_KERNEL);
 	if (!pdata) {
-		mem_err = true;
 		goto err;
 	}
 

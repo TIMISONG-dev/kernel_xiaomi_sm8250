@@ -37,7 +37,7 @@ static LIST_HEAD(commit_list);
 static LIST_HEAD(late_init_clist);
 static LIST_HEAD(query_list);
 
-DEFINE_RT_MUTEX(msm_bus_adhoc_lock);
+static DEFINE_RT_MUTEX(msm_bus_adhoc_lock);
 
 static bool chk_bl_list(struct list_head *black_list, unsigned int id)
 {

@@ -129,11 +129,11 @@ static int noc_div(uint64_t *a, uint32_t b)
 static uint64_t noc_bw(uint32_t bw_field, uint32_t qos_freq)
 {
 	uint64_t res;
-	uint32_t rem, scale;
+	uint32_t scale;
 
 	res = 2 * qos_freq * bw_field;
 	scale = BW_SCALE * 1000;
-	rem = noc_div(&res, scale);
+	noc_div(&res, scale);
 	MSM_BUS_DBG("NOC: Calculated bw: %llu\n", res * 1000000ULL);
 	return res * 1000000ULL;
 }

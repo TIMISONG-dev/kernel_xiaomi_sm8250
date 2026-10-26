@@ -250,9 +250,6 @@ extern int msm_bus_bimc_set_ops(struct msm_bus_node_device_type *bus_dev);
 extern int msm_bus_noc_set_ops(struct msm_bus_node_device_type *bus_dev);
 extern int msm_bus_of_get_static_rules(struct platform_device *pdev,
 					struct bus_rule_type **static_rule);
-extern int msm_rules_update_path(struct list_head *input_list,
-				struct list_head *output_list);
-extern void print_all_rules(void);
 #ifdef CONFIG_DEBUG_BUS_VOTER
 int msm_bus_floor_init(struct device *dev);
 #else
