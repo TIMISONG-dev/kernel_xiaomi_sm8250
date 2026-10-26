@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
+/* Select compat syscall numbers before audit.h includes architecture headers. */
+#define __COMPAT_SYSCALL_NR
+
+#include <linux/audit.h>
 #include <linux/init.h>
 #include <linux/types.h>
 #include <asm/unistd32.h>
