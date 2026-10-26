@@ -3,6 +3,7 @@
  * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  */
 
+#include <linux/dma-buf.h>
 #include "msm_cvp_internal.h"
 
 #define MSM_VIDC_NOMINAL_CYCLES		(444 * 1000 * 1000)
@@ -330,6 +331,7 @@ static int msm_cvp_register_buffer(struct msm_vidc_inst *inst,
 	int rc = 0;
 	bool found;
 	struct hfi_device *hdev;
+	struct dma_buf *dbuf;
 	struct msm_vidc_cvp_buffer *cbuf;
 	struct vidc_register_buffer vbuf;
 
@@ -375,6 +377,14 @@ static int msm_cvp_register_buffer(struct msm_vidc_inst *inst,
 		goto exit;
 	}
 
+	/* CVP registers a payload span, unlike VIDC's total plane length. */
+	dbuf = cbuf->smem.dma_buf;
+	if (buf->offset > dbuf->size ||
+	    buf->size > dbuf->size - buf->offset) {
+		rc = -EINVAL;
+		goto exit;
+	}
+
 	mutex_lock(&inst->cvpbufs.lock);
 	memset(&vbuf, 0, sizeof(struct vidc_register_buffer));
 	vbuf.index = buf->index;
@@ -395,7 +405,7 @@ static int msm_cvp_register_buffer(struct msm_vidc_inst *inst,
 	return rc;
 
 exit:
-	if (cbuf->smem.device_addr)
+	if (cbuf->smem.refcount)
 		inst->smem_ops->smem_unmap_dma_buf(inst, &cbuf->smem);
 	kfree(cbuf);
 	cbuf = NULL;
