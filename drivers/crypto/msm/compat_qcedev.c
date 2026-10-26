@@ -88,14 +88,14 @@ static int compat_get_qcedev_vbuf_info(
 
 	for (i = 0; i < QCEDEV_MAX_BUFFERS; i++) {
 		err |= get_user(vaddr, &vbuf32->src[i].vaddr);
-		err |= put_user(vaddr, (compat_uptr_t *)&vbuf->src[i].vaddr);
+		err |= put_user(vaddr, (compat_uptr_t __user *)&vbuf->src[i].vaddr);
 		err |= get_user(len, &vbuf32->src[i].len);
 		err |= put_user(len, &vbuf->src[i].len);
 	}
 
 	for (i = 0; i < QCEDEV_MAX_BUFFERS; i++) {
 		err |= get_user(vaddr, &vbuf32->dst[i].vaddr);
-		err |= put_user(vaddr, (compat_uptr_t *)&vbuf->dst[i].vaddr);
+		err |= put_user(vaddr, (compat_uptr_t __user *)&vbuf->dst[i].vaddr);
 		err |= get_user(len, &vbuf32->dst[i].len);
 		err |= put_user(len, &vbuf->dst[i].len);
 	}
@@ -111,14 +111,14 @@ static int compat_put_qcedev_vbuf_info(
 	uint32_t len;
 
 	for (i = 0; i < QCEDEV_MAX_BUFFERS; i++) {
-		err |= get_user(vaddr, (compat_uptr_t *)&vbuf->src[i].vaddr);
+		err |= get_user(vaddr, (compat_uptr_t __user *)&vbuf->src[i].vaddr);
 		err |= put_user(vaddr, &vbuf32->src[i].vaddr);
 		err |= get_user(len, &vbuf->src[i].len);
 		err |= put_user(len, &vbuf32->src[i].len);
 	}
 
 	for (i = 0; i < QCEDEV_MAX_BUFFERS; i++) {
-		err |= get_user(vaddr, (compat_uptr_t *)&vbuf->dst[i].vaddr);
+		err |= get_user(vaddr, (compat_uptr_t __user *)&vbuf->dst[i].vaddr);
 		err |= put_user(vaddr, &vbuf32->dst[i].vaddr);
 		err |= get_user(len, &vbuf->dst[i].len);
 		err |= put_user(len, &vbuf32->dst[i].len);
@@ -332,7 +332,7 @@ static int compat_get_qcedev_sha_op_req(
 
 	for (i = 0; i < QCEDEV_MAX_BUFFERS; i++) {
 		err |= get_user(vaddr, &data32->data[i].vaddr);
-		err |= put_user(vaddr, (compat_uptr_t *)&data->data[i].vaddr);
+		err |= put_user(vaddr, (compat_uptr_t __user *)&data->data[i].vaddr);
 		err |= get_user(len, &data32->data[i].len);
 		err |= put_user(len, &data->data[i].len);
 	}
@@ -350,7 +350,7 @@ static int compat_get_qcedev_sha_op_req(
 	err |= get_user(diglen, &data32->diglen);
 	err |= put_user(diglen, &data->diglen);
 	err |= get_user(authkey, &data32->authkey);
-	err |= put_user(authkey, (compat_uptr_t *)&data->authkey);
+	err |= put_user(authkey, (compat_uptr_t __user *)&data->authkey);
 	err |= get_user(authklen, &data32->authklen);
 	err |= put_user(authklen, &data->authklen);
 	err |= get_user(alg, &data32->alg);
@@ -375,7 +375,7 @@ static int compat_put_qcedev_sha_op_req(
 	uint32_t len;
 
 	for (i = 0; i < QCEDEV_MAX_BUFFERS; i++) {
-		err |= get_user(vaddr, (compat_uptr_t *)&data->data[i].vaddr);
+		err |= get_user(vaddr, (compat_uptr_t __user *)&data->data[i].vaddr);
 		err |= put_user(vaddr, &data32->data[i].vaddr);
 		err |= get_user(len, &data->data[i].len);
 		err |= put_user(len, &data32->data[i].len);
@@ -393,7 +393,7 @@ static int compat_put_qcedev_sha_op_req(
 
 	err |= get_user(diglen, &data->diglen);
 	err |= put_user(diglen, &data32->diglen);
-	err |= get_user(authkey, (compat_uptr_t *)&data->authkey);
+	err |= get_user(authkey, (compat_uptr_t __user *)&data->authkey);
 	err |= put_user(authkey, &data32->authkey);
 	err |= get_user(authklen, &data->authklen);
 	err |= put_user(authklen, &data32->authklen);

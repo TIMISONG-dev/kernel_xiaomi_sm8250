@@ -3764,7 +3764,6 @@ static int _sha_update(struct ahash_request  *req, uint32_t sha_block_size)
 	uint32_t trailing_buf_len = 0;
 	uint32_t nbytes;
 	uint32_t offset = 0;
-	uint32_t bytes = 0;
 	uint8_t  *staging;
 	int ret = 0;
 
@@ -3775,7 +3774,7 @@ static int _sha_update(struct ahash_request  *req, uint32_t sha_block_size)
 	if (total <= sha_block_size) {
 		k_src = &rctx->trailing_buf[rctx->trailing_buf_len];
 		num_sg = qcrypto_count_sg(req->src, len);
-		bytes = qcrypto_sg_copy_to_buffer(req->src, num_sg, k_src, len);
+		qcrypto_sg_copy_to_buffer(req->src, num_sg, k_src, len);
 
 		rctx->trailing_buf_len = total;
 		return 0;

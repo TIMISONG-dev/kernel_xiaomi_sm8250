@@ -725,7 +725,7 @@ static int qcedev_sha_update_max_xfer(struct qcedev_async_req *qcedev_areq,
 	int i = 0;
 	uint32_t total;
 
-	uint8_t *user_src = NULL;
+	uint8_t __user *user_src = NULL;
 	uint8_t *k_src = NULL;
 	uint8_t *k_buf_src = NULL;
 	uint8_t *k_align_src = NULL;
@@ -1001,7 +1001,7 @@ static int qcedev_hash_cmac(struct qcedev_async_req *qcedev_areq,
 	int i = 0;
 	uint32_t total;
 
-	uint8_t *user_src = NULL;
+	uint8_t __user *user_src = NULL;
 	uint8_t *k_src = NULL;
 	uint8_t *k_buf_src = NULL;
 
@@ -1281,7 +1281,7 @@ static int qcedev_vbuf_ablk_cipher_max_xfer(struct qcedev_async_req *areq,
 	int dst_i = *di;
 	struct scatterlist sg_src;
 	uint32_t byteoffset = 0;
-	uint8_t *user_src = NULL;
+	uint8_t __user *user_src = NULL;
 	uint8_t *k_align_dst = k_align_src;
 	struct	qcedev_cipher_op_req *creq = &areq->cipher_op_req;
 
@@ -1782,7 +1782,6 @@ static inline long qcedev_ioctl(struct file *file,
 	struct qcedev_handle *handle;
 	struct qcedev_control *podev;
 	struct qcedev_async_req *qcedev_areq;
-	struct qcedev_stat *pstat;
 
 	qcedev_areq = kzalloc(sizeof(struct qcedev_async_req), GFP_KERNEL);
 	if (!qcedev_areq)
@@ -1805,7 +1804,6 @@ static inline long qcedev_ioctl(struct file *file,
 	}
 
 	init_completion(&qcedev_areq->complete);
-	pstat = &_qcedev_stat;
 
 	if (podev->platform_support.bus_scale_table != NULL &&
 		cmd != QCEDEV_IOCTL_MAP_BUF_REQ &&
