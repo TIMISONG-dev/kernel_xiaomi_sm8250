@@ -109,8 +109,10 @@ int crypto_qti_tz_raw_secret(const u8 *wrapped_key,
 		return -ENOMEM;
 
 	err = qtee_shmbridge_allocate_shm(secret_size, &shm_secret);
-	if (err)
-		return -ENOMEM;
+	if (err) {
+		err = -ENOMEM;
+		goto free_key;
+	}
 
 	tzbuf_key = shm_key.vaddr;
 	memcpy(tzbuf_key, wrapped_key, wrapped_key_size);
@@ -129,14 +131,16 @@ int crypto_qti_tz_raw_secret(const u8 *wrapped_key,
 	err = scm_call2(smc_id, &desc);
 	if (err) {
 		pr_err("%s failed to retrieve raw secret: %d\n", __func__, err);
-		return err;
+		goto free_secret;
 	}
 
 	dmac_inv_range(shm_secret.vaddr, shm_secret.vaddr + secret_size);
 	memcpy(secret, shm_secret.vaddr, secret_size);
 
-	qtee_shmbridge_free_shm(&shm_key);
+free_secret:
 	qtee_shmbridge_free_shm(&shm_secret);
+free_key:
+	qtee_shmbridge_free_shm(&shm_key);
 
 	return err;
 }
