@@ -338,15 +338,15 @@ int __nla_validate(const struct nlattr *head, int len, int maxtype,
 EXPORT_SYMBOL(__nla_validate);
 
 /**
- * nla_policy_len - Determin the max. length of a policy
- * @policy: policy to use
+ * nla_policy_len - determine the maximum encoded length of a policy
+ * @p: policy to use
  * @n: number of policies
  *
  * Determines the max. length of the policy.  It is currently used
  * to allocated Netlink buffers roughly the size of the actual
  * message.
  *
- * Returns 0 on success or a negative error code.
+ * Return: Total encoded length of the policy attributes, including padding.
  */
 int
 nla_policy_len(const struct nla_policy *p, int n)

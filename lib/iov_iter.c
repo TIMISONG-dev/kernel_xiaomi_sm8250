@@ -633,7 +633,7 @@ static size_t copy_pipe_to_iter_mcsafe(const void *addr, size_t bytes,
  * _copy_to_iter_mcsafe - copy to user with source-read error exception handling
  * @addr: source kernel address
  * @bytes: total transfer length
- * @iter: destination iterator
+ * @i: destination iterator
  *
  * The pmem driver arranges for filesystem-dax to use this facility via
  * dax_copy_to_iter() for protecting read/write to persistent memory.
@@ -762,7 +762,7 @@ EXPORT_SYMBOL(_copy_from_iter_nocache);
  * _copy_from_iter_flushcache - write destination through cpu cache
  * @addr: destination kernel address
  * @bytes: total transfer length
- * @iter: source iterator
+ * @i: source iterator
  *
  * The pmem driver arranges for filesystem-dax to use this facility via
  * dax_copy_from_iter() for ensuring that writes to persistent memory

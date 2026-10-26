@@ -77,14 +77,14 @@ static void __dump_stack(void)
 	show_stack(NULL, NULL);
 }
 
-/**
- * dump_stack - dump the current task information and its stack trace
- *
- * Architectures can override this implementation by implementing its own.
- */
 #ifdef CONFIG_SMP
 static atomic_t dump_lock = ATOMIC_INIT(-1);
 
+/**
+ * dump_stack - dump the current task information and its stack trace
+ *
+ * Architectures can override this implementation by implementing their own.
+ */
 asmlinkage __visible void dump_stack(void)
 {
 	unsigned long flags;

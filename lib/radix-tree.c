@@ -198,13 +198,13 @@ static inline void all_tag_set(struct radix_tree_node *node, unsigned int tag)
 /**
  * radix_tree_find_next_bit - find the next set bit in a memory region
  *
- * @addr: The address to base the search on
- * @size: The bitmap size in bits
+ * @node: Radix tree node containing the tag bitmap
+ * @tag: Tag bitmap to search
  * @offset: The bitnumber to start searching at
  *
  * Unrollable variant of find_next_bit() for constant size arrays.
- * Tail bits starting from size to roundup(size, BITS_PER_LONG) must be zero.
- * Returns next bit offset, or size if nothing found.
+ * Tail bits from RADIX_TREE_MAP_SIZE to the end of the bitmap must be zero.
+ * Returns the next bit offset, or RADIX_TREE_MAP_SIZE if nothing is found.
  */
 static __always_inline unsigned long
 radix_tree_find_next_bit(struct radix_tree_node *node, unsigned int tag,
@@ -607,8 +607,9 @@ out:
 }
 
 /**
- *	radix_tree_shrink    -    shrink radix tree to minimum height
- *	@root		radix tree root
+ * radix_tree_shrink - shrink radix tree to minimum height
+ * @root: Radix tree root
+ * @update_node: Optional callback invoked when a node changes
  */
 static inline bool radix_tree_shrink(struct radix_tree_root *root,
 				     radix_tree_update_node_t update_node)
@@ -1165,6 +1166,7 @@ EXPORT_SYMBOL(radix_tree_replace_slot);
 /**
  * radix_tree_iter_replace - replace item in a slot
  * @root:	radix tree root
+ * @iter: Iterator identifying the node containing the slot
  * @slot:	pointer to slot
  * @item:	new item to store in the slot.
  *

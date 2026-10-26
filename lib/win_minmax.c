@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /**
- * lib/minmax.c: windowed min/max tracker
+ * DOC: Windowed min/max tracker
  *
  * Kathleen Nichols' algorithm for tracking the minimum (or maximum)
  * value of a data stream over some fixed time interval.  (E.g.,

@@ -246,6 +246,7 @@ EXPORT_SYMBOL(sg_free_table);
  * @table:	The sg table header to use
  * @nents:	Number of entries in sg list
  * @max_ents:	The maximum number of entries the allocator returns per call
+ * @first_chunk: Optional preallocated first scatterlist chunk, or NULL
  * @gfp_mask:	GFP allocation mask
  * @alloc_fn:	Allocator to use
  *
@@ -656,6 +657,7 @@ EXPORT_SYMBOL(__sg_page_iter_dma_next);
  * @miter: sg mapping iter to be started
  * @sgl: sg list to iterate over
  * @nents: number of sg entries
+ * @flags: SG_MITER_TO_SG or SG_MITER_FROM_SG, optionally SG_MITER_ATOMIC
  *
  * Description:
  *   Starts mapping iterator @miter.
