@@ -78,7 +78,10 @@ static void pipe_handler(struct sps_bam *dev,
 			struct sps_pipe *pipe);
 
 /**
- * Pipe transfer event (EOT, DESC_DONE) source handler.
+ * pipe_handler_eot() - Pipe transfer event (EOT, DESC_DONE) source handler
+ * @dev: BAM device descriptor.
+ * @pipe: Pipe state descriptor.
+ *
  * This function is called by pipe_handler() and other functions to process the
  * descriptor FIFO.
  */
@@ -86,7 +89,8 @@ static void pipe_handler_eot(struct sps_bam *dev,
 			   struct sps_pipe *pipe);
 
 /**
- * BAM driver initialization
+ * sps_bam_driver_init() - BAM driver initialization
+ * @options: Driver initialization options (currently unused).
  */
 int sps_bam_driver_init(u32 options)
 {
@@ -212,13 +216,13 @@ polling:
 }
 
 /**
- * BAM interrupt service routine
+ * bam_isr() - BAM interrupt service routine
+ * @irq: Interrupt number registered for this BAM.
+ * @ctxt: BAM device descriptor supplied to request_irq().
  *
  * This function is the BAM interrupt service routine.
  *
- * @ctxt - pointer to ISR's registered argument
- *
- * @return void
+ * Return: IRQ_HANDLED.
  */
 static irqreturn_t bam_isr(int irq, void *ctxt)
 {
@@ -260,7 +264,8 @@ static irqreturn_t bam_isr(int irq, void *ctxt)
 }
 
 /**
- * BAM device enable
+ * sps_bam_enable() - BAM device enable
+ * @dev: BAM device descriptor.
  */
 int sps_bam_enable(struct sps_bam *dev)
 {
@@ -529,8 +534,8 @@ fail_enable:
 }
 
 /**
- * BAM device disable
- *
+ * sps_bam_disable() - BAM device disable
+ * @dev: BAM device descriptor.
  */
 int sps_bam_disable(struct sps_bam *dev)
 {
@@ -573,7 +578,8 @@ int sps_bam_disable(struct sps_bam *dev)
 }
 
 /**
- * BAM device initialization
+ * sps_bam_device_init() - BAM device initialization
+ * @dev: BAM device descriptor.
  */
 int sps_bam_device_init(struct sps_bam *dev)
 {
@@ -614,8 +620,8 @@ int sps_bam_device_init(struct sps_bam *dev)
 }
 
 /**
- * BAM device de-initialization
- *
+ * sps_bam_device_de_init() - BAM device de-initialization
+ * @dev: BAM device descriptor.
  */
 int sps_bam_device_de_init(struct sps_bam *dev)
 {
@@ -630,8 +636,8 @@ int sps_bam_device_de_init(struct sps_bam *dev)
 }
 
 /**
- * BAM device reset
- *
+ * sps_bam_reset() - BAM device reset
+ * @dev: BAM device descriptor.
  */
 int sps_bam_reset(struct sps_bam *dev)
 {
@@ -670,12 +676,10 @@ int sps_bam_reset(struct sps_bam *dev)
 }
 
 /**
- * Clear the BAM pipe state struct
+ * pipe_clear() - Clear the BAM pipe state struct
+ * @pipe: Pipe state descriptor.
  *
  * This function clears the BAM pipe state struct.
- *
- * @pipe - pointer to client pipe struct
- *
  */
 static void pipe_clear(struct sps_pipe *pipe)
 {
@@ -695,8 +699,9 @@ static void pipe_clear(struct sps_pipe *pipe)
 }
 
 /**
- * Allocate a BAM pipe
- *
+ * sps_bam_pipe_alloc() - Allocate a BAM pipe
+ * @dev: BAM device descriptor.
+ * @pipe_index: Requested pipe index, or SPS_BAM_PIPE_INVALID to find a free pipe.
  */
 u32 sps_bam_pipe_alloc(struct sps_bam *dev, u32 pipe_index)
 {
@@ -753,8 +758,9 @@ u32 sps_bam_pipe_alloc(struct sps_bam *dev, u32 pipe_index)
 }
 
 /**
- * Free a BAM pipe
- *
+ * sps_bam_pipe_free() - Free a BAM pipe
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
  */
 void sps_bam_pipe_free(struct sps_bam *dev, u32 pipe_index)
 {
@@ -807,8 +813,9 @@ void sps_bam_pipe_free(struct sps_bam *dev, u32 pipe_index)
 }
 
 /**
- * Establish BAM pipe connection
- *
+ * sps_bam_pipe_connect() - Establish BAM pipe connection
+ * @bam_pipe: Client pipe state to associate with the connection.
+ * @params: Pipe mode, connection options and MTI interrupt destination.
  */
 int sps_bam_pipe_connect(struct sps_pipe *bam_pipe,
 			 const struct sps_bam_connect_param *params)
@@ -1085,8 +1092,9 @@ exit_init_err:
 }
 
 /**
- * Disconnect a BAM pipe connection
- *
+ * sps_bam_pipe_disconnect() - Disconnect a BAM pipe connection
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
  */
 int sps_bam_pipe_disconnect(struct sps_bam *dev, u32 pipe_index)
 {
@@ -1144,16 +1152,12 @@ int sps_bam_pipe_disconnect(struct sps_bam *dev, u32 pipe_index)
 }
 
 /**
- * Set BAM pipe interrupt enable state
+ * pipe_set_irq() - Set BAM pipe interrupt enable state
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @poll: Nonzero to poll the pipe instead of enabling its interrupt.
  *
  * This function sets the interrupt enable state for a BAM pipe.
- *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @poll - true if SPS_O_POLL is set, false otherwise
- *
  */
 static void pipe_set_irq(struct sps_bam *dev, u32 pipe_index,
 				 u32 poll)
@@ -1199,8 +1203,10 @@ static void pipe_set_irq(struct sps_bam *dev, u32 pipe_index,
 }
 
 /**
- * Set BAM pipe parameters
- *
+ * sps_bam_pipe_set_params() - Set BAM pipe parameters
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @options: SPS_O_* connection and event options to apply.
  */
 int sps_bam_pipe_set_params(struct sps_bam *dev, u32 pipe_index, u32 options)
 {
@@ -1330,8 +1336,9 @@ int sps_bam_pipe_set_params(struct sps_bam *dev, u32 pipe_index, u32 options)
 }
 
 /**
- * Enable a BAM pipe
- *
+ * sps_bam_pipe_enable() - Enable a BAM pipe
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
  */
 int sps_bam_pipe_enable(struct sps_bam *dev, u32 pipe_index)
 {
@@ -1345,8 +1352,9 @@ int sps_bam_pipe_enable(struct sps_bam *dev, u32 pipe_index)
 }
 
 /**
- * Disable a BAM pipe
- *
+ * sps_bam_pipe_disable() - Disable a BAM pipe
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
  */
 int sps_bam_pipe_disable(struct sps_bam *dev, u32 pipe_index)
 {
@@ -1365,8 +1373,10 @@ int sps_bam_pipe_disable(struct sps_bam *dev, u32 pipe_index)
 }
 
 /**
- * Register an event for a BAM pipe
- *
+ * sps_bam_pipe_reg_event() - Register an event for a BAM pipe
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @reg: Event selection, notification mode and client callback data.
  */
 int sps_bam_pipe_reg_event(struct sps_bam *dev,
 			   u32 pipe_index,
@@ -1409,8 +1419,13 @@ int sps_bam_pipe_reg_event(struct sps_bam *dev,
 }
 
 /**
- * Submit a transfer of a single buffer to a BAM pipe
- *
+ * sps_bam_pipe_transfer_one() - Submit a transfer of a single buffer to a BAM pipe
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @addr: Buffer address to encode in the transfer descriptor.
+ * @size: Buffer length in bytes.
+ * @user: Client context associated with completion of this descriptor.
+ * @flags: SPS_IOVEC_FLAG_* descriptor and submission flags.
  */
 int sps_bam_pipe_transfer_one(struct sps_bam *dev,
 				    u32 pipe_index, u32 addr, u32 size,
@@ -1553,8 +1568,10 @@ int sps_bam_pipe_transfer_one(struct sps_bam *dev,
 }
 
 /**
- * Submit a transfer to a BAM pipe
- *
+ * sps_bam_pipe_transfer() - Submit a transfer to a BAM pipe
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @transfer: Descriptor array and client context for the transfer.
  */
 int sps_bam_pipe_transfer(struct sps_bam *dev,
 			 u32 pipe_index, struct sps_transfer *transfer)
@@ -1668,16 +1685,13 @@ int sps_bam_pipe_inject_zlt(struct sps_bam *dev, u32 pipe_index)
 }
 
 /**
- * Allocate an event tracking struct
+ * alloc_event() - Allocate an event tracking struct
+ * @pipe: Pipe state descriptor.
+ * @event_reg: Registration selecting queued or callback notification.
  *
  * This function allocates an event tracking struct.
  *
- * @pipe - pointer to pipe state
- *
- * @event_reg - pointer to event registration
- *
- * @return - pointer to event notification struct, or NULL
- *
+ * Return: Event tracking structure, or NULL on allocation failure.
  */
 static struct sps_q_event *alloc_event(struct sps_pipe *pipe,
 					struct sps_bam_event_reg *event_reg)
@@ -1692,18 +1706,13 @@ static struct sps_q_event *alloc_event(struct sps_pipe *pipe,
 }
 
 /**
- * Trigger an event notification
+ * trigger_event() - Trigger an event notification
+ * @dev: BAM device descriptor.
+ * @pipe: Pipe state descriptor.
+ * @event_reg: Registration containing the completion and callback to notify.
+ * @sps_event: Event carrying the notification passed to the callback.
  *
  * This function triggers an event notification.
- *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe - pointer to pipe state
- *
- * @event_reg - pointer to event registration
- *
- * @sps_event - pointer to event struct
- *
  */
 static void trigger_event(struct sps_bam *dev,
 			  struct sps_pipe *pipe,
@@ -1729,18 +1738,13 @@ static void trigger_event(struct sps_bam *dev,
 }
 
 /**
- * Handle a BAM pipe's generic interrupt sources
+ * pipe_handler_generic() - Handle a BAM pipe's generic interrupt sources
+ * @dev: BAM device descriptor.
+ * @pipe: Pipe state descriptor.
+ * @event_id: SPS event identifier to report.
  *
  * This function creates the event notification for a BAM pipe's
- *    generic interrupt sources.  The caller of this function must lock the BAM
- *    device's mutex.
- *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe - pointer to pipe state
- *
- * @event_id - event identifier enum
- *
+ * generic interrupt sources. IRQ dispatch holds the BAM ISR spinlock.
  */
 static void pipe_handler_generic(struct sps_bam *dev,
 			       struct sps_pipe *pipe,
@@ -1764,16 +1768,12 @@ static void pipe_handler_generic(struct sps_bam *dev,
 }
 
 /**
- * Handle a BAM pipe's WAKEUP interrupt sources
+ * pipe_handler_wakeup() - Handle a BAM pipe's WAKEUP interrupt sources
+ * @dev: BAM device descriptor.
+ * @pipe: Pipe state descriptor.
  *
  * This function creates the event notification for a BAM pipe's
- *    WAKEUP interrupt source.  The caller of this function must lock the BAM
- *    device's mutex.
- *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe - pointer to pipe state
- *
+ * WAKEUP interrupt source. IRQ dispatch holds the BAM ISR spinlock.
  */
 static void pipe_handler_wakeup(struct sps_bam *dev, struct sps_pipe *pipe)
 {
@@ -1800,15 +1800,13 @@ static void pipe_handler_wakeup(struct sps_bam *dev, struct sps_pipe *pipe)
 }
 
 /**
- * Handle a BAM pipe's EOT/INT interrupt sources
+ * pipe_handler_eot() - Handle a BAM pipe's EOT/INT interrupt sources
+ * @dev: BAM device descriptor.
+ * @pipe: Pipe state descriptor.
  *
  * This function creates the event notification for a BAM pipe's EOT interrupt
- *    source.  The caller of this function must lock the BAM device's mutex.
- *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe - pointer to pipe state
- *
+ * source. IRQ dispatch holds the BAM ISR spinlock; polling also calls this
+ * handler directly.
  */
 static void pipe_handler_eot(struct sps_bam *dev, struct sps_pipe *pipe)
 {
@@ -2021,17 +2019,12 @@ static void pipe_handler_eot(struct sps_bam *dev, struct sps_pipe *pipe)
 }
 
 /**
- * Handle a BAM pipe's interrupt sources
+ * pipe_handler() - Handle a BAM pipe's interrupt sources
+ * @dev: BAM device descriptor.
+ * @pipe: Pipe state descriptor.
  *
  * This function handles a BAM pipe's interrupt sources.
- *    The caller of this function must lock the BAM device's mutex.
- *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @return void
- *
+ *    IRQ dispatch runs with the BAM ISR spinlock held.
  */
 static void pipe_handler(struct sps_bam *dev, struct sps_pipe *pipe)
 {
@@ -2129,8 +2122,10 @@ static void pipe_handler(struct sps_bam *dev, struct sps_pipe *pipe)
 }
 
 /**
- * Get a BAM pipe event
- *
+ * sps_bam_pipe_get_event() - Get a BAM pipe event
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @notify: Output notification; event_id is SPS_EVENT_INVALID if no event is queued.
  */
 int sps_bam_pipe_get_event(struct sps_bam *dev,
 			   u32 pipe_index, struct sps_event_notify *notify)
@@ -2184,7 +2179,10 @@ int sps_bam_pipe_get_event(struct sps_bam *dev,
 }
 
 /**
- * Get processed I/O vector
+ * sps_bam_pipe_get_iovec() - Get processed I/O vector
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @iovec: Output completed descriptor, cleared if none is available.
  */
 int sps_bam_pipe_get_iovec(struct sps_bam *dev, u32 pipe_index,
 			   struct sps_iovec *iovec)
@@ -2247,8 +2245,10 @@ int sps_bam_pipe_get_iovec(struct sps_bam *dev, u32 pipe_index,
 }
 
 /**
- * Determine whether a BAM pipe descriptor FIFO is empty
- *
+ * sps_bam_pipe_is_empty() - Determine whether a BAM pipe descriptor FIFO is empty
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @empty: Output flag indicating whether the descriptor FIFO is empty.
  */
 int sps_bam_pipe_is_empty(struct sps_bam *dev, u32 pipe_index,
 				u32 *empty)
@@ -2320,8 +2320,10 @@ int sps_bam_pipe_is_empty(struct sps_bam *dev, u32 pipe_index,
 }
 
 /**
- * Get number of free slots in a BAM pipe descriptor FIFO
- *
+ * sps_bam_get_free_count() - Get number of free slots in a BAM pipe descriptor FIFO
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @count: Output number of descriptor slots available for submission.
  */
 int sps_bam_get_free_count(struct sps_bam *dev, u32 pipe_index,
 				 u32 *count)
@@ -2356,8 +2358,9 @@ int sps_bam_get_free_count(struct sps_bam *dev, u32 pipe_index,
 }
 
 /**
- * Set BAM pipe to satellite ownership
- *
+ * sps_bam_set_satellite() - Set BAM pipe to satellite ownership
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
  */
 int sps_bam_set_satellite(struct sps_bam *dev, u32 pipe_index)
 {
@@ -2412,8 +2415,11 @@ int sps_bam_set_satellite(struct sps_bam *dev, u32 pipe_index)
 }
 
 /**
- * Perform BAM pipe timer control
- *
+ * sps_bam_pipe_timer_ctrl() - Perform BAM pipe timer control
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @timer_ctrl: Requested timer operation, mode and timeout.
+ * @timer_result: Optional output for the current timer count.
  */
 int sps_bam_pipe_timer_ctrl(struct sps_bam *dev,
 			    u32 pipe_index,
@@ -2458,7 +2464,11 @@ int sps_bam_pipe_timer_ctrl(struct sps_bam *dev,
 }
 
 /**
- * Get the number of unused descriptors in the descriptor FIFO
+ * sps_bam_pipe_get_unused_desc_num() - Get the number of unused descriptors in the descriptor FIFO
+ * @dev: BAM device descriptor.
+ * @pipe_index: Index of the pipe in the BAM device.
+ * @desc_num: Output descriptor count between the read and write offsets.
+ *
  * of a pipe
  */
 int sps_bam_pipe_get_unused_desc_num(struct sps_bam *dev, u32 pipe_index,
