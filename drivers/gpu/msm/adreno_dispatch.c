@@ -1215,17 +1215,6 @@ static inline int _wait_for_room_in_context_queue(
 	return 0;
 }
 
-static unsigned int _check_context_state_to_queue_cmds(
-	struct adreno_context *drawctxt)
-{
-	int ret = _check_context_state(&drawctxt->base);
-
-	if (ret)
-		return ret;
-
-	return _wait_for_room_in_context_queue(drawctxt);
-}
-
 static void _queue_drawobj(struct adreno_context *drawctxt,
 	struct kgsl_drawobj *drawobj)
 {
@@ -1400,7 +1389,9 @@ int adreno_dispatcher_queue_cmds(struct kgsl_device_private *dev_priv,
 
 	spin_lock(&drawctxt->lock);
 
-	ret = _check_context_state_to_queue_cmds(drawctxt);
+	ret = _check_context_state(&drawctxt->base);
+	if (!ret)
+		ret = _wait_for_room_in_context_queue(drawctxt);
 	if (ret) {
 		spin_unlock(&drawctxt->lock);
 		return ret;
@@ -1430,13 +1421,12 @@ int adreno_dispatcher_queue_cmds(struct kgsl_device_private *dev_priv,
 		case MARKEROBJ_TYPE:
 			ret = drawctxt_queue_markerobj(adreno_dev, drawctxt,
 				drawobj[i], timestamp, user_ts);
-			if (ret)
+			if (ret) {
 				spin_unlock(&drawctxt->lock);
-
-			if (ret == 1)
-				goto done;
-			else if (ret)
+				if (ret == 1)
+					goto done;
 				return ret;
+			}
 			break;
 		case CMDOBJ_TYPE:
 			ret = drawctxt_queue_cmdobj(adreno_dev, drawctxt,
