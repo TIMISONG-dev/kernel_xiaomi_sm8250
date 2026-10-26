@@ -150,6 +150,7 @@ struct crypto_engine {
 
 	enum qcrypto_bus_state bw_state;
 	bool   high_bw_req;
+	bool stopping;
 	struct timer_list bw_reaper_timer;
 	struct work_struct bw_reaper_ws;
 	struct work_struct bw_allocate_ws;
@@ -295,24 +296,22 @@ static void qcrypto_init_req_control(struct crypto_engine *pce,
 static struct crypto_engine *_qrypto_find_pengine_device(struct crypto_priv *cp,
 			 unsigned int device)
 {
-	struct crypto_engine *entry = NULL;
+	struct crypto_engine *entry, *match = NULL;
 	unsigned long flags;
 
 	spin_lock_irqsave(&cp->lock, flags);
 	list_for_each_entry(entry, &cp->engine_list, elist) {
-		if (entry->ce_device == device)
+		if (entry->ce_device == device) {
+			match = entry;
 			break;
+		}
 	}
 	spin_unlock_irqrestore(&cp->lock, flags);
 
-	if (((entry != NULL) && (entry->ce_device != device)) ||
-		(entry == NULL)) {
-		pr_err("Device node for CE device %d NOT FOUND!!\n",
-				device);
-		return NULL;
-	}
+	if (!match)
+		pr_err("Device node for CE device %d NOT FOUND!!\n", device);
 
-	return entry;
+	return match;
 }
 
 static struct crypto_engine *_qrypto_find_pengine_device_hw
@@ -320,26 +319,23 @@ static struct crypto_engine *_qrypto_find_pengine_device_hw
 			u32 device,
 			u32 hw_instance)
 {
-	struct crypto_engine *entry = NULL;
+	struct crypto_engine *entry, *match = NULL;
 	unsigned long flags;
 
 	spin_lock_irqsave(&cp->lock, flags);
 	list_for_each_entry(entry, &cp->engine_list, elist) {
 		if ((entry->ce_device == device) &&
-			(entry->ce_hw_instance == hw_instance))
+			(entry->ce_hw_instance == hw_instance)) {
+			match = entry;
 			break;
+		}
 	}
 	spin_unlock_irqrestore(&cp->lock, flags);
 
-	if (((entry != NULL) &&
-		((entry->ce_device != device)
-		|| (entry->ce_hw_instance != hw_instance)))
-		|| (entry == NULL)) {
-		pr_err("Device node for CE device %d NOT FOUND!!\n",
-						 device);
-		return NULL;
-	}
-	return entry;
+	if (!match)
+		pr_err("Device node for CE device %d NOT FOUND!!\n", device);
+
+	return match;
 }
 
 int qcrypto_get_num_engines(void)
@@ -668,21 +664,32 @@ static void qcrypto_bw_reaper_timer_callback(struct timer_list *data)
 {
 	struct crypto_engine *pengine = from_timer(pengine, data,
 		bw_reaper_timer);
+	struct crypto_priv *cp = pengine->pcp;
+	unsigned long flags;
 
-	schedule_work(&pengine->bw_reaper_ws);
+	spin_lock_irqsave(&cp->lock, flags);
+	if (!pengine->stopping)
+		schedule_work(&pengine->bw_reaper_ws);
+	spin_unlock_irqrestore(&cp->lock, flags);
 }
 
 static void qcrypto_bw_set_timeout(struct crypto_engine *pengine)
 {
-	pengine->bw_reaper_timer.expires = jiffies +
-			msecs_to_jiffies(QCRYPTO_HIGH_BANDWIDTH_TIMEOUT);
-	mod_timer(&(pengine->bw_reaper_timer),
-		pengine->bw_reaper_timer.expires);
+	struct crypto_priv *cp = pengine->pcp;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cp->lock, flags);
+	if (!pengine->stopping)
+		mod_timer(&pengine->bw_reaper_timer, jiffies +
+			msecs_to_jiffies(QCRYPTO_HIGH_BANDWIDTH_TIMEOUT));
+	spin_unlock_irqrestore(&cp->lock, flags);
 }
 
+/* Called with cp->lock held. */
 static void qcrypto_ce_bw_allocate_req(struct crypto_engine *pengine)
 {
-	schedule_work(&pengine->bw_allocate_ws);
+	if (!pengine->stopping)
+		schedule_work(&pengine->bw_allocate_ws);
 }
 
 static int _start_qcrypto_process(struct crypto_priv *cp,
@@ -696,6 +703,10 @@ static void qcrypto_bw_allocate_work(struct work_struct *work)
 	struct crypto_priv *cp = pengine->pcp;
 
 	spin_lock_irqsave(&cp->lock, flags);
+	if (pengine->stopping) {
+		spin_unlock_irqrestore(&cp->lock, flags);
+		return;
+	}
 	pengine->bw_state = BUS_BANDWIDTH_ALLOCATING;
 	spin_unlock_irqrestore(&cp->lock, flags);
 
@@ -720,6 +731,10 @@ static void qcrypto_bw_reaper_work(struct work_struct *work)
 	bool restart = false;
 
 	spin_lock_irqsave(&cp->lock, flags);
+	if (pengine->stopping) {
+		spin_unlock_irqrestore(&cp->lock, flags);
+		return;
+	}
 	active_seq = pengine->active_seq;
 	if (pengine->bw_state == BUS_HAS_BANDWIDTH &&
 		(active_seq == pengine->last_active_seq)) {
@@ -1325,10 +1340,11 @@ static void _qcrypto_remove_engine(struct crypto_engine *pengine)
 	cp = pengine->pcp;
 
 	spin_lock_irqsave(&cp->lock, flags);
+	pengine->stopping = true;
 	list_del(&pengine->elist);
 	if (pengine->first_engine) {
 		cp->first_engine = NULL;
-		pe = list_first_entry(&cp->engine_list, struct crypto_engine,
+		pe = list_first_entry_or_null(&cp->engine_list, struct crypto_engine,
 								elist);
 		if (pe) {
 			pe->first_engine = true;
@@ -1343,9 +1359,9 @@ static void _qcrypto_remove_engine(struct crypto_engine *pengine)
 
 	cp->total_units--;
 
+	del_timer_sync(&pengine->bw_reaper_timer);
 	cancel_work_sync(&pengine->bw_reaper_ws);
 	cancel_work_sync(&pengine->bw_allocate_ws);
-	del_timer_sync(&pengine->bw_reaper_timer);
 
 	if (pengine->bus_scale_handle != 0)
 		msm_bus_scale_unregister_client(pengine->bus_scale_handle);
@@ -2253,8 +2269,8 @@ static int _start_qcrypto_process(struct crypto_priv *cp,
 
 again:
 	spin_lock_irqsave(&cp->lock, flags);
-	if (pengine->issue_req ||
-		atomic_read(&pengine->req_count) >= (pengine->max_req)) {
+	if (pengine->stopping || pengine->issue_req ||
+	    atomic_read(&pengine->req_count) >= pengine->max_req) {
 		spin_unlock_irqrestore(&cp->lock, flags);
 		return 0;
 	}
@@ -3764,7 +3780,6 @@ static int _sha_update(struct ahash_request  *req, uint32_t sha_block_size)
 	uint32_t trailing_buf_len = 0;
 	uint32_t nbytes;
 	uint32_t offset = 0;
-	uint32_t bytes = 0;
 	uint8_t  *staging;
 	int ret = 0;
 
@@ -3775,7 +3790,7 @@ static int _sha_update(struct ahash_request  *req, uint32_t sha_block_size)
 	if (total <= sha_block_size) {
 		k_src = &rctx->trailing_buf[rctx->trailing_buf_len];
 		num_sg = qcrypto_count_sg(req->src, len);
-		bytes = qcrypto_sg_copy_to_buffer(req->src, num_sg, k_src, len);
+		qcrypto_sg_copy_to_buffer(req->src, num_sg, k_src, len);
 
 		rctx->trailing_buf_len = total;
 		return 0;
@@ -4948,13 +4963,12 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 	rc = msm_bus_scale_client_update_request(pengine->bus_scale_handle, 1);
 	if (rc) {
 		dev_err(&pdev->dev, "failed to set high bandwidth\n");
-		goto exit_kzfree;
+		goto exit_unregister_bus;
 	}
 	handle = qce_open(pdev, &rc);
-	if (handle == NULL) {
-		rc = -ENODEV;
+	if (handle == NULL)
 		goto exit_free_pdata;
-	}
+	pengine->qce = handle;
 	rc = msm_bus_scale_client_update_request(pengine->bus_scale_handle, 0);
 	if (rc) {
 		dev_err(&pdev->dev, "failed to set low bandwidth\n");
@@ -4962,7 +4976,6 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, pengine);
-	pengine->qce = handle;
 	pengine->pcp = cp;
 	pengine->pdev = pdev;
 	pengine->signature = 0xdeadbeef;
@@ -5000,7 +5013,7 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 				GFP_KERNEL);
 	if (pqcrypto_req_control == NULL) {
 		rc = -ENOMEM;
-		goto exit_unlock_mutex;
+		goto err;
 	}
 	qcrypto_init_req_control(pengine, pqcrypto_req_control);
 	if (cp->ce_support.bam)	 {
@@ -5021,7 +5034,7 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 	}
 
 	if (cp->total_units != 1)
-		goto exit_unlock_mutex;
+		goto success;
 
 	/* register crypto cipher algorithms the device supports */
 	for (i = 0; i < ARRAY_SIZE(_qcrypto_ablk_cipher_algos); i++) {
@@ -5308,13 +5321,12 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 					q_alg->aead_alg.base.cra_driver_name);
 		}
 	}
+success:
 	mutex_unlock(&cp->engine_lock);
 
 	return 0;
 err:
 	_qcrypto_remove_engine(pengine);
-	kzfree(pqcrypto_req_control);
-exit_unlock_mutex:
 	mutex_unlock(&cp->engine_lock);
 exit_qce_close:
 	if (pengine->qce)
@@ -5322,6 +5334,9 @@ exit_qce_close:
 exit_free_pdata:
 	msm_bus_scale_client_update_request(pengine->bus_scale_handle, 0);
 	platform_set_drvdata(pdev, NULL);
+exit_unregister_bus:
+	if (pengine->bus_scale_handle)
+		msm_bus_scale_unregister_client(pengine->bus_scale_handle);
 exit_kzfree:
 	memset(pengine, 0, ksize((void *)pengine));
 	kfree(pengine);

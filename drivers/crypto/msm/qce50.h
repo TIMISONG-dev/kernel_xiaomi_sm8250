@@ -63,8 +63,8 @@ struct ce_result_dump_format {
 	uint32_t auth_iv[NUM_OF_CRYPTO_AUTH_IV_REG];
 	uint32_t auth_byte_count[NUM_OF_CRYPTO_AUTH_BYTE_COUNT_REG];
 	uint32_t encr_cntr_iv[NUM_OF_CRYPTO_CNTR_IV_REG];
-	uint32_t status;
-	uint32_t status2;
+	__be32 status;
+	__be32 status2;
 };
 
 struct qce_cmdlist_info {

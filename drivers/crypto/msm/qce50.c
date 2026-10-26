@@ -2226,12 +2226,8 @@ static int _aead_complete(struct qce_device *pce_dev, int req_info)
 		qce_callback(areq, mac, NULL, result_status);
 
 	} else {
-		uint32_t ivsize = 0;
-		struct crypto_aead *aead;
 		unsigned char iv[NUM_OF_CRYPTO_CNTR_IV_REG * CRYPTO_REG_SIZE];
 
-		aead = crypto_aead_reqtfm(areq);
-		ivsize = crypto_aead_ivsize(aead);
 		memcpy(iv, (char *)(pce_sps_data->result->encr_cntr_iv),
 			sizeof(iv));
 		qce_free_req_info(pce_dev, req_info, true);
@@ -6231,12 +6227,16 @@ void *qce_open(struct platform_device *pdev, int *rc)
 	pce_dev->iovec_memsize = TOTAL_IOVEC_SPACE_PER_PIPE *
 						MAX_QCE_ALLOC_BAM_REQ * 2;
 	pce_dev->iovec_vmem = kzalloc(pce_dev->iovec_memsize, GFP_KERNEL);
-	if (pce_dev->iovec_vmem == NULL)
+	if (pce_dev->iovec_vmem == NULL) {
+		*rc = -ENOMEM;
 		goto err_mem;
+	}
 
 	pce_dev->dummyreq_in_buf = kzalloc(DUMMY_REQ_DATA_LEN, GFP_KERNEL);
-	if (pce_dev->dummyreq_in_buf == NULL)
+	if (pce_dev->dummyreq_in_buf == NULL) {
+		*rc = -ENOMEM;
 		goto err_mem;
+	}
 
 	*rc = __qce_init_clk(pce_dev);
 	if (*rc)

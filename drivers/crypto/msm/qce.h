@@ -194,4 +194,6 @@ int qce_disable_clk(void *handle);
 void qce_get_driver_stats(void *handle);
 void qce_clear_driver_stats(void *handle);
 
+void qce_dump_req(void *handle);
+
 #endif /* __CRYPTO_MSM_QCE_H */
