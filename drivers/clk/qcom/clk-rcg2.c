@@ -343,40 +343,42 @@ static int _determine_parent_and_update_div(struct clk_hw *hw,
 	if ((curr_parent == next_parent) && (f->pre_div == f_curr->pre_div))
 		return 0;
 
-	if (curr_parent == next_parent || curr_parent != next_parent) {
-		/* Read back the old configuration */
-		regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG,
-				&old_cfg);
-
-		if (f->pre_div > f_curr->pre_div) {
-			mask = BIT(rcg->hid_width) - 1;
-			cfg = f->pre_div << CFG_SRC_DIV_SHIFT;
-			update_rcg = true;
-		}
-
-		if (f_curr->src_freq < f->src_freq) {
-			mask = CFG_SRC_SEL_MASK;
-			cfg = (rcg->parent_map[next_src_index].cfg <<
-					CFG_SRC_SEL_SHIFT);
-			update_rcg = true;
-		}
-
-		if (!update_rcg)
-			return 0;
-
-		ret = regmap_update_bits(rcg->clkr.regmap,
-				rcg->cmd_rcgr + CFG_REG, mask, cfg);
-		if (ret) {
-			pr_err("Failed to regmap update cfg\n");
-			return ret;
-		}
-
-		regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG, &regval);
-
-		ret = update_config(rcg, old_cfg);
-		if (ret)
-			pr_err("Failed to update pre_div in determine rate\n");
+	if (f->pre_div > f_curr->pre_div) {
+		mask = BIT(rcg->hid_width) - 1;
+		cfg = f->pre_div << CFG_SRC_DIV_SHIFT;
+		update_rcg = true;
 	}
+
+	if (f_curr->src_freq < f->src_freq) {
+		mask = CFG_SRC_SEL_MASK;
+		cfg = (rcg->parent_map[next_src_index].cfg <<
+				CFG_SRC_SEL_SHIFT);
+		update_rcg = true;
+	}
+
+	if (!update_rcg)
+		return 0;
+
+	/* Read back the old configuration */
+	ret = regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG,
+			  &old_cfg);
+	if (ret)
+		return ret;
+
+	ret = regmap_update_bits(rcg->clkr.regmap,
+			rcg->cmd_rcgr + CFG_REG, mask, cfg);
+	if (ret) {
+		pr_err("Failed to regmap update cfg\n");
+		return ret;
+	}
+
+	ret = regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG, &regval);
+	if (ret)
+		return ret;
+
+	ret = update_config(rcg, old_cfg);
+	if (ret)
+		pr_err("Failed to update pre_div in determine rate\n");
 
 	return ret;
 }
