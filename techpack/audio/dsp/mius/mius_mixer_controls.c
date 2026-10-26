@@ -233,25 +233,6 @@ void mius_set_calibration_data(uint8_t *calib_data, size_t size)
 	memcpy((u8 *)calibration_obj->buffer, calib_data, size);
 }
 
-void mius_set_diagnostics_data(uint8_t *diag_data, size_t size)
-{
-	struct mius_shared_data_block *diagnostics_obj = NULL;
-
-	if (size <= MIUS_DIAGNOSTICS_DATA_SIZE) {
-		diagnostics_obj =
-			mius_get_shared_obj(
-				MIUS_OBJ_ID_DIAGNOSTICS_DATA);
-		if (diagnostics_obj == NULL) {
-			MI_PRINT_E("el..set_diagnostics_data() NULL (%zu)",
-				size);
-			return;
-		}
-		memcpy((uint8_t *)&mius_engine_diagnostics_data_cache,
-			diag_data, size);
-		memcpy((u8 *)diagnostics_obj->buffer, diag_data, size);
-	}
-}
-
 static const size_t NUM_SHARED_RW_OBJS =
 	sizeof(shared_data_blocks) / sizeof(struct mius_shared_data_block);
 
@@ -277,66 +258,17 @@ static const struct soc_enum mius_enum[] = {
 	ultrasound_enable_texts),
 };
 
-int get_mius_calibration_data(uint8_t *caldata, uint32_t max_size)
-{
-	uint32_t copied;
-
-	copied = MIUS_CALIBRATION_DATA_SIZE;
-	if (max_size < MIUS_CALIBRATION_DATA_SIZE) {
-		copied = max_size;
-		MI_PRINT_D("size mismatch : %u vs %u",
-			(uint32_t)MIUS_CALIBRATION_DATA_SIZE, max_size);
-	}
-
-	memcpy(caldata, (uint8_t *)&mius_engine_calibration_data_cache,
-		max_size);
-	return copied;
-}
-
-int get_mius_calibration_v2_data(uint8_t *caldata, uint32_t max_size)
-{
-	uint32_t copied;
-
-	copied = MIUS_CALIBRATION_V2_DATA_SIZE;
-	if (max_size < MIUS_CALIBRATION_V2_DATA_SIZE) {
-		copied = max_size;
-		MI_PRINT_D("size mismatch : %u vs %u",
-			(uint32_t)MIUS_CALIBRATION_V2_DATA_SIZE, max_size);
-	}
-
-	memcpy(caldata, (uint8_t *)&mius_engine_calibration_v2_data_cache,
-		max_size);
-	return copied;
-}
-
-int get_mius_diagnostics_data(uint8_t *diagdata, uint32_t max_size)
-{
-	uint32_t copied;
-
-	copied = MIUS_DIAGNOSTICS_DATA_SIZE;
-	if (max_size < MIUS_DIAGNOSTICS_DATA_SIZE) {
-		copied = max_size;
-		MI_PRINT_D("size mismatch : %u vs %u",
-			(uint32_t)MIUS_DIAGNOSTICS_DATA_SIZE, max_size);
-	}
-
-	memcpy(diagdata, (uint8_t *)&mius_engine_diagnostics_data_cache,
-		max_size);
-	return copied;
-}
-
-
 static uint32_t ultrasound_enable_cache;
 
-int mius_ultrasound_enable_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_enable_get(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.integer.value[0] = ultrasound_enable_cache;
 	return 0;
 }
 
-int mius_ultrasound_enable_set(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_enable_set(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
 {
 	int32_t msg[4] = {0, 0, 0, 0};
 
@@ -351,8 +283,8 @@ int mius_ultrasound_enable_set(struct snd_kcontrol *kcontrol,
 
 static uint32_t ultrasound_suspend_cache;
 
-int mius_ultrasound_suspend_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_suspend_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.integer.value[0] = ultrasound_suspend_cache;
 	return 0;
@@ -360,15 +292,15 @@ int mius_ultrasound_suspend_get(struct snd_kcontrol *kcontrol,
 
 static uint32_t ultrasound_report_none_cache;
 
-int mius_ultrasound_report_none_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_report_none_get(struct snd_kcontrol *kcontrol,
+				    struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.integer.value[0] = ultrasound_report_none_cache;
 	return 0;
 }
 
-int mius_ultrasound_report_none_set(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_report_none_set(struct snd_kcontrol *kcontrol,
+				    struct snd_ctl_elem_value *ucontrol)
 {
 	int32_t msg[4] = {0, 0, 0, 0};
 
@@ -381,8 +313,8 @@ int mius_ultrasound_report_none_set(struct snd_kcontrol *kcontrol,
 		(const char *)msg, sizeof(msg));
 }
 
-int mius_ultrasound_suspend_set(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_suspend_set(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	int32_t msg[4] = {0, 0, 0, 0};
 
@@ -397,15 +329,15 @@ int mius_ultrasound_suspend_set(struct snd_kcontrol *kcontrol,
 
 static uint32_t ultrasound_log_level_cache;
 
-int mius_ultrasound_log_level_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_log_level_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.integer.value[0] = ultrasound_log_level_cache;
 	return 0;
 }
 
-int mius_ultrasound_log_level_set(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_log_level_set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
 {
 	int32_t msg[4] = {0, 0, 0, 0};
 
@@ -420,15 +352,15 @@ int mius_ultrasound_log_level_set(struct snd_kcontrol *kcontrol,
 
 static uint32_t ultrasound_mode_cache;
 
-int mius_ultrasound_mode_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_mode_get(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.integer.value[0] = ultrasound_mode_cache;
 	return 0;
 }
 
-int mius_ultrasound_mode_set(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_mode_set(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
 {
 	int32_t msg[4] = {0, 0, 0, 0};
 
@@ -443,15 +375,15 @@ int mius_ultrasound_mode_set(struct snd_kcontrol *kcontrol,
 
 static uint32_t ultrasound_tx_port_cache;
 
-int mius_ultrasound_tx_port_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_tx_port_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.integer.value[0] = ultrasound_tx_port_cache;
 	return 0;
 }
 
-int mius_ultrasound_tx_port_set(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_tx_port_set(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	int ret;
 
@@ -475,15 +407,15 @@ int mius_ultrasound_tx_port_set(struct snd_kcontrol *kcontrol,
 
 static uint32_t ultrasound_rx_port_cache;
 
-int mius_ultrasound_rx_port_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_rx_port_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.integer.value[0] = ultrasound_rx_port_cache;
 	return 0;
 }
 
-int mius_ultrasound_rx_port_set(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_rx_port_set(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	int ret;
 
@@ -506,16 +438,16 @@ int mius_ultrasound_rx_port_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-int mius_ultrasound_rampdown_get(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_rampdown_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	/* Rampdown is a strobe, so always return Off */
 	ucontrol->value.integer.value[0] = 0;
 	return 0;
 }
 
-int mius_ultrasound_rampdown_set(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_rampdown_set(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	int32_t msg[2] = {1, 0};
 
@@ -526,15 +458,15 @@ int mius_ultrasound_rampdown_set(struct snd_kcontrol *kcontrol,
 		(const char *)msg, sizeof(msg));
 }
 
-int mius_ultrasound_diagnostics_get(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
+static int mius_ultrasound_diagnostics_get(struct snd_kcontrol *kcontrol,
+				    struct snd_ctl_elem_value *ucontrol)
 {
 	/* Diagnostics is a strobe, so always return Off */
 	ucontrol->value.integer.value[0] = 0;
 	return 0;
 }
 
-int mius_ultrasound_request_diagnostics(struct snd_kcontrol *kcontrol,
+static int mius_ultrasound_request_diagnostics(struct snd_kcontrol *kcontrol,
 					struct snd_ctl_elem_value *ucontrol)
 {
 	int32_t msg[3] = {MSC_ENGINE_DIAGNOSTICS, 0, 0};
@@ -546,16 +478,16 @@ int mius_ultrasound_request_diagnostics(struct snd_kcontrol *kcontrol,
 				(const char *)msg, sizeof(msg));
 }
 
-int mius_system_configuration_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_system_configuration_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(ucontrol->value.bytes.data, &mius_system_configuration,
 		   MIUS_SYSTEM_CONFIGURATION_SIZE);
 	return 0;
 }
 
-int mius_system_configuration_put(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
+static int mius_system_configuration_put(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(&mius_system_configuration, ucontrol->value.bytes.data,
 		   MIUS_SYSTEM_CONFIGURATION_SIZE);
@@ -565,8 +497,8 @@ int mius_system_configuration_put(struct snd_kcontrol *kcontrol,
 				  MIUS_SYSTEM_CONFIGURATION_SIZE);
 }
 
-int mius_calibration_data_get(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_calibration_data_get(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(ucontrol->value.bytes.data,
 		&mius_engine_calibration_data_cache,
@@ -574,8 +506,8 @@ int mius_calibration_data_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-int mius_calibration_data_put(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_calibration_data_put(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(mius_ultrasound_calibration_data_cache.data,
 		ucontrol->value.bytes.data, MIUS_CALIBRATION_FLOAT_DATA_SIZE);
@@ -585,8 +517,8 @@ int mius_calibration_data_put(struct snd_kcontrol *kcontrol,
 		sizeof(mius_ultrasound_calibration_data_cache));
 }
 
-int mius_calibration_v2_data_get(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_calibration_v2_data_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	struct mius_shared_data_block *calibration_obj =
 		mius_get_shared_obj(MIUS_OBJ_ID_CALIBRATION_V2_DATA);
@@ -602,8 +534,8 @@ int mius_calibration_v2_data_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-int mius_calibration_v2_data_put(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_calibration_v2_data_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(&mius_engine_calibration_v2_data_cache,
 	ucontrol->value.bytes.data, MIUS_CALIBRATION_V2_DATA_SIZE);
@@ -613,8 +545,8 @@ int mius_calibration_v2_data_put(struct snd_kcontrol *kcontrol,
 		MIUS_CALIBRATION_V2_DATA_SIZE);
 }
 
-int mius_diagnostics_data_get(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_diagnostics_data_get(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(ucontrol->value.bytes.data,
 		&mius_engine_diagnostics_data_cache,
@@ -622,14 +554,14 @@ int mius_diagnostics_data_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-int mius_diagnostics_data_put(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_diagnostics_data_put(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_value *ucontrol)
 {
 	return 0;
 }
 
-int mius_ml_data_get(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_ml_data_get(struct snd_kcontrol *kcontrol,
+		     struct snd_ctl_elem_value *ucontrol)
 {
 	struct mius_shared_data_block *ml_obj =
 		mius_get_shared_obj(MIUS_OBJ_ID_ML_DATA);
@@ -645,16 +577,16 @@ int mius_ml_data_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-int mius_ml_data_put(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_ml_data_put(struct snd_kcontrol *kcontrol,
+		     struct snd_ctl_elem_value *ucontrol)
 {
 	return mius_data_write(MIUS_ULTRASOUND_SET_PARAMS,
 		(const char *)ucontrol->value.bytes.data,
 		MIUS_ML_DATA_SIZE);
 }
 
-int mius_sensor_data_get(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_sensor_data_get(struct snd_kcontrol *kcontrol,
+			 struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(ucontrol->value.bytes.data,
 		&mius_engine_sensor_data_cache,
@@ -662,8 +594,8 @@ int mius_sensor_data_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-int mius_sensor_data_put(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_sensor_data_put(struct snd_kcontrol *kcontrol,
+			 struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(&mius_engine_sensor_data_cache,
 	ucontrol->value.bytes.data, MIUS_SENSOR_DATA_SIZE);
@@ -673,51 +605,50 @@ int mius_sensor_data_put(struct snd_kcontrol *kcontrol,
 		MIUS_SENSOR_DATA_SIZE);
 }
 
-int mius_version_data_get(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_version_data_get(struct snd_kcontrol *kcontrol,
+			  struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(ucontrol->value.bytes.data, &mius_engine_version_cache,
 		   MIUS_VERSION_INFO_SIZE);
 	return 0;
 }
 
-int mius_version_data_put(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
+static int mius_version_data_put(struct snd_kcontrol *kcontrol,
+			  struct snd_ctl_elem_value *ucontrol)
 {
 	return 0;
 }
 
-int mius_branch_data_get(struct snd_kcontrol *kcontrol,
-				 struct snd_ctl_elem_value *ucontrol)
+static int mius_branch_data_get(struct snd_kcontrol *kcontrol,
+			 struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(ucontrol->value.bytes.data, &mius_engine_branch_cache,
 		   MIUS_BRANCH_INFO_MAX_SIZE);
 	return 0;
 }
 
-int mius_branch_data_put(struct snd_kcontrol *kcontrol,
-				 struct snd_ctl_elem_value *ucontrol)
+static int mius_branch_data_put(struct snd_kcontrol *kcontrol,
+			 struct snd_ctl_elem_value *ucontrol)
 {
 	return 0;
 }
 
-int mius_tag_data_get(struct snd_kcontrol *kcontrol,
-				 struct snd_ctl_elem_value *ucontrol)
+static int mius_tag_data_get(struct snd_kcontrol *kcontrol,
+		      struct snd_ctl_elem_value *ucontrol)
 {
 	memcpy(ucontrol->value.bytes.data, &mius_engine_tag_cache,
 		   MIUS_TAG_INFO_SIZE);
 	return 0;
 }
 
-int mius_tag_data_put(struct snd_kcontrol *kcontrol,
-				 struct snd_ctl_elem_value *ucontrol)
+static int mius_tag_data_put(struct snd_kcontrol *kcontrol,
+		      struct snd_ctl_elem_value *ucontrol)
 {
 	return 0;
 }
 
-int mius_calibration_param_get(
-	struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
+static int mius_calibration_param_get(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
 {
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
@@ -748,9 +679,8 @@ int mius_calibration_param_get(
 	return 1;
 }
 
-int mius_calibration_param_put(
-	struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
+static int mius_calibration_param_put(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
 {
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
@@ -794,9 +724,8 @@ int mius_calibration_param_put(
 				  (u8 *)&param, sizeof(param));
 }
 
-int mius_system_configuration_param_get(
-	struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
+static int mius_system_configuration_param_get(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
 {
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
@@ -899,11 +828,8 @@ int mius_system_configuration_param_get(
 	return 1;
 }
 
-
-
-int mius_system_configuration_param_put(
-	struct snd_kcontrol *kcontrol,
-	struct snd_ctl_elem_value *ucontrol)
+static int mius_system_configuration_param_put(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
 {
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
