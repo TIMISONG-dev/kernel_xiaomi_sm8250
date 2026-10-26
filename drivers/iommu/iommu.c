@@ -1970,6 +1970,7 @@ void iommu_put_resv_regions(struct device *dev, struct list_head *list)
 /**
  * iommu_trigger_fault() - trigger an IOMMU fault
  * @domain: iommu domain
+ * @flags: Driver-specific fault trigger flags
  *
  * Triggers a fault on the device to which this domain is attached.
  *

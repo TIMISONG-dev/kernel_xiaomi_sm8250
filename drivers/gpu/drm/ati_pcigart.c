@@ -1,8 +1,8 @@
 /**
- * \file ati_pcigart.c
+ * DOC: ati_pcigart.c
  * ATI PCI GART support
  *
- * \author Gareth Hughes <gareth@valinux.com>
+ * Author: Gareth Hughes <gareth@valinux.com>
  */
 
 /*

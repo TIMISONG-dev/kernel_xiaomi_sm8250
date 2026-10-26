@@ -1,9 +1,9 @@
 /**
- * \file drm_memory.c
+ * DOC: drm_memory.c
  * Memory management wrappers for DRM
  *
- * \author Rickard E. (Rik) Faith <faith@valinux.com>
- * \author Gareth Hughes <gareth@valinux.com>
+ * Author: Rickard E. (Rik) Faith <faith@valinux.com>
+ * Author: Gareth Hughes <gareth@valinux.com>
  */
 
 /*

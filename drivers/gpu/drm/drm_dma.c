@@ -1,9 +1,9 @@
 /**
- * \file drm_dma.c
+ * DOC: drm_dma.c
  * DMA IOCTL and function support
  *
- * \author Rickard E. (Rik) Faith <faith@valinux.com>
- * \author Gareth Hughes <gareth@valinux.com>
+ * Author: Rickard E. (Rik) Faith <faith@valinux.com>
+ * Author: Gareth Hughes <gareth@valinux.com>
  */
 
 /*
@@ -38,10 +38,10 @@
 #include "drm_legacy.h"
 
 /**
- * Initialize the DMA data.
+ * drm_legacy_dma_setup - initialize legacy DMA state
+ * @dev: DRM device
  *
- * \param dev DRM device.
- * \return zero on success or a negative value on failure.
+ * Return: zero on success or a negative value on failure.
  *
  * Allocate and initialize a drm_device_dma structure.
  */
@@ -67,9 +67,9 @@ int drm_legacy_dma_setup(struct drm_device *dev)
 }
 
 /**
- * Cleanup the DMA resources.
+ * drm_legacy_dma_takedown - release legacy DMA resources
+ * @dev: DRM device
  *
- * \param dev DRM device.
  *
  * Free all pages associated with DMA buffers, the buffers and pages lists, and
  * finally the drm_device::dma structure itself.
@@ -116,10 +116,10 @@ void drm_legacy_dma_takedown(struct drm_device *dev)
 }
 
 /**
- * Free a buffer.
+ * drm_legacy_free_buffer - reset a released DMA buffer
+ * @dev: DRM device
+ * @buf: DMA buffer to release
  *
- * \param dev DRM device.
- * \param buf buffer to free.
  *
  * Resets the fields of \p buf.
  */
@@ -135,9 +135,10 @@ void drm_legacy_free_buffer(struct drm_device *dev, struct drm_buf * buf)
 }
 
 /**
- * Reclaim the buffers.
+ * drm_legacy_reclaim_buffers - reclaim a client DMA buffer set
+ * @dev: DRM device
+ * @file_priv: DRM file issuing the request
  *
- * \param file_priv DRM file private.
  *
  * Frees each buffer associated with \p file_priv not already on the hardware.
  */

@@ -42,14 +42,13 @@ struct drm_ctx_list {
 /*@{*/
 
 /**
- * Free a handle from the context bitmap.
+ * drm_legacy_ctxbitmap_free - release a context handle
+ * @dev: DRM device
+ * @ctx_handle: Context handle to release
  *
- * \param dev DRM device.
- * \param ctx_handle context handle.
  *
- * Clears the bit specified by \p ctx_handle in drm_device::ctx_bitmap and the entry
- * in drm_device::ctx_idr, while holding the drm_device::struct_mutex
- * lock.
+ * Remove @ctx_handle from drm_device::ctx_idr while holding
+ * drm_device::struct_mutex.
  */
 void drm_legacy_ctxbitmap_free(struct drm_device * dev, int ctx_handle)
 {
@@ -63,10 +62,10 @@ void drm_legacy_ctxbitmap_free(struct drm_device * dev, int ctx_handle)
 }
 
 /**
- * Context bitmap allocation.
+ * drm_legacy_ctxbitmap_next - allocate a context handle
+ * @dev: DRM device
  *
- * \param dev DRM device.
- * \return (non-negative) context handle on success or a negative number on failure.
+ * Return: (non-negative) context handle on success or a negative number on failure.
  *
  * Allocate a new idr from drm_device::ctx_idr while holding the
  * drm_device::struct_mutex lock.
@@ -83,9 +82,9 @@ static int drm_legacy_ctxbitmap_next(struct drm_device * dev)
 }
 
 /**
- * Context bitmap initialization.
+ * drm_legacy_ctxbitmap_init - initialize the context IDR
+ * @dev: DRM device
  *
- * \param dev DRM device.
  *
  * Initialise the drm_device::ctx_idr
  */
@@ -99,9 +98,9 @@ void drm_legacy_ctxbitmap_init(struct drm_device * dev)
 }
 
 /**
- * Context bitmap cleanup.
+ * drm_legacy_ctxbitmap_cleanup - release context mappings
+ * @dev: DRM device
  *
- * \param dev DRM device.
  *
  * Free all idr members using drm_ctx_sarea_free helper function
  * while holding the drm_device::struct_mutex lock.
@@ -158,13 +157,12 @@ void drm_legacy_ctxbitmap_flush(struct drm_device *dev, struct drm_file *file)
 /*@{*/
 
 /**
- * Get per-context SAREA.
+ * drm_legacy_getsareactx - look up a context SAREA token
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_ctx_priv_map lookup request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg user argument pointing to a drm_ctx_priv_map structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Gets the map from drm_device::ctx_idr with the handle specified and
  * returns its handle.
@@ -206,13 +204,12 @@ int drm_legacy_getsareactx(struct drm_device *dev, void *data,
 }
 
 /**
- * Set per-context SAREA.
+ * drm_legacy_setsareactx - assign a context SAREA mapping
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_ctx_priv_map assignment request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg user argument pointing to a drm_ctx_priv_map structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Searches the mapping specified in \p arg and update the entry in
  * drm_device::ctx_idr with it.
@@ -258,12 +255,12 @@ int drm_legacy_setsareactx(struct drm_device *dev, void *data,
 /*@{*/
 
 /**
- * Switch context.
+ * drm_context_switch - begin a context switch
+ * @dev: DRM device
+ * @old: Previously active context handle
+ * @new: Context handle to activate
  *
- * \param dev DRM device.
- * \param old old context handle.
- * \param new new context handle.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Attempt to set drm_device::context_flag.
  */
@@ -285,15 +282,15 @@ static int drm_context_switch(struct drm_device * dev, int old, int new)
 }
 
 /**
- * Complete context switch.
+ * drm_context_switch_complete - finish a context switch
+ * @dev: DRM device
+ * @file_priv: DRM file issuing the request
+ * @new: Context handle to activate
  *
- * \param dev DRM device.
- * \param new new context handle.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Updates drm_device::last_context and drm_device::last_switch. Verifies the
- * hardware lock is held, clears the drm_device::context_flag and wakes up
- * drm_device::context_wait.
+ * hardware lock is held, clears the drm_device::context_flag.
  */
 static int drm_context_switch_complete(struct drm_device *dev,
 				       struct drm_file *file_priv, int new)
@@ -313,13 +310,12 @@ static int drm_context_switch_complete(struct drm_device *dev,
 }
 
 /**
- * Reserve contexts.
+ * drm_legacy_resctx - enumerate reserved contexts
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_ctx_res reserved-context request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg user argument pointing to a drm_ctx_res structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  */
 int drm_legacy_resctx(struct drm_device *dev, void *data,
 		      struct drm_file *file_priv)
@@ -346,13 +342,12 @@ int drm_legacy_resctx(struct drm_device *dev, void *data,
 }
 
 /**
- * Add context.
+ * drm_legacy_addctx - allocate a legacy context
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_ctx creation request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg user argument pointing to a drm_ctx structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Get a new handle for the context and copy to userspace.
  */
@@ -399,13 +394,12 @@ int drm_legacy_addctx(struct drm_device *dev, void *data,
 }
 
 /**
- * Get context.
+ * drm_legacy_getctx - query legacy context flags
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_ctx query request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg user argument pointing to a drm_ctx structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  */
 int drm_legacy_getctx(struct drm_device *dev, void *data,
 		      struct drm_file *file_priv)
@@ -423,13 +417,12 @@ int drm_legacy_getctx(struct drm_device *dev, void *data,
 }
 
 /**
- * Switch context.
+ * drm_legacy_switchctx - request a context switch
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_ctx switch request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg user argument pointing to a drm_ctx structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Calls context_switch().
  */
@@ -447,13 +440,12 @@ int drm_legacy_switchctx(struct drm_device *dev, void *data,
 }
 
 /**
- * New context.
+ * drm_legacy_newctx - complete a context switch
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_ctx switch-completion request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg user argument pointing to a drm_ctx structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Calls context_switch_complete().
  */
@@ -473,13 +465,12 @@ int drm_legacy_newctx(struct drm_device *dev, void *data,
 }
 
 /**
- * Remove context.
+ * drm_legacy_rmctx - remove a legacy context
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_ctx removal request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg user argument pointing to a drm_ctx structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * If not the special kernel context, calls ctxbitmap_free() to free the specified context.
  */

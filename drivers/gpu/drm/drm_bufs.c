@@ -124,12 +124,21 @@ static int drm_map_handle(struct drm_device *dev, struct drm_hash_item *hash,
 }
 
 /**
- * Core function to create a range of memory available for mapping by a
- * non-root process.
+ * drm_addmap_core - create or find a legacy mapping
+ * @dev: DRM device
+ * @offset: Physical or backing-store offset of the mapping
+ * @size: Size of the mapping in bytes
+ * @type: Backing memory type for the mapping
+ * @flags: Mapping permissions and allocation flags
+ * @maplist: Receives the existing or newly allocated mapping list entry
+ *
+ * The mapping is available to a non-root process.
  *
  * Adjusts the memory offset to its absolute value according to the mapping
  * type.  Adds the map to the map list drm_device::maplist. Adds MTRR's where
  * applicable and if supported by the kernel.
+ *
+ * Return: zero on success or a negative error code on failure.
  */
 static int drm_addmap_core(struct drm_device *dev, resource_size_t offset,
 			   unsigned int size, enum drm_map_type type,
@@ -378,14 +387,14 @@ int drm_legacy_addmap(struct drm_device *dev, resource_size_t offset,
 EXPORT_SYMBOL(drm_legacy_addmap);
 
 /**
- * Ioctl to specify a range of memory that is available for mapping by a
- * non-root process.
+ * drm_legacy_addmap_ioctl - create a userspace mapping token
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_map mapping request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg pointer to a drm_map structure.
- * \return zero on success or a negative value on error.
+ * The mapping is available to a non-root process.
+ *
+ * Return: zero on success or a negative value on error.
  *
  */
 int drm_legacy_addmap_ioctl(struct drm_device *dev, void *data,
@@ -479,14 +488,18 @@ int drm_legacy_getmap_ioctl(struct drm_device *dev, void *data,
 }
 
 /**
- * Remove a map private from list and deallocate resources if the mapping
- * isn't in use.
+ * drm_legacy_rmmap_locked - remove a legacy mapping
+ * @dev: DRM device
+ * @map: Mapping to remove; the caller holds dev->struct_mutex
+ *
  *
  * Searches the map on drm_device::maplist, removes it from the list, see if
  * its being used, and free any associate resource (such as MTRR's) if it's not
  * being on use.
  *
  * \sa drm_legacy_addmap
+ *
+ * Return: zero on success or a negative error code on failure.
  */
 int drm_legacy_rmmap_locked(struct drm_device *dev, struct drm_local_map *map)
 {
@@ -632,10 +645,10 @@ int drm_legacy_rmmap_ioctl(struct drm_device *dev, void *data,
 }
 
 /**
- * Cleanup after an error on one of the addbufs() functions.
+ * drm_cleanup_buf_error - unwind a partial buffer allocation
+ * @dev: DRM device
+ * @entry: Buffer entry whose partial allocation must be freed
  *
- * \param dev DRM device.
- * \param entry buffer entry where the error occurred.
  *
  * Frees any pages and buffers associated with the given entry.
  */
@@ -667,11 +680,11 @@ static void drm_cleanup_buf_error(struct drm_device *dev,
 
 #if IS_ENABLED(CONFIG_AGP)
 /**
- * Add AGP buffers for DMA transfers.
+ * drm_legacy_addbufs_agp - allocate AGP DMA buffers
+ * @dev: DRM device
+ * @request: Buffer count, size and AGP allocation request
  *
- * \param dev struct drm_device to which the buffers are to be added.
- * \param request pointer to a struct drm_buf_desc describing the request.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * After some sanity checks creates a drm_buf structure for each buffer and
  * reallocates the buffer list of the same size order to accommodate the new
@@ -1203,13 +1216,12 @@ static int drm_legacy_addbufs_sg(struct drm_device *dev,
 }
 
 /**
- * Add buffers for DMA transfers (ioctl).
+ * drm_legacy_addbufs - allocate legacy DMA buffers
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_buf_desc allocation request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg pointer to a struct drm_buf_desc request.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * According with the memory type specified in drm_buf_desc::flags and the
  * build options, it dispatches the call either to addbufs_agp(),
@@ -1244,17 +1256,17 @@ int drm_legacy_addbufs(struct drm_device *dev, void *data,
 }
 
 /**
- * Get information about the buffer mappings.
+ * __drm_legacy_infobufs - describe legacy DMA buffer pools
+ * @dev: DRM device
+ * @data: Callback context containing the buffer-information request
+ * @p: Input array capacity, updated to the available entry count
+ * @f: Callback that copies one buffer entry into the client array
  *
  * This was originally mean for debugging purposes, or by a sophisticated
  * client library to determine how best to use the available buffers (e.g.,
  * large buffers can be used for image transfer).
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg pointer to a drm_buf_info structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Increments drm_device::buf_use while holding the drm_device::buf_lock
  * lock, preventing of allocating more buffers after this call. Information
@@ -1335,13 +1347,12 @@ int drm_legacy_infobufs(struct drm_device *dev, void *data,
 }
 
 /**
- * Specifies a low and high water mark for buffer allocation
+ * drm_legacy_markbufs - set DMA buffer water marks
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_buf_desc water-mark request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg a pointer to a drm_buf_desc structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Verifies that the size order is bounded between the admissible orders and
  * updates the respective drm_device_dma::bufs entry low and high water mark.
@@ -1384,13 +1395,12 @@ int drm_legacy_markbufs(struct drm_device *dev, void *data,
 }
 
 /**
- * Unreserve the buffers in list, previously reserved using drmDMA.
+ * drm_legacy_freebufs - release reserved DMA buffers
+ * @dev: DRM device
+ * @data: Kernel copy of the struct drm_buf_free release request
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg pointer to a drm_buf_free structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Calls free_buffer() for each used buffer.
  * This function is primarily used for debugging.
@@ -1436,13 +1446,15 @@ int drm_legacy_freebufs(struct drm_device *dev, void *data,
 }
 
 /**
- * Maps all of the DMA buffers into client-virtual space (ioctl).
+ * __drm_legacy_mapbufs - map legacy DMA buffers for a client
+ * @dev: DRM device
+ * @data: Callback context containing the buffer-mapping request
+ * @p: Input array capacity, updated to the available entry count
+ * @v: Receives the base address of the client DMA mapping
+ * @f: Callback that copies one buffer entry into the client array
+ * @file_priv: DRM file issuing the request
  *
- * \param inode device inode.
- * \param file_priv DRM file private.
- * \param cmd command.
- * \param arg pointer to a drm_buf_map structure.
- * \return zero on success or a negative number on failure.
+ * Return: zero on success or a negative number on failure.
  *
  * Maps the AGP, SG or PCI buffer region with vm_mmap(), and copies information
  * about each buffer into user space. For PCI buffers, it calls vm_mmap() with

@@ -1,8 +1,8 @@
 /**
- * \file drm_info.c
+ * DOC: drm_info.c
  * DRM info file implementations
  *
- * \author Ben Gamari <bgamari@gmail.com>
+ * Author: Ben Gamari <bgamari@gmail.com>
  */
 
 /*
@@ -41,9 +41,13 @@
 #include "drm_legacy.h"
 
 /**
- * Called when "/proc/dri/.../name" is read.
+ * drm_name_info - show the DRM device identity
+ * @m: Sequence file receiving the device information
+ * @data: Unused sequence iterator value
  *
  * Prints the device name together with the bus id if available.
+ *
+ * Return: zero.
  */
 int drm_name_info(struct seq_file *m, void *data)
 {
@@ -68,8 +72,12 @@ int drm_name_info(struct seq_file *m, void *data)
 }
 
 /**
- * Called when "/proc/dri/.../clients" is read.
+ * drm_clients_info - show the DRM client list
+ * @m: Sequence file receiving the device information
+ * @data: Unused sequence iterator value
  *
+ *
+ * Return: zero.
  */
 int drm_clients_info(struct seq_file *m, void *data)
 {
