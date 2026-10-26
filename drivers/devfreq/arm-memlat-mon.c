@@ -730,6 +730,9 @@ static void stop_hwmon(struct memlat_hwmon *hw)
 }
 
 /**
+ * set_update_ms() - Refresh the group polling interval
+ * @cpu_grp: Group whose active monitors determine the interval
+ *
  * We should set update_ms to the lowest requested_update_ms of all of the
  * active mons, or 0 (i.e. stop polling) if ALL active mons have 0.
  * This is expected to be called with cpu_grp->mons_lock taken.
