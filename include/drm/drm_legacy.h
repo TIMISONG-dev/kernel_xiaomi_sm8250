@@ -135,8 +135,10 @@ struct drm_local_map {
 	unsigned long size;	 /**< Requested physical size (bytes) */
 	enum drm_map_type type;	 /**< Type of memory to map */
 	enum drm_map_flags flags;	 /**< Flags */
-	void *handle;		 /**< User-space: "Handle" to pass to mmap() */
-				 /**< Kernel-space: kernel-virtual address */
+	union {
+		void *handle;		/**< Kernel RAM address or mmap token */
+		void __iomem *iomem;	/**< Kernel MMIO address */
+	};
 	int mtrr;		 /**< MTRR slot used */
 };
 
