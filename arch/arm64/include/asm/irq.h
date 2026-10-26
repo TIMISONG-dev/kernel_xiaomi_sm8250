@@ -6,6 +6,8 @@
 
 #include <asm-generic/irq.h>
 
+extern unsigned long irq_err_count;
+
 struct pt_regs;
 
 static inline int nr_legacy_irqs(void)

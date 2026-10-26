@@ -143,7 +143,7 @@ int __init init_tracecounters(void)
 	struct dentry *dir;
 	struct dentry *file;
 	unsigned int value = 1;
-	int cpu, rc;
+	int cpu;
 
 	dir = debugfs_create_dir("perf_debug_tp", NULL);
 	if (!dir)
@@ -156,7 +156,7 @@ int __init init_tracecounters(void)
 	}
 	for_each_possible_cpu(cpu)
 		per_cpu(old_pid, cpu) = -1;
-	rc = cpuhp_setup_state_nocalls(USE_CPUHP_STATE,
+	cpuhp_setup_state_nocalls(USE_CPUHP_STATE,
 		"tracectr_cpu_hotplug",
 		tracectr_cpu_hotplug_coming_up,
 		NULL);

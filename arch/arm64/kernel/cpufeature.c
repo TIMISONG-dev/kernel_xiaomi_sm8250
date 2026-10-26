@@ -561,7 +561,6 @@ static void __init init_cpu_ftr_reg(u32 sys_reg, u64 new)
 	reg->user_mask = user_mask;
 }
 
-extern const struct arm64_cpu_capabilities arm64_errata[];
 static void __init setup_boot_cpu_capabilities(void);
 
 void __init init_cpu_features(struct cpuinfo_arm64 *info)
@@ -1852,8 +1851,6 @@ static void __init mark_const_caps_ready(void)
 {
 	static_branch_enable(&arm64_const_caps_ready);
 }
-
-extern const struct arm64_cpu_capabilities arm64_errata[];
 
 bool this_cpu_has_cap(unsigned int cap)
 {

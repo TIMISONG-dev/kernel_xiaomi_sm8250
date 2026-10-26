@@ -20,6 +20,13 @@
 #include <linux/compat.h>
 #include <linux/err.h>
 
+int syscall_trace_enter(struct pt_regs *regs);
+void syscall_trace_exit(struct pt_regs *regs);
+asmlinkage long __arm64_sys_ni_syscall(const struct pt_regs *regs);
+long compat_arm_syscall(struct pt_regs *regs, int scno);
+asmlinkage void el0_svc_handler(struct pt_regs *regs);
+asmlinkage void el0_svc_compat_handler(struct pt_regs *regs);
+
 typedef long (*syscall_fn_t)(const struct pt_regs *regs);
 
 extern const syscall_fn_t sys_call_table[];

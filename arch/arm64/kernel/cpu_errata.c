@@ -21,6 +21,8 @@
 #include <linux/types.h>
 #include <linux/cpu.h>
 #include <asm/cpu.h>
+#include <asm/alternative.h>
+#include <asm/cpu_errata.h>
 #include <asm/cputype.h>
 #include <asm/cpufeature.h>
 #include <asm/mmu_context.h>

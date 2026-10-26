@@ -571,10 +571,12 @@ static inline bool system_supports_cnp(void)
 #define ARM64_SSBD_FORCE_ENABLE		2
 #define ARM64_SSBD_MITIGATED		3
 
+extern int ssbd_state;
+extern const struct arm64_cpu_capabilities arm64_errata[];
+
 static inline int arm64_get_ssbd_state(void)
 {
 #ifdef CONFIG_ARM64_SSBD
-	extern int ssbd_state;
 	return ssbd_state;
 #else
 	return ARM64_SSBD_UNKNOWN;
