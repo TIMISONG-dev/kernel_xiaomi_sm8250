@@ -1189,7 +1189,7 @@ static inline u32 calc_pred_demand(struct task_struct *p)
  * if the task current window busy time exceeds the predicted
  * demand, update it here to reflect the task needs.
  */
-void update_task_pred_demand(struct rq *rq, struct task_struct *p, int event)
+static void update_task_pred_demand(struct rq *rq, struct task_struct *p, int event)
 {
 	u32 new, old;
 	u16 new_scaled;
@@ -3080,7 +3080,7 @@ unsigned long thermal_cap(int cpu)
 	return thermal_cap_cpu[cpu] ?: SCHED_CAPACITY_SCALE;
 }
 
-unsigned long do_thermal_cap(int cpu, unsigned long thermal_max_freq)
+static unsigned long do_thermal_cap(int cpu, unsigned long thermal_max_freq)
 {
 	struct rq *rq = cpu_rq(cpu);
 #ifdef CONFIG_ENERGY_MODEL
