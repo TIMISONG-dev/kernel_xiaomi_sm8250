@@ -11,6 +11,7 @@
  */
 #define DEBUG
 
+#include <asm/unaligned.h>
 #include <linux/ctype.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -1072,7 +1073,7 @@ static int wm_coeff_write_acked_control(struct wm_coeff_ctl *ctl,
 					unsigned int event_id)
 {
 	struct wm_adsp *dsp = ctl->dsp;
-	u32 val = cpu_to_be32(event_id);
+	__be32 val = cpu_to_be32(event_id);
 	unsigned int reg;
 	int i, ret;
 
@@ -1252,18 +1253,19 @@ static int wm_coeff_read_control(struct wm_coeff_ctl *ctl,
 		return -ENOMEM;
 
 	while ((len - read_len) > 0) {
-		toread_len = (len - read_len) > MAX_BULKSIZE ?
-			MAX_BULKSIZE : (len - read_len);
-		regmap_raw_read(dsp->regmap, reg + read_len / REG_BYTESIZE,
-				scratch + read_len, toread_len);
+		toread_len = (len - read_len) > MAX_BULKSIZE ? MAX_BULKSIZE :
+							       (len - read_len);
+		ret = regmap_raw_read(dsp->regmap,
+				      reg + read_len / REG_BYTESIZE,
+				      scratch + read_len, toread_len);
 		if (ret) {
-			adsp_err(dsp, "Failed to read %zu bytes from %x: %d\n",
-				 toread_len,
-				 reg + read_len / REG_BYTESIZE, ret);
+			adsp_err(dsp, "Failed to read %d bytes from %x: %d\n",
+				 toread_len, reg + read_len / REG_BYTESIZE,
+				 ret);
 			kfree(scratch);
 			return ret;
 		}
-		adsp_dbg(dsp, "Read %zu bytes from %x\n", toread_len,
+		adsp_dbg(dsp, "Read %d bytes from %x\n", toread_len,
 			 reg + read_len / REG_BYTESIZE);
 		read_len += toread_len;
 	}
@@ -1809,7 +1811,7 @@ static int wm_adsp_parse_coeff(struct wm_adsp *dsp,
 		wm_coeff_parse_coeff(dsp, &data, &coeff_blk);
 
 		switch (coeff_blk.ctl_type) {
-		case SNDRV_CTL_ELEM_TYPE_BYTES:
+		case WMFW_CTL_TYPE_BYTES:
 			break;
 		case WMFW_CTL_TYPE_ACKED:
 			if (coeff_blk.flags & WMFW_CTL_FLAG_SYS)
@@ -2468,9 +2470,9 @@ static int wm_adsp1_setup_algs(struct wm_adsp *dsp)
 				len = be32_to_cpu(adsp1_alg[i + 1].dm);
 				len -= be32_to_cpu(adsp1_alg[i].dm);
 				len *= 4;
-				wm_adsp_create_control(dsp, alg_region, 0,
-						     len, NULL, 0, 0,
-						     SNDRV_CTL_ELEM_TYPE_BYTES);
+				wm_adsp_create_control(
+					dsp, alg_region, 0, len, NULL, 0, 0,
+					WMFW_CTL_TYPE_BYTES);
 			} else {
 				adsp_warn(dsp, "Missing length info for region DM with ID %x\n",
 					  be32_to_cpu(adsp1_alg[i].alg.id));
@@ -2489,9 +2491,9 @@ static int wm_adsp1_setup_algs(struct wm_adsp *dsp)
 				len = be32_to_cpu(adsp1_alg[i + 1].zm);
 				len -= be32_to_cpu(adsp1_alg[i].zm);
 				len *= 4;
-				wm_adsp_create_control(dsp, alg_region, 0,
-						     len, NULL, 0, 0,
-						     SNDRV_CTL_ELEM_TYPE_BYTES);
+				wm_adsp_create_control(
+					dsp, alg_region, 0, len, NULL, 0, 0,
+					WMFW_CTL_TYPE_BYTES);
 			} else {
 				adsp_warn(dsp, "Missing length info for region ZM with ID %x\n",
 					  be32_to_cpu(adsp1_alg[i].alg.id));
@@ -2588,9 +2590,9 @@ static int wm_adsp2_setup_algs(struct wm_adsp *dsp)
 				len = be32_to_cpu(adsp2_alg[i + 1].xm);
 				len -= be32_to_cpu(adsp2_alg[i].xm);
 				len *= 4;
-				wm_adsp_create_control(dsp, alg_region, 0,
-						     len, NULL, 0, 0,
-						     SNDRV_CTL_ELEM_TYPE_BYTES);
+				wm_adsp_create_control(
+					dsp, alg_region, 0, len, NULL, 0, 0,
+					WMFW_CTL_TYPE_BYTES);
 			} else {
 				adsp_warn(dsp, "Missing length info for region XM with ID %x\n",
 					  be32_to_cpu(adsp2_alg[i].alg.id));
@@ -2609,9 +2611,9 @@ static int wm_adsp2_setup_algs(struct wm_adsp *dsp)
 				len = be32_to_cpu(adsp2_alg[i + 1].ym);
 				len -= be32_to_cpu(adsp2_alg[i].ym);
 				len *= 4;
-				wm_adsp_create_control(dsp, alg_region, 0,
-						     len, NULL, 0, 0,
-						     SNDRV_CTL_ELEM_TYPE_BYTES);
+				wm_adsp_create_control(
+					dsp, alg_region, 0, len, NULL, 0, 0,
+					WMFW_CTL_TYPE_BYTES);
 			} else {
 				adsp_warn(dsp, "Missing length info for region YM with ID %x\n",
 					  be32_to_cpu(adsp2_alg[i].alg.id));
@@ -2630,9 +2632,9 @@ static int wm_adsp2_setup_algs(struct wm_adsp *dsp)
 				len = be32_to_cpu(adsp2_alg[i + 1].zm);
 				len -= be32_to_cpu(adsp2_alg[i].zm);
 				len *= 4;
-				wm_adsp_create_control(dsp, alg_region, 0,
-						     len, NULL, 0, 0,
-						     SNDRV_CTL_ELEM_TYPE_BYTES);
+				wm_adsp_create_control(
+					dsp, alg_region, 0, len, NULL, 0, 0,
+					WMFW_CTL_TYPE_BYTES);
 			} else {
 				adsp_warn(dsp, "Missing length info for region ZM with ID %x\n",
 					  be32_to_cpu(adsp2_alg[i].alg.id));
@@ -3532,7 +3534,8 @@ static int wm_halo_apply_calibration(struct snd_soc_dapm_widget *w)
 	struct snd_soc_component *component = snd_soc_dapm_to_component(w->dapm);
 	struct wm_adsp *dsps = snd_soc_component_get_drvdata(component);
 	struct wm_adsp *dsp = &dsps[w->shift];
-	int ret, val;
+	int ret;
+	__be32 val;
 
 	adsp_dbg(dsp, "%s:\n", __func__);
 
@@ -4210,7 +4213,7 @@ static int wm_adsp_read_data_block(struct wm_adsp *dsp, int mem_type,
 		return ret;
 
 	for (i = 0; i < num_words; ++i)
-		data[i] = be32_to_cpu(data[i]) & data_word_mask;
+		data[i] = get_unaligned_be32(&data[i]) & data_word_mask;
 
 	return 0;
 }
@@ -4226,15 +4229,16 @@ static int wm_adsp_write_data_word(struct wm_adsp *dsp, int mem_type,
 {
 	struct wm_adsp_region const *mem = wm_adsp_find_region(dsp, mem_type);
 	unsigned int reg;
+	__be32 val;
 
 	if (!mem)
 		return -EINVAL;
 
 	reg = dsp->ops->region_to_reg(mem, mem_addr);
 
-	data = cpu_to_be32(data & dsp->data_word_mask);
+	val = cpu_to_be32(data & dsp->data_word_mask);
 
-	return regmap_raw_write(dsp->regmap, reg, &data, sizeof(data));
+	return regmap_raw_write(dsp->regmap, reg, &val, sizeof(val));
 }
 
 static inline int wm_adsp_buffer_read(struct wm_adsp_compr_buf *buf,
@@ -4400,8 +4404,10 @@ static int wm_adsp_buffer_parse_legacy(struct wm_adsp *dsp)
 static int wm_adsp_buffer_parse_coeff(struct wm_coeff_ctl *ctl)
 {
 	int ret, i;
-	unsigned int val, reg;
+	unsigned int reg, val;
+	__be32 raw_val;
 	struct wm_adsp_host_buf_coeff_v1 coeff_v1;
+	u32 name[ARRAY_SIZE(coeff_v1.name)];
 	struct wm_adsp_compr_buf *buf;
 
 	ret = wm_coeff_base_reg(ctl, &reg);
@@ -4409,17 +4415,17 @@ static int wm_adsp_buffer_parse_coeff(struct wm_coeff_ctl *ctl)
 		return ret;
 
 	for (i = 0; i < 5; ++i) {
-		ret = regmap_raw_read(ctl->dsp->regmap, reg, &val, sizeof(val));
+		ret = regmap_raw_read(ctl->dsp->regmap, reg, &raw_val, sizeof(raw_val));
 		if (ret < 0)
 			return ret;
 
-		if (val)
+		if (raw_val)
 			break;
 
 		usleep_range(1000, 2000);
 	}
 
-	if (!val) {
+	if (!raw_val) {
 		adsp_err(ctl->dsp, "Failed to acquire host buffer\n");
 		return -EIO;
 	}
@@ -4429,7 +4435,7 @@ static int wm_adsp_buffer_parse_coeff(struct wm_coeff_ctl *ctl)
 		return -ENOMEM;
 
 	buf->host_buf_mem_type = ctl->alg_region.type;
-	buf->host_buf_ptr = be32_to_cpu(val);
+	buf->host_buf_ptr = be32_to_cpu(raw_val);
 
 	ret = wm_adsp_buffer_populate(buf);
 	if (ret < 0)
@@ -4449,8 +4455,7 @@ static int wm_adsp_buffer_parse_coeff(struct wm_coeff_ctl *ctl)
 	if (ret < 0)
 		return ret;
 
-	coeff_v1.versions = be32_to_cpu(coeff_v1.versions);
-	val = coeff_v1.versions & HOST_BUF_COEFF_COMPAT_VER_MASK;
+	val = be32_to_cpu(coeff_v1.versions) & HOST_BUF_COEFF_COMPAT_VER_MASK;
 	val >>= HOST_BUF_COEFF_COMPAT_VER_SHIFT;
 
 	if (val > HOST_BUF_COEFF_SUPPORTED_COMPAT_VER) {
@@ -4461,14 +4466,14 @@ static int wm_adsp_buffer_parse_coeff(struct wm_coeff_ctl *ctl)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(coeff_v1.name); i++)
-		coeff_v1.name[i] = be32_to_cpu(coeff_v1.name[i]);
+		name[i] = be32_to_cpu(coeff_v1.name[i]);
 
-	wm_adsp_remove_padding((u32 *)&coeff_v1.name,
-			       ARRAY_SIZE(coeff_v1.name),
+	wm_adsp_remove_padding(name, ARRAY_SIZE(name),
 			       ctl->dsp->data_word_size);
 
-	buf->name = kasprintf(GFP_KERNEL, "%s-dsp-%s", ctl->dsp->part,
-			      (char *)&coeff_v1.name);
+	buf->name = kasprintf(GFP_KERNEL, "%s-dsp-%.*s", ctl->dsp->part,
+			      (int)(ARRAY_SIZE(name) * ctl->dsp->data_word_size),
+			      (char *)name);
 
 	compr_dbg(buf, "host_buf_ptr=%x coeff version %u\n",
 		  buf->host_buf_ptr, val);
