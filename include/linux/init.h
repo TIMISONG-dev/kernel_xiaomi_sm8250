@@ -110,6 +110,7 @@
 #define __REFCONST       .section       ".ref.rodata", "a"
 
 #ifndef __ASSEMBLY__
+extern const char *envp_init[];
 /*
  * Used for initialization calls..
  */
