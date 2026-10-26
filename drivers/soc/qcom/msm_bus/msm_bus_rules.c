@@ -40,7 +40,7 @@ struct rule_node_info {
 	struct rule_apply_rcm_info apply;
 };
 
-DEFINE_MUTEX(msm_bus_rules_lock);
+static DEFINE_MUTEX(msm_bus_rules_lock);
 static LIST_HEAD(node_list);
 static struct rule_node_info *get_node(u32 id, void *data);
 static int node_rules_compare(void *priv, struct list_head *a,
@@ -551,7 +551,7 @@ static bool __rule_register(int num_rules, struct bus_rule_type *rule,
 		}
 	}
 	list_sort(NULL, &node->node_rules, node_rules_compare);
-	if (nb && nb != node->rule_notify_list.head)
+	if (nb && nb != rcu_access_pointer(node->rule_notify_list.head))
 		raw_notifier_chain_register(&node->rule_notify_list, nb);
 exit_rule_register:
 	return reg_success;

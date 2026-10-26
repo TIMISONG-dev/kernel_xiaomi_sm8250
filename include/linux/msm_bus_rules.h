@@ -43,6 +43,9 @@ struct bus_rule_type {
 	void *client_data;
 };
 
+int msm_rules_update_path(struct list_head *input_list,
+			  struct list_head *output_list);
+void print_all_rules(void);
 void msm_rule_register(int num_rules, struct bus_rule_type *rule,
 				struct notifier_block *nb);
 void msm_rule_unregister(int num_rules, struct bus_rule_type *rule,
