@@ -128,7 +128,7 @@ reject:
 EXPORT_SYMBOL_GPL(find_asymmetric_key);
 
 /**
- * asymmetric_key_generate_id: Construct an asymmetric key ID
+ * asymmetric_key_generate_id - Construct an asymmetric key ID
  * @val_1: First binary blob
  * @len_1: Length of first binary blob
  * @val_2: Second binary blob
@@ -161,7 +161,8 @@ EXPORT_SYMBOL_GPL(asymmetric_key_generate_id);
 
 /**
  * asymmetric_key_id_same - Return true if two asymmetric keys IDs are the same.
- * @kid_1, @kid_2: The key IDs to compare
+ * @kid1: The first key ID to compare
+ * @kid2: The second key ID to compare
  */
 bool asymmetric_key_id_same(const struct asymmetric_key_id *kid1,
 			    const struct asymmetric_key_id *kid2)
@@ -177,7 +178,8 @@ EXPORT_SYMBOL_GPL(asymmetric_key_id_same);
 /**
  * asymmetric_key_id_partial - Return true if two asymmetric keys IDs
  * partially match
- * @kid_1, @kid_2: The key IDs to compare
+ * @kid1: The first key ID to compare
+ * @kid2: The second key ID to compare
  */
 bool asymmetric_key_id_partial(const struct asymmetric_key_id *kid1,
 			       const struct asymmetric_key_id *kid2)
