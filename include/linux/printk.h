@@ -8,6 +8,8 @@
 #include <linux/linkage.h>
 #include <linux/cache.h>
 
+extern bool no_hash_pointers;
+
 extern const char linux_banner[];
 extern const char *linux_banner_ptr;
 extern const char linux_proc_banner[];

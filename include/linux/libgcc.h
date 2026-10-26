@@ -21,6 +21,8 @@
 
 #include <asm/byteorder.h>
 
+extern const unsigned char __clz_tab[];
+
 typedef int word_type __attribute__ ((mode (__word__)));
 
 #ifdef __BIG_ENDIAN
