@@ -18,4 +18,13 @@
  */
 #define MIN_KIMG_ALIGN		SZ_2M
 
+#ifndef __ASSEMBLY__
+#include <linux/types.h>
+
+extern phys_addr_t __fdt_pointer;
+extern u64 boot_args[4];
+u64 kaslr_early_init(u64 dt_phys);
+void init_random_pool(void);
+#endif
+
 #endif

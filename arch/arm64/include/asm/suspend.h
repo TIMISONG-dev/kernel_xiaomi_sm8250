@@ -35,6 +35,14 @@ struct sleep_stack_data {
 	unsigned long		callee_saved_regs[NR_CALLEE_SAVED_REGS];
 };
 
+#ifdef CONFIG_CPU_PM
+extern void cpu_suspend_set_dbg_restorer(int (*hw_bp_restore)(unsigned int));
+#else
+static inline void cpu_suspend_set_dbg_restorer(int (*hw_bp_restore)(unsigned int))
+{
+}
+#endif
+
 extern unsigned long *sleep_save_stash;
 
 extern int cpu_suspend(unsigned long arg, int (*fn)(unsigned long));

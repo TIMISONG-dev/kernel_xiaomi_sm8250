@@ -36,6 +36,7 @@
 #include <linux/cma.h>
 
 #include <asm/barrier.h>
+#include <asm/dma-contiguous.h>
 #include <asm/cputype.h>
 #include <asm/fixmap.h>
 #include <asm/kasan.h>

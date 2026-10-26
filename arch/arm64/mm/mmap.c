@@ -17,6 +17,7 @@
  */
 
 #include <linux/elf.h>
+#include <linux/elf-randomize.h>
 #include <linux/fs.h>
 #include <linux/memblock.h>
 #include <linux/mm.h>

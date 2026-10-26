@@ -60,6 +60,8 @@ extern void proc_caches_init(void);
 
 extern void fork_init(void);
 
+int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src);
+
 extern void release_task(struct task_struct * p);
 
 #ifdef CONFIG_HAVE_COPY_THREAD_TLS

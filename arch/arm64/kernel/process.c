@@ -39,6 +39,7 @@
 #include <linux/init.h>
 #include <linux/cpu.h>
 #include <linux/elfcore.h>
+#include <linux/elf-randomize.h>
 #include <linux/pm.h>
 #include <linux/tick.h>
 #include <linux/utsname.h>
@@ -60,7 +61,10 @@
 #include <asm/mmu_context.h>
 #include <asm/processor.h>
 #include <asm/scs.h>
+#include <asm/smp.h>
 #include <asm/stacktrace.h>
+#include <asm/system_misc.h>
+#include <asm/switch_to.h>
 
 #ifdef CONFIG_STACKPROTECTOR
 #include <linux/stackprotector.h>

@@ -6,6 +6,7 @@
 #include <linux/compat.h>
 #include <linux/errno.h>
 #include <linux/prctl.h>
+#include <linux/nospec.h>
 #include <linux/sched.h>
 #include <linux/sched/task_stack.h>
 #include <linux/thread_info.h>

@@ -8,6 +8,11 @@
 
 #ifdef CONFIG_SHADOW_CALL_STACK
 
+DECLARE_PER_CPU(unsigned long *, irq_shadow_call_stack_ptr);
+#ifndef CONFIG_SHADOW_CALL_STACK_VMAP
+DECLARE_PER_CPU(unsigned long [SCS_SIZE/sizeof(long)], irq_shadow_call_stack);
+#endif
+
 extern void scs_init_irq(void);
 
 static __always_inline void scs_save(struct task_struct *tsk)

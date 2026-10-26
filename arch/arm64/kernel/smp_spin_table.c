@@ -28,6 +28,7 @@
 #include <asm/cputype.h>
 #include <asm/io.h>
 #include <asm/smp_plat.h>
+#include <asm/smp.h>
 
 extern void secondary_holding_pen(void);
 volatile unsigned long __section(".mmuoff.data.read")
