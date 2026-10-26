@@ -417,7 +417,10 @@ static int qrng_get_random(struct crypto_rng *tfm, const u8 *src,
 				unsigned int slen, u8 *rdata,
 				unsigned int dlen)
 {
-	int sizeread = 0;
+	u32 scratch[MAX_HW_FIFO_DEPTH];
+	unsigned int remaining = dlen;
+	unsigned int empty_reads = 0;
+	int sizeread;
 	int rv = -EFAULT;
 
 	if (!READ_ONCE(msm_rng_dev_cached)) {
@@ -442,14 +445,33 @@ static int qrng_get_random(struct crypto_rng *tfm, const u8 *src,
 		rv = -ENODEV;
 		goto unlock;
 	}
-	sizeread = msm_rng_direct_read(msm_rng_dev_cached, rdata, dlen);
+	while (remaining) {
+		unsigned int count = min_t(unsigned int, remaining, sizeof(scratch));
 
-	if (sizeread == dlen)
-		rv = 0;
+		if (signal_pending(current)) {
+			rv = -ERESTARTSYS;
+			goto unlock;
+		}
+		sizeread = msm_rng_direct_read(msm_rng_dev_cached, scratch,
+					     round_up(count, sizeof(u32)));
+		if (sizeread <= 0) {
+			if (++empty_reads >= RETRY_MAX_CNT)
+				goto unlock;
+			continue;
+		}
+		empty_reads = 0;
+		count = min_t(unsigned int, sizeread, remaining);
+		memcpy(rdata, scratch, count);
+		rdata += count;
+		remaining -= count;
+		cond_resched();
+	}
+	rv = 0;
 
 unlock:
 	mutex_unlock(&cached_rng_lock);
 err_exit:
+	memzero_explicit(scratch, sizeof(scratch));
 	return rv;
 
 }
