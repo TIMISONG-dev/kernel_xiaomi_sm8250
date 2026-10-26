@@ -4252,7 +4252,7 @@ exit:
 	return rc;
 }
 
-int msm_vidc_send_pending_eos_buffers(struct msm_vidc_inst *inst)
+static int msm_vidc_send_pending_eos_buffers_locked(struct msm_vidc_inst *inst)
 {
 	struct vidc_frame_data data = {0};
 	struct hfi_device *hdev;
@@ -4264,7 +4264,6 @@ int msm_vidc_send_pending_eos_buffers(struct msm_vidc_inst *inst)
 		return -EINVAL;
 	}
 
-	mutex_lock(&inst->eosbufs.lock);
 	list_for_each_entry_safe(binfo, temp, &inst->eosbufs.list, list) {
 		if (binfo->is_queued)
 			continue;
@@ -4285,8 +4284,23 @@ int msm_vidc_send_pending_eos_buffers(struct msm_vidc_inst *inst)
 
 		rc = call_hfi_op(hdev, session_etb, inst->session,
 				&data);
+		if (rc)
+			break;
 		binfo->is_queued = 1;
 	}
+
+	return rc;
+}
+
+int msm_vidc_send_pending_eos_buffers(struct msm_vidc_inst *inst)
+{
+	int rc;
+
+	if (!inst || !inst->core || !inst->core->device)
+		return -EINVAL;
+
+	mutex_lock(&inst->eosbufs.lock);
+	rc = msm_vidc_send_pending_eos_buffers_locked(inst);
 	mutex_unlock(&inst->eosbufs.lock);
 
 	return rc;
@@ -4362,16 +4376,16 @@ int msm_vidc_comm_cmd(void *instance, union msm_v4l2_cmd *cmd)
 
 		mutex_lock(&inst->eosbufs.lock);
 		list_add_tail(&binfo->list, &inst->eosbufs.list);
-		mutex_unlock(&inst->eosbufs.lock);
 
-		rc = msm_vidc_send_pending_eos_buffers(inst);
+		rc = msm_vidc_send_pending_eos_buffers_locked(inst);
 		if (rc) {
 			s_vpr_e(inst->sid,
 				"Failed pending_eos_buffers sending\n");
 			list_del(&binfo->list);
+			msm_comm_smem_free(inst, &binfo->smem);
 			kfree(binfo);
-			break;
 		}
+		mutex_unlock(&inst->eosbufs.lock);
 		break;
 	}
 	default:
