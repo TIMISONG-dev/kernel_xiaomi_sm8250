@@ -27,7 +27,6 @@ struct qmi_servreg_notif_register_listener_req_msg_v01 {
 	char service_name[QMI_SERVREG_NOTIF_NAME_LENGTH_V01 + 1];
 };
 #define QMI_SERVREG_NOTIF_REGISTER_LISTENER_REQ_MSG_V01_MAX_MSG_LEN 71
-struct qmi_elem_info qmi_servreg_notif_register_listener_req_msg_v01_ei[];
 
 struct qmi_servreg_notif_register_listener_resp_msg_v01 {
 	struct qmi_response_type_v01 resp;
@@ -35,13 +34,11 @@ struct qmi_servreg_notif_register_listener_resp_msg_v01 {
 	enum qmi_servreg_notif_service_state_enum_type_v01 curr_state;
 };
 #define QMI_SERVREG_NOTIF_REGISTER_LISTENER_RESP_MSG_V01_MAX_MSG_LEN 14
-struct qmi_elem_info qmi_servreg_notif_register_listener_resp_msg_v01_ei[];
 
 struct qmi_servreg_notif_query_state_req_msg_v01 {
 	char service_name[QMI_SERVREG_NOTIF_NAME_LENGTH_V01 + 1];
 };
 #define QMI_SERVREG_NOTIF_QUERY_STATE_REQ_MSG_V01_MAX_MSG_LEN 67
-struct qmi_elem_info qmi_servreg_notif_query_state_req_msg_v01_ei[];
 
 struct qmi_servreg_notif_query_state_resp_msg_v01 {
 	struct qmi_response_type_v01 resp;
@@ -49,7 +46,6 @@ struct qmi_servreg_notif_query_state_resp_msg_v01 {
 	enum qmi_servreg_notif_service_state_enum_type_v01 curr_state;
 };
 #define QMI_SERVREG_NOTIF_QUERY_STATE_RESP_MSG_V01_MAX_MSG_LEN 14
-struct qmi_elem_info qmi_servreg_notif_query_state_resp_msg_v01_ei[];
 
 struct qmi_servreg_notif_state_updated_ind_msg_v01 {
 	enum qmi_servreg_notif_service_state_enum_type_v01 curr_state;
@@ -57,34 +53,29 @@ struct qmi_servreg_notif_state_updated_ind_msg_v01 {
 	uint16_t transaction_id;
 };
 #define QMI_SERVREG_NOTIF_STATE_UPDATED_IND_MSG_V01_MAX_MSG_LEN 79
-struct qmi_elem_info qmi_servreg_notif_state_updated_ind_msg_v01_ei[];
 
 struct qmi_servreg_notif_set_ack_req_msg_v01 {
 	char service_name[QMI_SERVREG_NOTIF_NAME_LENGTH_V01 + 1];
 	uint16_t transaction_id;
 };
 #define QMI_SERVREG_NOTIF_SET_ACK_REQ_MSG_V01_MAX_MSG_LEN 72
-struct qmi_elem_info qmi_servreg_notif_set_ack_req_msg_v01_ei[];
 
 struct qmi_servreg_notif_set_ack_resp_msg_v01 {
 	struct qmi_response_type_v01 resp;
 };
 #define QMI_SERVREG_NOTIF_SET_ACK_RESP_MSG_V01_MAX_MSG_LEN 7
-struct qmi_elem_info qmi_servreg_notif_set_ack_resp_msg_v01_ei[];
 
 struct qmi_servreg_notif_restart_pd_req_msg_v01 {
 	char service_name[QMI_SERVREG_NOTIF_NAME_LENGTH_V01 + 1];
 };
 #define QMI_SERVREG_NOTIF_RESTART_PD_REQ_MSG_V01_MAX_MSG_LEN 67
-extern struct qmi_elem_info qmi_servreg_notif_restart_pd_req_msg_v01_ei[];
 
 struct qmi_servreg_notif_restart_pd_resp_msg_v01 {
 	struct qmi_response_type_v01 resp;
 };
 #define QMI_SERVREG_NOTIF_RESTART_PD_RESP_MSG_V01_MAX_MSG_LEN 7
-extern struct qmi_elem_info qmi_servreg_notif_restart_pd_resp_msg_v01_ei[];
 
-struct qmi_elem_info qmi_servreg_notif_register_listener_req_msg_v01_ei[] = {
+static struct qmi_elem_info qmi_servreg_notif_register_listener_req_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_UNSIGNED_1_BYTE,
 		.elem_len       = 1,
@@ -108,11 +99,11 @@ struct qmi_elem_info qmi_servreg_notif_register_listener_req_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_EOTI,
 		.array_type       = NO_ARRAY,
-		.array_type       = QMI_COMMON_TLV_TYPE,
+		.tlv_type         = QMI_COMMON_TLV_TYPE,
 	},
 };
 
-struct qmi_elem_info qmi_servreg_notif_register_listener_resp_msg_v01_ei[] = {
+static struct qmi_elem_info qmi_servreg_notif_register_listener_resp_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_STRUCT,
 		.elem_len       = 1,
@@ -148,11 +139,11 @@ struct qmi_elem_info qmi_servreg_notif_register_listener_resp_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_EOTI,
 		.array_type       = NO_ARRAY,
-		.array_type       = QMI_COMMON_TLV_TYPE,
+		.tlv_type         = QMI_COMMON_TLV_TYPE,
 	},
 };
 
-struct qmi_elem_info qmi_servreg_notif_query_state_req_msg_v01_ei[] = {
+static struct qmi_elem_info qmi_servreg_notif_query_state_req_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_STRING,
 		.elem_len       = QMI_SERVREG_NOTIF_NAME_LENGTH_V01 + 1,
@@ -166,11 +157,11 @@ struct qmi_elem_info qmi_servreg_notif_query_state_req_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_EOTI,
 		.array_type       = NO_ARRAY,
-		.array_type       = QMI_COMMON_TLV_TYPE,
+		.tlv_type         = QMI_COMMON_TLV_TYPE,
 	},
 };
 
-struct qmi_elem_info qmi_servreg_notif_query_state_resp_msg_v01_ei[] = {
+static struct qmi_elem_info qmi_servreg_notif_query_state_resp_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_STRUCT,
 		.elem_len       = 1,
@@ -206,11 +197,11 @@ struct qmi_elem_info qmi_servreg_notif_query_state_resp_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_EOTI,
 		.array_type       = NO_ARRAY,
-		.array_type       = QMI_COMMON_TLV_TYPE,
+		.tlv_type         = QMI_COMMON_TLV_TYPE,
 	},
 };
 
-struct qmi_elem_info qmi_servreg_notif_state_updated_ind_msg_v01_ei[] = {
+static struct qmi_elem_info qmi_servreg_notif_state_updated_ind_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_SIGNED_4_BYTE_ENUM,
 		.elem_len       = 1,
@@ -245,11 +236,11 @@ struct qmi_elem_info qmi_servreg_notif_state_updated_ind_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_EOTI,
 		.array_type       = NO_ARRAY,
-		.array_type       = QMI_COMMON_TLV_TYPE,
+		.tlv_type         = QMI_COMMON_TLV_TYPE,
 	},
 };
 
-struct qmi_elem_info qmi_servreg_notif_set_ack_req_msg_v01_ei[] = {
+static struct qmi_elem_info qmi_servreg_notif_set_ack_req_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_STRING,
 		.elem_len       = QMI_SERVREG_NOTIF_NAME_LENGTH_V01 + 1,
@@ -273,11 +264,11 @@ struct qmi_elem_info qmi_servreg_notif_set_ack_req_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_EOTI,
 		.array_type       = NO_ARRAY,
-		.array_type       = QMI_COMMON_TLV_TYPE,
+		.tlv_type         = QMI_COMMON_TLV_TYPE,
 	},
 };
 
-struct qmi_elem_info qmi_servreg_notif_set_ack_resp_msg_v01_ei[] = {
+static struct qmi_elem_info qmi_servreg_notif_set_ack_resp_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_STRUCT,
 		.elem_len       = 1,
@@ -292,11 +283,11 @@ struct qmi_elem_info qmi_servreg_notif_set_ack_resp_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_EOTI,
 		.array_type       = NO_ARRAY,
-		.array_type       = QMI_COMMON_TLV_TYPE,
+		.tlv_type         = QMI_COMMON_TLV_TYPE,
 	},
 };
 
-struct qmi_elem_info qmi_servreg_notif_restart_pd_req_msg_v01_ei[] = {
+static struct qmi_elem_info qmi_servreg_notif_restart_pd_req_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_STRING,
 		.elem_len       = QMI_SERVREG_NOTIF_NAME_LENGTH_V01 + 1,
@@ -310,11 +301,11 @@ struct qmi_elem_info qmi_servreg_notif_restart_pd_req_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_EOTI,
 		.array_type       = NO_ARRAY,
-		.array_type       = QMI_COMMON_TLV_TYPE,
+		.tlv_type         = QMI_COMMON_TLV_TYPE,
 	},
 };
 
-struct qmi_elem_info qmi_servreg_notif_restart_pd_resp_msg_v01_ei[] = {
+static struct qmi_elem_info qmi_servreg_notif_restart_pd_resp_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_STRUCT,
 		.elem_len       = 1,
@@ -329,7 +320,7 @@ struct qmi_elem_info qmi_servreg_notif_restart_pd_resp_msg_v01_ei[] = {
 	{
 		.data_type      = QMI_EOTI,
 		.array_type       = NO_ARRAY,
-		.array_type       = QMI_COMMON_TLV_TYPE,
+		.tlv_type         = QMI_COMMON_TLV_TYPE,
 	},
 };
 #endif
