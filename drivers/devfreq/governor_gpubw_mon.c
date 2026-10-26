@@ -56,7 +56,7 @@ static ssize_t cur_ab_show(struct device *dev,
 					struct msm_busmon_extended_profile,
 					profile);
 
-	return scnprintf(buf, PAGE_SIZE, "%llu\n", bus_profile->ab_mbytes);
+	return scnprintf(buf, PAGE_SIZE, "%lu\n", bus_profile->ab_mbytes);
 }
 
 static ssize_t sampling_interval_show(struct device *dev,
@@ -292,7 +292,6 @@ static int devfreq_gpubw_event_handler(struct devfreq *devfreq,
 				unsigned int event, void *data)
 {
 	int result = 0;
-	unsigned long freq;
 	struct device_node *node = devfreq->dev.parent->of_node;
 
 	/*
@@ -303,7 +302,6 @@ static int devfreq_gpubw_event_handler(struct devfreq *devfreq,
 		return -EINVAL;
 
 	mutex_lock(&devfreq->lock);
-	freq = devfreq->previous_freq;
 	switch (event) {
 	case DEVFREQ_GOV_START:
 		result = gpubw_start(devfreq);
