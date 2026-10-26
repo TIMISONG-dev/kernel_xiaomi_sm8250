@@ -35,7 +35,7 @@
 #define DSI_CLOCK_BITRATE_RADIX 10
 #define MAX_TE_SOURCE_ID  2
 
-DEFINE_MUTEX(dsi_display_clk_mutex);
+static DEFINE_MUTEX(dsi_display_clk_mutex);
 
 extern int mi_disp_lhbm_attach_primary_dsi_display(struct dsi_display *display);
 
@@ -52,7 +52,7 @@ static const struct of_device_id dsi_display_dt_match[] = {
 	{}
 };
 
-struct dsi_display *primary_display;
+static struct dsi_display *primary_display;
 
 static void dsi_display_mask_ctrl_error_interrupts(struct dsi_display *display,
 			u32 mask, bool enable)
@@ -2062,7 +2062,7 @@ static int dsi_display_is_ulps_req_valid(struct dsi_display *display,
 
 /**
  * dsi_display_set_ulps() - set ULPS state for DSI lanes.
- * @dsi_display:         DSI display handle.
+ * @display:         DSI display handle.
  * @enable:           enable/disable ULPS.
  *
  * ULPS can be enabled/disabled after DSI host engine is turned on.
@@ -2148,7 +2148,7 @@ static int dsi_display_set_ulps(struct dsi_display *display, bool enable)
 
 /**
  * dsi_display_set_clamp() - set clamp state for DSI IO.
- * @dsi_display:         DSI display handle.
+ * @display:         DSI display handle.
  * @enable:           enable/disable clamping.
  *
  * Return: error code.
@@ -2212,8 +2212,8 @@ static int dsi_display_set_clamp(struct dsi_display *display, bool enable)
 }
 
 /**
- * dsi_display_setup_ctrl() - setup DSI controller.
- * @dsi_display:         DSI display handle.
+ * dsi_display_ctrl_setup() - setup DSI controller.
+ * @display:         DSI display handle.
  *
  * Return: error code.
  */
@@ -2254,7 +2254,7 @@ static int dsi_display_phy_enable(struct dsi_display *display);
 
 /**
  * dsi_display_phy_idle_on() - enable DSI PHY while coming out of idle screen.
- * @dsi_display:         DSI display handle.
+ * @display:         DSI display handle.
  * @mmss_clamp:          True if clamp is enabled.
  *
  * Return: error code.
@@ -2301,7 +2301,7 @@ static int dsi_display_phy_idle_on(struct dsi_display *display,
 
 /**
  * dsi_display_phy_idle_off() - disable DSI PHY while going to idle screen.
- * @dsi_display:         DSI display handle.
+ * @display:         DSI display handle.
  *
  * Return: error code.
  */
