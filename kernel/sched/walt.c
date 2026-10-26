@@ -935,7 +935,7 @@ void fixup_busy_time(struct task_struct *p, int new_cpu)
 
 	new_task = is_new_task(p);
 	/* Protected by rq_lock */
-	grp = p->grp;
+	grp = rcu_access_pointer(p->grp);
 
 	/*
 	 * For frequency aggregation, we continue to do migration fixups
@@ -1533,7 +1533,7 @@ static void update_cpu_busy_time(struct task_struct *p, struct rq *rq,
 	if (!account_busy_for_cpu_time(rq, p, irqtime, event))
 		goto done;
 
-	grp = p->grp;
+	grp = rcu_access_pointer(p->grp);
 	if (grp) {
 		struct group_cpu_time *cpu_time = &rq->grp_time;
 
@@ -2873,7 +2873,8 @@ err:
 
 static void remove_task_from_group(struct task_struct *p)
 {
-	struct related_thread_group *grp = p->grp;
+	struct related_thread_group *grp = rcu_dereference_protected(p->grp,
+			lockdep_is_held(&related_thread_group_lock));
 	struct rq *rq;
 	int empty_group = 1;
 	struct rq_flags rf;
@@ -2881,7 +2882,7 @@ static void remove_task_from_group(struct task_struct *p)
 	raw_spin_lock(&grp->lock);
 
 	rq = __task_rq_lock(p, &rf);
-	transfer_busy_time(rq, p->grp, p, REM_TASK);
+	transfer_busy_time(rq, grp, p, REM_TASK);
 	list_del_init(&p->grp_list);
 	rcu_assign_pointer(p->grp, NULL);
 	__task_rq_unlock(rq, &rf);
@@ -2950,7 +2951,7 @@ void add_new_task_to_grp(struct task_struct *new)
 	 * group. or it might have taken out from the colocated schedtune
 	 * cgroup. check these conditions under lock.
 	 */
-	if (!schedtune_task_colocated(new) || new->grp) {
+	if (!schedtune_task_colocated(new) || rcu_access_pointer(new->grp)) {
 		write_unlock_irqrestore(&related_thread_group_lock, flags);
 		return;
 	}
@@ -2978,8 +2979,8 @@ static int __sched_set_group_id(struct task_struct *p, unsigned int group_id)
 
 	/* Switching from one group to another directly is not permitted */
 	if ((current != p && p->flags & PF_EXITING) ||
-			(!p->grp && !group_id) ||
-			(p->grp && group_id))
+			(!rcu_access_pointer(p->grp) && !group_id) ||
+			(rcu_access_pointer(p->grp) && group_id))
 		goto done;
 
 	if (!group_id) {
