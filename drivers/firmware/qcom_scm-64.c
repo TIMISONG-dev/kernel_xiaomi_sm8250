@@ -75,7 +75,8 @@ static DEFINE_MUTEX(qcom_scm_lock);
  * @dev:	device
  * @svc_id:	service identifier
  * @cmd_id:	command identifier
- * @desc:	Descriptor structure containing arguments and return values
+ * @desc:	Descriptor structure containing arguments
+ * @res:	Secure monitor return values
  *
  * Sends a command to the SCM and waits for the command to finish processing.
  * This should *only* be called in pre-emptible context.
@@ -193,8 +194,8 @@ int __qcom_scm_set_warm_boot_addr(struct device *dev, void *entry,
 }
 
 /**
- * qcom_scm_cpu_power_down() - Power down the cpu
- * @flags - Flags to flush cache
+ * __qcom_scm_cpu_power_down() - Power down the cpu
+ * @flags: Flags to flush cache
  *
  * This is an end point to power down cpu. If there was a pending interrupt,
  * the control would return from this function, otherwise, the cpu jumps to the

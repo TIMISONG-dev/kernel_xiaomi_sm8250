@@ -273,8 +273,9 @@ static enum blk_crypto_mode_num ufshcd_blk_crypto_mode_num_for_alg_dusize(
 }
 
 /**
- * ufshcd_hba_init_crypto - Read crypto capabilities, init crypto fields in hba
+ * ufshcd_hba_init_crypto_spec - Initialize standard UFS crypto capabilities
  * @hba: Per adapter instance
+ * @ksm_ops: Low-level keyslot management operations
  *
  * Return: 0 if crypto was initialized or is not supported, else a -errno value.
  */
