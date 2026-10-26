@@ -1328,7 +1328,7 @@ static void _qcrypto_remove_engine(struct crypto_engine *pengine)
 	list_del(&pengine->elist);
 	if (pengine->first_engine) {
 		cp->first_engine = NULL;
-		pe = list_first_entry(&cp->engine_list, struct crypto_engine,
+		pe = list_first_entry_or_null(&cp->engine_list, struct crypto_engine,
 								elist);
 		if (pe) {
 			pe->first_engine = true;
@@ -4948,13 +4948,12 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 	rc = msm_bus_scale_client_update_request(pengine->bus_scale_handle, 1);
 	if (rc) {
 		dev_err(&pdev->dev, "failed to set high bandwidth\n");
-		goto exit_kzfree;
+		goto exit_unregister_bus;
 	}
 	handle = qce_open(pdev, &rc);
-	if (handle == NULL) {
-		rc = -ENODEV;
+	if (handle == NULL)
 		goto exit_free_pdata;
-	}
+	pengine->qce = handle;
 	rc = msm_bus_scale_client_update_request(pengine->bus_scale_handle, 0);
 	if (rc) {
 		dev_err(&pdev->dev, "failed to set low bandwidth\n");
@@ -4962,7 +4961,6 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, pengine);
-	pengine->qce = handle;
 	pengine->pcp = cp;
 	pengine->pdev = pdev;
 	pengine->signature = 0xdeadbeef;
@@ -5000,7 +4998,7 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 				GFP_KERNEL);
 	if (pqcrypto_req_control == NULL) {
 		rc = -ENOMEM;
-		goto exit_unlock_mutex;
+		goto err;
 	}
 	qcrypto_init_req_control(pengine, pqcrypto_req_control);
 	if (cp->ce_support.bam)	 {
@@ -5021,7 +5019,7 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 	}
 
 	if (cp->total_units != 1)
-		goto exit_unlock_mutex;
+		goto success;
 
 	/* register crypto cipher algorithms the device supports */
 	for (i = 0; i < ARRAY_SIZE(_qcrypto_ablk_cipher_algos); i++) {
@@ -5308,13 +5306,12 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 					q_alg->aead_alg.base.cra_driver_name);
 		}
 	}
+success:
 	mutex_unlock(&cp->engine_lock);
 
 	return 0;
 err:
 	_qcrypto_remove_engine(pengine);
-	kzfree(pqcrypto_req_control);
-exit_unlock_mutex:
 	mutex_unlock(&cp->engine_lock);
 exit_qce_close:
 	if (pengine->qce)
@@ -5322,6 +5319,9 @@ exit_qce_close:
 exit_free_pdata:
 	msm_bus_scale_client_update_request(pengine->bus_scale_handle, 0);
 	platform_set_drvdata(pdev, NULL);
+exit_unregister_bus:
+	if (pengine->bus_scale_handle)
+		msm_bus_scale_unregister_client(pengine->bus_scale_handle);
 exit_kzfree:
 	memset(pengine, 0, ksize((void *)pengine));
 	kfree(pengine);
