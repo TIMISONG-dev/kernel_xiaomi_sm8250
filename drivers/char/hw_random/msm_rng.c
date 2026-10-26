@@ -53,9 +53,9 @@ struct msm_rng_device {
 	struct mutex rng_lock;
 };
 
-struct msm_rng_device msm_rng_device_info;
+static struct msm_rng_device msm_rng_device_info;
 static struct msm_rng_device *msm_rng_dev_cached;
-struct mutex cached_rng_lock;
+static DEFINE_MUTEX(cached_rng_lock);
 static long msm_rng_ioctl(struct file *filp, unsigned int cmd,
 				unsigned long arg)
 {
@@ -64,8 +64,13 @@ static long msm_rng_ioctl(struct file *filp, unsigned int cmd,
 	switch (cmd) {
 	case QRNG_IOCTL_RESET_BUS_BANDWIDTH:
 		pr_debug("calling msm_rng_bus_scale(LOW)\n");
-		ret = msm_bus_scale_client_update_request(
+		mutex_lock(&cached_rng_lock);
+		if (msm_rng_device_info.qrng_perf_client)
+			ret = msm_bus_scale_client_update_request(
 				msm_rng_device_info.qrng_perf_client, 0);
+		else
+			ret = -ENODEV;
+		mutex_unlock(&cached_rng_lock);
 		if (ret)
 			pr_err("failed qrng_reset_bus_bw, ret = %ld\n", ret);
 		break;
@@ -85,7 +90,6 @@ static long msm_rng_ioctl(struct file *filp, unsigned int cmd,
 static int msm_rng_direct_read(struct msm_rng_device *msm_rng_dev,
 					void *data, size_t max)
 {
-	struct platform_device *pdev;
 	void __iomem *base;
 	size_t currsize = 0;
 	u32 val = 0;
@@ -93,7 +97,6 @@ static int msm_rng_direct_read(struct msm_rng_device *msm_rng_dev,
 	int ret;
 	int failed = 0;
 
-	pdev = msm_rng_dev->pdev;
 	base = msm_rng_dev->base;
 
 	/* no room for word data */
@@ -237,6 +240,7 @@ static int msm_rng_enable_hw(struct msm_rng_device *msm_rng_dev)
 }
 
 static const struct file_operations msm_rng_fops = {
+	.owner = THIS_MODULE,
 	.unlocked_ioctl = msm_rng_ioctl,
 };
 static struct class *msm_rng_class;
@@ -249,7 +253,6 @@ static int msm_rng_probe(struct platform_device *pdev)
 	void __iomem *base = NULL;
 	bool configure_qrng = true;
 	int error = 0;
-	int ret = 0;
 	struct device *dev;
 
 	struct msm_bus_scale_pdata *qrng_platform_support = NULL;
@@ -311,8 +314,6 @@ static int msm_rng_probe(struct platform_device *pdev)
 		qrng_platform_support = msm_bus_cl_get_pdata(pdev);
 		msm_rng_dev->qrng_perf_client = msm_bus_scale_register_client(
 						qrng_platform_support);
-		msm_rng_device_info.qrng_perf_client =
-					msm_rng_dev->qrng_perf_client;
 		if (!msm_rng_dev->qrng_perf_client)
 			pr_err("Unable to register bus client\n");
 	}
@@ -330,7 +331,6 @@ static int msm_rng_probe(struct platform_device *pdev)
 	}
 
 	mutex_init(&msm_rng_dev->rng_lock);
-	mutex_init(&cached_rng_lock);
 
 	/* register with hwrng framework */
 	msm_rng.priv = (unsigned long) msm_rng_dev;
@@ -340,12 +340,16 @@ static int msm_rng_probe(struct platform_device *pdev)
 		error = -EPERM;
 		goto rollback_clk;
 	}
-	ret = register_chrdev(QRNG_IOC_MAGIC, DRIVER_NAME, &msm_rng_fops);
+	error = register_chrdev(QRNG_IOC_MAGIC, DRIVER_NAME, &msm_rng_fops);
+	if (error < 0)
+		goto unregister_hwrng;
 
 	msm_rng_class = class_create(THIS_MODULE, "msm-rng");
 	if (IS_ERR(msm_rng_class)) {
 		pr_err("class_create failed\n");
-		return PTR_ERR(msm_rng_class);
+		error = PTR_ERR(msm_rng_class);
+		msm_rng_class = NULL;
+		goto unregister_chrdev;
 	}
 
 	dev = device_create(msm_rng_class, NULL, MKDEV(QRNG_IOC_MAGIC, 0),
@@ -353,15 +357,27 @@ static int msm_rng_probe(struct platform_device *pdev)
 	if (IS_ERR(dev)) {
 		pr_err("Device create failed\n");
 		error = PTR_ERR(dev);
-		goto unregister_chrdev;
+		goto destroy_class;
 	}
 	cdev_init(&msm_rng_cdev, &msm_rng_fops);
+	mutex_lock(&cached_rng_lock);
+	msm_rng_device_info.qrng_perf_client = msm_rng_dev->qrng_perf_client;
 	msm_rng_dev_cached = msm_rng_dev;
-	return error;
+	mutex_unlock(&cached_rng_lock);
+	return 0;
 
+destroy_class:
+	class_destroy(msm_rng_class);
+	msm_rng_class = NULL;
 unregister_chrdev:
 	unregister_chrdev(QRNG_IOC_MAGIC, DRIVER_NAME);
+unregister_hwrng:
+	hwrng_unregister(&msm_rng);
 rollback_clk:
+	msm_rng.priv = 0;
+	platform_set_drvdata(pdev, NULL);
+	if (msm_rng_dev->qrng_perf_client)
+		msm_bus_scale_unregister_client(msm_rng_dev->qrng_perf_client);
 	if (msm_rng_dev->prng_clk)
 		clk_put(msm_rng_dev->prng_clk);
 err_clk_get:
@@ -377,7 +393,15 @@ static int msm_rng_remove(struct platform_device *pdev)
 	struct msm_rng_device *msm_rng_dev = platform_get_drvdata(pdev);
 
 	unregister_chrdev(QRNG_IOC_MAGIC, DRIVER_NAME);
+	mutex_lock(&cached_rng_lock);
+	msm_rng_device_info.qrng_perf_client = 0;
+	msm_rng_dev_cached = NULL;
+	mutex_unlock(&cached_rng_lock);
+	device_destroy(msm_rng_class, MKDEV(QRNG_IOC_MAGIC, 0));
+	class_destroy(msm_rng_class);
+	msm_rng_class = NULL;
 	hwrng_unregister(&msm_rng);
+	msm_rng.priv = 0;
 	if (msm_rng_dev->prng_clk)
 		clk_put(msm_rng_dev->prng_clk);
 	iounmap(msm_rng_dev->base);
@@ -386,7 +410,6 @@ static int msm_rng_remove(struct platform_device *pdev)
 		msm_bus_scale_unregister_client(msm_rng_dev->qrng_perf_client);
 
 	kzfree(msm_rng_dev);
-	msm_rng_dev_cached = NULL;
 	return 0;
 }
 
@@ -397,7 +420,7 @@ static int qrng_get_random(struct crypto_rng *tfm, const u8 *src,
 	int sizeread = 0;
 	int rv = -EFAULT;
 
-	if (!msm_rng_dev_cached) {
+	if (!READ_ONCE(msm_rng_dev_cached)) {
 		pr_err("%s: msm_rng_dev is not initialized\n", __func__);
 		rv = -ENODEV;
 		goto err_exit;
@@ -415,11 +438,16 @@ static int qrng_get_random(struct crypto_rng *tfm, const u8 *src,
 		rv = -ERESTARTSYS;
 		goto err_exit;
 	}
+	if (!msm_rng_dev_cached) {
+		rv = -ENODEV;
+		goto unlock;
+	}
 	sizeread = msm_rng_direct_read(msm_rng_dev_cached, rdata, dlen);
 
 	if (sizeread == dlen)
 		rv = 0;
 
+unlock:
 	mutex_unlock(&cached_rng_lock);
 err_exit:
 	return rv;
