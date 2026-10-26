@@ -220,37 +220,6 @@ static unsigned int intersect(unsigned long s1, unsigned long l1,
 	return (unsigned int)(~0);
 }
 
-int ion_secure_cma_prefetch(struct ion_heap *heap, void *data)
-{
-	unsigned long len = (unsigned long)data;
-	struct ion_cma_secure_heap *sheap =
-		container_of(heap, struct ion_cma_secure_heap, heap);
-	unsigned long diff;
-
-	if ((int)heap->type != ION_HEAP_TYPE_SECURE_DMA)
-		return -EINVAL;
-
-	if (len == 0)
-		len = sheap->default_prefetch_size;
-
-	/*
-	 * Only prefetch as much space as there is left in the pool so
-	 * check against the current free size of the heap.
-	 * This is slightly racy if someone else is allocating at the same
-	 * time. CMA has a restricted size for the heap so worst case
-	 * the prefetch doesn't work because the allocation fails.
-	 */
-	diff = sheap->heap_size - atomic_read(&sheap->total_pool_size);
-
-	if (len > diff)
-		len = diff;
-
-	sheap->last_alloc = len;
-	schedule_work(&sheap->work);
-
-	return 0;
-}
-
 static void bad_math_dump(unsigned long len, int total_overlap,
 			  struct ion_cma_secure_heap *sheap,
 			  bool alloc, dma_addr_t paddr)
@@ -356,18 +325,6 @@ __ion_secure_cma_shrink_pool(struct ion_cma_secure_heap *sheap, int max_nr)
 	}
 
 	return drained_size;
-}
-
-int ion_secure_cma_drain_pool(struct ion_heap *heap, void *unused)
-{
-	struct ion_cma_secure_heap *sheap =
-		container_of(heap, struct ion_cma_secure_heap, heap);
-
-	mutex_lock(&sheap->chunk_lock);
-	__ion_secure_cma_shrink_pool(sheap, INT_MAX);
-	mutex_unlock(&sheap->chunk_lock);
-
-	return 0;
 }
 
 static unsigned long ion_secure_cma_shrinker(struct shrinker *shrinker,
