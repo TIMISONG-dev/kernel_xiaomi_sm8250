@@ -10,6 +10,8 @@
 
 /**
  * dsi_catalog_cmn_init() - catalog init for dsi controller v1.4
+ * @ctrl: DSI controller hardware object
+ * @version: Hardware version to select
  */
 static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
 		enum dsi_ctrl_version version)
@@ -190,6 +192,7 @@ int dsi_catalog_ctrl_setup(struct dsi_ctrl_hw *ctrl,
 
 /**
  * dsi_catalog_phy_2_0_init() - catalog init for DSI PHY 14nm
+ * @phy: DSI PHY hardware object
  */
 static void dsi_catalog_phy_2_0_init(struct dsi_phy_hw *phy)
 {
@@ -218,6 +221,7 @@ static void dsi_catalog_phy_2_0_init(struct dsi_phy_hw *phy)
 
 /**
  * dsi_catalog_phy_3_0_init() - catalog init for DSI PHY 10nm
+ * @phy: DSI PHY hardware object
  */
 static void dsi_catalog_phy_3_0_init(struct dsi_phy_hw *phy)
 {
@@ -254,6 +258,7 @@ static void dsi_catalog_phy_3_0_init(struct dsi_phy_hw *phy)
 
 /**
  * dsi_catalog_phy_4_0_init() - catalog init for DSI PHY 7nm
+ * @phy: DSI PHY hardware object
  */
 static void dsi_catalog_phy_4_0_init(struct dsi_phy_hw *phy)
 {
@@ -294,7 +299,7 @@ static void dsi_catalog_phy_4_0_init(struct dsi_phy_hw *phy)
 
 /**
  * dsi_catalog_phy_setup() - return catalog info for dsi phy hardware
- * @ctrl:        Pointer to DSI PHY hw object.
+ * @phy:        Pointer to DSI PHY hw object.
  * @version:     DSI PHY version.
  * @index:       DSI PHY instance ID.
  *
