@@ -348,13 +348,17 @@ static inline bool is_suh_max(void)
 #define DEFAULT_CGROUP_COLOC_ID 1
 static inline bool walt_should_kick_upmigrate(struct task_struct *p, int cpu)
 {
-	struct related_thread_group *rtg = p->grp;
+	struct related_thread_group *rtg;
+	bool ret = false;
 
+	rcu_read_lock();
+	rtg = rcu_dereference(p->grp);
 	if (is_suh_max() && rtg && rtg->id == DEFAULT_CGROUP_COLOC_ID &&
 			    rtg->skip_min && p->unfilter)
-		return is_min_capacity_cpu(cpu);
+		ret = is_min_capacity_cpu(cpu);
+	rcu_read_unlock();
 
-	return false;
+	return ret;
 }
 
 static inline unsigned int walt_nr_rtg_high_prio(int cpu)
