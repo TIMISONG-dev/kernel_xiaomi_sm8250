@@ -73,6 +73,11 @@ struct ice_clk_info {
 	bool enabled;
 };
 
+struct qcom_ice_device {
+	struct ice_device ice;
+	struct cdev *cdev;
+};
+
 static LIST_HEAD(ice_devices);
 static int qcom_ice_init(struct ice_device *ice_dev,
 			 void *host_controller_data,
@@ -512,7 +517,11 @@ static int qcom_ice_parse_clock_info(struct platform_device *pdev,
 			goto out;
 		}
 		clki->max_freq = clkfreq[i];
-		clki->name = kstrdup(name, GFP_KERNEL);
+		clki->name = devm_kstrdup(dev, name, GFP_KERNEL);
+		if (!clki->name) {
+			ret = -ENOMEM;
+			goto out;
+		}
 		list_add_tail(&clki->list, &ice_dev->clk_list_head);
 	}
 out:
@@ -585,6 +594,8 @@ static const struct file_operations qcom_ice_fops = {
 
 static int register_ice_device(struct ice_device *ice_dev)
 {
+	struct qcom_ice_device *ice = container_of(ice_dev,
+					struct qcom_ice_device, ice);
 	int rc = 0;
 	unsigned int baseminor = 0;
 	unsigned int count = 1;
@@ -605,7 +616,7 @@ static int register_ice_device(struct ice_device *ice_dev)
 			is_sdcc_ice ? QCOM_SDCC_ICE_DEV : is_ufscard_ice ?
 				QCOM_UFS_CARD_ICE_DEV : QCOM_UFS_ICE_DEV);
 	if (IS_ERR(ice_dev->driver_class)) {
-		rc = -ENOMEM;
+		rc = PTR_ERR(ice_dev->driver_class);
 		pr_err("class_create failed %d for %s\n", rc,
 			is_sdcc_ice ? QCOM_SDCC_ICE_DEV : is_ufscard_ice ?
 				QCOM_UFS_CARD_ICE_DEV : QCOM_UFS_ICE_DEV);
@@ -616,22 +627,29 @@ static int register_ice_device(struct ice_device *ice_dev)
 			is_sdcc_ice ? QCOM_SDCC_ICE_DEV : is_ufscard_ice ?
 				QCOM_UFS_CARD_ICE_DEV : QCOM_UFS_ICE_DEV);
 
-	if (!class_dev) {
+	if (IS_ERR(class_dev)) {
+		rc = PTR_ERR(class_dev);
 		pr_err("class_device_create failed %d for %s\n", rc,
 			is_sdcc_ice ? QCOM_SDCC_ICE_DEV : is_ufscard_ice ?
 				QCOM_UFS_CARD_ICE_DEV : QCOM_UFS_ICE_DEV);
-		rc = -ENOMEM;
 		goto exit_destroy_class;
 	}
 
-	cdev_init(&ice_dev->cdev, &qcom_ice_fops);
-	ice_dev->cdev.owner = THIS_MODULE;
+	/* Open file descriptors can retain the cdev after ICE removal. */
+	ice->cdev = cdev_alloc();
+	if (!ice->cdev) {
+		rc = -ENOMEM;
+		goto exit_destroy_device;
+	}
+	ice->cdev->ops = &qcom_ice_fops;
+	ice->cdev->owner = THIS_MODULE;
 
-	rc = cdev_add(&ice_dev->cdev, MKDEV(MAJOR(ice_dev->device_no), 0), 1);
+	rc = cdev_add(ice->cdev, MKDEV(MAJOR(ice_dev->device_no), 0), 1);
 	if (rc < 0) {
 		pr_err("cdev_add failed %d for %s\n", rc,
 			is_sdcc_ice ? QCOM_SDCC_ICE_DEV : is_ufscard_ice ?
 				QCOM_UFS_CARD_ICE_DEV : QCOM_UFS_ICE_DEV);
+		kobject_put(&ice->cdev->kobj);
 		goto exit_destroy_device;
 	}
 	return  0;
@@ -647,8 +665,30 @@ exit_unreg_chrdev_region:
 	return rc;
 }
 
+static void unregister_ice_device(struct ice_device *ice_dev)
+{
+	struct qcom_ice_device *ice = container_of(ice_dev,
+					struct qcom_ice_device, ice);
+
+	cdev_del(ice->cdev);
+	device_destroy(ice_dev->driver_class, ice_dev->device_no);
+	class_destroy(ice_dev->driver_class);
+	unregister_chrdev_region(ice_dev->device_no, 1);
+}
+
+static void qcom_ice_bus_unregister(struct ice_device *ice_dev)
+{
+#ifdef CONFIG_MSM_BUS_SCALING
+	if (ice_dev->bus_vote.client_handle) {
+		msm_bus_scale_unregister_client(ice_dev->bus_vote.client_handle);
+		ice_dev->bus_vote.client_handle = 0;
+	}
+#endif
+}
+
 static int qcom_ice_probe(struct platform_device *pdev)
 {
+	struct qcom_ice_device *ice;
 	struct ice_device *ice_dev;
 	int rc = 0;
 
@@ -658,21 +698,22 @@ static int qcom_ice_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	ice_dev = kzalloc(sizeof(struct ice_device), GFP_KERNEL);
+	ice = devm_kzalloc(&pdev->dev, sizeof(*ice), GFP_KERNEL);
 
-	if (!ice_dev) {
+	if (!ice) {
 		rc = -ENOMEM;
 		pr_err("%s: Error %d allocating memory for ICE device:\n",
 			__func__, rc);
 		goto out;
 	}
 
+	ice_dev = &ice->ice;
 	ice_dev->pdev = &pdev->dev;
 	if (!ice_dev->pdev) {
 		rc = -EINVAL;
 		pr_err("%s: Invalid device passed in platform_device\n",
 								__func__);
-		goto err_ice_dev;
+		goto out;
 	}
 
 	if (pdev->dev.of_node)
@@ -683,13 +724,13 @@ static int qcom_ice_probe(struct platform_device *pdev)
 	}
 
 	if (rc)
-		goto err_ice_dev;
+		goto out;
 
 	pr_debug("%s: Registering ICE device\n", __func__);
 	rc = register_ice_device(ice_dev);
 	if (rc) {
 		pr_err("create character device failed.\n");
-		goto err_ice_dev;
+		goto out;
 	}
 
 	/*
@@ -699,8 +740,8 @@ static int qcom_ice_probe(struct platform_device *pdev)
 	 */
 	rc = qcom_ice_init(ice_dev, NULL, NULL);
 	if (rc) {
-		pr_err("create character device failed.\n");
-		goto err_ice_dev;
+		pr_err("ICE initialization failed: %d\n", rc);
+		goto err_unregister;
 	}
 	ice_dev->is_ice_enabled = true;
 
@@ -709,8 +750,9 @@ static int qcom_ice_probe(struct platform_device *pdev)
 
 	goto out;
 
-err_ice_dev:
-	kfree(ice_dev);
+err_unregister:
+	qcom_ice_bus_unregister(ice_dev);
+	unregister_ice_device(ice_dev);
 out:
 	return rc;
 }
@@ -724,16 +766,17 @@ static int qcom_ice_remove(struct platform_device *pdev)
 	if (!ice_dev)
 		return 0;
 
-	qcom_ice_disable_intr(ice_dev);
+	if (ice_dev->mmio)
+		qcom_ice_disable_intr(ice_dev);
 
 	device_init_wakeup(&pdev->dev, false);
-	if (ice_dev->mmio)
-		iounmap(ice_dev->mmio);
+	qcom_ice_bus_unregister(ice_dev);
+	unregister_ice_device(ice_dev);
 
 	list_del_init(&ice_dev->list);
-	kfree(ice_dev);
+	platform_set_drvdata(pdev, NULL);
 
-	return 1;
+	return 0;
 }
 
 static int  qcom_ice_suspend(struct platform_device *pdev)
