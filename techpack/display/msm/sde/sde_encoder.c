@@ -2286,6 +2286,7 @@ static int _sde_encoder_resource_control_helper(struct drm_encoder *drm_enc,
 		/* enable SDE core clks */
 		rc = pm_runtime_get_sync(drm_enc->dev->dev);
 		if (rc < 0) {
+			pm_runtime_put_noidle(drm_enc->dev->dev);
 			SDE_ERROR("failed to enable power resource %d\n", rc);
 			SDE_EVT32(rc, SDE_EVTLOG_ERROR);
 			return rc;
@@ -4750,6 +4751,7 @@ static void sde_encoder_vsync_event_work_handler(struct kthread_work *work)
 	drm_enc = &sde_enc->base;
 	rc = pm_runtime_get_sync(drm_enc->dev->dev);
 	if (rc < 0) {
+		pm_runtime_put_noidle(drm_enc->dev->dev);
 		SDE_ERROR_ENC(sde_enc, "sde enc power enabled failed:%d\n", rc);
 		return;
 	}
@@ -5429,8 +5431,10 @@ static ssize_t _sde_encoder_misr_setup(struct file *file,
 		return -EINVAL;
 
 	rc = pm_runtime_get_sync(drm_enc->dev->dev);
-	if (rc < 0)
+	if (rc < 0) {
+		pm_runtime_put_noidle(drm_enc->dev->dev);
 		return rc;
+	}
 
 	sde_enc->misr_enable = enable;
 	sde_enc->misr_frame_count = frame_count;
@@ -5468,8 +5472,10 @@ static ssize_t _sde_encoder_misr_read(struct file *file,
 	drm_enc = &sde_enc->base;
 
 	rc = pm_runtime_get_sync(drm_enc->dev->dev);
-	if (rc < 0)
+	if (rc < 0) {
+		pm_runtime_put_noidle(drm_enc->dev->dev);
 		return rc;
+	}
 
 	if (!sde_enc->misr_enable) {
 		len += scnprintf(buf + len, MISR_BUFF_SIZE - len,
