@@ -3398,7 +3398,6 @@ static ssize_t tfa98xx_misc_device_profile_write(struct file *file, const char _
 {
 	struct tfa98xx *tfa98xx = file->private_data;
 	char name[100] = { 0 };
-	int ret = 0;
 	int profileID = 0;
 
 	pr_info("entry count=%d\n", (int)count);
@@ -3412,7 +3411,10 @@ static ssize_t tfa98xx_misc_device_profile_write(struct file *file, const char _
 		return -EINVAL;
 	}*/
 	memset(name, 0x00, sizeof(name));
-	ret = copy_from_user(name, user_buf, count);
+	if (count >= sizeof(name))
+		return -EINVAL;
+	if (copy_from_user(name, user_buf, count))
+		return -EFAULT;
 	pr_info("profile name=%s\n", name);
 
 	/* search profile name and return ID. */
