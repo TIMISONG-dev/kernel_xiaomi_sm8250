@@ -164,10 +164,9 @@ static void sel_netnode_insert(struct sel_netnode *node)
 	list_add_rcu(&node->list, &sel_netnode_hash[idx].list);
 	if (sel_netnode_hash[idx].size == SEL_NETNODE_HASH_BKT_LIMIT) {
 		struct sel_netnode *tail;
-		tail = list_entry(
-			rcu_dereference_protected(sel_netnode_hash[idx].list.prev,
-						  lockdep_is_held(&sel_netnode_lock)),
-			struct sel_netnode, list);
+		lockdep_assert_held(&sel_netnode_lock);
+		tail = list_last_entry(&sel_netnode_hash[idx].list,
+				       struct sel_netnode, list);
 		list_del_rcu(&tail->list);
 		kfree_rcu(tail, rcu);
 	} else
