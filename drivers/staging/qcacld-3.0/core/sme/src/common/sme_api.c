@@ -284,7 +284,7 @@ void sme_purge_pdev_all_ser_cmd_list(mac_handle_t mac_handle)
  *
  * This function frees memory allocated for SME commands
  *
- * @Return: void
+ * Return: void
  */
 static void free_sme_cmds(struct mac_context *mac_ctx)
 {
@@ -624,7 +624,7 @@ static uint32_t sme_get_sessionid_from_activelist(struct mac_context *mac)
 
 /**
  * sme_state_info_dump() - prints state information of sme layer
- * @buf: buffer pointer
+ * @buf_ptr: buffer pointer
  * @size: size of buffer to be filled
  *
  * This function is used to dump state information of sme layer
@@ -870,6 +870,7 @@ QDF_STATUS sme_set11dinfo(mac_handle_t mac_handle,
  * incoming val
  * @mac_handle: Opaque handle to the global MAC context
  * @val: New FTM capability value
+ * @session_id: Session identifier selecting the FTM capabilities to update
  *
  * Return: None
  */
@@ -910,7 +911,7 @@ void sme_update_nud_config(mac_handle_t mac_handle, uint8_t nud_fail_behavior)
 
 /**
  * sme_update_neighbor_report_config() - Update CSR config for 11k params
- * @mac_handle: Pointer to MAC context
+ * @mac: Pointer to MAC context
  * @csr_config: Pointer to CSR config data structure
  *
  * Return: None
@@ -1755,7 +1756,6 @@ QDF_STATUS sme_set_ese_beacon_request(mac_handle_t mac_handle,
  * sme_get_tsm_stats() - SME get tsm stats
  * @mac_handle: Opaque handle to the global MAC context
  * @callback: SME sends back the requested stats using the callback
- * @staId: The station ID for which the stats is requested for
  * @bssId: bssid
  * @pContext: user context to be passed back along with the callback
  * @tid: Traffic id
@@ -1896,7 +1896,7 @@ QDF_STATUS sme_get_roam_scan_ch(mac_handle_t mac_handle,
 /**
  * sme_ibss_peer_info_response_handler() - Handler for ibss peer info
  * @mac: Global MAC pointer
- * @sme_ibss_peer_info_response_handler: ibss peer info params
+ * @pIbssPeerInfoParams: ibss peer info params
  *
  * Return: QDF_STATUS
  */
@@ -2065,7 +2065,7 @@ QDF_STATUS sme_set_roam_scan_ch_event_cb(mac_handle_t mac_handle,
  * sme_process_roam_scan_ch_list_resp() - Process get roam scan ch list
  * response
  * @mac: Global MAC pointer
- * @msgbuf: pointer to roam scan ch list response
+ * @roam_ch: pointer to roam scan ch list response
  *
  * This function checks the roam scan chan list message is for command
  * response or a async event and accordingly data is given to user space.
@@ -2740,6 +2740,7 @@ QDF_STATUS sme_get_ap_channel_from_scan(void *profile,
  * @profile: SAP adapter
  * @ap_ch_freq: pointer to channel freq of SAP. Fill the value after finding the
  *              best ap from scan cache.
+ * @scan_cache: Output handle receiving the filtered scan results used to select the AP channel
  *
  * This function is written to get AP's channel id from CSR by filtering
  * the result which matches our roam profile. This is a synchronous call.
@@ -3202,7 +3203,7 @@ QDF_STATUS sme_roam_get_connect_profile(mac_handle_t mac_handle,
  * sme_roam_free_connect_profile - a wrapper function to request CSR to free and
  * reinitialize the profile returned previously by csr_roam_get_connect_profile.
  *
- * @profile - pointer to a caller allocated structure tCsrRoamConnectedProfile
+ * @profile: pointer to a caller allocated structure tCsrRoamConnectedProfile
  *
  * Return: none
  */
@@ -3456,7 +3457,7 @@ void  sme_deregister_oem_data_rsp_callback(mac_handle_t mac_handle)
 /**
  * sme_oem_update_capability() - update UMAC's oem related capability.
  * @mac_handle: Handle returned by mac_open
- * @oem_cap: pointer to oem_capability
+ * @cap: pointer to oem_capability
  *
  * This function updates OEM capability to UMAC. Currently RTT
  * related capabilities are updated. More capabilities can be
@@ -3484,7 +3485,7 @@ QDF_STATUS sme_oem_update_capability(mac_handle_t mac_handle,
 /**
  * sme_oem_get_capability() - get oem capability
  * @mac_handle: Handle returned by mac_open
- * @oem_cap: pointer to oem_capability
+ * @cap: pointer to oem_capability
  *
  * This function is used to get the OEM capability from UMAC.
  * Currently RTT related capabilities are received. More
@@ -5033,10 +5034,10 @@ QDF_STATUS sme_send_mgmt_tx(mac_handle_t mac_handle, uint8_t session_id,
 #ifdef WLAN_FEATURE_EXTWOW_SUPPORT
 /**
  * sme_configure_ext_wow() - configure Extr WoW
- * @mac_handle - The handle returned by mac_open.
- * @wlanExtParams - Depicts the wlan Ext params.
- * @callback - ext_wow callback to be registered.
- * @callback_context - ext_wow callback context
+ * @mac_handle: The handle returned by mac_open.
+ * @wlanExtParams: Depicts the wlan Ext params.
+ * @callback: ext_wow callback to be registered.
+ * @callback_context: ext_wow callback context
  *
  * SME will pass this request to lower mac to configure Extr WoW
  * Return: QDF_STATUS
@@ -5226,7 +5227,7 @@ uint16_t sme_check_concurrent_channel_overlap(mac_handle_t mac_handle,
  * sme_set_tsfcb() - Set callback for TSF capture
  * @mac_handle: Handler return by mac_open
  * @cb_fn: Callback function pointer
- * @db_ctx: Callback data
+ * @cb_ctx: Callback data
  *
  * Return: QDF_STATUS
  */
@@ -5373,7 +5374,7 @@ void sme_set_cc_src(mac_handle_t mac_handle, enum country_src cc_src)
 /**
  * sme_handle_generic_change_country_code() - handles country ch req
  * @mac_ctx:    mac global context
- * @msg:        request msg packet
+ * @msg_buf:        request msg packet
  *
  * If Supplicant country code is priority than 11d is disabled.
  * If 11D is enabled, we update the country code after every scan.
@@ -5868,7 +5869,7 @@ sme_update_roam_scan_home_away_time(mac_handle_t mac_handle, uint8_t vdev_id,
  * sme_ext_change_channel()- function to post send ECSA
  * action frame to csr.
  * @mac_handle: Opaque handle to the global MAC context
- * @channel freq: new channel freq to switch
+ * @channel: Channel value checked by regulatory code and passed to CSR for ECSA
  * @session_id: senssion it should be sent on.
  *
  * This function is called to post ECSA frame to csr.
@@ -6330,9 +6331,9 @@ QDF_STATUS sme_update_is_fast_roam_ini_feature_enabled(mac_handle_t mac_handle,
 
 /**
  * sme_config_fast_roaming() - enable/disable LFR support at runtime
- * @mac_handle - The handle returned by macOpen.
- * @session_id - Session Identifier
- * @is_fast_roam_enabled - flag to enable/disable roaming
+ * @mac_handle: The handle returned by macOpen.
+ * @session_id: Session Identifier
+ * @is_fast_roam_enabled: flag to enable/disable roaming
  *
  * When Supplicant issues enabled/disable fast roaming on the basis
  * of the Bssid modification in network block (e.g. AutoJoin mode N/W block)
@@ -6447,8 +6448,10 @@ int sme_add_key_btk(mac_handle_t mac_handle, uint8_t session_id,
  * sme_stop_roaming() - Stop roaming for a given sessionId
  *  This is a synchronous call
  *
- * @mac_handle      - The handle returned by mac_open
- * @sessionId - Session Identifier
+ * @mac_handle: The handle returned by mac_open
+ * @session_id: Session Identifier
+ * @reason: Roaming stop reason checked for driver disable operations
+ * @requestor: Operation bitmap requestor cleared for a driver disable request
  *
  * Return QDF_STATUS_SUCCESS on success
  *	   Other status on failure
@@ -8858,9 +8861,8 @@ QDF_STATUS sme_update_access_policy_vendor_ie(mac_handle_t mac_handle,
 /**
  * sme_update_sta_inactivity_timeout(): Update sta_inactivity_timeout to FW
  * @mac_handle: Handle returned by mac_open
- * @session_id: Session ID on which sta_inactivity_timeout needs
+ * @sta_inactivity_timer: Input session identifier and station inactivity timeout copied to WMA
  * to be updated to FW
- * @sta_inactivity_timeout: sta inactivity timeout.
  *
  * If a station does not send anything in sta_inactivity_timeout seconds, an
  * empty data frame is sent to it in order to verify whether it is
@@ -9573,7 +9575,7 @@ QDF_STATUS sme_stats_ext_request(uint8_t session_id, tpStatsExtRequestReq input)
  * sme_stats_ext_event() - eWNI_SME_STATS_EXT_EVENT processor
  * @mac: Global MAC context
  * @msg: "stats ext" message
-
+ *
  * This callback function called when SME received eWNI_SME_STATS_EXT_EVENT
  * response from WMA
  *
@@ -9626,7 +9628,7 @@ QDF_STATUS sme_get_fw_state(mac_handle_t mac_handle,
 /**
  * sme_fw_state_resp() - eWNI_SME_FW_STATUS_IND processor
  * @mac: Global MAC context
-
+ *
  * This callback function called when SME received eWNI_SME_FW_STATUS_IND
  * response from WMA
  *
@@ -10396,7 +10398,6 @@ QDF_STATUS sme_ext_scan_register_callback(mac_handle_t mac_handle,
  * sme_send_wisa_params(): Pass WISA mode to WMA
  * @mac_handle: Opaque handle to the global MAC context
  * @wisa_params: pointer to WISA params struct
- * @sessionId: SME session id
  *
  * Pass WISA params to WMA
  *
@@ -10674,6 +10675,7 @@ QDF_STATUS sme_reset_link_layer_stats_ind_cb(mac_handle_t mac_handle)
 /**
  * sme_ll_stats_set_thresh - set threshold for mac counters
  * @mac_handle: Opaque handle to the global MAC context
+ * @threshold: Link layer statistics threshold configuration sent to firmware
  * @threshold, threshold for mac counters
  *
  * Return: QDF_STATUS Enumeration
@@ -11077,10 +11079,10 @@ QDF_STATUS sme_enable_dfs_chan_scan(mac_handle_t mac_handle, uint8_t dfs_flag)
  * sme_validate_sap_channel_switch() - validate target channel switch w.r.t
  *      concurreny rules set to avoid channel interference.
  * @mac_handle: Opaque handle to the global MAC context
- * @sap_ch - channel to switch
- * @sap_phy_mode - phy mode of SAP
- * @cc_switch_mode - concurreny switch mode
- * @session_id - sme session id.
+ * @sap_ch_freq: channel to switch
+ * @sap_phy_mode: phy mode of SAP
+ * @cc_switch_mode: concurreny switch mode
+ * @session_id: sme session id.
  *
  * Return: true if there is no channel interference else return false
  */
@@ -12500,13 +12502,14 @@ QDF_STATUS sme_pdev_set_hw_mode(struct policy_mgr_hw_mode msg)
 /**
  * sme_nss_update_request() - Send beacon templete update to FW with new
  * nss value
- * @mac_handle: Handle returned by macOpen
  * @vdev_id: the session id
  * @new_nss: the new nss value
  * @ch_width: channel width, optional value
  * @cback: hdd callback
  * @next_action: next action to happen at policy mgr after beacon update
  * @original_vdev_id: original request hwmode change vdev id
+ * @psoc: PSOC context retained for the NSS update callback
+ * @reason: Connection update reason retained in the NSS update command
  *
  * Sends the command to CSR to send to PE
  * Return: QDF_STATUS_SUCCESS on successful posting
@@ -12556,7 +12559,6 @@ QDF_STATUS sme_nss_update_request(uint32_t vdev_id,
 
 /**
  * sme_soc_set_dual_mac_config() - Set dual mac configurations
- * @mac_handle: Handle returned by macOpen
  * @msg: Structure containing the dual mac config parameters
  *
  * Queues configuration information to CSR to configure
@@ -13122,7 +13124,7 @@ QDF_STATUS sme_remove_beacon_filter(mac_handle_t mac_handle,
  * @session_id: session id
  * @peer_mac: peer mac address
  * @reason: reason for disassociation
- * wait_for_ack: wait for acknowledgment
+ * @wait_for_ack: wait for acknowledgment
  *
  * function to send disassoc request to lim
  *
@@ -13278,7 +13280,7 @@ uint32_t sme_get_wni_dot11_mode(mac_handle_t mac_handle)
  * sme_create_mon_session() - post message to create PE session for monitormode
  * operation
  * @mac_handle: Opaque handle to the global MAC context
- * @bssid: pointer to bssid
+ * @bss_id: pointer to bssid
  * @vdev_id: sme session id
  *
  * Return: QDF_STATUS_SUCCESS on success, non-zero error code on failure.
@@ -13599,8 +13601,8 @@ QDF_STATUS sme_process_mac_pwr_dbg_cmd(mac_handle_t mac_handle,
 /**
  * sme_get_vdev_type_nss() - gets the nss per vdev type
  * @dev_mode: connection type.
- * @nss2g: Pointer to the 2G Nss parameter.
- * @nss5g: Pointer to the 5G Nss parameter.
+ * @nss_2g: Pointer to the 2G Nss parameter.
+ * @nss_5g: Pointer to the 5G Nss parameter.
  *
  * Fills the 2G and 5G Nss values based on connection type.
  *
