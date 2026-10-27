@@ -1662,7 +1662,7 @@ exit_ioctl:
 	return ret;
 }
 
-static unsigned int gsi_ctrl_dev_poll(struct file *fp, poll_table *wait)
+static __poll_t gsi_ctrl_dev_poll(struct file *fp, poll_table *wait)
 {
 	struct gsi_ctrl_port *c_port;
 	enum ipa_usb_teth_prot prot_id =
@@ -1670,14 +1670,14 @@ static unsigned int gsi_ctrl_dev_poll(struct file *fp, poll_table *wait)
 	struct gsi_inst_status *inst_cur = &inst_status[prot_id];
 	struct f_gsi *gsi;
 	unsigned long flags;
-	unsigned int mask = 0;
+	__poll_t mask = 0;
 
 	mutex_lock(&inst_cur->gsi_lock);
 	if (unlikely(inst_cur->inst_exist == false)) {
 		mutex_unlock(&inst_cur->gsi_lock);
 		pr_err_ratelimited("%s: free_inst is called and being freed\n",
 								__func__);
-		return -ENODEV;
+		return EPOLLERR;
 	}
 	mutex_unlock(&inst_cur->gsi_lock);
 
@@ -1685,15 +1685,15 @@ static unsigned int gsi_ctrl_dev_poll(struct file *fp, poll_table *wait)
 	c_port = &inst_cur->opts->gsi->c_port;
 	if (!c_port) {
 		log_event_err("%s: gsi ctrl port %pK", __func__, c_port);
-		return -ENODEV;
+		return EPOLLERR;
 	}
 
 	poll_wait(fp, &c_port->read_wq, wait);
 
 	spin_lock_irqsave(&c_port->lock, flags);
 	if (!list_empty(&c_port->cpkt_req_q)) {
-		mask |= POLLIN | POLLRDNORM;
-		log_event_dbg("%s sets POLLIN for %s", __func__, c_port->name);
+		mask |= EPOLLIN | EPOLLRDNORM;
+		log_event_dbg("%s sets EPOLLIN for %s", __func__, c_port->name);
 	}
 	spin_unlock_irqrestore(&c_port->lock, flags);
 
