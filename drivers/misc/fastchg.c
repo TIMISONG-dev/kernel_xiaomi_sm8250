@@ -79,7 +79,7 @@ static struct attribute_group force_fast_charge_attr_group = {
 /* Initialize fast charge sysfs folder */
 static struct kobject *force_fast_charge_kobj;
 
-int force_fast_charge_init(void)
+static int force_fast_charge_init(void)
 {
 	int force_fast_charge_retval;
 
@@ -96,7 +96,7 @@ int force_fast_charge_init(void)
 	return (force_fast_charge_retval);
 }
 
-void force_fast_charge_exit(void)
+static void force_fast_charge_exit(void)
 {
 	kobject_put(force_fast_charge_kobj);
 }
