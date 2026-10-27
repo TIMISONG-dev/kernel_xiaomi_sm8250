@@ -811,23 +811,28 @@ static bool is_dynamic_key(const struct lock_class_key *key)
 	if (WARN_ON_ONCE(static_obj(key)))
 		return false;
 
+	rcu_read_lock();
 	/*
 	 * If lock debugging is disabled lock_keys_hash[] may contain
 	 * pointers to memory that has already been freed. Avoid triggering
 	 * a use-after-free in that case by returning early.
+	 * Check inside RCU so unregister also waits for readers that saw
+	 * debugging enabled before it was disabled.
 	 */
-	if (!debug_locks)
-		return true;
+	if (!READ_ONCE(debug_locks)) {
+		found = true;
+		goto out_unlock;
+	}
 
 	hash_head = keyhashentry(key);
 
-	rcu_read_lock();
 	hlist_for_each_entry_rcu(k, hash_head, hash_entry) {
 		if (k == key) {
 			found = true;
 			break;
 		}
 	}
+out_unlock:
 	rcu_read_unlock();
 
 	return found;
