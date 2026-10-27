@@ -13,6 +13,7 @@
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/mhi.h>
+#include <asm/unaligned.h>
 #include "mhi_internal.h"
 
 static void mhi_special_events_pending(struct mhi_controller *mhi_cntrl);
@@ -310,7 +311,8 @@ int mhi_ready_state_transition(struct mhi_controller *mhi_cntrl)
 			continue;
 
 		ring->wp = ring->base + ring->len - ring->el_size;
-		*ring->ctxt_wp = ring->iommu_base + ring->len - ring->el_size;
+		put_unaligned_le64(ring->iommu_base + ring->len - ring->el_size,
+				   ring->ctxt_wp);
 		/* needs to update to all cores */
 		smp_wmb();
 
@@ -528,7 +530,8 @@ static int mhi_pm_mission_mode_transition(struct mhi_controller *mhi_cntrl)
 			continue;
 
 		ring->wp = ring->base + ring->len - ring->el_size;
-		*ring->ctxt_wp = ring->iommu_base + ring->len - ring->el_size;
+		put_unaligned_le64(ring->iommu_base + ring->len - ring->el_size,
+				   ring->ctxt_wp);
 		/* all ring updates must get updated immediately */
 		smp_wmb();
 
