@@ -313,7 +313,6 @@ QDF_STATUS ucfg_mc_cp_stats_get_psoc_wake_lock_stats(
 						struct wake_lock_stats *stats)
 {
 	struct psoc_cp_stats *psoc_cp_stats_priv;
-	struct psoc_mc_cp_stats *psoc_mc_stats;
 
 	psoc_cp_stats_priv = wlan_cp_stats_get_psoc_stats_obj(psoc);
 	if (!psoc_cp_stats_priv) {
@@ -322,7 +321,6 @@ QDF_STATUS ucfg_mc_cp_stats_get_psoc_wake_lock_stats(
 	}
 
 	wlan_cp_stats_psoc_obj_lock(psoc_cp_stats_priv);
-	psoc_mc_stats = psoc_cp_stats_priv->obj_stats;
 	/* iterate through all vdevs, and get wow stats from vdev_cs object */
 	wlan_objmgr_iterate_obj_list(psoc, WLAN_VDEV_OP, vdev_iterator,
 				     stats, true, WLAN_CP_STATS_ID);
