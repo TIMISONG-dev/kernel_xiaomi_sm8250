@@ -409,7 +409,7 @@ static struct page *follow_p4d_mask(struct vm_area_struct *vma,
  * an error pointer if there is a mapping to something not represented
  * by a page descriptor (see also vm_normal_page()).
  */
-struct page *follow_page_mask(struct vm_area_struct *vma,
+static struct page *follow_page_mask(struct vm_area_struct *vma,
 			      unsigned long address, unsigned int flags,
 			      struct follow_page_context *ctx)
 {
@@ -1874,7 +1874,7 @@ static void gup_pgd_range(unsigned long addr, unsigned long end,
  * Check if it's allowed to use __get_user_pages_fast() for the range, or
  * we need to fall back to the slow version:
  */
-bool gup_fast_permitted(unsigned long start, int nr_pages, int write)
+static bool gup_fast_permitted(unsigned long start, int nr_pages, int write)
 {
 	unsigned long len, end;
 
