@@ -1256,8 +1256,8 @@ static ssize_t ipa3_read_stats(struct file *file, char __user *ubuf,
 		"flow_enable=%u\n"
 		"flow_disable=%u\n"
 		"rx_page_drop_cnt=%u\n"
-		"zero_len_frag_pkt_cnt=%u\n",
-		"lower_order=%u\n",
+		"zero_len_frag_pkt_cnt=%u\n"
+		"lower_order=%llu\n",
 		ipa3_ctx->stats.tx_sw_pkts,
 		ipa3_ctx->stats.tx_hw_pkts,
 		ipa3_ctx->stats.tx_non_linear,
