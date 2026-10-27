@@ -26,7 +26,7 @@ struct rb {
 
 struct rb *grb;
 
-int32_t get_free_size(int32_t tail, int32_t head)
+static int32_t get_free_size(int32_t tail, int32_t head)
 {
 	if (head == tail)
 		return BUFFER_SIZE - 1;
