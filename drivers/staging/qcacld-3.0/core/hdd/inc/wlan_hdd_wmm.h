@@ -88,8 +88,14 @@ enum hdd_wmm_user_mode {
 #define HDD_AC_BE 0x8
 
 /**
- * enum hdd_wmm_linuxac: AC/Queue Index values for Linux Qdisc to
- * operate on different traffic.
+ * enum hdd_wmm_linuxac - Access-category queue indices for Linux Qdisc
+ * @HDD_LINUX_AC_VO: Voice traffic queue
+ * @HDD_LINUX_AC_VI: Video traffic queue
+ * @HDD_LINUX_AC_BE: Best-effort traffic queue
+ * @HDD_LINUX_AC_BK: Background traffic queue
+ * @HDD_LINUX_AC_HI_PRIO: High-priority traffic queue
+ *
+ * These indices select the Linux transmit subqueue for each traffic class.
  */
 enum hdd_wmm_linuxac {
 	HDD_LINUX_AC_VO = 0,

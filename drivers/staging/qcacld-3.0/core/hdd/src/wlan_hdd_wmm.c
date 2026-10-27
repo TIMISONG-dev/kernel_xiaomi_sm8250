@@ -72,10 +72,6 @@ const uint8_t hdd_wmm_up_to_ac_map[] = {
 	SME_AC_VO
 };
 
-/**
- * enum hdd_wmm_linuxac: AC/Queue Index values for Linux Qdisc to
- * operate on different traffic.
- */
 #ifdef QCA_LL_TX_FLOW_CONTROL_V2
 void wlan_hdd_process_peer_unauthorised_pause(struct hdd_adapter *adapter)
 {
