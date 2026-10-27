@@ -12,6 +12,8 @@
 #include <linux/uaccess.h>
 #include <linux/proc_fs.h>
 
+#include "internal.h"
+
 static struct vfsmount *nsfs_mnt;
 
 static long ns_ioctl(struct file *filp, unsigned int ioctl,
