@@ -2338,7 +2338,8 @@ static int spcom_rpdev_cb(struct rpmsg_device *rpdev,
 		spcom_pr_err("%s: invalid ch\n", __func__);
 		return -EINVAL;
 	}
-	if (len > SPCOM_RX_BUF_SIZE || len <= 0) {
+	if (len > SPCOM_RX_BUF_SIZE ||
+	    len < (int)sizeof(struct spcom_msg_hdr)) {
 		spcom_pr_err("got msg size %d, max allowed %d\n",
 		       len, SPCOM_RX_BUF_SIZE);
 		return -EINVAL;
@@ -2349,8 +2350,10 @@ static int spcom_rpdev_cb(struct rpmsg_device *rpdev,
 		return -ENOMEM;
 
 	rx_item->rpmsg_rx_buf = kmemdup(data, len, GFP_ATOMIC);
-	if (!rx_item->rpmsg_rx_buf)
+	if (!rx_item->rpmsg_rx_buf) {
+		kfree(rx_item);
 		return -ENOMEM;
+	}
 
 	rx_item->rx_buf_size = len;
 	rx_item->ch = ch;
