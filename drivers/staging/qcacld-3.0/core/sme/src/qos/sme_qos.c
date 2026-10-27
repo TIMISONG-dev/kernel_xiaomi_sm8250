@@ -3676,7 +3676,6 @@ static QDF_STATUS sme_qos_find_matching_tspec_lfr3(struct mac_context *mac_ctx,
 {
 	struct sme_qos_acinfo *ac_info;
 	uint8_t tspec_flow_idx;
-	bool found = false;
 	enum sme_qos_wmm_dir_type direction, qos_dir;
 	uint8_t ac1;
 	tDot11fIERICDataDesc *ric_data = NULL;
@@ -3712,7 +3711,6 @@ static QDF_STATUS sme_qos_find_matching_tspec_lfr3(struct mac_context *mac_ctx,
 			}
 			direction = ric_data->WMMTSPEC.direction;
 			if (ac == ac1 && direction == qos_dir) {
-				found = true;
 				status = sme_qos_process_ftric_response(mac_ctx,
 						sessionid, ric_data, ac,
 						tspec_flow_idx);
@@ -3730,7 +3728,6 @@ static QDF_STATUS sme_qos_find_matching_tspec_lfr3(struct mac_context *mac_ctx,
 sme_qos_next_ric:
 		ric_data = ric_data_desc;
 		ric_len = ric_rsplen;
-		found = false;
 	}
 
 	return status;
@@ -4119,14 +4116,12 @@ static
 QDF_STATUS sme_qos_process_del_ts_rsp(struct mac_context *mac, void *msg_buf)
 {
 	tpSirDeltsRsp pDeltsRsp = (tpSirDeltsRsp) msg_buf;
-	struct sme_qos_sessioninfo *pSession;
 	uint8_t sessionId = pDeltsRsp->sessionId;
 
 	/* msg */
 	QDF_TRACE(QDF_MODULE_ID_SME, QDF_TRACE_LEVEL_DEBUG,
 		  "%s: %d: Invoked on session %d with return code %d",
 		  __func__, __LINE__, sessionId, pDeltsRsp->rc);
-	pSession = &sme_qos_cb.sessionInfo[sessionId];
 	(void)sme_qos_process_buffered_cmd(sessionId);
 	return QDF_STATUS_SUCCESS;
 }
@@ -4147,8 +4142,6 @@ static QDF_STATUS sme_qos_process_del_ts_ind(struct mac_context *mac,
 					     void *msg_buf)
 {
 	tpSirDeltsRsp pdeltsind = (tpSirDeltsRsp)msg_buf;
-	struct sme_qos_sessioninfo *pSession;
-	struct sme_qos_acinfo *pACInfo;
 	uint8_t sessionId = pdeltsind->sessionId;
 	enum qca_wlan_ac_type ac;
 	struct sme_qos_searchinfo search_key;
@@ -4171,8 +4164,6 @@ static QDF_STATUS sme_qos_process_del_ts_ind(struct mac_context *mac,
 			  __func__, __LINE__, ac, up);
 		return QDF_STATUS_E_FAILURE;
 	}
-	pSession = &sme_qos_cb.sessionInfo[sessionId];
-	pACInfo = &pSession->ac_info[ac];
 
 	qdf_mem_zero(&search_key, sizeof(struct sme_qos_searchinfo));
 	/* set the key type & the key to be searched in the Flow List */
@@ -6065,7 +6056,6 @@ static QDF_STATUS sme_qos_buffer_existing_flows(struct mac_context *mac_ctx,
 						uint8_t sessionid)
 {
 	tListElem *list_entry = NULL, *list_nextentry = NULL;
-	struct sme_qos_sessioninfo *qos_session;
 	struct sme_qos_flowinfoentry *flow_info = NULL;
 	struct sme_qos_cmdinfo cmd;
 	struct sme_qos_setupcmdinfo *setupinfo;
@@ -6160,7 +6150,6 @@ static QDF_STATUS sme_qos_buffer_existing_flows(struct mac_context *mac_ctx,
 
 		list_entry = list_nextentry;
 	}
-	qos_session = &sme_qos_cb.sessionInfo[sessionid];
 	return QDF_STATUS_SUCCESS;
 }
 
