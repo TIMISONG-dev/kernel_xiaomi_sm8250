@@ -1905,7 +1905,8 @@ wma_wow_get_pkt_proto_subtype(uint8_t *data, uint32_t len)
 		return QDF_PROTO_INVALID;
 	}
 
-	eth_type = *(uint16_t *)(data + QDF_NBUF_TRAC_ETH_TYPE_OFFSET);
+	qdf_mem_copy(&eth_type, data + QDF_NBUF_TRAC_ETH_TYPE_OFFSET,
+		     sizeof(eth_type));
 	eth_type = qdf_cpu_to_be16(eth_type);
 
 	WMA_LOGD("Ether Type: 0x%04x", eth_type);
@@ -2000,8 +2001,8 @@ static void wma_log_pkt_eapol(uint8_t *data, uint32_t length)
 	if (length < WMA_EAPOL_INFO_GET_MIN_LEN)
 		return;
 
-	pkt_len = *(uint16_t *)(data + EAPOL_PKT_LEN_OFFSET);
-	key_len = *(uint16_t *)(data + EAPOL_KEY_LEN_OFFSET);
+	qdf_mem_copy(&pkt_len, data + EAPOL_PKT_LEN_OFFSET, sizeof(pkt_len));
+	qdf_mem_copy(&key_len, data + EAPOL_KEY_LEN_OFFSET, sizeof(key_len));
 	WMA_LOGD("Pkt_len: %u, Key_len: %u",
 		 qdf_cpu_to_be16(pkt_len), qdf_cpu_to_be16(key_len));
 }
@@ -2014,8 +2015,8 @@ static void wma_log_pkt_dhcp(uint8_t *data, uint32_t length)
 	if (length < WMA_DHCP_INFO_GET_MIN_LEN)
 		return;
 
-	pkt_len = *(uint16_t *)(data + DHCP_PKT_LEN_OFFSET);
-	trans_id = *(uint32_t *)(data + DHCP_TRANSACTION_ID_OFFSET);
+	qdf_mem_copy(&pkt_len, data + DHCP_PKT_LEN_OFFSET, sizeof(pkt_len));
+	qdf_mem_copy(&trans_id, data + DHCP_TRANSACTION_ID_OFFSET, sizeof(trans_id));
 	WMA_LOGD("Pkt_len: %u, Transaction_id: %u",
 		 qdf_cpu_to_be16(pkt_len), qdf_cpu_to_be16(trans_id));
 }
@@ -2027,8 +2028,8 @@ static void wma_log_pkt_icmpv4(uint8_t *data, uint32_t length)
 	if (length < WMA_IPV4_PKT_INFO_GET_MIN_LEN)
 		return;
 
-	pkt_len = *(uint16_t *)(data + IPV4_PKT_LEN_OFFSET);
-	seq_num = *(uint16_t *)(data + ICMP_SEQ_NUM_OFFSET);
+	qdf_mem_copy(&pkt_len, data + IPV4_PKT_LEN_OFFSET, sizeof(pkt_len));
+	qdf_mem_copy(&seq_num, data + ICMP_SEQ_NUM_OFFSET, sizeof(seq_num));
 	WMA_LOGD("Pkt_len: %u, Seq_num: %u",
 		 qdf_cpu_to_be16(pkt_len), qdf_cpu_to_be16(seq_num));
 }
@@ -2040,8 +2041,8 @@ static void wma_log_pkt_icmpv6(uint8_t *data, uint32_t length)
 	if (length < WMA_IPV6_PKT_INFO_GET_MIN_LEN)
 		return;
 
-	pkt_len = *(uint16_t *)(data + IPV6_PKT_LEN_OFFSET);
-	seq_num = *(uint16_t *)(data + ICMPV6_SEQ_NUM_OFFSET);
+	qdf_mem_copy(&pkt_len, data + IPV6_PKT_LEN_OFFSET, sizeof(pkt_len));
+	qdf_mem_copy(&seq_num, data + ICMPV6_SEQ_NUM_OFFSET, sizeof(seq_num));
 	WMA_LOGD("Pkt_len: %u, Seq_num: %u",
 		 qdf_cpu_to_be16(pkt_len), qdf_cpu_to_be16(seq_num));
 }
@@ -2054,15 +2055,15 @@ static void wma_log_pkt_ipv4(uint8_t *data, uint32_t length)
 	if (length < WMA_IPV4_PKT_INFO_GET_MIN_LEN)
 		return;
 
-	pkt_len = *(uint16_t *)(data + IPV4_PKT_LEN_OFFSET);
+	qdf_mem_copy(&pkt_len, data + IPV4_PKT_LEN_OFFSET, sizeof(pkt_len));
 	ip_addr = (char *)(data + IPV4_SRC_ADDR_OFFSET);
 	WMA_LOGD("src addr %d:%d:%d:%d", ip_addr[0], ip_addr[1],
 		 ip_addr[2], ip_addr[3]);
 	ip_addr = (char *)(data + IPV4_DST_ADDR_OFFSET);
 	WMA_LOGD("dst addr %d:%d:%d:%d", ip_addr[0], ip_addr[1],
 		 ip_addr[2], ip_addr[3]);
-	src_port = *(uint16_t *)(data + IPV4_SRC_PORT_OFFSET);
-	dst_port = *(uint16_t *)(data + IPV4_DST_PORT_OFFSET);
+	qdf_mem_copy(&src_port, data + IPV4_SRC_PORT_OFFSET, sizeof(src_port));
+	qdf_mem_copy(&dst_port, data + IPV4_DST_PORT_OFFSET, sizeof(dst_port));
 	WMA_LOGI("Pkt_len: %u, src_port: %u, dst_port: %u",
 		 qdf_cpu_to_be16(pkt_len),
 		 qdf_cpu_to_be16(src_port),
@@ -2077,7 +2078,7 @@ static void wma_log_pkt_ipv6(uint8_t *data, uint32_t length)
 	if (length < WMA_IPV6_PKT_INFO_GET_MIN_LEN)
 		return;
 
-	pkt_len = *(uint16_t *)(data + IPV6_PKT_LEN_OFFSET);
+	qdf_mem_copy(&pkt_len, data + IPV6_PKT_LEN_OFFSET, sizeof(pkt_len));
 	ip_addr = (char *)(data + IPV6_SRC_ADDR_OFFSET);
 	WMA_LOGD("src addr "IPV6_ADDR_STR, ip_addr[0],
 		 ip_addr[1], ip_addr[2], ip_addr[3], ip_addr[4],
@@ -2092,8 +2093,8 @@ static void wma_log_pkt_ipv6(uint8_t *data, uint32_t length)
 		 ip_addr[9], ip_addr[10], ip_addr[11],
 		 ip_addr[12], ip_addr[13], ip_addr[14],
 		 ip_addr[15]);
-	src_port = *(uint16_t *)(data + IPV6_SRC_PORT_OFFSET);
-	dst_port = *(uint16_t *)(data + IPV6_DST_PORT_OFFSET);
+	qdf_mem_copy(&src_port, data + IPV6_SRC_PORT_OFFSET, sizeof(src_port));
+	qdf_mem_copy(&dst_port, data + IPV6_DST_PORT_OFFSET, sizeof(dst_port));
 	WMA_LOGI("Pkt_len: %u, src_port: %u, dst_port: %u",
 		 qdf_cpu_to_be16(pkt_len),
 		 qdf_cpu_to_be16(src_port),
@@ -2107,7 +2108,7 @@ static void wma_log_pkt_tcpv4(uint8_t *data, uint32_t length)
 	if (length < WMA_IPV4_PKT_INFO_GET_MIN_LEN)
 		return;
 
-	seq_num = *(uint32_t *)(data + IPV4_TCP_SEQ_NUM_OFFSET);
+	qdf_mem_copy(&seq_num, data + IPV4_TCP_SEQ_NUM_OFFSET, sizeof(seq_num));
 	WMA_LOGD("TCP_seq_num: %u", qdf_cpu_to_be16(seq_num));
 }
 
@@ -2118,7 +2119,7 @@ static void wma_log_pkt_tcpv6(uint8_t *data, uint32_t length)
 	if (length < WMA_IPV6_PKT_INFO_GET_MIN_LEN)
 		return;
 
-	seq_num = *(uint32_t *)(data + IPV6_TCP_SEQ_NUM_OFFSET);
+	qdf_mem_copy(&seq_num, data + IPV6_TCP_SEQ_NUM_OFFSET, sizeof(seq_num));
 	WMA_LOGD("TCP_seq_num: %u", qdf_cpu_to_be16(seq_num));
 }
 
