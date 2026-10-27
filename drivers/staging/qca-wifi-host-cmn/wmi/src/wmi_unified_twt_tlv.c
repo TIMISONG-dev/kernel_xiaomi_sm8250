@@ -394,7 +394,6 @@ static QDF_STATUS extract_twt_disable_comp_event_tlv(wmi_unified_t wmi_handle,
 		struct wmi_twt_disable_complete_event *params)
 {
 	WMI_TWT_DISABLE_COMPLETE_EVENTID_param_tlvs *param_buf;
-	wmi_twt_disable_complete_event_fixed_param *ev;
 
 	param_buf = (WMI_TWT_DISABLE_COMPLETE_EVENTID_param_tlvs *)evt_buf;
 	if (!param_buf) {
@@ -402,13 +401,6 @@ static QDF_STATUS extract_twt_disable_comp_event_tlv(wmi_unified_t wmi_handle,
 		return QDF_STATUS_E_INVAL;
 	}
 
-	ev = param_buf->fixed_param;
-
-#if 0
-	params->pdev_id =
-		wmi_handle->ops->convert_pdev_id_target_to_host(ev->pdev_id);
-	params->status = ev->status;
-#endif
 
 	return QDF_STATUS_SUCCESS;
 }
