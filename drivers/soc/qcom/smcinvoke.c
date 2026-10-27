@@ -280,7 +280,7 @@ static struct smcinvoke_server_info *find_cb_server_locked(uint16_t server_id)
 	return  NULL;
 }
 
-struct smcinvoke_server_info *get_cb_server_locked(uint16_t server_id)
+static struct smcinvoke_server_info *get_cb_server_locked(uint16_t server_id)
 {
 	struct smcinvoke_server_info *server = find_cb_server_locked(server_id);
 
@@ -919,7 +919,7 @@ static void process_tzcb_req(void *buf, size_t buf_len, struct file **arr_filp)
 	struct smcinvoke_server_info *srvr_info = NULL;
 
 	if (buf_len < sizeof(struct smcinvoke_tzcb_req)) {
-		pr_err("smaller buffer length : %u\n", buf_len);
+		pr_err("smaller buffer length : %zu\n", buf_len);
 		return;
 	}
 
