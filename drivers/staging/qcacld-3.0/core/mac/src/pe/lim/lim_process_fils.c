@@ -771,12 +771,10 @@ static void lim_generate_rmsk_data(struct pe_session *pe_session)
 	uint8_t optional_data[4] = {0};
 	uint8_t rmsk_label[] = RMSK_LABEL;
 	struct pe_fils_session *fils_info = pe_session->fils_info;
-	struct fils_auth_rsp_info *auth_info;
 
 	if (!fils_info)
 		return;
 
-	auth_info = &(pe_session->fils_info->auth_info);
 	fils_info->fils_rmsk_len = fils_info->fils_rrk_len;
 	fils_info->fils_rmsk = qdf_mem_malloc(fils_info->fils_rrk_len);
 	if (!fils_info->fils_rmsk)
@@ -806,10 +804,6 @@ static void lim_generate_rmsk_data(struct pe_session *pe_session)
 static QDF_STATUS lim_process_auth_wrapped_data(struct pe_session *pe_session,
 			uint8_t *wrapped_data, uint32_t data_len)
 {
-	uint8_t code;
-	uint8_t identifier;
-	uint16_t length;
-	uint8_t type;
 	unsigned long flags;
 	struct pe_fils_session *fils_info;
 	uint8_t hash[32] = {0}, crypto;
@@ -827,18 +821,15 @@ static QDF_STATUS lim_process_auth_wrapped_data(struct pe_session *pe_session,
 
 	pe_debug("trying to process the wrappped data");
 
-	code = *wrapped_data;
 	wrapped_data++;
 	remaining_len--;
-	identifier = *wrapped_data;
 	wrapped_data++;
 	remaining_len--;
 
-	length = lim_get_u16(wrapped_data);
+	lim_get_u16(wrapped_data);
 	wrapped_data += sizeof(uint16_t);
 	remaining_len -= sizeof(uint16_t);
 
-	type = *wrapped_data; /* val should be 2 here */
 	wrapped_data++;
 	remaining_len--;
 
@@ -1755,7 +1746,7 @@ static QDF_STATUS lim_parse_kde_elements(struct mac_context *mac_ctx,
 {
 	uint8_t rem_len = kde_list_len;
 	uint8_t *temp_ie = kde_list;
-	uint8_t elem_id, data_type, data_len, *ie_data = NULL, *current_ie;
+	uint8_t data_type, data_len, *ie_data = NULL, *current_ie;
 	uint16_t elem_len;
 
 	if (!kde_list_len || !kde_list) {
@@ -1765,7 +1756,7 @@ static QDF_STATUS lim_parse_kde_elements(struct mac_context *mac_ctx,
 
 	while (rem_len >= 2) {
 		current_ie = temp_ie;
-		elem_id = *temp_ie++;
+		temp_ie++;
 		elem_len = *temp_ie++;
 		rem_len -= 2;
 

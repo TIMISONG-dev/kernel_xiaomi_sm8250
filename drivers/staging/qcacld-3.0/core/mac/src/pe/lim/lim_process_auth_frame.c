@@ -409,12 +409,11 @@ static void lim_process_sae_auth_frame(struct mac_context *mac_ctx,
 {
 	tpSirMacMgmtHdr mac_hdr;
 	uint32_t frame_len;
-	uint8_t *body_ptr;
 	enum rxmgmt_flags rx_flags = RXMGMT_FLAG_NONE;
 	struct sae_auth_retry *sae_retry;
 
 	mac_hdr = WMA_GET_RX_MAC_HEADER(rx_pkt_info);
-	body_ptr = WMA_GET_RX_MPDU_DATA(rx_pkt_info);
+	WMA_GET_RX_MPDU_DATA(rx_pkt_info);
 	frame_len = WMA_GET_RX_PAYLOAD_LEN(rx_pkt_info);
 
 	pe_nofl_rl_info("SAE Auth RX type %d subtype %d from " QDF_MAC_ADDR_FMT,

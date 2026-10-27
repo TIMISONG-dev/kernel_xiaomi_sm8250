@@ -2227,9 +2227,8 @@ lim_util_count_sta_del(struct mac_context *mac,
  */
 static void lim_switch_channel_vdev_started(struct pe_session *pe_session)
 {
-	QDF_STATUS status;
 
-	status = wlan_vdev_mlme_sm_deliver_evt(
+	wlan_vdev_mlme_sm_deliver_evt(
 				pe_session->vdev,
 				WLAN_VDEV_SM_EV_START_SUCCESS,
 				sizeof(*pe_session), pe_session);
@@ -4185,13 +4184,11 @@ lim_validate_delts_req(struct mac_context *mac_ctx, tpSirDeltsReq delts_req,
 	}
 
 	if (LIM_IS_STA_ROLE(session)) {
-		uint32_t val;
 
 		/* station always talks to the AP */
 		sta = dph_get_hash_entry(mac_ctx, DPH_STA_HASH_INDEX_PEER,
 					&session->dph.dphHashTable);
 
-		val = sizeof(tSirMacAddr);
 		sir_copy_mac_addr(peer_mac_addr, session->bssId);
 
 	} else {
@@ -8461,13 +8458,12 @@ static inline void lim_send_csa_restart_resp(struct mac_context *mac_ctx,
 					     struct pe_session *session)
 {
 	struct scheduler_msg msg = {0};
-	QDF_STATUS status;
 
 	msg.type = eWNI_SME_CSA_RESTART_RSP;
 	msg.bodyptr = NULL;
 	msg.bodyval = session->smeSessionId;
 
-	status = scheduler_post_message(QDF_MODULE_ID_PE, QDF_MODULE_ID_SME,
+	scheduler_post_message(QDF_MODULE_ID_PE, QDF_MODULE_ID_SME,
 					QDF_MODULE_ID_SME, &msg);
 }
 

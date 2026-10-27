@@ -70,7 +70,6 @@ lim_collect_bss_description(struct mac_context *mac,
 	uint32_t ieLen = 0;
 	tpSirMacMgmtHdr pHdr;
 	uint32_t chan_freq;
-	uint8_t rfBand = 0;
 
 	pHdr = WMA_GET_RX_MAC_HEADER(pRxPacketInfo);
 
@@ -82,7 +81,7 @@ lim_collect_bss_description(struct mac_context *mac,
 	ieLen =
 		WMA_GET_RX_PAYLOAD_LEN(pRxPacketInfo) - SIR_MAC_B_PR_SSID_OFFSET;
 	pBody = WMA_GET_RX_MPDU_DATA(pRxPacketInfo);
-	rfBand = WMA_GET_RX_RFBAND(pRxPacketInfo);
+	WMA_GET_RX_RFBAND(pRxPacketInfo);
 
 	/**
 	 * Length of BSS desription is without length of
