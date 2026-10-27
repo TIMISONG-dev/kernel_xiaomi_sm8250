@@ -12,6 +12,7 @@
 #include <linux/skbuff.h>
 #include <linux/slab.h>
 #include <linux/mhi.h>
+#include <asm/unaligned.h>
 #include "mhi_internal.h"
 
 static char *mhi_generic_sfr = "unknown reason";
@@ -113,8 +114,8 @@ static void mhi_reg_write_enqueue(struct mhi_controller *mhi_cntrl,
 
 	q_index = q_index & (REG_WRITE_QUEUE_LEN - 1);
 
-	MHI_ASSERT(mhi_cntrl->reg_write_q[q_index].valid, "queue full idx %d",
-			q_index);
+	MHI_ASSERT(mhi_cntrl->reg_write_q[q_index].valid, "queue full idx %u",
+		   q_index);
 
 	mhi_cntrl->reg_write_q[q_index].reg_addr = reg_addr;
 	mhi_cntrl->reg_write_q[q_index].val = val;
@@ -204,8 +205,9 @@ void mhi_ring_er_db(struct mhi_event *mhi_event)
 {
 	struct mhi_ring *ring = &mhi_event->ring;
 
-	mhi_event->db_cfg.process_db(mhi_event->mhi_cntrl, &mhi_event->db_cfg,
-				     ring->db_addr, *ring->ctxt_wp);
+	mhi_event->db_cfg.process_db(mhi_event->mhi_cntrl,
+				     &mhi_event->db_cfg, ring->db_addr,
+				     get_unaligned_le64(ring->ctxt_wp));
 }
 
 void mhi_ring_cmd_db(struct mhi_controller *mhi_cntrl, struct mhi_cmd *mhi_cmd)
@@ -214,7 +216,7 @@ void mhi_ring_cmd_db(struct mhi_controller *mhi_cntrl, struct mhi_cmd *mhi_cmd)
 	struct mhi_ring *ring = &mhi_cmd->ring;
 
 	db = ring->iommu_base + (ring->wp - ring->base);
-	*ring->ctxt_wp = db;
+	put_unaligned_le64(db, ring->ctxt_wp);
 	mhi_write_db(mhi_cntrl, ring->db_addr, db);
 }
 
@@ -225,7 +227,7 @@ void mhi_ring_chan_db(struct mhi_controller *mhi_cntrl,
 	dma_addr_t db;
 
 	db = ring->iommu_base + (ring->wp - ring->base);
-	*ring->ctxt_wp = db;
+	put_unaligned_le64(db, ring->ctxt_wp);
 	mhi_chan->db_cfg.process_db(mhi_cntrl, &mhi_chan->db_cfg, ring->db_addr,
 				    db);
 }
@@ -319,7 +321,7 @@ void *mhi_to_virtual(struct mhi_ring *ring, dma_addr_t addr)
 	return (addr - ring->iommu_base) + ring->base;
 }
 
-dma_addr_t mhi_to_physical(struct mhi_ring *ring, void *addr)
+static dma_addr_t mhi_to_physical(struct mhi_ring *ring, void *addr)
 {
 	return (addr - ring->base) + ring->iommu_base;
 }
@@ -331,14 +333,14 @@ static void mhi_recycle_ev_ring_element(struct mhi_controller *mhi_cntrl,
 
 	/* update the WP */
 	ring->wp += ring->el_size;
-	ctxt_wp = *ring->ctxt_wp + ring->el_size;
+	ctxt_wp = get_unaligned_le64(ring->ctxt_wp) + ring->el_size;
 
 	if (ring->wp >= (ring->base + ring->len)) {
 		ring->wp = ring->base;
 		ctxt_wp = ring->iommu_base;
 	}
 
-	*ring->ctxt_wp = ctxt_wp;
+	put_unaligned_le64(ctxt_wp, ring->ctxt_wp);
 
 	/* update the RP */
 	ring->rp += ring->el_size;
@@ -361,7 +363,7 @@ static void mhi_recycle_fwd_ev_ring_element(struct mhi_controller *mhi_cntrl,
 
 	/* update the context WP based on the RP to support fast forwarding */
 	ctxt_wp = ring->iommu_base + (ring->wp - ring->base);
-	*ring->ctxt_wp = ctxt_wp;
+	put_unaligned_le64(ctxt_wp, ring->ctxt_wp);
 
 	/* update the RP */
 	ring->rp += ring->el_size;
@@ -1416,7 +1418,7 @@ int mhi_process_tsync_ev_ring(struct mhi_controller *mhi_cntrl,
 	sequence = MHI_TRE_GET_EV_TSYNC_SEQ(dev_rp);
 	remote_time = MHI_TRE_GET_EV_TIME(dev_rp);
 
-	MHI_VERB("Received TSYNC event with seq:0x%llx time:0x%llx\n",
+	MHI_VERB("Received TSYNC event with seq:0x%x time:0x%llx\n",
 		 sequence, remote_time);
 
 	read_lock_bh(&mhi_cntrl->pm_lock);
@@ -1428,7 +1430,7 @@ int mhi_process_tsync_ev_ring(struct mhi_controller *mhi_cntrl,
 	mutex_lock(&mhi_cntrl->tsync_mutex);
 
 	if (unlikely(mhi_tsync->int_sequence != sequence)) {
-		MHI_ASSERT(1, "Unexpected response:0x%llx Expected:0x%llx\n",
+		MHI_ASSERT(1, "Unexpected response:0x%x Expected:0x%x\n",
 			   sequence, mhi_tsync->int_sequence);
 
 		mhi_device_put(mhi_cntrl->mhi_dev,
@@ -1734,9 +1736,9 @@ irqreturn_t mhi_intvec_handlr(int irq_number, void *dev)
 	/* wake up any events waiting for state change */
 	MHI_VERB("Enter\n");
 	if (unlikely(mhi_cntrl->initiate_mhi_reset)) {
-		mhi_read_reg_field(mhi_cntrl, mhi_cntrl->regs, MHICTRL,
-			MHICTRL_RESET_MASK, MHICTRL_RESET_SHIFT, &in_reset);
-		mhi_cntrl->initiate_mhi_reset = !!in_reset;
+		if (!mhi_read_reg_field(mhi_cntrl, mhi_cntrl->regs, MHICTRL,
+					MHICTRL_RESET_MASK, MHICTRL_RESET_SHIFT, &in_reset))
+			mhi_cntrl->initiate_mhi_reset = !!in_reset;
 	}
 	wake_up_all(&mhi_cntrl->state_event);
 	MHI_VERB("Exit\n");
@@ -2042,13 +2044,12 @@ static void mhi_reset_data_chan(struct mhi_controller *mhi_cntrl,
 static void mhi_reset_rsc_chan(struct mhi_controller *mhi_cntrl,
 			       struct mhi_chan *mhi_chan)
 {
-	struct mhi_ring *buf_ring, *tre_ring;
+	struct mhi_ring *buf_ring;
 	struct mhi_result result;
 	struct mhi_buf_info *buf_info;
 
 	/* reset any pending buffers */
 	buf_ring = &mhi_chan->buf_ring;
-	tre_ring = &mhi_chan->tre_ring;
 	result.transaction_status = -ENOTCONN;
 	result.bytes_xferd = 0;
 
@@ -2319,16 +2320,14 @@ int mhi_debugfs_mhi_chan_show(struct seq_file *m, void *d)
 }
 
 /* show bus/device votes for a specific device */
-int mhi_device_vote_show(struct device *dev, void *data)
+static int mhi_device_vote_show(struct device *dev, void *data)
 {
 	struct mhi_device *mhi_dev;
-	struct mhi_controller *mhi_cntrl;
 
 	if (dev->bus != &mhi_bus_type)
 		return 0;
 
 	mhi_dev = to_mhi_device(dev);
-	mhi_cntrl = mhi_dev->mhi_cntrl;
 
 	/* we dont care about timesync or similar special devices */
 	if (mhi_dev->dev_type == MHI_TIMESYNC_TYPE)
@@ -2789,7 +2788,7 @@ int mhi_get_remote_time(struct mhi_device *mhi_dev,
 
 	mhi_cntrl->lpm_enable(mhi_cntrl, mhi_cntrl->priv_data);
 
-	MHI_VERB("time DB request with seq:0x%llx\n", mhi_tsync->int_sequence);
+	MHI_VERB("time DB request with seq:0x%x\n", mhi_tsync->int_sequence);
 
 	mhi_tsync->db_response_pending = true;
 	init_completion(&mhi_tsync->db_completion);

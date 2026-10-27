@@ -615,7 +615,7 @@ struct mhi_ctxt {
 struct mhi_ring {
 	dma_addr_t dma_handle;
 	dma_addr_t iommu_base;
-	u64 *ctxt_wp; /* point to ctxt wp */
+	void *ctxt_wp; /* point to ctxt wp */
 	void *pre_aligned;
 	void *base;
 	void *rp;
@@ -987,7 +987,7 @@ void mhi_ev_task(unsigned long data);
 
 #define MHI_ASSERT(cond, fmt, ...) do { \
 	if (cond) \
-		panic(fmt); \
+		panic(fmt, ##__VA_ARGS__); \
 } while (0)
 
 #endif /* _MHI_INT_H */

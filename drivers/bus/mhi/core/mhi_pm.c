@@ -13,6 +13,7 @@
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/mhi.h>
+#include <asm/unaligned.h>
 #include "mhi_internal.h"
 
 static void mhi_special_events_pending(struct mhi_controller *mhi_cntrl);
@@ -187,7 +188,7 @@ static void mhi_toggle_dev_wake(struct mhi_controller *mhi_cntrl)
 }
 
 /* set device wake */
-void mhi_assert_dev_wake(struct mhi_controller *mhi_cntrl, bool force)
+static void mhi_assert_dev_wake(struct mhi_controller *mhi_cntrl, bool force)
 {
 	unsigned long flags;
 
@@ -220,7 +221,7 @@ void mhi_assert_dev_wake(struct mhi_controller *mhi_cntrl, bool force)
 }
 
 /* clear device wake */
-void mhi_deassert_dev_wake(struct mhi_controller *mhi_cntrl, bool override)
+static void mhi_deassert_dev_wake(struct mhi_controller *mhi_cntrl, bool override)
 {
 	unsigned long flags;
 
@@ -310,7 +311,8 @@ int mhi_ready_state_transition(struct mhi_controller *mhi_cntrl)
 			continue;
 
 		ring->wp = ring->base + ring->len - ring->el_size;
-		*ring->ctxt_wp = ring->iommu_base + ring->len - ring->el_size;
+		put_unaligned_le64(ring->iommu_base + ring->len - ring->el_size,
+				   ring->ctxt_wp);
 		/* needs to update to all cores */
 		smp_wmb();
 
@@ -528,7 +530,8 @@ static int mhi_pm_mission_mode_transition(struct mhi_controller *mhi_cntrl)
 			continue;
 
 		ring->wp = ring->base + ring->len - ring->el_size;
-		*ring->ctxt_wp = ring->iommu_base + ring->len - ring->el_size;
+		put_unaligned_le64(ring->iommu_base + ring->len - ring->el_size,
+				   ring->ctxt_wp);
 		/* all ring updates must get updated immediately */
 		smp_wmb();
 
@@ -779,7 +782,7 @@ int mhi_debugfs_trigger_reset(void *data, u64 val)
 }
 
 /* queue disable transition work item */
-int mhi_queue_disable_transition(struct mhi_controller *mhi_cntrl,
+static int mhi_queue_disable_transition(struct mhi_controller *mhi_cntrl,
 				 enum MHI_PM_STATE pm_state)
 {
 	struct state_transition *item = kmalloc(sizeof(*item), GFP_ATOMIC);
@@ -1058,8 +1061,9 @@ void mhi_control_error(struct mhi_controller *mhi_cntrl)
 	/* copy subsystem failure reason string if supported */
 	if (sfr_info && sfr_info->buf_addr) {
 		memcpy(sfr_info->str, sfr_info->buf_addr, sfr_info->len);
-		MHI_CNTRL_ERR("mhi:%s sfr: %s\n", mhi_cntrl->name,
-				sfr_info->buf_addr);
+		MHI_CNTRL_ERR("mhi:%s sfr: %.*s\n", mhi_cntrl->name,
+				(int)min_t(size_t, sfr_info->len, INT_MAX),
+				sfr_info->str);
 	}
 
 	/* link is not down if device supports RDDM */
