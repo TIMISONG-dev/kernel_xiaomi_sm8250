@@ -310,8 +310,8 @@ static const char *const cmd_flag_name[] = {
 	CMD_FLAG_NAME(PREFLUSH),
 	CMD_FLAG_NAME(RAHEAD),
 	CMD_FLAG_NAME(BACKGROUND),
-	CMD_FLAG_NAME(NOUNMAP),
-	CMD_FLAG_NAME(NOWAIT),
+	/* These names share one bit in this vendor request-flag layout. */
+	[__REQ_NOUNMAP] = "NOUNMAP|NOWAIT",
 };
 #undef CMD_FLAG_NAME
 
