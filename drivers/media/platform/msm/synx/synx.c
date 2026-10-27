@@ -17,7 +17,7 @@
 
 struct synx_device *synx_dev;
 
-void synx_external_callback(s32 sync_obj, int status, void *data)
+static void synx_external_callback(s32 sync_obj, int status, void *data)
 {
 	s32 synx_obj;
 	struct synx_table_row *row = NULL;
@@ -49,17 +49,17 @@ void synx_external_callback(s32 sync_obj, int status, void *data)
 	}
 }
 
-bool synx_fence_enable_signaling(struct dma_fence *fence)
+static bool synx_fence_enable_signaling(struct dma_fence *fence)
 {
 	return true;
 }
 
-const char *synx_fence_driver_name(struct dma_fence *fence)
+static const char *synx_fence_driver_name(struct dma_fence *fence)
 {
 	return "Global Synx driver";
 }
 
-void synx_fence_release(struct dma_fence *fence)
+static void synx_fence_release(struct dma_fence *fence)
 {
 	struct synx_table_row *row = NULL;
 
@@ -196,7 +196,6 @@ int synx_deregister_callback(s32 synx_obj,
 	void *userdata,
 	synx_callback cancel_cb_func)
 {
-	u32 state = SYNX_STATE_INVALID;
 	struct synx_table_row *row = NULL;
 	struct synx_callback_info *synx_cb, *temp;
 
@@ -208,7 +207,7 @@ int synx_deregister_callback(s32 synx_obj,
 
 	mutex_lock(&synx_dev->row_locks[row->index]);
 
-	state = synx_status(row);
+	synx_status(row);
 	pr_debug("de-registering callback for synx 0x%x\n",
 		synx_obj);
 	list_for_each_entry_safe(synx_cb, temp, &row->callback_list, list) {
@@ -525,7 +524,6 @@ int synx_release(s32 synx_obj)
 {
 	int rc;
 	struct synx_table_row *row  = NULL;
-	struct dma_fence *fence;
 	struct synx_handle_entry *entry;
 	unsigned long flags;
 
@@ -548,7 +546,6 @@ int synx_release(s32 synx_obj)
 		return -EINVAL;
 	}
 
-	fence = row->fence;
 	rc = synx_release_core(row);
 	synx_release_handle(row);
 	return rc;
@@ -989,7 +986,6 @@ static int synx_handle_merge(struct synx_private_ioctl_arg *k_ioctl)
 	struct synx_merge synx_merge_info;
 	s32 *synx_objs;
 	u32 num_objs;
-	u32 size;
 	int result;
 
 	if (k_ioctl->size != sizeof(synx_merge_info))
@@ -1003,7 +999,6 @@ static int synx_handle_merge(struct synx_private_ioctl_arg *k_ioctl)
 	if (synx_merge_info.num_objs >= SYNX_MAX_OBJS)
 		return -EINVAL;
 
-	size = sizeof(u32) * synx_merge_info.num_objs;
 	synx_objs = kcalloc(synx_merge_info.num_objs,
 					sizeof(*synx_objs), GFP_KERNEL);
 	if (!synx_objs)
@@ -1142,7 +1137,6 @@ static int synx_handle_deregister_user_payload(
 	struct synx_client *client)
 {
 	s32 synx_obj;
-	u32 state = SYNX_STATE_INVALID;
 	struct synx_userpayload_info userpayload_info;
 	struct synx_cb_data *user_payload_kernel, *temp;
 	struct synx_table_row *row = NULL;
@@ -1173,7 +1167,7 @@ static int synx_handle_deregister_user_payload(
 
 	mutex_lock(&synx_dev->row_locks[row->index]);
 
-	state = synx_status_locked(row);
+	synx_status_locked(row);
 	list_for_each_entry_safe(user_payload_kernel, temp,
 			&row->user_payload_list, list) {
 		if (user_payload_kernel->data.payload_data[0] ==
@@ -1287,13 +1281,12 @@ static long synx_ioctl(struct file *filep,
 	unsigned long arg)
 {
 	s32 rc = 0;
-	struct synx_device *synx_dev = NULL;
 	struct synx_client *client;
 	struct synx_private_ioctl_arg k_ioctl;
 
 	pr_debug("Enter %s\n", __func__);
 
-	synx_dev = get_synx_device(filep);
+	get_synx_device(filep);
 	client = filep->private_data;
 
 	if (cmd != SYNX_PRIVATE_IOCTL_CMD) {
