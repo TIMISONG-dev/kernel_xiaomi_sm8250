@@ -107,11 +107,11 @@ static const struct dbm_reg_data dbm_1_5_regtable[] = {
 /**
  * Write register masked field with debug info.
  *
- * @dbm - DBM specific data
- * @reg - DBM register, used to look up the offset value
- * @ep - endpoint number
- * @mask - register bitmask.
- * @val - value to write.
+ * @dbm: DBM specific data
+ * @reg: DBM register, used to look up the offset value
+ * @ep: endpoint number
+ * @mask: register bitmask.
+ * @val: value to write.
  *
  */
 static inline void msm_dbm_write_ep_reg_field(struct dbm *dbm,
@@ -132,12 +132,11 @@ static inline void msm_dbm_write_ep_reg_field(struct dbm *dbm,
 	msm_dbm_write_ep_reg_field(d, r, 0, m, v)
 
 /**
+ * msm_dbm_read_ep_reg() - Read register with debug info.
  *
- * Read register with debug info.
- *
- * @dbm - DBM specific data
- * @reg - DBM register, used to look up the offset value
- * @ep - endpoint number
+ * @dbm: DBM specific data
+ * @reg: DBM register, used to look up the offset value
+ * @ep: endpoint number
  *
  * @return u32
  */
@@ -151,12 +150,12 @@ static inline u32 msm_dbm_read_ep_reg(struct dbm *dbm, enum dbm_reg reg, int ep)
 #define msm_dbm_read_reg(d, r) msm_dbm_read_ep_reg(d, r, 0)
 
 /**
+ * msm_dbm_write_ep_reg() - Write register with debug info.
  *
- * Write register with debug info.
- *
- * @dbm - DBM specific data
- * @reg - DBM register, used to look up the offset value
- * @ep - endpoint number
+ * @dbm: DBM specific data
+ * @reg: DBM register, used to look up the offset value
+ * @ep: endpoint number
+ * @val: Value written to the selected endpoint register
  *
  */
 static inline void msm_dbm_write_ep_reg(struct dbm *dbm, enum dbm_reg reg,
@@ -171,6 +170,8 @@ static inline void msm_dbm_write_ep_reg(struct dbm *dbm, enum dbm_reg reg,
 
 /**
  * Return DBM EP number according to usb endpoint number.
+ * @dbm: DBM instance whose endpoint state and MMIO registers are accessed
+ * @usb_ep: USB endpoint number to match against the DBM endpoint map
  *
  */
 static int find_matching_dbm_ep(struct dbm *dbm, u8 usb_ep)
@@ -188,6 +189,8 @@ static int find_matching_dbm_ep(struct dbm *dbm, u8 usb_ep)
 
 /**
  * Reset the DBM registers upon initialization.
+ * @dbm: DBM instance whose endpoint state and MMIO registers are accessed
+ * @reset: Whether to assert or clear the DBM soft reset bit
  *
  */
 int dbm_soft_reset(struct dbm *dbm, bool reset)
@@ -210,8 +213,9 @@ int dbm_soft_reset(struct dbm *dbm, bool reset)
  * such as transfer aborting, USB re-enumeration and USB
  * disconnection.
  *
- * @dbm_ep - DBM ep number.
- * @enter_reset - should we enter a reset state or get out of it.
+ * @dbm_ep: DBM ep number.
+ * @enter_reset: should we enter a reset state or get out of it.
+ * @dbm: DBM instance whose endpoint state and MMIO registers are accessed
  *
  */
 static int ep_soft_reset(struct dbm *dbm, u8 dbm_ep, bool enter_reset)
@@ -244,8 +248,9 @@ static int ep_soft_reset(struct dbm *dbm, u8 dbm_ep, bool enter_reset)
  * The function relies on ep_soft_reset() for checking
  * the legality of the resulting DBM ep number.
  *
- * @usb_ep - USB ep number.
- * @enter_reset - should we enter a reset state or get out of it.
+ * @usb_ep: USB ep number.
+ * @enter_reset: should we enter a reset state or get out of it.
+ * @dbm: DBM instance whose endpoint state and MMIO registers are accessed
  *
  */
 int dbm_ep_soft_reset(struct dbm *dbm, u8 usb_ep, bool enter_reset)
@@ -267,11 +272,13 @@ int dbm_ep_soft_reset(struct dbm *dbm, u8 usb_ep, bool enter_reset)
  * Configure a USB DBM ep to work in BAM mode.
  *
  *
- * @usb_ep - USB physical EP number.
- * @producer - producer/consumer.
- * @disable_wb - disable write back to system memory.
- * @internal_mem - use internal USB memory for data fifo.
- * @ioc - enable interrupt on completion.
+ * @usb_ep: USB physical EP number.
+ * @producer: producer/consumer.
+ * @disable_wb: disable write back to system memory.
+ * @internal_mem: use internal USB memory for data fifo.
+ * @ioc: enable interrupt on completion.
+ * @dbm: DBM instance whose endpoint state and MMIO registers are accessed
+ * @bam_pipe: BAM pipe number programmed for this DBM endpoint
  *
  * @return int - DBM ep number.
  */
@@ -333,6 +340,7 @@ int dbm_ep_config(struct dbm *dbm, u8 usb_ep, u8 bam_pipe, bool producer,
 
 /**
  * Return number of configured DBM endpoints.
+ * @dbm: DBM instance whose endpoint state and MMIO registers are accessed
  */
 int dbm_get_num_of_eps_configured(struct dbm *dbm)
 {
@@ -354,7 +362,8 @@ int dbm_get_num_of_eps_configured(struct dbm *dbm)
 /**
  * Configure a USB DBM ep to work in normal mode.
  *
- * @usb_ep - USB ep number.
+ * @usb_ep: USB ep number.
+ * @dbm: DBM instance whose endpoint state and MMIO registers are accessed
  *
  */
 int dbm_ep_unconfig(struct dbm *dbm, u8 usb_ep)
@@ -393,8 +402,10 @@ int dbm_ep_unconfig(struct dbm *dbm, u8 usb_ep)
  * Configure the DBM with the USB3 core event buffer.
  * This function is called by the SNPS UDC upon initialization.
  *
- * @addr - address of the event buffer.
- * @size - size of the event buffer.
+ * @addr_lo: address of the event buffer.
+ * @size: size of the event buffer.
+ * @dbm: DBM instance whose endpoint state and MMIO registers are accessed
+ * @addr_hi: Upper 32 bits of the event buffer physical address
  *
  */
 int dbm_event_buffer_config(struct dbm *dbm, u32 addr_lo, u32 addr_hi, int size)
@@ -430,7 +441,8 @@ int dbm_event_buffer_config(struct dbm *dbm, u32 addr_lo, u32 addr_hi, int size)
 /**
  * Disable update xfer before queueing stop xfer command to USB3 core.
  *
- * @usb_ep - USB physical EP number.
+ * @usb_ep: USB physical EP number.
+ * @dbm: DBM instance whose endpoint state and MMIO registers are accessed
  *
  */
 int dwc3_dbm_disable_update_xfer(struct dbm *dbm, u8 usb_ep)
