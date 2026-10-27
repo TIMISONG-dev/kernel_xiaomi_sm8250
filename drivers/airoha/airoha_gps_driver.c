@@ -99,7 +99,7 @@ static ssize_t airoha_gps_read(struct file *file_p, char __user *user,
 	result = copy_to_user(user, buffer, copy_len);
 	atomic_dec(&is_interrupt_happen);
 	up(&gps_file_operation_lock);
-	return len;
+	return result ? -EFAULT : copy_len;
 }
 static ssize_t airoha_gps_write(struct file *file_p, const char __user *user,
 				size_t len, loff_t *offset)
@@ -196,6 +196,8 @@ static int xiaomi_uart_probe(struct platform_device *pdev)
 	airoha_printk("====GPIO init done!!======\n");
 	airoha_printk("====Device init...\n");
 	result = alloc_chrdev_region(&gps_dev_number, 0, 1, "airoha_gps_dev");
+	if (result)
+		return result;
 
 	gps_dev = cdev_alloc();
 	if (!gps_dev) {
@@ -212,14 +214,14 @@ static int xiaomi_uart_probe(struct platform_device *pdev)
 
 	pctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(pctrl)) {
-		airoha_printk("%s: Unable to allocate pinctrl: %d\n", __FILE__,
+		airoha_printk("%s: Unable to allocate pinctrl: %ld\n", __FILE__,
 			      PTR_ERR(pctrl));
 		return -1;
 	}
 
 	pctrl_mode_active = pinctrl_lookup_state(pctrl, "gps_enable_active");
 	if (IS_ERR(pctrl_mode_active)) {
-		airoha_printk("%s: Unable to find pinctrl_state_mode_spi: %d\n",
+		airoha_printk("%s: Unable to find pinctrl_state_mode_spi: %ld\n",
 			      __FILE__, PTR_ERR(pctrl_mode_active));
 		return -1;
 	}
@@ -227,7 +229,7 @@ static int xiaomi_uart_probe(struct platform_device *pdev)
 	pctrl_mode_idle = pinctrl_lookup_state(pctrl, "gps_enable_suspend");
 	if (IS_ERR(pctrl_mode_idle)) {
 		airoha_printk(
-			"%s: Unable to find pinctrl_state_mode_idle: %d\n",
+			"%s: Unable to find pinctrl_state_mode_idle: %ld\n",
 			__FILE__, PTR_ERR(pctrl_mode_idle));
 		return -1;
 	}
