@@ -181,7 +181,6 @@ QDF_STATUS dp_tx_desc_pool_free(struct dp_soc *soc, uint8_t pool_id)
 QDF_STATUS dp_tx_ext_desc_pool_alloc(struct dp_soc *soc, uint8_t pool_id,
 	uint16_t num_elem)
 {
-	uint16_t num_page;
 	uint32_t count;
 	struct dp_tx_ext_desc_elem_s *c_elem, *p_elem;
 	struct qdf_mem_dma_page_t *page_info;
@@ -209,7 +208,6 @@ QDF_STATUS dp_tx_ext_desc_pool_alloc(struct dp_soc *soc, uint8_t pool_id,
 		goto fail_exit;
 	}
 
-	num_page = soc->tx_ext_desc[pool_id].desc_pages.num_pages;
 	/*
 	 * Cacheable ext descriptor link alloc
 	 * This structure also large size already
