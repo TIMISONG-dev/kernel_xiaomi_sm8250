@@ -325,7 +325,7 @@ static void sde_rot_dump_vbif_debug_bus(u32 bus_dump_flag,
  * @len - range of the register set
  * @dump_mem - output buffer for memory dump location option
  */
-void sde_rot_dump_reg(const char *dump_name, u32 reg_dump_flag,
+static void sde_rot_dump_reg(const char *dump_name, u32 reg_dump_flag,
 	enum sde_rot_regdump_access access, u32 addr,
 	int len, u32 **dump_mem)
 {
