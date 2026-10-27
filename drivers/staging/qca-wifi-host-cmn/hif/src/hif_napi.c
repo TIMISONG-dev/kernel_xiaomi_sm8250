@@ -1153,7 +1153,6 @@ static int hnc_link_clusters(struct qca_napi_data *napid)
 	int rc = 0;
 
 	int i;
-	int it = 0;
 	uint32_t cl_done = 0x0;
 	int cl, curcl, curclhead = 0;
 	int more;
@@ -1167,7 +1166,7 @@ static int hnc_link_clusters(struct qca_napi_data *napid)
 
 	do {
 		more = 0;
-		it++; curcl = -1;
+		curcl = -1;
 		for (i = 0; i < NR_CPUS; i++) {
 			cl = cpus[i].cluster_id;
 			NAPI_DEBUG("Processing cpu[%d], cluster=%d\n",
