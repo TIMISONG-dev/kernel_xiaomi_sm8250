@@ -246,12 +246,12 @@ out_invalid:
 }
 
 /**
- * ns_match() - Returns true if current namespace matches dev/ino provided.
- * @ns_common: current ns
+ * ns_match() - check a namespace against nsfs device and inode numbers
+ * @ns: namespace whose inode number is compared with @ino
  * @dev: dev_t from nsfs that will be matched against current nsfs
  * @ino: ino_t from nsfs that will be matched against current nsfs
  *
- * Return: true if dev and ino matches the current nsfs.
+ * Return: true if @ns matches both @dev and @ino.
  */
 bool ns_match(const struct ns_common *ns, dev_t dev, ino_t ino)
 {
