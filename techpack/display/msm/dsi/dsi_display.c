@@ -1643,9 +1643,6 @@ static ssize_t debugfs_read_esd_check_mode(struct file *file,
 	if (!display)
 		return -ENODEV;
 
-	if (*ppos)
-		return 0;
-
 	if (!display->panel) {
 		DSI_ERR("invalid panel data\n");
 		return -EINVAL;
@@ -1662,27 +1659,26 @@ static ssize_t debugfs_read_esd_check_mode(struct file *file,
 		goto error;
 	}
 
-	len = min_t(size_t, user_len, ESD_MODE_STRING_MAX_LEN - 1);
 	if (!esd_config->esd_enabled) {
-		rc = snprintf(buf, len, "ESD feature not enabled");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "ESD feature not enabled");
 		goto output_mode;
 	}
 
 	switch (esd_config->status_mode) {
 	case ESD_MODE_REG_READ:
-		rc = snprintf(buf, len, "reg_read");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "reg_read");
 		break;
 	case ESD_MODE_PANEL_TE:
-		rc = snprintf(buf, len, "te_signal_check");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "te_signal_check");
 		break;
 	case ESD_MODE_SW_SIM_FAILURE:
-		rc = snprintf(buf, len, "esd_sw_sim_failure");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "esd_sw_sim_failure");
 		break;
 	case ESD_MODE_SW_SIM_SUCCESS:
-		rc = snprintf(buf, len, "esd_sw_sim_success");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "esd_sw_sim_success");
 		break;
 	default:
-		rc = snprintf(buf, len, "invalid");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "invalid");
 		break;
 	}
 
@@ -1692,16 +1688,12 @@ output_mode:
 		goto error;
 	}
 
-	if (copy_to_user(user_buf, buf, len)) {
-		rc = -EFAULT;
-		goto error;
-	}
-
-	*ppos += len;
+	len = rc;
+	rc = simple_read_from_buffer(user_buf, user_len, ppos, buf, len);
 
 error:
 	kfree(buf);
-	return len;
+	return rc;
 }
 
 static ssize_t debugfs_update_cmd_scheduling_params(struct file *file,
