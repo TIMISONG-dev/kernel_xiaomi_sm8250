@@ -1899,13 +1899,12 @@ qdf_export_symbol(qdf_dp_trace_log_pkt);
 void qdf_dp_display_mgmt_pkt(struct qdf_dp_trace_record_s *record,
 			      uint16_t index, uint8_t pdev_id, uint8_t info)
 {
-	int loc;
 	char prepend_str[QDF_DP_TRACE_PREPEND_STR_SIZE];
 	struct qdf_dp_trace_mgmt_buf *buf =
 		(struct qdf_dp_trace_mgmt_buf *)record->data;
 
 	qdf_mem_zero(prepend_str, sizeof(prepend_str));
-	loc = qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
+	qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
 					 index, info, record);
 
 	DPTRACE_PRINT("%s [%d] [%s %s]",
@@ -1943,12 +1942,11 @@ qdf_dpt_display_credit_record_debugfs(qdf_debugfs_file_t file,
 				      struct qdf_dp_trace_record_s *record,
 				      uint32_t index)
 {
-	int loc;
 	char prepend_str[QDF_DP_TRACE_PREPEND_STR_SIZE];
 	struct qdf_dp_trace_credit_record *buf =
 		(struct qdf_dp_trace_credit_record *)record->data;
 
-	loc = qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
+	qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
 					 index, 0, record);
 	if (buf->operation == QDF_OP_NA)
 		qdf_debugfs_printf(file, "%s [%s] [T: %d G0: %d G1: %d]\n",
@@ -1970,12 +1968,11 @@ qdf_dpt_display_credit_record_debugfs(qdf_debugfs_file_t file,
 void qdf_dp_display_credit_record(struct qdf_dp_trace_record_s *record,
 				  uint16_t index, uint8_t pdev_id, uint8_t info)
 {
-	int loc;
 	char prepend_str[QDF_DP_TRACE_PREPEND_STR_SIZE];
 	struct qdf_dp_trace_credit_record *buf =
 		(struct qdf_dp_trace_credit_record *)record->data;
 
-	loc = qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
+	qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
 					 index, info, record);
 	if (buf->operation == QDF_OP_NA)
 		DPTRACE_PRINT("%s [%s] [T: %d G0: %d G1: %d]",
@@ -2077,13 +2074,12 @@ qdf_export_symbol(qdf_dp_trace_record_event);
 void qdf_dp_display_proto_pkt(struct qdf_dp_trace_record_s *record,
 			      uint16_t index, uint8_t pdev_id, uint8_t info)
 {
-	int loc;
 	char prepend_str[QDF_DP_TRACE_PREPEND_STR_SIZE];
 	struct qdf_dp_trace_proto_buf *buf =
 		(struct qdf_dp_trace_proto_buf *)record->data;
 
 	qdf_mem_zero(prepend_str, sizeof(prepend_str));
-	loc = qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
+	qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
 					 index, info, record);
 	DPTRACE_PRINT("%s [%d] [%s] SA: "
 		      QDF_MAC_ADDR_FMT " %s DA: "
@@ -2343,7 +2339,6 @@ qdf_export_symbol(qdf_dp_trace_data_pkt);
 void qdf_dp_display_record(struct qdf_dp_trace_record_s *record,
 			   uint16_t index, uint8_t pdev_id, uint8_t info)
 {
-	int loc;
 	char prepend_str[QDF_DP_TRACE_PREPEND_STR_SIZE];
 
 	if (!(pdev_id == QDF_TRACE_DEFAULT_PDEV_ID ||
@@ -2351,7 +2346,7 @@ void qdf_dp_display_record(struct qdf_dp_trace_record_s *record,
 		return;
 
 	qdf_mem_zero(prepend_str, sizeof(prepend_str));
-	loc = qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
+	qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
 					 index, info, record);
 
 	switch (record->code) {
@@ -2540,12 +2535,11 @@ static void qdf_dpt_display_proto_pkt_debugfs(qdf_debugfs_file_t file,
 				struct qdf_dp_trace_record_s *record,
 				uint32_t index)
 {
-	int loc;
 	char prepend_str[QDF_DP_TRACE_PREPEND_STR_SIZE];
 	struct qdf_dp_trace_proto_buf *buf =
 		(struct qdf_dp_trace_proto_buf *)record->data;
 
-	loc = qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
+	qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
 					 index, 0, record);
 	qdf_debugfs_printf(file, "%s [%d] [%s] SA: "
 			   QDF_MAC_ADDR_FMT " %s DA: "
@@ -2572,12 +2566,11 @@ static void qdf_dpt_display_mgmt_pkt_debugfs(qdf_debugfs_file_t file,
 				uint32_t index)
 {
 
-	int loc;
 	char prepend_str[QDF_DP_TRACE_PREPEND_STR_SIZE];
 	struct qdf_dp_trace_mgmt_buf *buf =
 		(struct qdf_dp_trace_mgmt_buf *)record->data;
 
-	loc = qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
+	qdf_dp_trace_fill_meta_str(prepend_str, sizeof(prepend_str),
 					 index, 0, record);
 
 	qdf_debugfs_printf(file, "%s [%d] [%s %s]\n",
@@ -2674,7 +2667,6 @@ static void qdf_dpt_display_record_debugfs(qdf_debugfs_file_t file,
 uint32_t qdf_dpt_get_curr_pos_debugfs(qdf_debugfs_file_t file,
 				      enum qdf_dpt_debugfs_state state)
 {
-	uint32_t i = 0;
 	uint32_t tail;
 	uint32_t count = g_qdf_dp_trace_data.num;
 
@@ -2734,17 +2726,7 @@ uint32_t qdf_dpt_get_curr_pos_debugfs(qdf_debugfs_file_t file,
 
 	spin_lock_bh(&l_dp_trace_lock);
 	if (g_qdf_dp_trace_data.head != INVALID_QDF_DP_TRACE_ADDR) {
-		i = g_qdf_dp_trace_data.head;
 		tail = g_qdf_dp_trace_data.tail;
-
-		if (count > g_qdf_dp_trace_data.num)
-			count = g_qdf_dp_trace_data.num;
-
-		if (tail >= (count - 1))
-			i = tail - count + 1;
-		else if (count != MAX_QDF_DP_TRACE_RECORDS)
-			i = MAX_QDF_DP_TRACE_RECORDS - ((count - 1) -
-						     tail);
 		g_qdf_dp_trace_data.curr_pos = 0;
 		g_qdf_dp_trace_data.saved_tail = tail;
 	}
