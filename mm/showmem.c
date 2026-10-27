@@ -8,6 +8,7 @@
 #include <linux/debugfs.h>
 #include <linux/fs.h>
 #include <linux/init.h>
+#include <linux/show_mem_notifier.h>
 
 ATOMIC_NOTIFIER_HEAD(show_mem_notifier);
 
@@ -36,7 +37,7 @@ static int show_mem_notifier_get(void *dat, u64 *val)
 DEFINE_SIMPLE_ATTRIBUTE(show_mem_notifier_debug_ops, show_mem_notifier_get,
 				NULL, "%llu\n");
 
-int show_mem_notifier_debugfs_register(void)
+static int show_mem_notifier_debugfs_register(void)
 {
 	debugfs_create_file("show_mem_notifier", 0664, NULL, NULL,
 				&show_mem_notifier_debug_ops);
