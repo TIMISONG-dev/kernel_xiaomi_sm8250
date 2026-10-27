@@ -1339,7 +1339,7 @@ const struct seq_operations mounts_op = {
 
 /**
  * may_umount_tree - check if a mount tree is busy
- * @mnt: root of mount tree
+ * @m: root of the mount tree to check
  *
  * This is called to check if a tree of mounts has any
  * open files, pwds, chroots or sub mounts that are
@@ -1894,6 +1894,7 @@ static bool has_locked_children(struct mount *mnt, struct dentry *dentry)
 
 /**
  * clone_private_mount - create a private clone of a path
+ * @path: path supplying the mount and root dentry to clone
  *
  * This creates a new vfsmount, which will be the clone of @path.  The new will
  * not be attached anywhere in the namespace and will be private (i.e. changes
@@ -3122,7 +3123,7 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
 
 /**
  * create_mnt_ns - creates a private namespace and adds a root filesystem
- * @mnt: pointer to the new root filesystem mountpoint
+ * @m: mount to install as the new namespace root
  */
 static struct mnt_namespace *create_mnt_ns(struct vfsmount *m)
 {
