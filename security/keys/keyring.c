@@ -515,7 +515,7 @@ EXPORT_SYMBOL(keyring_alloc);
  * @keyring: The keyring being added to.
  * @type: The type of key being added.
  * @payload: The payload of the key intended to be added.
- * @data: Additional data for evaluating restriction.
+ * @restriction_key: Key supplied for evaluating the restriction (unused).
  *
  * Reject the addition of any links to a keyring.  It can be overridden by
  * passing KEY_ALLOC_BYPASS_RESTRICTION to key_instantiate_and_link() when
@@ -975,7 +975,8 @@ static bool keyring_detect_restriction_cycle(const struct key *dest_keyring,
 /**
  * keyring_restrict - Look up and apply a restriction to a keyring
  *
- * @keyring: The keyring to be restricted
+ * @keyring_ref: Reference to the keyring to be restricted
+ * @type: Key type providing the restriction, or NULL to reject all links
  * @restriction: The restriction options to apply to the keyring
  */
 int keyring_restrict(key_ref_t keyring_ref, const char *type,
