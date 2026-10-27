@@ -508,7 +508,7 @@ static void *mbuf_real_base(struct vs_mbuf_axon *mbuf)
  * Get the service_id and reserved bits from a message buffer and the
  * clear the reserved bits so the upper layers don't see them.
  */
-vs_service_id_t
+static vs_service_id_t
 transport_get_mbuf_service_id(struct vs_transport_axon *transport,
 		void *data, unsigned int *freed_acks)
 {
@@ -1498,7 +1498,7 @@ fail:
 	transport_fatal_error(transport, "free bufs send failed");
 }
 
-int transport_notify(struct vs_transport *_transport,
+static int transport_notify(struct vs_transport *_transport,
 		struct vs_service_device *service, unsigned long bits)
 {
 	struct vs_transport_axon *transport = to_vs_transport_axon(_transport);
