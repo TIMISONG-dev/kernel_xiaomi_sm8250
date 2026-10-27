@@ -302,25 +302,25 @@ struct nf_conn;
 struct nf_conntrack_expect;
 
 extern int
-(*nf_nat_pptp_hook_outbound)(struct sk_buff *skb,
+(__rcu *nf_nat_pptp_hook_outbound)(struct sk_buff *skb,
 			     struct nf_conn *ct, enum ip_conntrack_info ctinfo,
 			     unsigned int protoff,
 			     struct PptpControlHeader *ctlh,
 			     union pptp_ctrl_union *pptpReq);
 
 extern int
-(*nf_nat_pptp_hook_inbound)(struct sk_buff *skb,
+(__rcu *nf_nat_pptp_hook_inbound)(struct sk_buff *skb,
 			    struct nf_conn *ct, enum ip_conntrack_info ctinfo,
 			    unsigned int protoff,
 			    struct PptpControlHeader *ctlh,
 			    union pptp_ctrl_union *pptpReq);
 
 extern void
-(*nf_nat_pptp_hook_exp_gre)(struct nf_conntrack_expect *exp_orig,
+(__rcu *nf_nat_pptp_hook_exp_gre)(struct nf_conntrack_expect *exp_orig,
 			    struct nf_conntrack_expect *exp_reply);
 
 extern void
-(*nf_nat_pptp_hook_expectfn)(struct nf_conn *ct,
+(__rcu *nf_nat_pptp_hook_expectfn)(struct nf_conn *ct,
 			     struct nf_conntrack_expect *exp);
 
 #endif /* __KERNEL__ */

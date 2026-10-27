@@ -45,27 +45,27 @@ MODULE_ALIAS_NFCT_HELPER("pptp");
 static DEFINE_SPINLOCK(nf_pptp_lock);
 
 int
-(*nf_nat_pptp_hook_outbound)(struct sk_buff *skb,
+(__rcu *nf_nat_pptp_hook_outbound)(struct sk_buff *skb,
 			     struct nf_conn *ct, enum ip_conntrack_info ctinfo,
 			     unsigned int protoff, struct PptpControlHeader *ctlh,
 			     union pptp_ctrl_union *pptpReq) __read_mostly;
 EXPORT_SYMBOL_GPL(nf_nat_pptp_hook_outbound);
 
 int
-(*nf_nat_pptp_hook_inbound)(struct sk_buff *skb,
+(__rcu *nf_nat_pptp_hook_inbound)(struct sk_buff *skb,
 			    struct nf_conn *ct, enum ip_conntrack_info ctinfo,
 			    unsigned int protoff, struct PptpControlHeader *ctlh,
 			    union pptp_ctrl_union *pptpReq) __read_mostly;
 EXPORT_SYMBOL_GPL(nf_nat_pptp_hook_inbound);
 
 void
-(*nf_nat_pptp_hook_exp_gre)(struct nf_conntrack_expect *expect_orig,
+(__rcu *nf_nat_pptp_hook_exp_gre)(struct nf_conntrack_expect *expect_orig,
 			    struct nf_conntrack_expect *expect_reply)
 			    __read_mostly;
 EXPORT_SYMBOL_GPL(nf_nat_pptp_hook_exp_gre);
 
 void
-(*nf_nat_pptp_hook_expectfn)(struct nf_conn *ct,
+(__rcu *nf_nat_pptp_hook_expectfn)(struct nf_conn *ct,
 			     struct nf_conntrack_expect *exp) __read_mostly;
 EXPORT_SYMBOL_GPL(nf_nat_pptp_hook_expectfn);
 
@@ -111,7 +111,7 @@ static void pptp_expectfn(struct nf_conn *ct,
 			 struct nf_conntrack_expect *exp)
 {
 	struct net *net = nf_ct_net(ct);
-	typeof(nf_nat_pptp_hook_expectfn) nf_nat_pptp_expectfn;
+	typeof(*nf_nat_pptp_hook_expectfn) *nf_nat_pptp_expectfn;
 	pr_debug("increasing timeouts\n");
 
 	/* increase timeout of GRE data channel conntrack entry */
@@ -210,7 +210,7 @@ static int exp_gre(struct nf_conn *ct, __be16 callid, __be16 peer_callid)
 	struct nf_conntrack_expect *exp_orig, *exp_reply;
 	enum ip_conntrack_dir dir;
 	int ret = 1;
-	typeof(nf_nat_pptp_hook_exp_gre) nf_nat_pptp_exp_gre;
+	typeof(*nf_nat_pptp_hook_exp_gre) *nf_nat_pptp_exp_gre;
 
 	exp_orig = nf_ct_expect_alloc(ct);
 	if (exp_orig == NULL)
@@ -280,7 +280,7 @@ pptp_inbound_pkt(struct sk_buff *skb, unsigned int protoff,
 	struct nf_ct_pptp_master *info = nfct_help_data(ct);
 	u_int16_t msg;
 	__be16 cid = 0, pcid = 0;
-	typeof(nf_nat_pptp_hook_inbound) nf_nat_pptp_inbound;
+	typeof(*nf_nat_pptp_hook_inbound) *nf_nat_pptp_inbound;
 
 	msg = ntohs(ctlh->messageType);
 	pr_debug("inbound control message %s\n", pptp_msg_name(msg));
@@ -408,7 +408,7 @@ pptp_outbound_pkt(struct sk_buff *skb, unsigned int protoff,
 	struct nf_ct_pptp_master *info = nfct_help_data(ct);
 	u_int16_t msg;
 	__be16 cid = 0, pcid = 0;
-	typeof(nf_nat_pptp_hook_outbound) nf_nat_pptp_outbound;
+	typeof(*nf_nat_pptp_hook_outbound) *nf_nat_pptp_outbound;
 
 	msg = ntohs(ctlh->messageType);
 	pr_debug("outbound control message %s\n", pptp_msg_name(msg));
