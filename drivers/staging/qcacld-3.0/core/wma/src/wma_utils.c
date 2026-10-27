@@ -1077,7 +1077,11 @@ static tSirLLStatsResults *wma_get_ll_stats_ext_buf(uint32_t *len,
 		}
 	} while (0);
 
-	if (excess_data || (buf_len > WMI_SVC_MSG_MAX_SIZE)) {
+	/* The envelope padding is host storage, not firmware payload. */
+	if (excess_data ||
+	    (buf_len - (sizeof(tSirLLStatsResults) -
+			offsetofend(tSirLLStatsResults, peer_event_number)) >
+	     WMI_SVC_MSG_MAX_SIZE)) {
 		WMA_LOGE("%s: excess wmi buffer: peer %d cca %d tx_mpdu %d tx_succ%d tx_fail %d tx_ppdu %d rx_mpdu %d rx_mcs %d",
 			 __func__, peer_num, fixed_param->num_chan_cca_stats,
 			 fixed_param->tx_mpdu_aggr_array_len,

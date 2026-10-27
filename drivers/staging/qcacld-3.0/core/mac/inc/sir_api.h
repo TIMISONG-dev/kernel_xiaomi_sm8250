@@ -3483,8 +3483,12 @@ typedef struct {
 	};
 
 	uint32_t peer_event_number;
-	/* Variable  length field - Do not add anything after this */
-	uint8_t results[0];
+	/*
+	 * Host-only payload includes pointer-bearing radio stats. Keep its
+	 * storage aligned; sizeof this envelope includes the padding.
+	 * Variable length field - Do not add anything after this.
+	 */
+	uint8_t results[0] __aligned(8);
 } tSirLLStatsResults, *tpSirLLStatsResults;
 
 #ifdef WLAN_FEATURE_LINK_LAYER_STATS
