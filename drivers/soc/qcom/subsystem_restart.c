@@ -1319,7 +1319,7 @@ EXPORT_SYMBOL(subsys_get_crash_status);
 
 static struct subsys_device *desc_to_subsys(struct device *d)
 {
-	struct subsys_device *device, *subsys_dev = 0;
+	struct subsys_device *device, *subsys_dev = NULL;
 
 	mutex_lock(&subsys_list_lock);
 	list_for_each_entry(device, &subsys_list, list)
@@ -1357,7 +1357,7 @@ void notify_before_auth_and_reset(struct device *device)
 
 static int subsys_device_open(struct inode *inode, struct file *file)
 {
-	struct subsys_device *device, *subsys_dev = 0;
+	struct subsys_device *device, *subsys_dev = NULL;
 	void *retval;
 
 	mutex_lock(&subsys_list_lock);
@@ -1379,7 +1379,7 @@ static int subsys_device_open(struct inode *inode, struct file *file)
 
 static int subsys_device_close(struct inode *inode, struct file *file)
 {
-	struct subsys_device *device, *subsys_dev = 0;
+	struct subsys_device *device, *subsys_dev = NULL;
 
 	mutex_lock(&subsys_list_lock);
 	list_for_each_entry(device, &subsys_list, list)
