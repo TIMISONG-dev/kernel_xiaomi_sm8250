@@ -663,7 +663,8 @@ static int clk_find_vdd_level(struct clk_core *clk, unsigned long rate)
  */
 static int clk_update_vdd(struct clk_vdd_class *vdd_class)
 {
-	int level, rc = 0, i, ignore;
+	int level, rc = 0, i;
+	int restore_ret;
 	struct regulator **r = vdd_class->regulator;
 	int *uv = vdd_class->vdd_uv;
 	int n_reg = vdd_class->num_regulators;
@@ -714,8 +715,11 @@ set_voltage_fail:
 		regulator_set_voltage(r[i], uv[cur_base + i], INT_MAX);
 		if (cur_lvl == 0 || cur_lvl == vdd_class->num_levels)
 			regulator_disable(r[i]);
-		else if (level == 0)
-			ignore = regulator_enable(r[i]);
+		else if (level == 0) {
+			restore_ret = regulator_enable(r[i]);
+			if (restore_ret)
+				pr_err("Failed to restore regulator: %d\n", restore_ret);
+		}
 	}
 
 	return rc;
@@ -3441,48 +3445,6 @@ static int clk_dump_show(struct seq_file *s, void *data)
 }
 DEFINE_SHOW_ATTRIBUTE(clk_dump);
 
-static const struct {
-	unsigned long flag;
-	const char *name;
-} clk_flags[] = {
-#define ENTRY(f) { f, #f }
-	ENTRY(CLK_SET_RATE_GATE),
-	ENTRY(CLK_SET_PARENT_GATE),
-	ENTRY(CLK_SET_RATE_PARENT),
-	ENTRY(CLK_IGNORE_UNUSED),
-	ENTRY(CLK_IS_BASIC),
-	ENTRY(CLK_GET_RATE_NOCACHE),
-	ENTRY(CLK_SET_RATE_NO_REPARENT),
-	ENTRY(CLK_GET_ACCURACY_NOCACHE),
-	ENTRY(CLK_RECALC_NEW_RATES),
-	ENTRY(CLK_SET_RATE_UNGATE),
-	ENTRY(CLK_IS_CRITICAL),
-	ENTRY(CLK_OPS_PARENT_ENABLE),
-	ENTRY(CLK_DUTY_CYCLE_PARENT),
-#undef ENTRY
-};
-
-static int clk_flags_show(struct seq_file *s, void *data)
-{
-	struct clk_core *core = s->private;
-	unsigned long flags = core->flags;
-	unsigned int i;
-
-	for (i = 0; flags && i < ARRAY_SIZE(clk_flags); i++) {
-		if (flags & clk_flags[i].flag) {
-			seq_printf(s, "%s\n", clk_flags[i].name);
-			flags &= ~clk_flags[i].flag;
-		}
-	}
-	if (flags) {
-		/* Unknown flags */
-		seq_printf(s, "0x%lx\n", flags);
-	}
-
-	return 0;
-}
-DEFINE_SHOW_ATTRIBUTE(clk_flags);
-
 static int possible_parents_show(struct seq_file *s, void *data)
 {
 	struct clk_core *core = s->private;
@@ -3496,17 +3458,6 @@ static int possible_parents_show(struct seq_file *s, void *data)
 	return 0;
 }
 DEFINE_SHOW_ATTRIBUTE(possible_parents);
-
-static int clk_duty_cycle_show(struct seq_file *s, void *data)
-{
-	struct clk_core *core = s->private;
-	struct clk_duty *duty = &core->duty;
-
-	seq_printf(s, "%u/%u\n", duty->num, duty->den);
-
-	return 0;
-}
-DEFINE_SHOW_ATTRIBUTE(clk_duty_cycle);
 
 static int clock_debug_rate_set(void *data, u64 val)
 {
