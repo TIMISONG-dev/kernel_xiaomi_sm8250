@@ -118,7 +118,7 @@ static ssize_t npu_debug_reg_read(struct file *file,
 	if (!reg_ctx->buf) {
 		char dump_buf[64];
 		char *ptr;
-		int cnt, tot, off;
+		int cnt, tot;
 
 		reg_ctx->buf_len = sizeof(dump_buf) *
 			DIV_ROUND_UP(debugfs->reg_cnt, ROW_BYTES);
@@ -129,7 +129,6 @@ static ssize_t npu_debug_reg_read(struct file *file,
 
 		ptr = npu_dev->core_io.base + debugfs->reg_off;
 		tot = 0;
-		off = (int)debugfs->reg_off;
 
 		if (npu_enable_core_power(npu_dev))
 			return -EPERM;
@@ -178,8 +177,8 @@ static ssize_t npu_debug_off_write(struct file *file,
 	size_t off = 0;
 	uint32_t cnt, reg_cnt;
 	char buf[24];
-	struct npu_device *npu_dev = file->private_data;
 	struct npu_debugfs_ctx *debugfs;
+	struct npu_device *npu_dev = file->private_data;
 
 	NPU_DBG("npu_dev %pK %pK\n", npu_dev, g_npu_dev);
 	npu_dev = g_npu_dev;
@@ -210,8 +209,8 @@ static ssize_t npu_debug_off_read(struct file *file,
 {
 	size_t len;
 	char buf[64];
-	struct npu_device *npu_dev = file->private_data;
 	struct npu_debugfs_ctx *debugfs;
+	struct npu_device *npu_dev = file->private_data;
 
 	NPU_DBG("npu_dev %pK %pK\n", npu_dev, g_npu_dev);
 	npu_dev = g_npu_dev;
@@ -242,13 +241,11 @@ static ssize_t npu_debug_ctrl_write(struct file *file,
 {
 	char buf[24];
 	struct npu_device *npu_dev = file->private_data;
-	struct npu_debugfs_ctx *debugfs;
 	int32_t rc = 0;
 	uint32_t val;
 
 	NPU_DBG("npu_dev %pK %pK\n", npu_dev, g_npu_dev);
 	npu_dev = g_npu_dev;
-	debugfs = &npu_dev->debugfs_ctx;
 
 	if (count >= sizeof(buf))
 		return -EINVAL;
