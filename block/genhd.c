@@ -522,7 +522,11 @@ void blk_free_devt(dev_t devt)
 }
 
 /**
- *	We invalidate devt by assigning NULL pointer for devt in idr.
+ * blk_invalidate_devt - invalidate an extended block device number
+ * @devt: device number whose partition mapping is invalidated
+ *
+ * Replace the partition pointer with NULL while retaining its IDR entry.
+ * Device numbers outside BLOCK_EXT_MAJOR have no extended mapping to invalidate.
  */
 void blk_invalidate_devt(dev_t devt)
 {

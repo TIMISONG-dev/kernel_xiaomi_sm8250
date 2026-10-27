@@ -1818,6 +1818,7 @@ EXPORT_SYMBOL_GPL(blkcg_schedule_throttle);
 
 /**
  * blkcg_add_delay - add delay to this blkg
+ * @blkg: block cgroup and queue whose delay accumulation is charged
  * @now: the current time in nanoseconds
  * @delta: how many nanoseconds of delay to add
  *
