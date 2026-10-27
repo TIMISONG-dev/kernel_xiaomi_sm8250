@@ -159,7 +159,7 @@ static enum hrtimer_restart pwm_hrtimer_handler(struct hrtimer *timer)
 		return HRTIMER_RESTART;
 }
 
-void drv8846_move(struct drv8846_soc_ctrl *c_ctrl)
+static void drv8846_move(struct drv8846_soc_ctrl *c_ctrl)
 {
 	pr_info("move %s\n", (c_ctrl->pdata.dir ? "up" : "down"));
 
@@ -501,7 +501,7 @@ mode0_gpio_req_err:
 	return rc;
 }
 
-int drv8846_parse_dt(struct drv8846_soc_ctrl *c_ctrl)
+static int drv8846_parse_dt(struct drv8846_soc_ctrl *c_ctrl)
 {
 	int rc = 0;
 	struct device_node *of_node = NULL;
