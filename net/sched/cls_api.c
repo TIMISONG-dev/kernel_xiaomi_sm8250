@@ -1073,7 +1073,7 @@ static void tcf_chain_tp_remove(struct tcf_chain *chain,
 {
 	struct tcf_proto *next = rtnl_dereference(chain_info->next);
 
-	if (tp == chain->filter_chain)
+	if (tp == rtnl_dereference(chain->filter_chain))
 		tcf_chain0_head_change(chain, next);
 	RCU_INIT_POINTER(*chain_info->pprev, next);
 	tcf_chain_put(chain);
@@ -1084,7 +1084,7 @@ static struct tcf_proto *tcf_chain_tp_find(struct tcf_chain *chain,
 					   u32 protocol, u32 prio,
 					   bool prio_allocate)
 {
-	struct tcf_proto **pprev;
+	struct tcf_proto __rcu **pprev;
 	struct tcf_proto *tp;
 
 	/* Check the chain for existence of proto-tcf with this priority */
