@@ -21,6 +21,8 @@
 
 #include "uvc_queue.h"
 
+void uvc_set_trace_param(unsigned int trace);
+
 struct usb_ep;
 struct usb_request;
 struct uvc_descriptor_header;
