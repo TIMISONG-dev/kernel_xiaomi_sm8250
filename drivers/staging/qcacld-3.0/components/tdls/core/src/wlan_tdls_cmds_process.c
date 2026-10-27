@@ -1022,7 +1022,6 @@ QDF_STATUS tdls_process_update_peer(struct tdls_update_peer_request *req)
 {
 	struct wlan_serialization_command cmd = {0,};
 	enum wlan_serialization_status ser_cmd_status;
-	struct wlan_objmgr_vdev *vdev;
 	QDF_STATUS status = QDF_STATUS_SUCCESS;
 
 	if (!req || !req->vdev) {
@@ -1031,7 +1030,6 @@ QDF_STATUS tdls_process_update_peer(struct tdls_update_peer_request *req)
 		goto free_req;
 	}
 
-	vdev = req->vdev;
 	cmd.cmd_type = WLAN_SER_CMD_TDLS_ADD_PEER;
 	cmd.cmd_id = 0;
 	cmd.cmd_cb = tdls_update_peer_serialize_callback;
@@ -1450,7 +1448,7 @@ QDF_STATUS tdls_process_add_peer_rsp(struct tdls_add_sta_rsp *rsp)
 
 QDF_STATUS tdls_process_del_peer_rsp(struct tdls_del_sta_rsp *rsp)
 {
-	uint8_t sta_idx, id;
+	uint8_t sta_idx;
 	QDF_STATUS status = QDF_STATUS_E_FAILURE;
 	struct wlan_objmgr_vdev *vdev;
 	struct wlan_objmgr_psoc *psoc;
@@ -1494,7 +1492,7 @@ QDF_STATUS tdls_process_del_peer_rsp(struct tdls_del_sta_rsp *rsp)
 				   QDF_MAC_ADDR_REF(macaddr),
 				   curr_peer->link_status);
 
-			id = wlan_vdev_get_id(vdev);
+			wlan_vdev_get_id(vdev);
 
 			if (TDLS_IS_LINK_CONNECTED(curr_peer))
 				tdls_decrement_peer_count(soc_obj);
