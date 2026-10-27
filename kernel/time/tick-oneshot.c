@@ -22,7 +22,9 @@
 #include "tick-internal.h"
 
 /**
- * tick_program_event
+ * tick_program_event - program the current CPU's next clock event
+ * @expires: Absolute expiration time, or KTIME_MAX to stop the device
+ * @force: Force a minimum-delay event if the expiration is too close or past
  */
 int tick_program_event(ktime_t expires, int force)
 {
@@ -61,6 +63,9 @@ void tick_resume_oneshot(void)
 
 /**
  * tick_setup_oneshot - setup the event device for oneshot mode (hres or nohz)
+ * @newdev: Clock event device to configure
+ * @handler: Event handler to install on @newdev
+ * @next_event: Absolute expiration time of the first event
  */
 void tick_setup_oneshot(struct clock_event_device *newdev,
 			void (*handler)(struct clock_event_device *),
@@ -73,6 +78,7 @@ void tick_setup_oneshot(struct clock_event_device *newdev,
 
 /**
  * tick_switch_to_oneshot - switch to oneshot mode
+ * @handler: Event handler to install on the current CPU's tick device
  */
 int tick_switch_to_oneshot(void (*handler)(struct clock_event_device *))
 {

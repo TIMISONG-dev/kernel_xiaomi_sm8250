@@ -842,6 +842,7 @@ found:
 
 /**
  * clocksource_select - Select the best clocksource available
+ * @force: Allow clocksource selection before boot has finished
  *
  * Private function. Must hold clocksource_mutex when called.
  *

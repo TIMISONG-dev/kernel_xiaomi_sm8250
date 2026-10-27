@@ -504,6 +504,7 @@ bool tick_nohz_tick_stopped_cpu(int cpu)
 
 /**
  * tick_nohz_update_jiffies - update jiffies when idle was interrupted
+ * @now: Current monotonic time at interrupt entry
  *
  * Called from interrupt entry when the CPU was idle
  *
@@ -1108,6 +1109,7 @@ EXPORT_SYMBOL_GPL(tick_nohz_get_sleep_length);
 /**
  * tick_nohz_get_idle_calls_cpu - return the current idle calls counter value
  * for a particular CPU.
+ * @cpu: CPU whose idle-entry counter is read
  *
  * Called from the schedutil frequency scaling governor in scheduler context.
  */
@@ -1431,7 +1433,8 @@ void tick_oneshot_notify(void)
 }
 
 /**
- * Check, if a change happened, which makes oneshot possible.
+ * tick_check_oneshot_change - check whether oneshot operation is possible
+ * @allow_nohz: Permit switching to low-resolution nohz mode
  *
  * Called cyclic from the hrtimer softirq (driven by the timer
  * softirq) allow_nohz signals, that we can switch into low-res nohz

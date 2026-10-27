@@ -245,7 +245,6 @@ EXPORT_SYMBOL_GPL(alarm_expires_remaining);
 /**
  * alarmtimer_suspend - Suspend time callback
  * @dev: unused
- * @state: unused
  *
  * When we are going into suspend, we look through the bases
  * to see which is the soonest timer to expire. We then
@@ -564,6 +563,7 @@ static enum alarmtimer_type clock2alarm(clockid_t clockid)
 /**
  * alarm_handle_timer - Callback for posix timers
  * @alarm: alarm that fired
+ * @now: Current time supplied by the alarm base (unused)
  *
  * Posix timer callback for expired alarm timers.
  */
@@ -723,6 +723,7 @@ static int alarm_timer_create(struct k_itimer *new_timer)
 /**
  * alarmtimer_nsleep_wakeup - Wakeup function for alarm_timer_nsleep
  * @alarm: ptr to alarm that fired
+ * @now: Current time supplied by the alarm base (unused)
  *
  * Wakes up the task that set the alarmtimer
  */
@@ -741,6 +742,7 @@ static enum alarmtimer_restart alarmtimer_nsleep_wakeup(struct alarm *alarm,
  * alarmtimer_do_nsleep - Internal alarmtimer nsleep implementation
  * @alarm: ptr to alarmtimer
  * @absexp: absolute expiration time
+ * @type: Alarm clock base used for freezer bookkeeping and remaining time
  *
  * Sets the alarm timer and sleeps until it is fired or interrupted.
  */
@@ -814,9 +816,9 @@ static long __sched alarm_timer_nsleep_restart(struct restart_block *restart)
  * @which_clock: clockid
  * @flags: determins abstime or relative
  * @tsreq: requested sleep time (abs or rel)
- * @rmtp: remaining sleep time saved
  *
- * Handles clock_nanosleep calls against _ALARM clockids
+ * Handles clock_nanosleep calls against _ALARM clockids. Remaining sleep
+ * time is saved through the current task's nanosleep restart block.
  */
 static int alarm_timer_nsleep(const clockid_t which_clock, int flags,
 			      const struct timespec64 *tsreq)
