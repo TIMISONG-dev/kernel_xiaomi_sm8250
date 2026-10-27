@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <getopt.h>
 #include <elf.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <setjmp.h>
 #include <stdio.h>
@@ -119,12 +120,42 @@ ulseek(int const fd, off_t const offset, int const whence)
 static size_t
 uread(int const fd, void *const buf, size_t const count)
 {
-	size_t const n = read(fd, buf, count);
-	if (n != count) {
-		perror("read");
-		fail_file();
+	size_t done = 0;
+
+	while (done < count) {
+		ssize_t n = read(fd, (char *)buf + done, count - done);
+
+		if (n < 0 && errno == EINTR)
+			continue;
+		if (n <= 0) {
+			if (!n)
+				errno = EIO;
+			perror("read");
+			fail_file();
+		}
+		done += n;
 	}
-	return n;
+	return done;
+}
+
+static void
+write_all(int fd, const void *buf, size_t count)
+{
+	size_t done = 0;
+
+	while (done < count) {
+		ssize_t n = write(fd, (const char *)buf + done, count - done);
+
+		if (n < 0 && errno == EINTR)
+			continue;
+		if (n <= 0) {
+			if (!n)
+				errno = EIO;
+			perror("write");
+			fail_file();
+		}
+		done += n;
+	}
 }
 
 static size_t
@@ -318,8 +349,6 @@ static void *mmap_file(char const *fname)
 static void write_file(const char *fname)
 {
 	char tmp_file[strlen(fname) + 4];
-	size_t n;
-
 	if (!file_updated)
 		return;
 
@@ -335,18 +364,9 @@ static void write_file(const char *fname)
 		perror(fname);
 		fail_file();
 	}
-	n = write(fd_map, file_map, sb.st_size);
-	if (n != sb.st_size) {
-		perror("write");
-		fail_file();
-	}
-	if (file_append_size) {
-		n = write(fd_map, file_append, file_append_size);
-		if (n != file_append_size) {
-			perror("write");
-			fail_file();
-		}
-	}
+	write_all(fd_map, file_map, sb.st_size);
+	if (file_append_size)
+		write_all(fd_map, file_append, file_append_size);
 	close(fd_map);
 	if (rename(tmp_file, fname) < 0) {
 		perror(fname);
