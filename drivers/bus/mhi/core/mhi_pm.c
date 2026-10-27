@@ -1059,7 +1059,7 @@ void mhi_control_error(struct mhi_controller *mhi_cntrl)
 	if (sfr_info && sfr_info->buf_addr) {
 		memcpy(sfr_info->str, sfr_info->buf_addr, sfr_info->len);
 		MHI_CNTRL_ERR("mhi:%s sfr: %s\n", mhi_cntrl->name,
-				sfr_info->buf_addr);
+				sfr_info->str);
 	}
 
 	/* link is not down if device supports RDDM */
