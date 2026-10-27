@@ -86,6 +86,9 @@ struct nvmem_cell_table {
 	struct list_head	node;
 };
 
+int nvmem_add_cells(struct nvmem_device *nvmem,
+		    const struct nvmem_cell_info *info, int ncells);
+
 #if IS_ENABLED(CONFIG_NVMEM)
 
 struct nvmem_device *nvmem_register(const struct nvmem_config *cfg);
