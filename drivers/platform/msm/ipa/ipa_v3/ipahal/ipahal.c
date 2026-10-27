@@ -1673,6 +1673,9 @@ int ipahal_init(enum ipa_hw_type ipa_hw_type, void __iomem *base,
 {
 	int result;
 
+	BUILD_BUG_ON(offsetof(struct ipahal_imm_cmd_pyld, data) %
+		     __alignof__(u64));
+
 	IPAHAL_DBG("Entry - IPA HW TYPE=%d base=%pK ipa_pdev=%pK\n",
 		ipa_hw_type, base, ipa_pdev);
 
