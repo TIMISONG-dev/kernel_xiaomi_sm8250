@@ -287,10 +287,10 @@ void sps_debugfs_record(const char *msg);
 #endif
 
 /* output the content of BAM-level registers */
-void print_bam_reg(void *virt_addr);
+void print_bam_reg(void __iomem *virt_addr);
 
 /* output the content of BAM pipe registers */
-void print_bam_pipe_reg(void *virt_addr, u32 pipe_index);
+void print_bam_pipe_reg(void __iomem *virt_addr, u32 pipe_index);
 
 /* output the content of selected BAM-level registers */
 void print_bam_selected_reg(void *virt_addr, u32 pipe_index);
