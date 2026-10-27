@@ -239,14 +239,15 @@ static int send_to_group(struct inode *to_tell,
 					file_name, cookie, iter_info);
 }
 
-static struct fsnotify_mark *fsnotify_first_mark(struct fsnotify_mark_connector **connp)
+static struct fsnotify_mark *fsnotify_first_mark(fsnotify_connp_t *connp)
 {
 	struct fsnotify_mark_connector *conn;
 	struct hlist_node *node = NULL;
 
 	conn = srcu_dereference(*connp, &fsnotify_mark_srcu);
 	if (conn)
-		node = srcu_dereference(conn->list.first, &fsnotify_mark_srcu);
+		node = srcu_dereference(hlist_first_rcu(&conn->list),
+				       &fsnotify_mark_srcu);
 
 	return hlist_entry_safe(node, struct fsnotify_mark, obj_list);
 }
@@ -256,7 +257,7 @@ static struct fsnotify_mark *fsnotify_next_mark(struct fsnotify_mark *mark)
 	struct hlist_node *node = NULL;
 
 	if (mark)
-		node = srcu_dereference(mark->obj_list.next,
+		node = srcu_dereference(hlist_next_rcu(&mark->obj_list),
 					&fsnotify_mark_srcu);
 
 	return hlist_entry_safe(node, struct fsnotify_mark, obj_list);
