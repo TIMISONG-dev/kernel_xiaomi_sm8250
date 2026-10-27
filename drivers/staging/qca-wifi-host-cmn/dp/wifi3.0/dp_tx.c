@@ -1485,10 +1485,12 @@ static void dp_tx_get_tid(struct dp_vdev *vdev, qdf_nbuf_t nbuf,
 		 * use flowlabel
 		 *igmpmld cases to be handled in phase 2
 		 */
-		unsigned long ver_pri_flowlabel;
-		unsigned long pri;
-		ver_pri_flowlabel = *(unsigned long *) L3datap;
-		pri = (ntohl(ver_pri_flowlabel) & IPV6_FLOWINFO_PRIORITY) >>
+		__be32 ver_pri_flowlabel;
+		u32 pri;
+
+		qdf_mem_copy(&ver_pri_flowlabel, L3datap,
+			     sizeof(ver_pri_flowlabel));
+		pri = (be32_to_cpu(ver_pri_flowlabel) & IPV6_FLOWINFO_PRIORITY) >>
 			DP_IPV6_PRIORITY_SHIFT;
 		tos = pri;
 		dscp_tid_override = 1;
