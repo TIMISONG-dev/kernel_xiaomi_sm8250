@@ -495,6 +495,8 @@ static int ch101_push_to_buffer(void *input_data)
 		pbuf += sizeof(u64);
 		ret = iio_push_to_buffers_with_timestamp(indio_dev, buf,
 						starting_ts);
+		if (ret)
+			dev_err_ratelimited(dev, "Failed to push sample: %d\n", ret);
 
 		pr_info(TAG "push tobuffer=%d, size=%d\n", i,
 			(int)(pbuf-buf));
@@ -1132,6 +1134,12 @@ int ch101_core_probe(struct i2c_client *client, struct regmap *regmap,
 
 	thread_st = kthread_run(control_thread_fn, data,
 		"CH101 Control Thread");
+	if (IS_ERR(thread_st)) {
+		ret = PTR_ERR(thread_st);
+		iio_device_unregister(indio_dev);
+		iio_triggered_buffer_cleanup(indio_dev);
+		goto error_dmp_sysfs;
+	}
 	}
 
 	dev_info(dev, "%s: End\n", __func__);
