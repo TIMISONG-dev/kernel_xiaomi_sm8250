@@ -43,14 +43,18 @@
 #include "smpboot.h"
 
 /**
- * cpuhp_cpu_state - Per cpu hotplug state storage
+ * struct cpuhp_cpu_state - Per cpu hotplug state storage
  * @state:	The current cpu state
  * @target:	The target state
+ * @fail:	State at which the next callback invocation should fail
  * @thread:	Pointer to the hotplug thread
  * @should_run:	Thread should execute
  * @rollback:	Perform a rollback
  * @single:	Single callback invocation
  * @bringup:	Single callback bringup or teardown selector
+ * @booted_once: Whether this CPU has reached its startup notification
+ * @node:	Instance selected for a single multi-instance callback
+ * @last:	Instance marking where a multi-instance invocation stopped
  * @cb_state:	The state for a single callback (install/uninstall)
  * @result:	Result of the operation
  * @done_up:	Signal completion to the issuer of the task for cpu-up
@@ -104,11 +108,17 @@ static inline void cpuhp_lock_release(bool bringup) { }
 #endif
 
 /**
- * cpuhp_step - Hotplug state machine step
+ * struct cpuhp_step - Hotplug state machine step
  * @name:	Name of the step
  * @startup:	Startup function of the step
+ * @startup.single: Startup callback for a single-instance state
+ * @startup.multi: Startup callback for one registered instance
  * @teardown:	Teardown function of the step
+ * @teardown.single: Teardown callback for a single-instance state
+ * @teardown.multi: Teardown callback for one registered instance
+ * @list:	Registered instances of a multi-instance state
  * @cant_stop:	Bringup/teardown can't be stopped at this step
+ * @multi_instance: Startup and teardown use the multi-instance callback form
  */
 struct cpuhp_step {
 	const char		*name;
@@ -1872,6 +1882,7 @@ EXPORT_SYMBOL_GPL(__cpuhp_state_add_instance);
 /**
  * __cpuhp_setup_state_cpuslocked - Setup the callbacks for an hotplug machine state
  * @state:		The state to setup
+ * @name:		Name used to identify the state
  * @invoke:		If true, the startup function is invoked for cpus where
  *			cpu state >= @state
  * @startup:		startup callback function
