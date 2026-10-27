@@ -44,11 +44,6 @@
 #ifdef CONFIG_SND_DEBUG
 #define CREATE_TRACE_POINTS
 #include "pcm_param_trace.h"
-#else
-#define trace_hw_mask_param_enabled()		0
-#define trace_hw_interval_param_enabled()	0
-#define trace_hw_mask_param(substream, type, index, prev, curr)
-#define trace_hw_interval_param(substream, type, index, prev, curr)
 #endif
 
 /*
@@ -283,7 +278,9 @@ static int constrain_mask_params(struct snd_pcm_substream *substream,
 					&substream->runtime->hw_constraints;
 	struct snd_mask *m;
 	unsigned int k;
+#ifdef CONFIG_SND_DEBUG
 	struct snd_mask old_mask;
+#endif
 	int changed;
 
 	for (k = SNDRV_PCM_HW_PARAM_FIRST_MASK; k <= SNDRV_PCM_HW_PARAM_LAST_MASK; k++) {
@@ -295,8 +292,10 @@ static int constrain_mask_params(struct snd_pcm_substream *substream,
 		if (!(params->rmask & (1 << k)))
 			continue;
 
+#ifdef CONFIG_SND_DEBUG
 		if (trace_hw_mask_param_enabled())
 			old_mask = *m;
+#endif
 
 		changed = snd_mask_refine(m, constrs_mask(constrs, k));
 		if (changed < 0)
@@ -305,7 +304,9 @@ static int constrain_mask_params(struct snd_pcm_substream *substream,
 			continue;
 
 		/* Set corresponding flag so that the caller gets it. */
+#ifdef CONFIG_SND_DEBUG
 		trace_hw_mask_param(substream, k, 0, &old_mask, m);
+#endif
 		params->cmask |= 1 << k;
 	}
 
@@ -319,7 +320,9 @@ static int constrain_interval_params(struct snd_pcm_substream *substream,
 					&substream->runtime->hw_constraints;
 	struct snd_interval *i;
 	unsigned int k;
+#ifdef CONFIG_SND_DEBUG
 	struct snd_interval old_interval;
+#endif
 	int changed;
 
 	for (k = SNDRV_PCM_HW_PARAM_FIRST_INTERVAL; k <= SNDRV_PCM_HW_PARAM_LAST_INTERVAL; k++) {
@@ -331,8 +334,10 @@ static int constrain_interval_params(struct snd_pcm_substream *substream,
 		if (!(params->rmask & (1 << k)))
 			continue;
 
+#ifdef CONFIG_SND_DEBUG
 		if (trace_hw_interval_param_enabled())
 			old_interval = *i;
+#endif
 
 		changed = snd_interval_refine(i, constrs_interval(constrs, k));
 		if (changed < 0)
@@ -341,7 +346,9 @@ static int constrain_interval_params(struct snd_pcm_substream *substream,
 			continue;
 
 		/* Set corresponding flag so that the caller gets it. */
+#ifdef CONFIG_SND_DEBUG
 		trace_hw_interval_param(substream, k, 0, &old_interval, i);
+#endif
 		params->cmask |= 1 << k;
 	}
 
@@ -359,8 +366,11 @@ static int constrain_params_by_rules(struct snd_pcm_substream *substream,
 	unsigned int stamp;
 	struct snd_pcm_hw_rule *r;
 	unsigned int d;
+
+#ifdef CONFIG_SND_DEBUG
 	struct snd_mask old_mask;
 	struct snd_interval old_interval;
+#endif
 	bool again;
 	int changed, err = 0;
 
@@ -420,6 +430,7 @@ retry:
 		if (r->deps[d] < 0)
 			continue;
 
+#ifdef CONFIG_SND_DEBUG
 		if (trace_hw_mask_param_enabled()) {
 			if (hw_is_mask(r->var))
 				old_mask = *hw_param_mask(params, r->var);
@@ -428,6 +439,7 @@ retry:
 			if (hw_is_interval(r->var))
 				old_interval = *hw_param_interval(params, r->var);
 		}
+#endif
 
 		changed = r->func(params, r);
 		if (changed < 0) {
@@ -441,6 +453,7 @@ retry:
 		 * iteration.
 		 */
 		if (changed && r->var >= 0) {
+#ifdef CONFIG_SND_DEBUG
 			if (hw_is_mask(r->var)) {
 				trace_hw_mask_param(substream, r->var,
 					k + 1, &old_mask,
@@ -451,6 +464,7 @@ retry:
 					k + 1, &old_interval,
 					hw_param_interval(params, r->var));
 			}
+#endif
 
 			params->cmask |= (1 << r->var);
 			vstamps[r->var] = stamp;
@@ -630,11 +644,15 @@ static int snd_pcm_hw_params_choose(struct snd_pcm_substream *pcm,
 		-1
 	};
 	const int *v;
+
+#ifdef CONFIG_SND_DEBUG
 	struct snd_mask old_mask;
 	struct snd_interval old_interval;
+#endif
 	int changed;
 
 	for (v = vars; *v != -1; v++) {
+#ifdef CONFIG_SND_DEBUG
 		/* Keep old parameter to trace. */
 		if (trace_hw_mask_param_enabled()) {
 			if (hw_is_mask(*v))
@@ -644,6 +662,7 @@ static int snd_pcm_hw_params_choose(struct snd_pcm_substream *pcm,
 			if (hw_is_interval(*v))
 				old_interval = *hw_param_interval(params, *v);
 		}
+#endif
 		if (*v != SNDRV_PCM_HW_PARAM_BUFFER_SIZE)
 			changed = snd_pcm_hw_param_first(pcm, params, *v, NULL);
 		else
@@ -653,6 +672,7 @@ static int snd_pcm_hw_params_choose(struct snd_pcm_substream *pcm,
 		if (changed == 0)
 			continue;
 
+#ifdef CONFIG_SND_DEBUG
 		/* Trace the changed parameter. */
 		if (hw_is_mask(*v)) {
 			trace_hw_mask_param(pcm, *v, 0, &old_mask,
@@ -662,6 +682,7 @@ static int snd_pcm_hw_params_choose(struct snd_pcm_substream *pcm,
 			trace_hw_interval_param(pcm, *v, 0, &old_interval,
 						hw_param_interval(params, *v));
 		}
+#endif
 	}
 
 	return 0;
@@ -1336,12 +1357,10 @@ static int snd_pcm_start_lock_irq(struct snd_pcm_substream *substream)
 static int snd_compressed_ioctl(struct snd_pcm_substream *substream,
 				unsigned int cmd, void __user *arg)
 {
-	struct snd_pcm_runtime *runtime;
 	int err = 0;
 
 	if (PCM_RUNTIME_CHECK(substream))
 		return -ENXIO;
-	runtime = substream->runtime;
 	pr_debug("%s called with cmd = %d\n", __func__, cmd);
 	err = substream->ops->ioctl(substream, cmd, arg);
 	return err;
@@ -1350,12 +1369,10 @@ static int snd_compressed_ioctl(struct snd_pcm_substream *substream,
 static int snd_user_ioctl(struct snd_pcm_substream *substream,
 				unsigned int cmd, void __user *arg)
 {
-	struct snd_pcm_runtime *runtime;
 	int err = 0;
 
 	if (PCM_RUNTIME_CHECK(substream))
 		return -ENXIO;
-	runtime = substream->runtime;
 	err = substream->ops->ioctl(substream, cmd, arg);
 	return err;
 }
