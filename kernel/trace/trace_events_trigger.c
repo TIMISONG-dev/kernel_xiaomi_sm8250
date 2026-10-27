@@ -31,12 +31,13 @@ void trigger_data_free(struct event_trigger_data *data)
  * event_triggers_call - Call triggers associated with a trace event
  * @file: The trace_event_file associated with the event
  * @rec: The trace entry for the event, NULL for unconditional invocation
+ * @event: Associated ring buffer event, or NULL when unavailable
  *
  * For each trigger associated with an event, invoke the trigger
  * function registered with the associated trigger command.  If rec is
  * non-NULL, it means that the trigger requires further processing and
  * shouldn't be unconditionally invoked.  If rec is non-NULL and the
- * trigger has a filter associated with it, rec will checked against
+ * trigger has a filter associated with it, rec will be checked against
  * the filter and if the record matches the trigger will be invoked.
  * If the trigger is a 'post_trigger', meaning it shouldn't be invoked
  * in any case until the current event is written, the trigger
@@ -908,7 +909,8 @@ void unpause_named_trigger(struct event_trigger_data *data)
 
 /**
  * set_named_trigger_data - Associate common named trigger data
- * @data: The trigger data of a named trigger to unpause
+ * @data: Named trigger to associate with the common data
+ * @named_data: Trigger that owns the common named trigger data
  *
  * Named triggers are sets of triggers that share a common set of
  * trigger data.  The first named trigger registered with a given name

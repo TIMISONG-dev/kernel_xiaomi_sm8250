@@ -90,7 +90,7 @@ static bool is_not(const char *str)
 }
 
 /**
- * prog_entry - a singe entry in the filter program
+ * struct prog_entry - a single entry in the filter program
  * @target:	     Index to jump to on a branch (actually one minus the index)
  * @when_to_branch:  The value of the result of the predicate to do a branch
  * @pred:	     The predicate to execute.
@@ -102,10 +102,10 @@ struct prog_entry {
 };
 
 /**
- * update_preds- assign a program entry a label target
+ * update_preds - assign a program entry a label target
  * @prog: The program array
  * @N: The index of the current entry in @prog
- * @when_to_branch: What to assign a program entry for its branch condition
+ * @invert: Branch condition to assign to the entry referenced by @N
  *
  * The program entry at @N has a target that points to the index of a program
  * entry that can have its target and when_to_branch fields updated.
@@ -1698,13 +1698,13 @@ static void create_filter_finish(struct filter_parse_error *pe)
 /**
  * create_filter - create a filter for a trace_event_call
  * @call: trace_event_call to create a filter for
- * @filter_str: filter string
- * @set_str: remember @filter_str and enable detailed error in filter
+ * @filter_string: filter string
+ * @set_str: remember @filter_string and enable detailed error in filter
  * @filterp: out param for created filter (always updated on return)
  *           Must be a pointer that references a NULL pointer.
  *
- * Creates a filter for @call with @filter_str.  If @set_str is %true,
- * @filter_str is copied and recorded in the new filter.
+ * Creates a filter for @call with @filter_string.  If @set_str is %true,
+ * @filter_string is copied and recorded in the new filter.
  *
  * On success, returns 0 and *@filterp points to the new filter.  On
  * failure, returns -errno and *@filterp may point to %NULL or to a new
@@ -1743,13 +1743,20 @@ int create_event_filter(struct trace_event_call *call,
 }
 
 /**
- * create_system_filter - create a filter for an event_subsystem
- * @system: event_subsystem to create a filter for
- * @filter_str: filter string
- * @filterp: out param for created filter (always updated on return)
+ * create_system_filter - create filters for events in a subsystem
+ * @dir: Subsystem directory whose events are to be filtered
+ * @tr: Trace array containing the event files
+ * @filter_str: Filter string to apply to the subsystem's events
+ * @filterp: Output for the subsystem filter and error information; must
+ *           initially point to %NULL
  *
- * Identical to create_filter() except that it creates a subsystem filter
- * and always remembers @filter_str.
+ * Creates and installs filters on the events in @tr that belong to @dir.
+ * The subsystem filter returned through @filterp records error information
+ * on failure. On success, its filter string is cleared so that reading the
+ * subsystem filter displays the default message. The caller is responsible
+ * for freeing any subsystem filter returned through @filterp.
+ *
+ * Return: 0 on success or a negative error code on failure.
  */
 static int create_system_filter(struct trace_subsystem_dir *dir,
 				struct trace_array *tr,
