@@ -4675,14 +4675,14 @@ static long dvb_demux_compat_ioctl(struct file *file, unsigned int cmd,
 }
 #endif
 
-static unsigned int dvb_demux_poll(struct file *file, poll_table *wait)
+static __poll_t dvb_demux_poll(struct file *file, poll_table *wait)
 {
 	struct dmxdev_filter *dmxdevfilter = file->private_data;
-	unsigned int mask = 0;
+	__poll_t mask = 0;
 
 	if (!dmxdevfilter) {
 		pr_err("%s: dmxdevfilter is NULL\n", __func__);
-		return -EINVAL;
+		return EPOLLERR;
 	}
 	if (dvb_vb2_is_streaming(&dmxdevfilter->vb2_ctx))
 		return dvb_vb2_poll(&dmxdevfilter->vb2_ctx, file, wait);
@@ -4695,17 +4695,17 @@ static unsigned int dvb_demux_poll(struct file *file, poll_table *wait)
 		return 0;
 
 	if (dmxdevfilter->buffer.error) {
-		mask |= (POLLIN | POLLRDNORM | POLLERR);
+		mask |= (EPOLLIN | EPOLLRDNORM | EPOLLERR);
 		if (dmxdevfilter->buffer.error == -EOVERFLOW)
-			mask |= POLLPRI;
+			mask |= EPOLLPRI;
 	}
 
 	if (!dvb_ringbuffer_empty(&dmxdevfilter->buffer))
-		mask |= (POLLIN | POLLRDNORM);
+		mask |= (EPOLLIN | EPOLLRDNORM);
 
 	if (dmxdevfilter->events.wakeup_events_counter >=
 		dmxdevfilter->events.event_mask.wakeup_threshold)
-		mask |= POLLPRI;
+		mask |= EPOLLPRI;
 
 	return mask;
 }
@@ -4903,14 +4903,14 @@ static long dvb_dvr_compat_ioctl(struct file *file, unsigned int cmd,
 }
 #endif
 
-static unsigned int dvb_dvr_poll(struct file *file, poll_table *wait)
+static __poll_t dvb_dvr_poll(struct file *file, poll_table *wait)
 {
 	struct dvb_device *dvbdev = file->private_data;
 	struct dmxdev *dmxdev = dvbdev->priv;
-	unsigned int mask = 0;
+	__poll_t mask = 0;
 
 	if (dmxdev->exit)
-		return -EPOLLERR;
+		return EPOLLERR;
 	if (dvb_vb2_is_streaming(&dmxdev->dvr_vb2_ctx))
 		return dvb_vb2_poll(&dmxdev->dvr_vb2_ctx, file, wait);
 #ifdef CONFIG_DVB_MMAP
@@ -4922,24 +4922,24 @@ static unsigned int dvb_dvr_poll(struct file *file, poll_table *wait)
 		poll_wait(file, &dmxdev->dvr_buffer.queue, wait);
 
 		if (dmxdev->dvr_buffer.error) {
-			mask |= (POLLIN | POLLRDNORM | POLLERR);
+			mask |= (EPOLLIN | EPOLLRDNORM | EPOLLERR);
 			if (dmxdev->dvr_buffer.error == -EOVERFLOW)
-				mask |= POLLPRI;
+				mask |= EPOLLPRI;
 		}
 
 		if (!dvb_ringbuffer_empty(&dmxdev->dvr_buffer))
-			mask |= (POLLIN | POLLRDNORM);
+			mask |= (EPOLLIN | EPOLLRDNORM);
 
 		if (dmxdev->dvr_output_events.wakeup_events_counter >=
 			dmxdev->dvr_output_events.event_mask.wakeup_threshold)
-			mask |= POLLPRI;
+			mask |= EPOLLPRI;
 	} else {
 		poll_wait(file, &dmxdev->dvr_input_buffer.queue, wait);
 		if (dmxdev->dvr_input_buffer.error)
-			mask |= (POLLOUT | POLLRDNORM | POLLPRI | POLLERR);
+			mask |= (EPOLLOUT | EPOLLRDNORM | EPOLLPRI | EPOLLERR);
 
 		if (dvb_ringbuffer_free(&dmxdev->dvr_input_buffer))
-			mask |= (POLLOUT | POLLRDNORM | POLLPRI);
+			mask |= (EPOLLOUT | EPOLLRDNORM | EPOLLPRI);
 	}
 
 	return mask;
