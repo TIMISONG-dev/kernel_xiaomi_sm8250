@@ -4,6 +4,7 @@
  * Copyright (c) 2022, Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
+#include <linux/err.h>
 #include <linux/io.h>
 #include <linux/module.h>
 #include <linux/debugfs.h>
@@ -18,9 +19,8 @@
 
 #define MAX_DBG_BUF_SIZE (36 * SYNX_MAX_OBJS)
 
-struct dentry *my_direc;
-const char delim[] = ",";
-int columns = NAME_COLUMN |
+static const char delim[] = ",";
+static int columns = NAME_COLUMN |
 BOUND_COLUMN | ERROR_CODES;
 
 static void populate_bound_rows(
@@ -39,7 +39,7 @@ static void populate_bound_rows(
 	}
 }
 static ssize_t synx_table_read(struct file *file,
-		char *buf,
+		char __user *buf,
 		size_t count,
 		loff_t *ppos)
 {
@@ -128,19 +128,19 @@ static ssize_t synx_table_write(struct file *file,
 		size_t count,
 		loff_t *ppos)
 {
-	char *ptr;
-	char *kbuffer = kzalloc(48, GFP_KERNEL);
-	int stat = -1;
+	char *ptr, *cursor, *kbuffer;
 
-	if (!kbuffer)
-		return -ENOMEM;
-	stat = copy_from_user(kbuffer, buf, 48);
-	if (stat != 0) {
-		kfree(kbuffer);
-		return -EFAULT;
-	}
-	while ((ptr = strsep(&kbuffer, delim)) != NULL) {
-		ptr += '\0';
+	if (!count)
+		return 0;
+	if (count > 48)
+		return -EINVAL;
+
+	kbuffer = memdup_user_nul(buf, count);
+	if (IS_ERR(kbuffer))
+		return PTR_ERR(kbuffer);
+
+	cursor = kbuffer;
+	while ((ptr = strsep(&cursor, delim)) != NULL) {
 		if (strcmp(ptr, "bound\n") == 0)
 			columns = columns ^ BOUND_COLUMN;
 		else if (strcmp(ptr, "name\n") == 0)
