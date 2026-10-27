@@ -544,8 +544,6 @@ static QDF_STATUS wma_fill_vht80_mcast_rate(uint32_t shortgi,
  * wma_fill_ht_mcast_rate() - fill ht mcast rate
  * @shortgi: short gaurd interval
  * @chwidth: channel width
- * @chanmode: channel mode
- * @mhz: frequency
  * @mbpsx10_rate: mbps rates
  * @nss: nss
  * @rate: rate
@@ -576,8 +574,6 @@ static QDF_STATUS wma_fill_ht_mcast_rate(uint32_t shortgi,
  * wma_fill_vht_mcast_rate() - fill vht mcast rate
  * @shortgi: short gaurd interval
  * @chwidth: channel width
- * @chanmode: channel mode
- * @mhz: frequency
  * @mbpsx10_rate: mbps rates
  * @nss: nss
  * @rate: rate
@@ -613,7 +609,6 @@ static QDF_STATUS wma_fill_vht_mcast_rate(uint32_t shortgi,
  * wma_encode_mc_rate() - fill mc rates
  * @shortgi: short gaurd interval
  * @chwidth: channel width
- * @chanmode: channel mode
  * @mhz: frequency
  * @mbpsx10_rate: mbps rates
  * @nss: nss
@@ -961,9 +956,9 @@ static void wma_data_tx_ack_work_handler(void *ack_work)
 
 /**
  * wma_data_tx_ack_comp_hdlr() - handles tx data ack completion
- * @context: context with which the handler is registered
+ * @wma_context: context with which the handler is registered
  * @netbuf: tx data nbuf
- * @err: status of tx completion
+ * @status: status of tx completion
  *
  * This is the cb registered with TxRx for
  * Ack Complete
@@ -1332,7 +1327,7 @@ QDF_STATUS wma_process_rate_update_indicate(tp_wma_handle wma,
 
 /**
  * wma_mgmt_tx_ack_comp_hdlr() - handles tx ack mgmt completion
- * @context: context with which the handler is registered
+ * @wma_context: context with which the handler is registered
  * @netbuf: tx mgmt nbuf
  * @status: status of tx completion
  *
@@ -1360,7 +1355,7 @@ wma_mgmt_tx_ack_comp_hdlr(void *wma_context, qdf_nbuf_t netbuf, int32_t status)
 
 /**
  * wma_mgmt_tx_dload_comp_hldr() - handles tx mgmt completion
- * @context: context with which the handler is registered
+ * @wma_context: context with which the handler is registered
  * @netbuf: tx mgmt nbuf
  * @status: status of tx completion
  *
@@ -1398,7 +1393,7 @@ wma_mgmt_tx_dload_comp_hldr(void *wma_context, qdf_nbuf_t netbuf,
 
 /**
  * wma_tx_attach() - attach tx related callbacks
- * @pwmaCtx: wma context
+ * @wma_handle: wma context
  *
  * attaches tx fn with underlying layer.
  *
@@ -1432,7 +1427,7 @@ QDF_STATUS wma_tx_attach(tp_wma_handle wma_handle)
 
 /**
  * wma_tx_detach() - detach tx related callbacks
- * @tp_wma_handle: wma context
+ * @wma_handle: wma context
  *
  * Deregister with TxRx for Tx Mgmt Download and Ack completion.
  *
@@ -1634,7 +1629,7 @@ QDF_STATUS wma_set_peer_rate_report_condition(WMA_HANDLE handle,
 /**
  * wma_process_init_bad_peer_tx_ctl_info -
  *                this function to initialize peer rate report config info.
- * @handle:	Handle of WMA
+ * @wma:	Handle of WMA
  * @config:	Bad peer configuration from SIR module
  *
  * This function initializes the bad peer tx control data structure in WMA,
@@ -1998,7 +1993,7 @@ static uint8_t wma_thermal_mgmt_get_level(void *handle, uint32_t temp)
 
 /**
  * wma_thermal_mgmt_evt_handler() - thermal mgmt event handler
- * @wma_handle: Pointer to WMA handle
+ * @handle: Pointer to WMA handle
  * @event: Thermal event information
  * @len: length of the event
  *
@@ -3107,7 +3102,7 @@ void wma_tx_abort(uint8_t vdev_id)
 
 /**
  * wma_lro_config_cmd() - process the LRO config command
- * @wma: Pointer to WMA handle
+ * @handle: Callback context (unused; WMA is obtained from CDS)
  * @wma_lro_cmd: Pointer to LRO configuration parameters
  *
  * This function sends down the LRO configuration parameters to
