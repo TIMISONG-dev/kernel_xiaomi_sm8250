@@ -61,6 +61,8 @@ static unsigned char mincore_page(struct address_space *mapping, pgoff_t pgoff)
 	 */
 #ifdef CONFIG_SWAP
 	if (shmem_mapping(mapping)) {
+		/* Keep swap address spaces alive until the page is pinned. */
+		rcu_read_lock();
 		page = find_get_entry(mapping, pgoff);
 		/*
 		 * shmem/tmpfs may return swap: account for swapcache
@@ -68,9 +70,17 @@ static unsigned char mincore_page(struct address_space *mapping, pgoff_t pgoff)
 		 */
 		if (xa_is_value(page)) {
 			swp_entry_t swp = radix_to_swp_entry(page);
-			page = find_get_page(swap_address_space(swp),
-					     swp_offset(swp));
+			struct address_space *spaces;
+
+			spaces = READ_ONCE(swapper_spaces[swp_type(swp)]);
+			if (spaces)
+				page = find_get_page(spaces + (swp_offset(swp) >>
+							      SWAP_ADDRESS_SPACE_SHIFT),
+						     swp_offset(swp));
+			else
+				page = NULL;
 		}
+		rcu_read_unlock();
 	} else
 		page = find_get_page(mapping, pgoff);
 #else
