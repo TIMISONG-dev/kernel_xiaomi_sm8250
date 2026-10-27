@@ -4803,7 +4803,6 @@ dp_htt_rx_flow_fse_operation(struct dp_pdev *pdev,
 	struct dp_htt_htc_pkt *pkt;
 	qdf_nbuf_t msg;
 	u_int32_t *msg_word;
-	struct htt_h2t_msg_rx_fse_operation_t *fse_operation;
 	uint8_t *htt_logger_bufp;
 	QDF_STATUS status;
 
@@ -4839,7 +4838,6 @@ dp_htt_rx_flow_fse_operation(struct dp_pdev *pdev,
 	*msg_word = 0;
 	HTT_H2T_MSG_TYPE_SET(*msg_word, HTT_H2T_MSG_TYPE_RX_FSE_OPERATION_CFG);
 
-	fse_operation = (struct htt_h2t_msg_rx_fse_operation_t *)msg_word;
 
 	HTT_RX_FSE_OPERATION_PDEV_ID_SET(*msg_word, fse_op_info->pdev_id);
 	msg_word++;
