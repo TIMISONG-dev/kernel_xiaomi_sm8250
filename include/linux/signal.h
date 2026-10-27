@@ -429,6 +429,7 @@ extern bool unhandled_signal(struct task_struct *tsk, int sig);
 	(!siginmask(signr, SIG_KERNEL_IGNORE_MASK|SIG_KERNEL_STOP_MASK) && \
 	 (t)->sighand->action[(signr)-1].sa.sa_handler == SIG_DFL)
 
+void sigaction_compat_abi(struct k_sigaction *act, struct k_sigaction *oact);
 void signals_init(void);
 
 int restore_altstack(const stack_t __user *);
