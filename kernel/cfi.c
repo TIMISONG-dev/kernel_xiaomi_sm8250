@@ -206,7 +206,7 @@ static void update_shadow(struct module *mod, unsigned long min_addr,
 	rcu_assign_pointer(cfi_shadow, next);
 
 	mutex_unlock(&shadow_update_lock);
-	synchronize_rcu();
+	synchronize_sched();
 
 	if (prev) {
 		set_memory_rw((unsigned long)prev, SHADOW_PAGES);
