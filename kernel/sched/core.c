@@ -8714,7 +8714,9 @@ struct cgroup_subsys cpu_cgrp_subsys = {
 void dump_cpu_task(int cpu)
 {
 	pr_info("Task dump for CPU %d:\n", cpu);
-	sched_show_task(cpu_curr(cpu));
+	rcu_read_lock();
+	sched_show_task(rcu_dereference(cpu_curr(cpu)));
+	rcu_read_unlock();
 }
 
 /*
