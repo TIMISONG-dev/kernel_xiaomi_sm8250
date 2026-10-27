@@ -214,14 +214,14 @@ static int xiaomi_uart_probe(struct platform_device *pdev)
 
 	pctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(pctrl)) {
-		airoha_printk("%s: Unable to allocate pinctrl: %d\n", __FILE__,
+		airoha_printk("%s: Unable to allocate pinctrl: %ld\n", __FILE__,
 			      PTR_ERR(pctrl));
 		return -1;
 	}
 
 	pctrl_mode_active = pinctrl_lookup_state(pctrl, "gps_enable_active");
 	if (IS_ERR(pctrl_mode_active)) {
-		airoha_printk("%s: Unable to find pinctrl_state_mode_spi: %d\n",
+		airoha_printk("%s: Unable to find pinctrl_state_mode_spi: %ld\n",
 			      __FILE__, PTR_ERR(pctrl_mode_active));
 		return -1;
 	}
@@ -229,7 +229,7 @@ static int xiaomi_uart_probe(struct platform_device *pdev)
 	pctrl_mode_idle = pinctrl_lookup_state(pctrl, "gps_enable_suspend");
 	if (IS_ERR(pctrl_mode_idle)) {
 		airoha_printk(
-			"%s: Unable to find pinctrl_state_mode_idle: %d\n",
+			"%s: Unable to find pinctrl_state_mode_idle: %ld\n",
 			__FILE__, PTR_ERR(pctrl_mode_idle));
 		return -1;
 	}
