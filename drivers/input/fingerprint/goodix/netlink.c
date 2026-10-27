@@ -4,6 +4,7 @@
  * Copyright (c) 2017 Goodix
  * Copyright (C) 2022 XiaoMi, Inc.
  */
+#include "gf_spi.h"
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/timer.h>
@@ -53,7 +54,7 @@ void sendnlmsg(char *message)
 	}
 }
 
-void nl_data_ready(struct sk_buff *__skb)
+static void nl_data_ready(struct sk_buff *__skb)
 {
 	struct sk_buff *skb;
 	struct nlmsghdr *nlh;
