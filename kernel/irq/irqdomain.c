@@ -97,6 +97,7 @@ EXPORT_SYMBOL_GPL(__irq_domain_alloc_fwnode);
 
 /**
  * irq_domain_free_fwnode - Free a non-OF-backed fwnode_handle
+ * @fwnode: IRQ chip firmware node allocated by irq_domain_alloc_fwnode()
  *
  * Free a fwnode_handle allocated with irq_domain_alloc_fwnode.
  */
@@ -912,6 +913,12 @@ EXPORT_SYMBOL_GPL(irq_find_mapping);
 
 /**
  * irq_domain_xlate_onecell() - Generic xlate for direct one cell bindings
+ * @d: IRQ domain receiving the translation (unused)
+ * @ctrlr: Interrupt controller device node (unused)
+ * @intspec: Device Tree interrupt specifier cells
+ * @intsize: Number of cells in @intspec
+ * @out_hwirq: Receives the hardware interrupt number from the first cell
+ * @out_type: Receives IRQ_TYPE_NONE
  *
  * Device Tree IRQ specifier translation function which works with one cell
  * bindings where the cell value maps directly to the hwirq number.
@@ -930,6 +937,12 @@ EXPORT_SYMBOL_GPL(irq_domain_xlate_onecell);
 
 /**
  * irq_domain_xlate_twocell() - Generic xlate for direct two cell bindings
+ * @d: IRQ domain receiving the translation (unused)
+ * @ctrlr: Interrupt controller device node (unused)
+ * @intspec: Device Tree interrupt specifier cells
+ * @intsize: Number of cells in @intspec
+ * @out_hwirq: Receives the hardware interrupt number from the first cell
+ * @out_type: Receives the second cell masked with IRQ_TYPE_SENSE_MASK
  *
  * Device Tree IRQ specifier translation function which works with two cell
  * bindings where the cell values map directly to the hwirq number
@@ -949,6 +962,12 @@ EXPORT_SYMBOL_GPL(irq_domain_xlate_twocell);
 
 /**
  * irq_domain_xlate_onetwocell() - Generic xlate for one or two cell bindings
+ * @d: IRQ domain receiving the translation (unused)
+ * @ctrlr: Interrupt controller device node (unused)
+ * @intspec: Device Tree interrupt specifier cells
+ * @intsize: Number of cells in @intspec
+ * @out_hwirq: Receives the hardware interrupt number from the first cell
+ * @out_type: Receives the masked second cell, or IRQ_TYPE_NONE if absent
  *
  * Device Tree IRQ specifier translation function which works with either one
  * or two cell bindings where the cell values map directly to the hwirq number
@@ -1548,12 +1567,12 @@ void irq_domain_free_irqs(unsigned int virq, unsigned int nr_irqs)
 
 /**
  * irq_domain_alloc_irqs_parent - Allocate interrupts from parent domain
+ * @domain: Child IRQ domain whose parent handles the interrupts
  * @irq_base:	Base IRQ number
  * @nr_irqs:	Number of IRQs to allocate
  * @arg:	Allocation data (arch/domain specific)
  *
- * Check whether the domain has been setup recursive. If not allocate
- * through the parent domain.
+ * Allocate through the parent domain, or return -ENOSYS if there is none.
  */
 int irq_domain_alloc_irqs_parent(struct irq_domain *domain,
 				 unsigned int irq_base, unsigned int nr_irqs,
@@ -1569,11 +1588,11 @@ EXPORT_SYMBOL_GPL(irq_domain_alloc_irqs_parent);
 
 /**
  * irq_domain_free_irqs_parent - Free interrupts from parent domain
+ * @domain: Child IRQ domain whose parent handles the interrupts
  * @irq_base:	Base IRQ number
  * @nr_irqs:	Number of IRQs to free
  *
- * Check whether the domain has been setup recursive. If not free
- * through the parent domain.
+ * Free through the parent domain. Do nothing if there is no parent.
  */
 void irq_domain_free_irqs_parent(struct irq_domain *domain,
 				 unsigned int irq_base, unsigned int nr_irqs)
