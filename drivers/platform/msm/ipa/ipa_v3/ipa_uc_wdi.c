@@ -74,7 +74,7 @@ enum ipa_hw_wdi_channel_states {
 };
 
 /**
- * enum ipa3_cpu_2_hw_commands -  Values that represent the WDI commands from
+ * enum ipa_cpu_2_hw_wdi_commands -  Values that represent the WDI commands from
  * CPU
  * @IPA_CPU_2_HW_CMD_WDI_TX_SET_UP : Command to set up WDI Tx Path
  * @IPA_CPU_2_HW_CMD_WDI_RX_SET_UP : Command to set up WDI Rx Path
@@ -107,6 +107,23 @@ enum ipa_cpu_2_hw_wdi_commands {
 /**
  * enum ipa_hw_2_cpu_cmd_resp_status -  Values that represent WDI related
  * command response status to be sent to CPU.
+ * @IPA_HW_2_CPU_WDI_CMD_STATUS_SUCCESS: Command completed successfully
+ * @IPA_HW_2_CPU_MAX_WDI_TX_CHANNELS: Maximum number of WDI transmit channels reached
+ * @IPA_HW_2_CPU_WDI_CE_RING_OVERRUN_POSSIBILITY: Copy-engine ring may overrun
+ * @IPA_HW_2_CPU_WDI_CE_RING_SET_UP_FAILURE: Copy-engine ring setup failed
+ * @IPA_HW_2_CPU_WDI_CE_RING_PARAMS_UNALIGNED: Copy-engine ring parameters are unaligned
+ * @IPA_HW_2_CPU_WDI_COMP_RING_OVERRUN_POSSIBILITY: Completion ring may overrun
+ * @IPA_HW_2_CPU_WDI_COMP_RING_SET_UP_FAILURE: Completion ring setup failed
+ * @IPA_HW_2_CPU_WDI_COMP_RING_PARAMS_UNALIGNED: Completion ring parameters are unaligned
+ * @IPA_HW_2_CPU_WDI_UNKNOWN_TX_CHANNEL: Transmit channel is unknown
+ * @IPA_HW_2_CPU_WDI_TX_INVALID_FSM_TRANSITION: Requested transmit state transition is invalid
+ * @IPA_HW_2_CPU_WDI_TX_FSM_TRANSITION_ERROR: Transmit state transition failed
+ * @IPA_HW_2_CPU_MAX_WDI_RX_CHANNELS: Maximum number of WDI receive channels reached
+ * @IPA_HW_2_CPU_WDI_RX_RING_PARAMS_UNALIGNED: Receive ring parameters are unaligned
+ * @IPA_HW_2_CPU_WDI_RX_RING_SET_UP_FAILURE: Receive ring setup failed
+ * @IPA_HW_2_CPU_WDI_UNKNOWN_RX_CHANNEL: Receive channel is unknown
+ * @IPA_HW_2_CPU_WDI_RX_INVALID_FSM_TRANSITION: Requested receive state transition is invalid
+ * @IPA_HW_2_CPU_WDI_RX_FSM_TRANSITION_ERROR: Receive state transition failed
  */
 enum ipa_hw_2_cpu_cmd_resp_status {
 	IPA_HW_2_CPU_WDI_CMD_STATUS_SUCCESS            =
@@ -179,6 +196,18 @@ enum ipa_hw_wdi_ch_errors {
  * IPA SRAM.
  *
  * The shared memory is used for communication between IPA HW and CPU.
+ * @common: Common uC shared-memory interface
+ * @reserved_2B_28: Reserved firmware interface space
+ * @reserved_2F_2C: Reserved firmware interface space
+ * @reserved_33_30: Reserved firmware interface space
+ * @reserved_37_34: Reserved firmware interface space
+ * @reserved_3B_38: Reserved firmware interface space
+ * @reserved_3F_3C: Reserved firmware interface space
+ * @reserved_43_42: Reserved firmware interface space
+ * @reserved_47_46: Reserved firmware interface space
+ * @interfaceVersionWdi: WDI interface version reported by firmware
+ * @wdi_tx_ch_0_state: Transmit channel zero state
+ * @wdi_rx_ch_0_state: Receive channel zero state
  */
 struct IpaHwSharedMemWdiMapping_t {
 	struct IpaHwSharedMemCommonMapping_t common;
@@ -282,11 +311,13 @@ struct IpaHwWdi2RxSetUpCmdData_t {
 /**
  * union IpaHwWdiRxExtCfgCmdData_t - Structure holding the parameters for
  * IPA_CPU_2_HW_CMD_WDI_RX_EXT_CFG command.
- * @ipa_pipe_number : The IPA pipe number for which this config is passed
- * @qmap_id : QMAP ID to be set in the metadata register
- * @reserved : Reserved
+ * @params.ipa_pipe_number: The IPA pipe number for which this config is passed
+ * @params.qmap_id: QMAP ID to be set in the metadata register
+ * @params.reserved: Reserved
  *
  * The parameters are passed as immediate params in the shared memory
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwWdiRxExtCfgCmdData_t {
 	struct IpaHwWdiRxExtCfgCmdParams_t {
@@ -304,10 +335,12 @@ union IpaHwWdiRxExtCfgCmdData_t {
  * IPA_CPU_2_HW_CMD_WDI_CH_DISABLE,
  * IPA_CPU_2_HW_CMD_WDI_CH_SUSPEND,
  * IPA_CPU_2_HW_CMD_WDI_CH_RESUME command.
- * @ipa_pipe_number :  The IPA pipe number. This could be Tx or an Rx pipe
- * @reserved : Reserved
+ * @params.ipa_pipe_number:  The IPA pipe number. This could be Tx or an Rx pipe
+ * @params.reserved: Reserved
  *
  * The parameters are passed as immediate params in the shared memory
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwWdiCommonChCmdData_t {
 	struct IpaHwWdiCommonChCmdParams_t {
@@ -320,14 +353,16 @@ union IpaHwWdiCommonChCmdData_t {
 /**
  * union IpaHwWdiErrorEventData_t - parameters for IPA_HW_2_CPU_EVENT_WDI_ERROR
  * event.
- * @wdi_error_type : The IPA pipe number to be torn down. This could be Tx or
+ * @params.wdi_error_type: The IPA pipe number to be torn down. This could be Tx or
  * an Rx pipe
- * @reserved : Reserved
- * @ipa_pipe_number : IPA pipe number on which error has happened. Applicable
+ * @params.reserved: Reserved
+ * @params.ipa_pipe_number: IPA pipe number on which error has happened. Applicable
  * only if error type indicates channel error
- * @wdi_ch_err_type : Information about the channel error (if available)
+ * @params.wdi_ch_err_type: Information about the channel error (if available)
  *
  * The parameters are passed as immediate params in the shared memory
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwWdiErrorEventData_t {
 	struct IpaHwWdiErrorEventParams_t {
@@ -2854,8 +2889,8 @@ uc_timeout:
 
 /**
  * ipa_broadcast_wdi_quota_reach_ind() - quota reach
- * @uint32_t fid: [in] input netdev ID
- * @uint64_t num_bytes: [in] used bytes
+ * @fid: [in] input netdev ID
+ * @num_bytes: [in] used bytes
  *
  * Returns:	0 on success, negative on failure
  */
