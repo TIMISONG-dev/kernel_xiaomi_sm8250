@@ -876,7 +876,7 @@ void mlme_get_mbssid_info(struct wlan_objmgr_vdev *vdev,
 		return;
 	}
 
-	mbss_11ax = &vdev_mlme->mgmt.mbss_11ax;
+	*mbss_11ax = vdev_mlme->mgmt.mbss_11ax;
 }
 
 QDF_STATUS mlme_set_tx_power(struct wlan_objmgr_vdev *vdev,
