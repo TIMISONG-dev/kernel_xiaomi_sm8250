@@ -47,7 +47,7 @@ int ptrace_access_vm(struct task_struct *tsk, unsigned long addr,
 		return 0;
 
 	if (!tsk->ptrace ||
-	    (current != tsk->parent) ||
+	    (current != rcu_access_pointer(tsk->parent)) ||
 	    ((get_dumpable(mm) != SUID_DUMP_USER) &&
 	     !ptracer_capable(tsk, mm->user_ns))) {
 		mmput(mm);
@@ -203,7 +203,7 @@ static void ptrace_unfreeze_traced(struct task_struct *task)
 	if (task->state != __TASK_TRACED)
 		return;
 
-	WARN_ON(!task->ptrace || task->parent != current);
+	WARN_ON(!task->ptrace || rcu_access_pointer(task->parent) != current);
 
 	/*
 	 * PTRACE_LISTEN can allow ptrace_trap_notify to wake us up remotely.
@@ -248,7 +248,7 @@ static int ptrace_check_attach(struct task_struct *child, bool ignore_state)
 	 * be changed by us so it's not changing right after this.
 	 */
 	read_lock(&tasklist_lock);
-	if (child->ptrace && child->parent == current) {
+	if (child->ptrace && rcu_access_pointer(child->parent) == current) {
 		WARN_ON(child->state == __TASK_TRACED);
 		/*
 		 * child->sighand can't be NULL, release_task()
