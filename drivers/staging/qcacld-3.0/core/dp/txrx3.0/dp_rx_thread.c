@@ -321,10 +321,8 @@ enq_done:
 
 static QDF_STATUS dp_rx_tm_thread_gro_flush_ind(struct dp_rx_thread *rx_thread)
 {
-	struct dp_rx_tm_handle_cmn *tm_handle_cmn;
 	qdf_wait_queue_head_t *wait_q_ptr;
 
-	tm_handle_cmn = rx_thread->rtm_handle_cmn;
 	wait_q_ptr = &rx_thread->wait_q;
 
 	qdf_atomic_set(&rx_thread->gro_flush_ind, 1);
@@ -519,14 +517,12 @@ static int dp_rx_thread_loop(void *arg)
 	struct dp_rx_thread *rx_thread = arg;
 	bool shutdown = false;
 	int status;
-	struct dp_rx_tm_handle_cmn *tm_handle_cmn;
 
 	if (!arg) {
 		dp_err("bad Args passed");
 		return 0;
 	}
 
-	tm_handle_cmn = rx_thread->rtm_handle_cmn;
 
 	qdf_set_user_nice(qdf_get_current_task(), -1);
 	qdf_set_wake_up_idle(true);

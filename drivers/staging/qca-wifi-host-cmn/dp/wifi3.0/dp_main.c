@@ -2993,9 +2993,8 @@ static bool dp_reo_remap_config(struct dp_soc *soc,
 				uint32_t *remap2)
 {
 	uint8_t offload_radio = wlan_cfg_get_dp_soc_nss_cfg(soc->wlan_cfg_ctx);
-	uint8_t target_type;
 
-	target_type = hal_get_target_type(soc->hal_soc);
+	hal_get_target_type(soc->hal_soc);
 
 	switch (offload_radio) {
 	case dp_nss_cfg_default:
@@ -6604,7 +6603,6 @@ dp_peer_authorize(struct cdp_soc_t *soc_hdl, uint8_t vdev_id,
 static void dp_vdev_reset_peer(struct dp_vdev *vdev,
 			       struct dp_peer *peer)
 {
-	struct dp_peer *bss_peer = NULL;
 
 	if (!vdev) {
 		dp_err("vdev is NULL");
@@ -6616,7 +6614,6 @@ static void dp_vdev_reset_peer(struct dp_vdev *vdev,
 		}
 
 		if (vdev && vdev->vap_bss_peer) {
-		    bss_peer = vdev->vap_bss_peer;
 		    DP_UPDATE_STATS(vdev, peer);
 		}
 	}
@@ -7493,12 +7490,10 @@ void dp_aggregate_vdev_stats(struct dp_vdev *vdev,
 			     struct cdp_vdev_stats *vdev_stats)
 {
 	struct dp_peer *peer = NULL;
-	struct dp_soc *soc = NULL;
 
 	if (!vdev || !vdev->pdev)
 		return;
 
-	soc = vdev->pdev->soc;
 
 	qdf_mem_copy(vdev_stats, &vdev->stats, sizeof(vdev->stats));
 
@@ -11336,7 +11331,6 @@ dp_soc_attach(struct cdp_ctrl_objmgr_psoc *ctrl_psoc,
 	      HTC_HANDLE htc_handle, qdf_device_t qdf_osdev,
 	      struct ol_if_ops *ol_ops, uint16_t device_id)
 {
-	int int_ctx;
 	struct dp_soc *soc =  NULL;
 	struct htt_soc *htt_soc;
 
@@ -11347,7 +11341,6 @@ dp_soc_attach(struct cdp_ctrl_objmgr_psoc *ctrl_psoc,
 		goto fail0;
 	}
 
-	int_ctx = 0;
 	soc->device_id = device_id;
 	soc->cdp_soc.ops = &dp_txrx_ops;
 	soc->cdp_soc.ol_ops = ol_ops;
