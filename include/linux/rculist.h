@@ -370,7 +370,7 @@ static inline void list_splice_tail_init_rcu(struct list_head *list,
 #define list_for_each_entry_rcu(pos, head, member, cond...)		\
 	for (__list_check_rcu(dummy, ## cond, 0),			\
 	     pos = list_entry_rcu((head)->next, typeof(*pos), member);	\
-		&pos->member != (head);					\
+		!list_entry_is_head(pos, head, member);					\
 		pos = list_entry_rcu(pos->member.next, typeof(*pos), member))
 
 /**
