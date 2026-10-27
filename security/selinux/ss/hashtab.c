@@ -9,6 +9,7 @@
 #include <linux/errno.h>
 #include <linux/sched.h>
 #include "hashtab.h"
+#include "security.h"
 
 static struct kmem_cache *hashtab_node_cachep;
 
