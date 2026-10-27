@@ -87,6 +87,15 @@ static void ipa3_dma_debugfs_destroy(void) {}
  * @total_sync_memcpy: total number of sync memcpy (statistics)
  * @total_async_memcpy: total number of async memcpy (statistics)
  * @total_uc_memcpy: total number of uc memcpy (statistics)
+ * @ipa_dma_async_cons_hdl: Handle of the asynchronous memcpy consumer.
+ * @ipa_dma_dummy_src_sync: Dummy source buffer queued by the synchronous memcpy prefetch
+ *   workaround.
+ * @ipa_dma_dummy_dst_sync: Dummy destination buffer queued by the synchronous memcpy prefetch
+ *   workaround.
+ * @ipa_dma_dummy_src_async: Dummy source buffer queued by the asynchronous memcpy prefetch
+ *   workaround.
+ * @ipa_dma_dummy_dst_async: Dummy destination buffer queued by the asynchronous memcpy prefetch
+ *   workaround.
  */
 struct ipa3_dma_ctx {
 	unsigned int enable_ref_cnt;
@@ -1078,9 +1087,9 @@ completed:
  * by IPA driver after getting notify on Rx operation is completed (data was
  * written to dest descriptor on async_cons ep).
  *
- * @priv -not in use.
+ * @priv: not in use.
  * @evt: event name - IPA_RECIVE.
- * @data -the ipa_mem_buffer.
+ * @data: Event payload; unused by this callback.
  */
 void ipa3_dma_async_memcpy_notify_cb(void *priv
 			, enum ipa_dp_evt_type evt, unsigned long data)

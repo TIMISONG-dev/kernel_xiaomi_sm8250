@@ -103,6 +103,8 @@ struct ipa3_rmnet_plat_drv_res {
  * @ch_id: channel id
  * @lock: spinlock for mutual exclusion
  * @device_status: holds device status
+ * @resource_granted_completion: Completion signaled when the PM resource is granted.
+ * @napi: NAPI receive polling context for this network interface.
  *
  * WWAN private - holds all relevant info about WWAN driver
  */
@@ -2111,6 +2113,10 @@ static void ipa3_wwan_setup(struct net_device *dev)
  * rmnet_ipa_send_coalesce_notification
  * (uint8_t qmap_id, bool enable, bool tcp, bool udp)
  * send RSC notification
+ * @qmap_id: QMAP identifier included when enabling coalescing.
+ * @enable: Send an enable notification when true, otherwise a disable notification.
+ * @tcp: TCP coalescing enable flag included in an enable notification.
+ * @udp: UDP coalescing enable flag included in an enable notification.
  *
  * This function sends the rsc enable/disable notification
  * fot tcp, udp to user-space module
@@ -2170,8 +2176,8 @@ int ipa3_wwan_set_modem_state(struct wan_ioctl_notify_wan_state *state)
  * This function will register 2 client with IPA PM to represent modem
  * in clock scaling calculation:
  *	- "EMB MODEM" - this client will be activated with embedded traffic
-	- "TETH MODEM" - this client we be activated by IPACM on offload to
-	  modem.
+ *	- "TETH MODEM" - this client we be activated by IPACM on offload to
+ *	  modem.
 */
 static int ipa3_q6_register_pm(void)
 {
@@ -2232,7 +2238,7 @@ static void ipa3_wake_tx_queue(struct work_struct *work)
  * ipa3_pm_resource_granted() - Called upon
  * IPA_PM_RESOURCE_GRANTED event. Wakes up the tx workqueue.
  *
- * @work: work object supplied ny workqueue
+ * @dev: Callback private data; unused by this implementation
  *
  * Return codes:
  * None
@@ -2369,6 +2375,7 @@ static void ipa3_wwan_deregister_netdev_pm_client(void)
 /**
  * ipa3_wwan_probe() - Initialized the module and registers as a
  * network interface to the network stack
+ * @pdev: Platform device supplying RMNET IPA configuration.
  *
  * Note: In case IPA driver hasn't initialized already, the probe function
  * will return immediately after registering a callback to be invoked when
@@ -2710,6 +2717,7 @@ static struct platform_driver rmnet_ipa_driver = {
 
 /**
  * rmnet_ipa_send_ssr_notification(bool ssr_done) - send SSR notification
+ * @ssr_done: True for the after-powerup notification, false for before-shutdown.
  *
  * This function sends the SSR notification before modem shutdown and
  * after_powerup from SSR framework, to user-space module
@@ -4069,6 +4077,7 @@ int rmnet_ipa3_reset_tethering_stats(struct wan_ioctl_reset_tether_stats *data)
 /**
  * ipa3_broadcast_quota_reach_ind() - Send Netlink broadcast on Quota
  * @mux_id: The MUX ID on which the quota has been reached
+ * @upstream_type: Upstream interface type selecting the quota notification contents.
  *
  * This function broadcasts a Netlink event using the kobject of the
  * rmnet_ipa interface in order to alert the user space that the quota

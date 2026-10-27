@@ -369,6 +369,7 @@ allocate_failed:
  * tbl bodies at the sram is enough for the commit
  * @ipt: the ip address family type
  * @rlt: the rule type (hashable or non-hashable)
+ * @bdy: Table body buffer whose size is compared with the local SRAM allocation.
  *
  * Return: true if enough space available or false in other cases
  */
@@ -403,10 +404,10 @@ static bool ipa_flt_valid_lcl_tbl_size(enum ipa_ip_type ipt,
  * ipa_flt_alloc_cmd_buffers() - alloc descriptors and imm cmds
  *  payload pointers buffers for headers and bodies of flt structure
  *  as well as place for flush imm.
- * @ipt: the ip address family type
+ * @ip: the ip address family type
  * @entries: the number of entries
  * @desc: [OUT] descriptor buffer
- * @cmd: [OUT] imm commands payload pointers buffer
+ * @cmd_pyld: [OUT] imm commands payload pointers buffer
  *
  * Return: 0 on success, negative on failure
  */
@@ -471,7 +472,7 @@ static bool ipa_flt_skip_pipe_config(int pipe)
  *  commit the headers and the bodies if are local with internal cache flushing.
  *  The headers (and local bodies) will first be created into dma buffers and
  *  then written via IC to the SRAM
- * @ipt: the ip address family type
+ * @ip: the ip address family type
  *
  * Return: 0 on success, negative on failure
  */
@@ -1409,6 +1410,8 @@ bail:
 /**
  * ipa3_add_flt_rule_after() - Add the specified filtering rules to SW after
  *  the rule which its handle is given and optionally commit to IPA HW
+ * @rules: Rules, insertion handle and commit flag, with rule handles and statuses returned in
+ *   place.
  *
  * Returns:	0 on success, negative on failure
  *
@@ -1527,6 +1530,8 @@ bail:
  * ipa3_add_flt_rule_after_v2() - Add the specified filtering
  *  rules to SW after the rule which its handle is given and
  *  optionally commit to IPA HW
+ * @rules: Rules, insertion handle and commit flag, with rule handles and statuses returned in
+ *   place.
  *
  * Returns:	0 on success, negative on failure
  *
@@ -1642,6 +1647,7 @@ bail:
 /**
  * ipa3_del_flt_rule() - Remove the specified filtering rules from SW and
  * optionally commit to IPA HW
+ * @hdls: Rule handles and commit flag, with per-handle deletion status returned in place.
  *
  * Returns:	0 on success, negative on failure
  *
@@ -1682,6 +1688,7 @@ bail:
 /**
  * ipa3_mdfy_flt_rule() - Modify the specified filtering rules in SW and
  * optionally commit to IPA HW
+ * @hdls: Rule modifications and commit flag, with per-rule status returned in place.
  *
  * Returns:	0 on success, negative on failure
  *
@@ -1734,6 +1741,7 @@ bail:
 /**
  * ipa3_mdfy_flt_rule_v2() - Modify the specified filtering
  * rules in SW and optionally commit to IPA HW
+ * @hdls: Rule modifications and commit flag, with per-rule status returned in place.
  *
  * Returns:	0 on success, negative on failure
  *

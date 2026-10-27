@@ -4113,6 +4113,8 @@ u8 ipa3_get_qmb_master_sel(enum ipa_client_type client)
 /**
  * ipa3_set_client() - provide client mapping
  * @client: client type
+ * @index: IPA endpoint index whose IPACM mapping is updated.
+ * @uplink: Whether this endpoint carries uplink traffic.
  *
  * Return value: none
  */
@@ -4130,6 +4132,7 @@ void ipa3_set_client(int index, enum ipacm_client_enum client, bool uplink)
 }
 /**
  * ipa3_get_wlan_stats() - get ipa wifi stats
+ * @wdi_sap_stats: Statistics request/result passed to the registered WDI statistics callback.
  *
  * Return value: success or failure
  */
@@ -4165,6 +4168,7 @@ int ipa3_set_wlan_quota(struct ipa_set_wifi_quota *wdi_quota)
 
 /**
  * ipa3_inform_wlan_bw() - inform wlan bw-index
+ * @wdi_bw: WLAN bandwidth index information passed to the statistics callback.
  *
  * Return value: success or failure
  */
@@ -4182,7 +4186,7 @@ int ipa3_inform_wlan_bw(struct ipa_inform_wlan_bw *wdi_bw)
 
 /**
  * ipa3_get_client() - provide client mapping
- * @client: client type
+ * @pipe_idx: IPA endpoint index used to look up the stored client mapping.
  *
  * Return value: client mapping enum
  */
@@ -4197,10 +4201,10 @@ enum ipacm_client_enum ipa3_get_client(int pipe_idx)
 }
 
 /**
- * ipa2_get_client_uplink() - provide client mapping
- * @client: client type
+ * ipa3_get_client_uplink() - provide client mapping
+ * @pipe_idx: IPA endpoint index used to look up the stored client mapping.
  *
- * Return value: none
+ * Return value: stored uplink flag, or false for an invalid endpoint index
  */
 bool ipa3_get_client_uplink(int pipe_idx)
 {
@@ -4315,6 +4319,7 @@ bool ipa_is_ep_support_flt(int pipe_idx)
 /**
  * ipa3_cfg_ep_seq() - IPA end-point HPS/DPS sequencer type configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
+ * @seq_cfg: Sequencer selection, including whether to use a dynamic sequence type.
  *
  * Returns:	0 on success, negative on failure
  *
@@ -4561,7 +4566,7 @@ int ipa3_cfg_ep_conn_track(u32 clnt_hdl,
 /**
  * ipa3_cfg_ep_status() - IPA end-point status configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_status:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -4599,7 +4604,7 @@ int ipa3_cfg_ep_status(u32 clnt_hdl,
 /**
  * ipa3_cfg_ep_cfg() - IPA end-point cfg configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @cfg:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -4644,7 +4649,7 @@ int ipa3_cfg_ep_cfg(u32 clnt_hdl, const struct ipa_ep_cfg_cfg *cfg)
 /**
  * ipa3_cfg_ep_metadata_mask() - IPA end-point meta-data mask configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @metadata_mask:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -4682,7 +4687,7 @@ int ipa3_cfg_ep_metadata_mask(u32 clnt_hdl,
 /**
  * ipa3_cfg_ep_hdr() -  IPA end-point header configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_hdr:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -4785,7 +4790,7 @@ int ipa3_cfg_ep_hdr_ext(u32 clnt_hdl,
 /**
  * ipa3_cfg_ep_ctrl() -  IPA end-point Control configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg_ctrl:	[in] IPA end-point configuration params
+ * @ep_ctrl:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  */
@@ -4840,7 +4845,7 @@ static const char *ipa3_get_mode_type_str(enum ipa_mode_type mode)
 /**
  * ipa3_cfg_ep_mode() - IPA end-point mode configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_mode:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -5035,7 +5040,7 @@ static int ipa3_process_timer_cfg(u32 time_us,
 /**
  * ipa3_cfg_ep_aggr() - IPA end-point aggregation configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_aggr:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -5131,7 +5136,7 @@ complete:
 /**
  * ipa3_cfg_ep_route() - IPA end-point routing configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_route:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -5196,7 +5201,7 @@ int ipa3_cfg_ep_route(u32 clnt_hdl, const struct ipa_ep_cfg_route *ep_route)
  *
  * In IPA4.2 HW version need configure base and scale value in HOL timer reg
  * @tmr_val: [in] timer value for HOL timer
- * @ipa_ep_cfg: [out] Fill IPA end-point configuration base and scale value
+ * @ep_holb: [out] Fill IPA end-point configuration base and scale value
  *			and return
  */
 void ipa3_cal_ep_holb_scale_base_val(u32 tmr_val,
@@ -5226,7 +5231,7 @@ void ipa3_cal_ep_holb_scale_base_val(u32 tmr_val,
  * and indefinite blocking is avoided.
  *
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_holb:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  */
@@ -5308,7 +5313,7 @@ success:
  * client handle.
  *
  * @client:	[in] client name
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_holb:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  */
@@ -5374,7 +5379,7 @@ int ipa3_cfg_ep_deaggr(u32 clnt_hdl,
 /**
  * ipa3_cfg_ep_metadata() - IPA end-point metadata configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_md:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -5611,6 +5616,7 @@ int ipa3_straddle_boundary(u32 start, u32 end, u32 boundary)
 /**
  * ipa3_init_mem_partition() - Assigns the static memory partition
  * based on the IPA version
+ * @type: IPA hardware version used to select the static memory partition.
  *
  * Returns:	0 on success
  */
@@ -6715,6 +6721,7 @@ bool ipa3_is_ready(void)
 
 /**
  * ipa3_is_client_handle_valid() - check if IPA client handle is valid handle
+ * @clnt_hdl: IPA endpoint index to check against the configured pipe count.
  *
  * Return value: true for yes; false for no
  */
@@ -6811,6 +6818,8 @@ u32 ipa3_get_num_pipes(void)
 /**
  * ipa3_disable_apps_wan_cons_deaggr()-
  * set ipa3_ctx->ipa_client_apps_wan_cons_agg_gro
+ * @agg_size: Aggregation size argument; currently unused by this implementation.
+ * @agg_count: Aggregation count argument; currently unused by this implementation.
  *
  * Return value: 0 or negative in case of failure
  */
@@ -7740,7 +7749,7 @@ static int __ipa3_stop_gsi_channel(u32 clnt_hdl)
 
 /**
  * ipa3_stop_gsi_channel()- Stops a GSI channel in IPA
- * @chan_hdl: GSI channel handle
+ * @clnt_hdl: IPA endpoint handle identifying the GSI channel to stop
  *
  * This function implements the sequence to stop a GSI channel
  * in IPA. This function returns when the channel is in STOP state.
@@ -8553,6 +8562,8 @@ bool ipa3_is_apq(void)
 
 /**
  * ipa_get_fnr_info() - get fnr_info
+ * @fnr_info: Output FNR counter offsets and validity, populated when stored information is
+ *   valid.
  *
  * Return value: true if set, false if not set
  *

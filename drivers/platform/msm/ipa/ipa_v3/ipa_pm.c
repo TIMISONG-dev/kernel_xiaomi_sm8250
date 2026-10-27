@@ -382,6 +382,7 @@ static int do_clk_scaling(void)
 
 /**
  * clock_scaling_func() - set the clock on a work queue
+ * @work: Clock-scaling work item; unused by this worker.
  */
 static void clock_scaling_func(struct work_struct *work)
 {
@@ -390,6 +391,7 @@ static void clock_scaling_func(struct work_struct *work)
 
 /**
  * activate_work_func - activate a client and vote for clock on a work queue
+ * @work: Queued work item embedded in the PM client being updated.
  */
 static void activate_work_func(struct work_struct *work)
 {
@@ -448,6 +450,7 @@ static void activate_work_func(struct work_struct *work)
 
 /**
  * delayed_deferred_deactivate_work_func - deferred deactivate on a work queue
+ * @work: Queued work item embedded in the PM client being updated.
  */
 static void delayed_deferred_deactivate_work_func(struct work_struct *work)
 {
@@ -591,7 +594,7 @@ static int remove_client_from_exception_list(u32 hdl)
 
 /**
  * ipa_pm_init() - initialize  IPA PM Components
- * @ipa_pm_init_params: parameters needed to fill exceptions and thresholds
+ * @params: parameters needed to fill exceptions and thresholds
  *
  * Returns: 0 on success, negative on failure
  */
@@ -701,7 +704,7 @@ int ipa_pm_destroy(void)
 
 /**
  * ipa_pm_register() - register an IPA PM client with the PM
- * @register_params: params for a client like throughput, callback, etc.
+ * @params: params for a client like throughput, callback, etc.
  * @hdl: int pointer that will be used as an index to access the client
  *
  * Returns: 0 on success, negative on failure
