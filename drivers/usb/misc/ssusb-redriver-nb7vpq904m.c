@@ -311,7 +311,7 @@ static void ssusb_redriver_gen_dev_set(
 		ret = redriver_i2c_reg_set(redriver, AUX_SWITCH_REG, aux_val);
 		if (ret < 0) {
 			dev_err(redriver->dev,
-			"failure to %s set AUX, aux_val = 0x%x\n",
+			"failure to %s set AUX, val = 0x%x, aux_val = 0x%x\n",
 			on ? "ENABLE":"DISABLE", val, aux_val);
 			return;
 		}
