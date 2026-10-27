@@ -2802,6 +2802,8 @@ static int hdd_parse_setmaxtxpower_command(uint8_t *command, int *tx_power)
 		return 0;
 
 	v = kstrtos32(in_ptr, 10, &temp_int);
+	if (v)
+		return v;
 
 	/* Range checking for passed parameter */
 	if ((temp_int < HDD_MIN_TX_POWER) || (temp_int > HDD_MAX_TX_POWER))
