@@ -3690,7 +3690,7 @@ static int __mem_cgroup_usage_register_event(struct mem_cgroup *memcg,
 	struct eventfd_ctx *eventfd, const char *args, enum res_type type)
 {
 	struct mem_cgroup_thresholds *thresholds;
-	struct mem_cgroup_threshold_ary *new;
+	struct mem_cgroup_threshold_ary *primary, *new;
 	unsigned long threshold;
 	unsigned long usage;
 	int i, size, ret;
@@ -3710,11 +3710,15 @@ static int __mem_cgroup_usage_register_event(struct mem_cgroup *memcg,
 	} else
 		BUG();
 
+	primary =
+		rcu_dereference_protected(thresholds->primary,
+					  lockdep_is_held(&memcg->thresholds_lock));
+
 	/* Check if a threshold crossed before adding a new one */
-	if (thresholds->primary)
+	if (primary)
 		__mem_cgroup_threshold(memcg, type == _MEMSWAP);
 
-	size = thresholds->primary ? thresholds->primary->size + 1 : 1;
+	size = primary ? primary->size + 1 : 1;
 
 	/* Allocate memory for new array of thresholds */
 	new = kmalloc(sizeof(*new) + size * sizeof(struct mem_cgroup_threshold),
@@ -3726,8 +3730,8 @@ static int __mem_cgroup_usage_register_event(struct mem_cgroup *memcg,
 	new->size = size;
 
 	/* Copy thresholds (if any) to new array */
-	if (thresholds->primary) {
-		memcpy(new->entries, thresholds->primary->entries, (size - 1) *
+	if (primary) {
+		memcpy(new->entries, primary->entries, (size - 1) *
 				sizeof(struct mem_cgroup_threshold));
 	}
 
@@ -3755,7 +3759,7 @@ static int __mem_cgroup_usage_register_event(struct mem_cgroup *memcg,
 
 	/* Free old spare buffer and save old primary buffer as spare */
 	kfree(thresholds->spare);
-	thresholds->spare = thresholds->primary;
+	thresholds->spare = primary;
 
 	rcu_assign_pointer(thresholds->primary, new);
 
@@ -3784,7 +3788,7 @@ static void __mem_cgroup_usage_unregister_event(struct mem_cgroup *memcg,
 	struct eventfd_ctx *eventfd, enum res_type type)
 {
 	struct mem_cgroup_thresholds *thresholds;
-	struct mem_cgroup_threshold_ary *new;
+	struct mem_cgroup_threshold_ary *primary, *new;
 	unsigned long usage;
 	int i, j, size, entries;
 
@@ -3799,7 +3803,11 @@ static void __mem_cgroup_usage_unregister_event(struct mem_cgroup *memcg,
 	} else
 		BUG();
 
-	if (!thresholds->primary)
+	primary =
+		rcu_dereference_protected(thresholds->primary,
+					  lockdep_is_held(&memcg->thresholds_lock));
+
+	if (!primary)
 		goto unlock;
 
 	/* Check if a threshold crossed before removing */
@@ -3807,8 +3815,8 @@ static void __mem_cgroup_usage_unregister_event(struct mem_cgroup *memcg,
 
 	/* Calculate new number of threshold */
 	size = entries = 0;
-	for (i = 0; i < thresholds->primary->size; i++) {
-		if (thresholds->primary->entries[i].eventfd != eventfd)
+	for (i = 0; i < primary->size; i++) {
+		if (primary->entries[i].eventfd != eventfd)
 			size++;
 		else
 			entries++;
@@ -3831,11 +3839,11 @@ static void __mem_cgroup_usage_unregister_event(struct mem_cgroup *memcg,
 
 	/* Copy thresholds and find current threshold */
 	new->current_threshold = -1;
-	for (i = 0, j = 0; i < thresholds->primary->size; i++) {
-		if (thresholds->primary->entries[i].eventfd == eventfd)
+	for (i = 0, j = 0; i < primary->size; i++) {
+		if (primary->entries[i].eventfd == eventfd)
 			continue;
 
-		new->entries[j] = thresholds->primary->entries[i];
+		new->entries[j] = primary->entries[i];
 		if (new->entries[j].threshold <= usage) {
 			/*
 			 * new->current_threshold will not be used
@@ -3849,7 +3857,7 @@ static void __mem_cgroup_usage_unregister_event(struct mem_cgroup *memcg,
 
 swap_buffers:
 	/* Swap primary and spare array */
-	thresholds->spare = thresholds->primary;
+	thresholds->spare = primary;
 
 	rcu_assign_pointer(thresholds->primary, new);
 
@@ -5276,7 +5284,7 @@ static int mem_cgroup_can_attach(struct cgroup_taskset *tset)
 	if (!mm)
 		return 0;
 	/* We move charges only when we move a owner of the mm */
-	if (mm->owner == p) {
+	if (rcu_access_pointer(mm->owner) == p) {
 		VM_BUG_ON(mc.from);
 		VM_BUG_ON(mc.to);
 		VM_BUG_ON(mc.precharge);
