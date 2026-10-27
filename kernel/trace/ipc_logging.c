@@ -49,10 +49,12 @@ static struct ipc_log_page *get_first_page(struct ipc_log_context *ilctxt)
  * is_nd_read_empty - Returns true if no data is available to read in log
  *
  * @ilctxt: logging context
- * @returns: > 1 if context is empty; 0 if not empty; <0 for failure
  *
  * This is for the debugfs read pointer which allows for a non-destructive read.
  * There may still be data in the log, but it may have already been read.
+ *
+ * Return: 1 if the context is empty, 0 if not empty, or -EINVAL if @ilctxt
+ * is NULL.
  */
 static int is_nd_read_empty(struct ipc_log_context *ilctxt)
 {
@@ -68,10 +70,12 @@ static int is_nd_read_empty(struct ipc_log_context *ilctxt)
  * is_read_empty - Returns true if no data is available in log
  *
  * @ilctxt: logging context
- * @returns: > 1 if context is empty; 0 if not empty; <0 for failure
  *
  * This is for the actual log contents.  If it is empty, then there
  * is no data at all in the log.
+ *
+ * Return: 1 if the context is empty, 0 if not empty, or -EINVAL if @ilctxt
+ * is NULL.
  */
 static int is_read_empty(struct ipc_log_context *ilctxt)
 {
@@ -88,7 +92,9 @@ static int is_read_empty(struct ipc_log_context *ilctxt)
  * the destructive read
  *
  * @ilctxt: logging context
- * @returns: true if nd read is equal to read; false otherwise
+ *
+ * Return: true if both read pointers identify the same page and offset,
+ * false otherwise.
  */
 static bool is_nd_read_equal_read(struct ipc_log_context *ilctxt)
 {
@@ -226,16 +232,16 @@ static void ipc_log_drop(struct ipc_log_context *ilctxt, void *data,
 
 /**
  * msg_read - Reads a message.
+ * @ilctxt: Logging context whose non-destructive read pointer is advanced
+ * @ectxt: Message context to receive the header and data
  *
  * If a message is read successfully, then the message context
  * will be set to:
  *     .hdr    message header .size and .type values
  *     .offset beginning of message data
  *
- * @ilctxt	Logging context
- * @ectxt   Message context
- *
- * @returns 0 - no message available; >0 message size; <0 error
+ * Return: 0 if no message is available, the header and payload size on
+ * success, or -EINVAL if @ectxt is NULL.
  */
 static int msg_read(struct ipc_log_context *ilctxt,
 	     struct encode_context *ectxt)
@@ -260,8 +266,7 @@ static int msg_read(struct ipc_log_context *ilctxt,
 
 /**
  * msg_drop - Drops a message.
- *
- * @ilctxt	Logging context
+ * @ilctxt: Logging context whose destructive read pointer is advanced
  */
 static void msg_drop(struct ipc_log_context *ilctxt)
 {
@@ -526,11 +531,13 @@ EXPORT_SYMBOL(ipc_log_string);
  * @ctxt:  logging context
  * @buff:    buffer to receive the data
  * @size:    size of the buffer
- * @returns: 0 if no data read; >0 number of bytes read; < 0 error
  *
  * If no data is available to be read, then the ilctxt::read_avail
  * completion is reinitialized.  This allows clients to block
  * until new log data is save.
+ *
+ * Return: Number of bytes written to @buff, 0 if no data was read, -EINVAL
+ * if @size is too small, or -EIO if the context has been destroyed.
  */
 int ipc_log_extract(void *ctxt, char *buff, int size)
 {
