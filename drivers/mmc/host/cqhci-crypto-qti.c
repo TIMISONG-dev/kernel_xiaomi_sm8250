@@ -213,7 +213,7 @@ static const struct keyslot_mgmt_ll_ops cqhci_crypto_qti_ksm_ops = {
 	.derive_raw_secret	= cqhci_crypto_qti_derive_raw_secret
 };
 
-enum blk_crypto_mode_num cqhci_blk_crypto_qti_mode_num_for_alg_dusize(
+static enum blk_crypto_mode_num cqhci_blk_crypto_qti_mode_num_for_alg_dusize(
 	enum cqhci_crypto_alg cqhci_crypto_alg,
 	enum cqhci_crypto_key_size key_size)
 {
@@ -227,7 +227,7 @@ enum blk_crypto_mode_num cqhci_blk_crypto_qti_mode_num_for_alg_dusize(
 	return BLK_ENCRYPTION_MODE_INVALID;
 }
 
-int cqhci_host_init_crypto_qti_spec(struct cqhci_host *host,
+static int cqhci_host_init_crypto_qti_spec(struct cqhci_host *host,
 				    const struct keyslot_mgmt_ll_ops *ksm_ops)
 {
 	int cap_idx = 0;
