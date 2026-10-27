@@ -34,7 +34,9 @@
 #include <wlan_dfs_ucfg_api.h>
 
 /**
- * @spectral_ops - Spectral function table, holds the Spectral functions that
+ * DOC: Spectral function table
+ *
+ * Spectral function table, holds the Spectral functions that
  * depend on whether the architecture is Direct Attach or Offload. This is used
  * to populate the actual Spectral function table present in the Spectral
  * module.
@@ -2023,7 +2025,7 @@ target_if_spectral_detach_simulation(struct target_if_spectral *spectral)
 
 /**
  * target_if_spectral_detach() - De-initialize target_if Spectral
- * @pdev: Pointer to pdev object
+ * @spectral: Spectral state whose locks are destroyed before it is freed
  *
  * Function to detach target_if spectral
  *
@@ -2412,11 +2414,11 @@ target_if_spectral_find_agile_width(enum phy_ch_width chwidth)
 }
 
 /**
- * target_if_calculate_center_freq() - Helper routine to
+ * target_if_is_center_freq_of_any_chan() - Helper routine to
  * check whether given frequency is center frequency of a
  * WLAN channel
  *
- * @spectral: Pointer to Spectral object
+ * @pdev: Physical device used to query regulatory channels
  * @chan_freq: Center frequency of a WLAN channel
  * @is_valid: Indicates whether given frequency is valid
  *
@@ -2992,7 +2994,6 @@ target_if_set_spectral_config(struct wlan_objmgr_pdev *pdev,
 /**
  * target_if_get_fft_bin_count() - Get fft bin count for a given fft length
  * @fft_len: FFT length
- * @pdev: Pointer to pdev object
  *
  * API to get fft bin count for a given fft length
  *
@@ -3028,14 +3029,13 @@ target_if_get_fft_bin_count(int fft_len)
 
 /**
  * target_if_init_upper_lower_flags() - Initializes control and extension
+ * @spectral: Spectral state whose upper and lower segment flags are initialized
  * segment flags
- * @fft_len: FFT length
- * @pdev: Pointer to pdev object
  *
  * API to initialize the control and extension flags with the lower/upper
  * segment based on the HT mode
  *
- * Return: FFt bin count
+ * Return: None
  */
 static void
 target_if_init_upper_lower_flags(struct target_if_spectral *spectral)
@@ -3467,7 +3467,7 @@ target_if_is_aspectral_prohibited_by_adfs(struct wlan_objmgr_psoc *psoc,
 /**
  * target_if_get_curr_band() - Get current operating band of pdev
  *
- * @spectral: pointer to spectral object
+ * @pdev: Physical device used to query regulatory channels
  *
  * API to get current operating band of a given pdev.
  *
