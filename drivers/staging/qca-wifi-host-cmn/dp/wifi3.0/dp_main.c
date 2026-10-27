@@ -168,7 +168,7 @@ dp_soc_attach(struct cdp_ctrl_objmgr_psoc *ctrl_psoc, HTC_HANDLE htc_handle,
 	      qdf_device_t qdf_osdev,
 	      struct ol_if_ops *ol_ops, uint16_t device_id);
 static void dp_pktlogmod_exit(struct dp_pdev *handle);
-static inline QDF_STATUS dp_peer_create_wifi3(struct cdp_soc_t *soc_hdl,
+static QDF_STATUS dp_peer_create_wifi3(struct cdp_soc_t *soc_hdl,
 					      uint8_t vdev_id,
 					      uint8_t *peer_mac_addr);
 static QDF_STATUS dp_peer_delete_wifi3(struct cdp_soc_t *soc_hdl,
@@ -197,7 +197,7 @@ static inline void
 dp_enable_mon_reap_timer(struct cdp_soc_t *soc_hdl, uint8_t pdev_id,
 			 bool enable);
 #endif
-static inline bool
+static bool
 dp_is_enable_reap_timer_non_pkt(struct dp_pdev *pdev);
 static uint8_t dp_soc_ring_if_nss_offloaded(struct dp_soc *soc,
 					    enum hal_ring_type ring_type,
