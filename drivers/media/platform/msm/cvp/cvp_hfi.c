@@ -2124,6 +2124,8 @@ static int __sys_set_idle_indicator(struct iris_hfi_device *device,
 		(struct cvp_hfi_cmd_sys_set_property_packet *) &packet;
 
 	rc = call_hfi_pkt_op(device, sys_set_idle_indicator, pkt, enable);
+	if (rc)
+		return rc;
 	if (__iface_cmdq_write(device, pkt))
 		return -ENOTEMPTY;
 	return 0;
