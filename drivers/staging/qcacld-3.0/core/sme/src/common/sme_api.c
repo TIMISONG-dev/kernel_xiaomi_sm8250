@@ -13544,6 +13544,8 @@ void sme_register_p2p_lo_event(mac_handle_t mac_handle, void *context,
 	QDF_STATUS status = QDF_STATUS_E_FAILURE;
 
 	status = sme_acquire_global_lock(&mac->sme);
+	if (QDF_IS_STATUS_ERROR(status))
+		return;
 	mac->sme.p2p_lo_event_callback = callback;
 	mac->sme.p2p_lo_event_context = context;
 	sme_release_global_lock(&mac->sme);
