@@ -940,16 +940,6 @@ static int slim_ele_access_sanity(struct slim_ele_access *msg, int oper,
 	}
 }
 
-static u16 slim_slicecodefromsize(u32 req)
-{
-	u8 codetosize[8] = {1, 2, 3, 4, 6, 8, 12, 16};
-
-	if (req >= 8)
-		return 0;
-	else
-		return codetosize[req];
-}
-
 static u16 slim_slicesize(u32 code)
 {
 	u8 sizetocode[16] = {0, 1, 2, 3, 3, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7};
@@ -1068,7 +1058,7 @@ int slim_xfer_msg(struct slim_controller *ctrl, struct slim_device *sbdev,
 	DEFINE_SLIM_LDEST_TXN(txn_stack, mc, len, 6, rbuf, wbuf, sbdev->laddr);
 	struct slim_msg_txn *txn;
 	int ret;
-	u16 sl, cur;
+	u16 sl;
 
 	ret = slim_ele_access_sanity(msg, mc, rbuf, wbuf, len);
 	if (ret)
@@ -1092,7 +1082,6 @@ int slim_xfer_msg(struct slim_controller *ctrl, struct slim_device *sbdev,
 	dev_dbg(&ctrl->dev, "SB xfer msg:os:%x, len:%d, MC:%x, sl:%x\n",
 				msg->start_offset, len, mc, sl);
 
-	cur = slim_slicecodefromsize(sl);
 	txn->ec = ((sl | (1 << 3)) | ((msg->start_offset & 0xFFF) << 4));
 
 	if (wbuf)
@@ -2187,7 +2176,6 @@ static void shiftsegoffsets(struct slim_controller *ctrl, struct slim_ich **ach,
 				int sz, u32 shft)
 {
 	int i;
-	u32 oldoff;
 
 	for (i = 0; i < sz; i++) {
 		struct slim_ich *slc;
@@ -2197,7 +2185,6 @@ static void shiftsegoffsets(struct slim_controller *ctrl, struct slim_ich **ach,
 		slc = ach[i];
 		if (slc->state == SLIM_CH_PENDING_REMOVAL)
 			continue;
-		oldoff = slc->newoff;
 		slc->newoff += shft;
 		/* seg. offset must be <= interval */
 		if (slc->newoff >= slc->newintr)
