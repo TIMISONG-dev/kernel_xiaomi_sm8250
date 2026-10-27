@@ -668,9 +668,8 @@ static void blk_account_io_merge(struct request *req)
 {
 	if (blk_do_io_stat(req)) {
 		struct hd_struct *part;
-		int cpu;
 
-		cpu = part_stat_lock();
+		part_stat_lock();
 		part = req->part;
 
 		part_dec_in_flight(req->q, part, rq_data_dir(req));
