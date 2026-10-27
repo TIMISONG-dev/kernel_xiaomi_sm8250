@@ -42,8 +42,8 @@ EXPORT_SYMBOL(msm_bus_scale_register_client);
  * msm_bus_scale_client_update_request() - Update the request for bandwidth
  * from a particular client
  *
- * cl: Handle to the client
- * index: Index into the vector, to which the bw and clock values need to be
+ * @cl: Handle to the client
+ * @index: Index into the vector, to which the bw and clock values need to be
  * updated
  */
 int msm_bus_scale_client_update_request(uint32_t cl, unsigned int index)
@@ -58,9 +58,9 @@ EXPORT_SYMBOL(msm_bus_scale_client_update_request);
 
 /**
  * msm_bus_scale_client_update_context() - Update the context for a client
- * cl: Handle to the client
- * active_only: Bool to indicate dual context or active-only context.
- * ctx_idx: Voting index to be used when switching contexts.
+ * @cl: Handle to the client
+ * @active_only: Bool to indicate dual context or active-only context.
+ * @ctx_idx: Voting index to be used when switching contexts.
  */
 int msm_bus_scale_client_update_context(uint32_t cl, bool active_only,
 							unsigned int ctx_idx)
@@ -113,7 +113,7 @@ msm_bus_scale_register(uint32_t mas, uint32_t slv, char *name, bool active_only)
 EXPORT_SYMBOL(msm_bus_scale_register);
 
 /**
- * msm_bus_scale_client_update_bw() - Update the request for bandwidth
+ * msm_bus_scale_update_bw() - Update the request for bandwidth
  * from a particular client
  *
  * @cl: Handle to the client
@@ -130,14 +130,17 @@ int msm_bus_scale_update_bw(struct msm_bus_client_handle *cl, u64 ab, u64 ib)
 EXPORT_SYMBOL(msm_bus_scale_update_bw);
 
 /**
- * msm_bus_scale_change_context() - Update the context for a particular client
- * cl: Handle to the client
- * act_ab: The average bandwidth(AB) in Bytes/s to be used in active context.
- * act_ib: The instantaneous bandwidth(IB) in Bytes/s to be used in active
+ * msm_bus_scale_update_bw_context() - Update the context for a particular client
+ * @cl: Handle to the client
+ * @act_ab: The average bandwidth(AB) in Bytes/s to be used in active context.
+ * @act_ib: The instantaneous bandwidth(IB) in Bytes/s to be used in active
  *         context.
- * dual_ib: The average bandwidth(AB) in Bytes/s to be used in dual context.
- * dual_ab: The instantaneous bandwidth(IB) in Bytes/s to be used in dual
- *         context.
+ * @dual_ib: Value forwarded as the callback's dual-context average bandwidth
+ *           in Bytes/s.
+ * @dual_ab: Value forwarded as the callback's dual-context instantaneous
+ *           bandwidth in Bytes/s.
+ *
+ * The current wrapper forwards these two values in reverse parameter order.
  */
 int
 msm_bus_scale_update_bw_context(struct msm_bus_client_handle *cl, u64 act_ab,
@@ -152,10 +155,9 @@ msm_bus_scale_update_bw_context(struct msm_bus_client_handle *cl, u64 act_ab,
 EXPORT_SYMBOL(msm_bus_scale_update_bw_context);
 
 /**
- * msm_bus_scale_unregister() - Update the request for bandwidth
- * from a particular client
+ * msm_bus_scale_unregister() - Unregister a bandwidth client
  *
- * cl: Handle to the client
+ * @cl: Handle to the client
  */
 void msm_bus_scale_unregister(struct msm_bus_client_handle *cl)
 {
@@ -171,9 +173,9 @@ EXPORT_SYMBOL(msm_bus_scale_unregister);
  * msm_bus_scale_query_tcs_cmd() - Query for a list of TCS commands for
  * an aggregated votes of paths from a single usecase.
  *
- * tcs_usecase: pointer to client allocated memory blob
- * cl: Handle to the client
- * index: Index into the vector, to which the bw and clock values need to be
+ * @tcs_usecase: pointer to client allocated memory blob
+ * @cl: Handle to the client
+ * @index: Index into the vector, to which the bw and clock values need to be
  * updated
  */
 int msm_bus_scale_query_tcs_cmd(struct msm_bus_tcs_usecase *tcs_usecase,
@@ -191,8 +193,8 @@ EXPORT_SYMBOL(msm_bus_scale_query_tcs_cmd);
  * msm_bus_scale_query_tcs_cmd_all() - Query for a list of TCS commands for
  * an aggregated vote of paths for all usecases registered by client
  *
- * tcs_handle: pointer to client allocated memory blob
- * cl: Handle to the client
+ * @tcs_handle: pointer to client allocated memory blob
+ * @cl: Handle to the client
  *
  */
 int msm_bus_scale_query_tcs_cmd_all(struct msm_bus_tcs_handle *tcs_handle,
