@@ -335,13 +335,10 @@ int ipa3_send(struct ipa3_sys_context *sys,
 	int i = 0;
 	int j;
 	int result;
-	u32 mem_flag = GFP_ATOMIC;
 	const struct ipa_gsi_ep_config *gsi_ep_cfg;
 	bool send_nop = false;
 	unsigned int max_desc;
 
-	if (unlikely(!in_atomic))
-		mem_flag = GFP_KERNEL;
 
 	gsi_ep_cfg = ipa3_get_gsi_ep_info(sys->ep->client);
 	if (unlikely(!gsi_ep_cfg)) {
@@ -809,7 +806,7 @@ static int ipa3_handle_rx_core(struct ipa3_sys_context *sys, bool process_all,
  * In RSC/RSB enabled cases using common event ring, so both the pipe
  * polling state should be in sync.
  */
-void __ipa3_update_curr_poll_state(enum ipa_client_type client, int state)
+static void __ipa3_update_curr_poll_state(enum ipa_client_type client, int state)
 {
 	int ep_idx = IPA_EP_NOT_ALLOCATED;
 
@@ -843,8 +840,8 @@ static int ipa3_rx_switch_to_intr_mode(struct ipa3_sys_context *sys)
 			atomic_set(&sys->curr_polling_state, 1);
 			__ipa3_update_curr_poll_state(sys->ep->client, 1);
 		} else {
-			IPAERR("Failed to switch to intr mode %d ch_id %d\n",
-			 sys->curr_polling_state, sys->ep->gsi_chan_hdl);
+			IPAERR("Failed to switch to intr mode %d ch_id %lu\n",
+			 atomic_read(&sys->curr_polling_state), sys->ep->gsi_chan_hdl);
 		}
 	}
 
@@ -912,7 +909,7 @@ static void ipa3_switch_to_intr_rx_work_func(struct work_struct *work)
 		ipa3_handle_rx(sys);
 }
 
-enum hrtimer_restart ipa3_ring_doorbell_timer_fn(struct hrtimer *param)
+static enum hrtimer_restart ipa3_ring_doorbell_timer_fn(struct hrtimer *param)
 {
 	struct ipa3_sys_context *sys = container_of(param,
 		struct ipa3_sys_context, db_timer);
@@ -1560,11 +1557,6 @@ static void ipa3_tx_comp_usr_notify_release(void *user1, int user2)
 				IPA_WRITE_DONE, (unsigned long)skb);
 	else
 		dev_kfree_skb_any(skb);
-}
-
-void ipa3_tx_cmd_comp(void *user1, int user2)
-{
-	ipahal_destroy_imm_cmd(user1);
 }
 
 /**
@@ -3826,7 +3818,6 @@ static int ipa3_assign_policy(struct ipa_sys_connect_params *in,
 		struct ipa3_sys_context *sys)
 {
 	bool apps_wan_cons_agg_gro_flag;
-	unsigned long aggr_byte_limit;
 
 	if (in->client == IPA_CLIENT_APPS_CMD_PROD) {
 		sys->policy = IPA_POLICY_INTR_MODE;
@@ -3857,7 +3848,6 @@ static int ipa3_assign_policy(struct ipa_sys_connect_params *in,
 
 	apps_wan_cons_agg_gro_flag =
 		ipa3_ctx->ipa_client_apps_wan_cons_agg_gro;
-	aggr_byte_limit = in->ipa_ep_cfg.aggr.aggr_byte_limit;
 
 	if (IPA_CLIENT_IS_PROD(in->client)) {
 		if (sys->ep->skip_ep_cfg) {

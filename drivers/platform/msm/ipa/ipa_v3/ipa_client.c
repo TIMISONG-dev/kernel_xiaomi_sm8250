@@ -374,7 +374,6 @@ int ipa3_smmu_map_peer_buff(u64 iova, u32 size, bool map, struct sg_table *sgt,
 	phys_addr_t phys;
 	unsigned long va;
 	struct scatterlist *sg;
-	int count = 0;
 	size_t len;
 	int i;
 	struct page *page;
@@ -415,7 +414,6 @@ int ipa3_smmu_map_peer_buff(u64 iova, u32 size, bool map, struct sg_table *sgt,
 					return -EINVAL;
 				}
 				va += len;
-				count++;
 			}
 		} else {
 			res = ipa3_iommu_map(smmu_domain,
@@ -751,7 +749,6 @@ int ipa3_set_usb_max_packet_size(
 int ipa3_xdci_connect(u32 clnt_hdl)
 {
 	int result;
-	struct ipa3_ep_context *ep;
 
 	IPADBG("entry\n");
 
@@ -761,7 +758,6 @@ int ipa3_xdci_connect(u32 clnt_hdl)
 		return -EINVAL;
 	}
 
-	ep = &ipa3_ctx->ep[clnt_hdl];
 	IPA_ACTIVE_CLIENTS_INC_EP(ipa3_get_client_mapping(clnt_hdl));
 
 	result = ipa3_start_gsi_channel(clnt_hdl);
@@ -845,10 +841,10 @@ int ipa3_xdci_start(u32 clnt_hdl, u8 xferrscidx, bool xferrscidx_valid)
 		gsi_res = gsi_enable_flow_control_ee(ep->gsi_chan_hdl, 0,
 									&code);
 		if (gsi_res == GSI_STATUS_SUCCESS) {
-			IPADBG("flow control sussess gsi ch %d with code %d\n",
+			IPADBG("flow control sussess gsi ch %lu with code %d\n",
 					ep->gsi_chan_hdl, code);
 		} else {
-			IPADBG("failed to flow control gsi ch %d code %d\n",
+			IPADBG("failed to flow control gsi ch %lu code %d\n",
 					ep->gsi_chan_hdl, code);
 		}
 	}
@@ -1286,10 +1282,10 @@ int ipa3_start_stop_client_prod_gsi_chnl(enum ipa_client_type client,
 			result = gsi_enable_flow_control_ee(ep->gsi_chan_hdl,
 								0, &code);
 			if (result == GSI_STATUS_SUCCESS) {
-				IPADBG("flow control sussess ch %d code %d\n",
+				IPADBG("flow control sussess ch %lu code %d\n",
 						ep->gsi_chan_hdl, code);
 			} else {
-				IPADBG("failed to flow control ch %d code %d\n",
+				IPADBG("failed to flow control ch %lu code %d\n",
 						ep->gsi_chan_hdl, code);
 			}
 		} else
@@ -1680,7 +1676,7 @@ int ipa3_start_gsi_channel(u32 clnt_hdl)
 		res = ipa3_cfg_ep_holb(ipa3_get_ep_mapping(
 				IPA_CLIENT_MHI_PRIME_RMNET_CONS), &holb_cfg);
 		if (res) {
-			IPAERR("Disable HOLB failed ep:%lu\n",
+			IPAERR("Disable HOLB failed ep:%d\n",
 				ipa3_get_ep_mapping(
 					IPA_CLIENT_MHI_PRIME_RMNET_CONS));
 		}
