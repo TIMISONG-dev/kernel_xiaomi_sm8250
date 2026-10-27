@@ -903,10 +903,9 @@ static bool page_mkclean_one(struct page *page, struct vm_area_struct *vma,
 	mmu_notifier_invalidate_range_start(&range);
 
 	while (page_vma_mapped_walk(&pvmw)) {
-		unsigned long cstart;
 		int ret = 0;
 
-		cstart = address = pvmw.address;
+		address = pvmw.address;
 		if (pvmw.pte) {
 			pte_t entry;
 			pte_t *pte = pvmw.pte;
@@ -933,7 +932,6 @@ static bool page_mkclean_one(struct page *page, struct vm_area_struct *vma,
 			entry = pmd_wrprotect(entry);
 			entry = pmd_mkclean(entry);
 			set_pmd_at(vma->vm_mm, address, pmd, entry);
-			cstart &= PMD_MASK;
 			ret = 1;
 #else
 			/* unexpected pmd-mapped page? */
@@ -1349,7 +1347,7 @@ static bool try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
 	struct page *subpage;
 	bool ret = true;
 	struct mmu_notifier_range range;
-	enum ttu_flags flags = (enum ttu_flags)arg;
+	enum ttu_flags flags = *(enum ttu_flags *)arg;
 
 	/*
 	 * When racing against e.g. zap_pte_range() on another cpu,
@@ -1739,7 +1737,7 @@ bool try_to_unmap(struct page *page, enum ttu_flags flags,
 {
 	struct rmap_walk_control rwc = {
 		.rmap_one = try_to_unmap_one,
-		.arg = (void *)flags,
+		.arg = &flags,
 		.done = page_not_mapped,
 		.anon_lock = page_lock_anon_vma_read,
 		.target_vma = vma,
@@ -1782,9 +1780,10 @@ bool try_to_unmap(struct page *page, enum ttu_flags flags,
 
 void try_to_munlock(struct page *page)
 {
+	enum ttu_flags flags = TTU_MUNLOCK;
 	struct rmap_walk_control rwc = {
 		.rmap_one = try_to_unmap_one,
-		.arg = (void *)TTU_MUNLOCK,
+		.arg = &flags,
 		.done = page_not_mapped,
 		.anon_lock = page_lock_anon_vma_read,
 		.target_vma = NULL,
