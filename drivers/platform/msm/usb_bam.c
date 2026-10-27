@@ -3210,7 +3210,7 @@ static struct notifier_block usb_bam_panic_blk = {
 	.notifier_call  = usb_bam_panic_notifier,
 };
 
-void usb_bam_register_panic_hdlr(void)
+static void usb_bam_register_panic_hdlr(void)
 {
 	atomic_notifier_chain_register(&panic_notifier_list,
 			&usb_bam_panic_blk);
@@ -3397,7 +3397,6 @@ EXPORT_SYMBOL(usb_bam_get_bam_type);
 
 bool msm_usb_bam_enable(enum usb_ctrl bam, bool bam_enable)
 {
-	struct msm_usb_bam_data *usb_bam_data;
 	struct usb_bam_ctx_type *ctx = &msm_usb_bam[bam];
 	static bool bam_enabled;
 	int ret;
@@ -3405,7 +3404,6 @@ bool msm_usb_bam_enable(enum usb_ctrl bam, bool bam_enable)
 	if (!ctx->usb_bam_pdev)
 		return false;
 
-	usb_bam_data = ctx->usb_bam_data;
 	if (bam != CI_CTRL)
 		return false;
 
