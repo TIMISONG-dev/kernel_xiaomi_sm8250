@@ -96,8 +96,8 @@ static inline unsigned long shadow_to_page(const struct cfi_shadow *s,
 	return (s->r.min_page + index) << PAGE_SHIFT;
 }
 
-static void prepare_next_shadow(const struct cfi_shadow __rcu *prev,
-		struct cfi_shadow *next)
+static void prepare_next_shadow(const struct cfi_shadow *prev,
+				struct cfi_shadow *next)
 {
 	int i, index, check;
 
@@ -228,7 +228,7 @@ void cfi_module_remove(struct module *mod, unsigned long min_addr,
 }
 EXPORT_SYMBOL_GPL(cfi_module_remove);
 
-static inline cfi_check_fn ptr_to_check_fn(const struct cfi_shadow __rcu *s,
+static inline cfi_check_fn ptr_to_check_fn(const struct cfi_shadow *s,
 	unsigned long ptr)
 {
 	int index;
