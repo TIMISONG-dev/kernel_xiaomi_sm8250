@@ -416,6 +416,7 @@ static void genpd_queue_power_off_work(struct generic_pm_domain *genpd)
  * RPM status of the releated device is in an intermediate state, not yet turned
  * into RPM_SUSPENDED. This means genpd_power_off() must allow one device to not
  * be RPM_SUSPENDED, while it tries to power off the PM domain.
+ * @depth: nesting depth for locking parent domains during recursive power-off
  *
  * If all of the @genpd's devices have been suspended and all of its subdomains
  * have been powered down, remove power from @genpd.
@@ -1273,6 +1274,7 @@ static void genpd_complete(struct device *dev)
 /**
  * genpd_syscore_switch - Switch power during system core suspend or resume.
  * @dev: Device that normally is marked as "always on" to switch power for.
+ * @suspend: true to power off for suspend, false to power on for resume
  *
  * This routine may only be called during the system core (syscore) suspend or
  * resume phase for devices whose "always on" flags are set.
@@ -2143,11 +2145,11 @@ EXPORT_SYMBOL_GPL(of_genpd_add_subdomain);
 
 /**
  * of_genpd_remove_last - Remove the last PM domain registered for a provider
- * @provider: Pointer to device structure associated with provider
+ * @np: Device-tree node identifying the PM domain provider
  *
  * Find the last PM domain that was added by a particular provider and
  * remove this PM domain from the list of PM domains. The provider is
- * identified by the 'provider' device structure that is passed. The PM
+ * identified by the device-tree node passed in @np. The PM
  * domain will only be removed, if the provider associated with domain
  * has been removed.
  *
