@@ -68,6 +68,8 @@ struct pmsg_start_t {
 	spinlock_t lock;
 };
 
+extern struct pmsg_start_t pmsg_start;
+
 struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
 			u32 sig, struct persistent_ram_ecc_info *ecc_info,
 			unsigned int memtype, u32 flags);
