@@ -79,7 +79,7 @@ static int __diag_multisim_mask_init(struct diag_mask_info *mask_info,
  *
  */
 
-struct diag_multisim_masks
+static struct diag_multisim_masks
 	*diag_get_ms_ptr_index(struct diag_multisim_masks *ms_ptr,
 	int subid_index)
 {
