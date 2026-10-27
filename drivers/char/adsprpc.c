@@ -1441,7 +1441,7 @@ static int context_alloc(struct fastrpc_file *fl, uint32_t kernel,
 	struct smq_invoke_ctx *ctx = NULL;
 	struct fastrpc_ctx_lst *clst = &fl->clst;
 	struct fastrpc_ioctl_invoke *invoke = &invokefd->inv;
-	struct fastrpc_channel_ctx *chan = 0;
+	struct fastrpc_channel_ctx *chan = NULL;
 	unsigned long irq_flags = 0;
 
 	bufs = REMOTE_SCALARS_LENGTH(invoke->sc);
