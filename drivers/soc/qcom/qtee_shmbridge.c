@@ -145,7 +145,7 @@ bool qtee_shmbridge_is_enabled(void)
 }
 EXPORT_SYMBOL(qtee_shmbridge_is_enabled);
 
-int32_t qtee_shmbridge_list_add_nolock(phys_addr_t paddr, uint64_t handle)
+static int32_t qtee_shmbridge_list_add_nolock(phys_addr_t paddr, uint64_t handle)
 {
 	struct bridge_list_entry *entry;
 
@@ -158,7 +158,7 @@ int32_t qtee_shmbridge_list_add_nolock(phys_addr_t paddr, uint64_t handle)
 	return 0;
 }
 
-void qtee_shmbridge_list_del_nolock(uint64_t handle)
+static void qtee_shmbridge_list_del_nolock(uint64_t handle)
 {
 	struct bridge_list_entry *entry;
 
@@ -171,7 +171,7 @@ void qtee_shmbridge_list_del_nolock(uint64_t handle)
 	}
 }
 
-int32_t qtee_shmbridge_query_nolock(phys_addr_t paddr)
+static int32_t qtee_shmbridge_query_nolock(phys_addr_t paddr)
 {
 	struct bridge_list_entry *entry;
 

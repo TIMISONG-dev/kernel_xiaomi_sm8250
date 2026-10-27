@@ -161,7 +161,7 @@ void msm_slim_free_endpoint(struct msm_slim_endp *ep)
 	ep->sps = NULL;
 }
 
-int msm_slim_sps_mem_alloc(
+static int msm_slim_sps_mem_alloc(
 		struct msm_slim_ctrl *dev, struct sps_mem_buffer *mem, u32 len)
 {
 	dma_addr_t phys;
@@ -190,7 +190,7 @@ int msm_slim_sps_mem_alloc(
 	return 0;
 }
 
-void
+static void
 msm_slim_sps_mem_free(struct msm_slim_ctrl *dev, struct sps_mem_buffer *mem)
 {
 	if (!dev->lpass_mem_usage) {
@@ -561,7 +561,7 @@ static int msm_slim_post_tx_msgq(struct msm_slim_ctrl *dev, u8 *buf, int len)
 	return ret;
 }
 
-void msm_slim_tx_msg_return(struct msm_slim_ctrl *dev, int err)
+static void msm_slim_tx_msg_return(struct msm_slim_ctrl *dev, int err)
 {
 	struct msm_slim_endp *endpoint = &dev->tx_msgq;
 	struct sps_mem_buffer *mem = &endpoint->buf;
