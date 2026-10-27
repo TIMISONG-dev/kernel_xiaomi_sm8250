@@ -566,7 +566,7 @@ found:
  *                          to descendants
  * @cgrp: The cgroup which descendants to traverse
  * @link: A link for which to replace BPF program
- * @type: Type of attach operation
+ * @new_prog: BPF program to install in the link
  *
  * Must be called with cgroup_mutex held.
  */
@@ -714,7 +714,7 @@ found:
  *                         propagate the change to descendants
  * @cgrp: The cgroup which descendants to traverse
  * @prog: A program to detach or NULL
- * @prog: A link to detach or NULL
+ * @link: A link to detach or NULL
  * @type: Type of detach operation
  *
  * At most one of @prog or @link can be non-NULL.
