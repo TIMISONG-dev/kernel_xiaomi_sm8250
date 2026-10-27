@@ -6962,7 +6962,7 @@ int sched_isolate_cpu(int cpu)
 
 	watchdog_disable(cpu);
 	irq_lock_sparse();
-	stop_cpus(cpumask_of(cpu), do_isolation_work_cpu_stop, 0);
+	stop_cpus(cpumask_of(cpu), do_isolation_work_cpu_stop, NULL);
 	irq_unlock_sparse();
 
 	calc_load_migrate(rq);
@@ -7007,7 +7007,7 @@ int sched_unisolate_cpu_unlocked(int cpu)
 	sched_update_group_capacities(cpu);
 
 	if (cpu_online(cpu)) {
-		stop_cpus(cpumask_of(cpu), do_unisolation_work_cpu_stop, 0);
+		stop_cpus(cpumask_of(cpu), do_unisolation_work_cpu_stop, NULL);
 
 		/* Kick CPU to immediately do load balancing */
 		if (!atomic_fetch_or(NOHZ_KICK_MASK, nohz_flags(cpu)))
