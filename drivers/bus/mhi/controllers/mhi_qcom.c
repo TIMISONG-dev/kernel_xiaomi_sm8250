@@ -41,7 +41,7 @@ const char * const mhi_suspend_mode_str[MHI_SUSPEND_MODE_MAX] = {
 	[MHI_FAST_LINK_ON] = "Fast Link On",
 };
 
-int mhi_debugfs_trigger_m0(void *data, u64 val)
+static int mhi_debugfs_trigger_m0(void *data, u64 val)
 {
 	struct mhi_controller *mhi_cntrl = data;
 	struct mhi_dev *mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
@@ -55,7 +55,7 @@ int mhi_debugfs_trigger_m0(void *data, u64 val)
 DEFINE_SIMPLE_ATTRIBUTE(debugfs_trigger_m0_fops, NULL,
 			mhi_debugfs_trigger_m0, "%llu\n");
 
-int mhi_debugfs_trigger_m3(void *data, u64 val)
+static int mhi_debugfs_trigger_m3(void *data, u64 val)
 {
 	struct mhi_controller *mhi_cntrl = data;
 	struct mhi_dev *mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
@@ -315,7 +315,7 @@ static int mhi_system_resume(struct device *dev)
 	return mhi_runtime_resume(dev);
 }
 
-int mhi_system_suspend(struct device *dev)
+static int mhi_system_suspend(struct device *dev)
 {
 	struct mhi_controller *mhi_cntrl = dev_get_drvdata(dev);
 	struct mhi_dev *mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
@@ -467,7 +467,7 @@ static int mhi_lpm_enable(struct mhi_controller *mhi_cntrl, void *priv)
 	return mhi_arch_link_lpm_enable(mhi_cntrl);
 }
 
-void mhi_qcom_store_hwinfo(struct mhi_controller *mhi_cntrl)
+static void mhi_qcom_store_hwinfo(struct mhi_controller *mhi_cntrl)
 {
 	struct mhi_dev *mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
 	int i;
