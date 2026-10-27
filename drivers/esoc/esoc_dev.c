@@ -126,7 +126,7 @@ found:
 	return esoc_udev;
 }
 
-void esoc_udev_handle_clink_req(enum esoc_req req, struct esoc_eng *eng)
+static void esoc_udev_handle_clink_req(enum esoc_req req, struct esoc_eng *eng)
 {
 	int err;
 	u32 clink_req;
@@ -149,7 +149,7 @@ void esoc_udev_handle_clink_req(enum esoc_req req, struct esoc_eng *eng)
 	wake_up_interruptible(&esoc_udev->req_wait);
 }
 
-void esoc_udev_handle_clink_evt(enum esoc_evt evt, struct esoc_eng *eng)
+static void esoc_udev_handle_clink_evt(enum esoc_evt evt, struct esoc_eng *eng)
 {
 	int err;
 	u32 clink_evt;
@@ -405,7 +405,7 @@ static const struct file_operations esoc_dev_fops = {
 	.release	= esoc_dev_release,
 };
 
-int esoc_clink_add_device(struct device *dev, void *dummy)
+static int esoc_clink_add_device(struct device *dev, void *dummy)
 {
 	struct esoc_udev *esoc_udev;
 	struct esoc_clink *esoc_clink = to_esoc_clink(dev);
@@ -426,7 +426,7 @@ dev_err:
 	return -ENODEV;
 }
 
-int esoc_clink_del_device(struct device *dev, void *dummy)
+static int esoc_clink_del_device(struct device *dev, void *dummy)
 {
 	struct esoc_udev *esoc_udev;
 	struct esoc_clink *esoc_clink = to_esoc_clink(dev);
