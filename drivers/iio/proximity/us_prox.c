@@ -12,6 +12,7 @@
  */
 
 #include <linux/device.h>
+#include <linux/us_prox.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -96,7 +97,7 @@ static const struct iio_trigger_ops us_sensor_trigger_ops = {
 	//.owner = THIS_MODULE,
 };
 
-int us_setup_trigger_sensor(struct iio_dev *indio_dev)
+static int us_setup_trigger_sensor(struct iio_dev *indio_dev)
 {
 	struct iio_trigger *trigger;
 	int ret;
