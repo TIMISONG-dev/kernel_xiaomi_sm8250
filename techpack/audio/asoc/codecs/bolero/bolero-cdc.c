@@ -1377,6 +1377,7 @@ static int bolero_probe(struct platform_device *pdev)
 	mutex_init(&priv->io_lock);
 	mutex_init(&priv->clk_lock);
 	mutex_init(&priv->vote_lock);
+	BLOCKING_INIT_NOTIFIER_HEAD(&priv->notifier);
 	INIT_WORK(&priv->bolero_add_child_devices_work,
 		  bolero_add_child_devices);
 
