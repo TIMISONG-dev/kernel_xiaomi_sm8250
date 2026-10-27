@@ -528,7 +528,8 @@ static ssize_t mpq_sdmx_log_level_write(struct file *fp,
 	if (level < SDMX_LOG_NO_PRINT || level > SDMX_LOG_VERBOSE)
 		return -EINVAL;
 
-	mutex_lock_interruptible(&mpq_demux->mutex);
+	if (mutex_lock_interruptible(&mpq_demux->mutex))
+		return -ERESTARTSYS;
 	mpq_demux->sdmx_log_level = level;
 	if (mpq_demux->sdmx_session_handle != SDMX_INVALID_SESSION_HANDLE) {
 		ret = sdmx_set_log_level(mpq_demux->sdmx_session_handle,
@@ -1101,7 +1102,8 @@ int mpq_dmx_reuse_decoder_buffer(struct dvb_demux_feed *feed, int cookie)
 		struct mpq_streambuffer *stream_buffer;
 		int ret;
 
-		mutex_lock_interruptible(&mpq_demux->mutex);
+		if (mutex_lock_interruptible(&mpq_demux->mutex))
+			return -ERESTARTSYS;
 		mpq_feed = feed->priv;
 		feed_data = &mpq_feed->video_info;
 
