@@ -319,16 +319,18 @@ int release_resource(struct resource *old)
 EXPORT_SYMBOL(release_resource);
 
 /**
- * Finds the lowest iomem resource that covers part of [start..end].  The
- * caller must specify start, end, flags, and desc (which may be
- * IORES_DESC_NONE).
+ * find_next_iomem_res - find the lowest matching resource in a range
+ * @start: first address of the search range
+ * @end: last address of the search range
+ * @flags: resource flag bits that must all be set
+ * @desc: required descriptor, or IORES_DESC_NONE to match any descriptor
+ * @first_level_children_only: restrict the search to iomem_resource's children
+ * @res: output resource clipped to the overlapping part of the search range
  *
- * If a resource is found, returns 0 and *res is overwritten with the part
- * of the resource that's within [start..end]; if none is found, returns
- * -ENODEV.  Returns -EINVAL for invalid parameters.
+ * The caller must provide a non-NULL @res and a range with @start < @end.
+ * This function walks the whole tree unless @first_level_children_only is true.
  *
- * This function walks the whole tree and not just first level children
- * unless @first_level_children_only is true.
+ * Return: 0 if a matching resource was found, or -ENODEV otherwise.
  */
 static int find_next_iomem_res(resource_size_t start, resource_size_t end,
 			       unsigned long flags, unsigned long desc,
