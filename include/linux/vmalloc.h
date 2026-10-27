@@ -99,6 +99,7 @@ void *__vmalloc_node(unsigned long size, unsigned long align, gfp_t gfp_mask,
 		int node, const void *caller);
 
 extern void vfree(const void *addr);
+void set_iounmap_nonlazy(void);
 extern void vfree_atomic(const void *addr);
 
 extern void *vmap(struct page **pages, unsigned int count,
