@@ -105,10 +105,9 @@ DEVICE_ATTR(xiaomi_keyboard_conn_status, (S_IRUGO | S_IWUSR | S_IWGRP),
 
 static irqreturn_t xiaomi_keyboard_irq_func(int irq, void *data)
 {
-	int value = 0;
 	MI_KB_INFO("keyboard event: wakeup system\n");
 	pm_wakeup_event(&mdata->pdev->dev, 500);
-	value = gpio_get_value_cansleep(mdata->pdata->in_irq_gpio);
+	gpio_get_value_cansleep(mdata->pdata->in_irq_gpio);
 
 	mutex_lock(&mdata->rw_mutex);
 	mdata->keyboard_conn_status = !mdata->keyboard_conn_status;
