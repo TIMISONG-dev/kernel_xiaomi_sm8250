@@ -497,7 +497,7 @@ static int npu_set_cdsprm_corner_limit(enum cdsprm_npu_corner corner)
 	return npu_set_power_level(g_npu_dev, false);
 }
 
-const struct cdsprm_npu_limit_cbs cdsprm_npu_limit_cbs = {
+static const struct cdsprm_npu_limit_cbs cdsprm_npu_limit_cbs = {
 	.set_corner_limit = npu_set_cdsprm_corner_limit,
 };
 
@@ -2391,9 +2391,9 @@ static int npu_hw_info_init(struct npu_device *npu_dev)
 static int npu_probe(struct platform_device *pdev)
 {
 	int rc = 0;
-	struct resource *res = 0;
-	struct npu_device *npu_dev = 0;
-	struct thermal_cooling_device *tcdev = 0;
+	struct resource *res = NULL;
+	struct npu_device *npu_dev = NULL;
+	struct thermal_cooling_device *tcdev = NULL;
 
 	npu_dev = devm_kzalloc(&pdev->dev,
 		sizeof(struct npu_device), GFP_KERNEL);
