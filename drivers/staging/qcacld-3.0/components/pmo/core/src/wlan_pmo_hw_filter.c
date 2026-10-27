@@ -30,7 +30,6 @@ QDF_STATUS pmo_core_enable_hw_filter_in_fwr(struct wlan_objmgr_vdev *vdev)
 {
 	QDF_STATUS status;
 	struct pmo_psoc_priv_obj *psoc_priv;
-	enum pmo_hw_filter_mode mode_bitmap;
 	struct pmo_hw_filter_params req = {0};
 
 	pmo_enter();
@@ -47,7 +46,6 @@ QDF_STATUS pmo_core_enable_hw_filter_in_fwr(struct wlan_objmgr_vdev *vdev)
 
 	psoc_priv = pmo_vdev_get_psoc_priv(vdev);
 	qdf_spin_lock_bh(&psoc_priv->lock);
-	mode_bitmap = psoc_priv->psoc_cfg.hw_filter_mode_bitmap;
 	qdf_spin_unlock_bh(&psoc_priv->lock);
 
 	req.vdev_id = pmo_vdev_get_id(vdev);
