@@ -571,7 +571,6 @@ static QDF_STATUS send_plm_stop_cmd_tlv(wmi_unified_t wmi_handle,
 	wmi_vdev_plmreq_stop_cmd_fixed_param *cmd;
 	int32_t len;
 	wmi_buf_t buf;
-	uint8_t *buf_ptr;
 	int ret;
 
 	len = sizeof(*cmd);
@@ -582,7 +581,6 @@ static QDF_STATUS send_plm_stop_cmd_tlv(wmi_unified_t wmi_handle,
 
 	cmd = (wmi_vdev_plmreq_stop_cmd_fixed_param *) wmi_buf_data(buf);
 
-	buf_ptr = (uint8_t *) cmd;
 
 	WMITLV_SET_HDR(&cmd->tlv_header,
 		       WMITLV_TAG_STRUC_wmi_vdev_plmreq_stop_cmd_fixed_param,
@@ -809,7 +807,6 @@ static QDF_STATUS send_process_roam_synch_complete_cmd_tlv(wmi_unified_t wmi_han
 {
 	wmi_roam_synch_complete_fixed_param *cmd;
 	wmi_buf_t wmi_buf;
-	uint8_t *buf_ptr;
 	uint16_t len;
 	len = sizeof(wmi_roam_synch_complete_fixed_param);
 
@@ -818,7 +815,6 @@ static QDF_STATUS send_process_roam_synch_complete_cmd_tlv(wmi_unified_t wmi_han
 		return QDF_STATUS_E_NOMEM;
 	}
 	cmd = (wmi_roam_synch_complete_fixed_param *) wmi_buf_data(wmi_buf);
-	buf_ptr = (uint8_t *) cmd;
 	WMITLV_SET_HDR(&cmd->tlv_header,
 		       WMITLV_TAG_STRUC_wmi_roam_synch_complete_fixed_param,
 		       WMITLV_GET_STRUCT_TLVLEN
