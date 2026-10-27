@@ -529,11 +529,13 @@ void jbd2_journal_write_revoke_records(transaction_t *transaction,
 	struct jbd2_revoke_record_s *record;
 	struct jbd2_revoke_table_s *revoke;
 	struct list_head *hash_list;
-	int i, offset, count;
+	int i, offset;
+#ifdef CONFIG_JBD2_DEBUG
+	int count = 0;
+#endif
 
 	descriptor = NULL;
 	offset = 0;
-	count = 0;
 
 	/* select revoke table for committing transaction */
 	revoke = journal->j_revoke == journal->j_revoke_table[0] ?
@@ -547,14 +549,18 @@ void jbd2_journal_write_revoke_records(transaction_t *transaction,
 				hash_list->next;
 			write_one_revoke_record(transaction, log_bufs,
 						&descriptor, &offset, record);
+#ifdef CONFIG_JBD2_DEBUG
 			count++;
+#endif
 			list_del(&record->hash);
 			kmem_cache_free(jbd2_revoke_record_cache, record);
 		}
 	}
 	if (descriptor)
 		flush_descriptor(journal, descriptor, offset);
+#ifdef CONFIG_JBD2_DEBUG
 	jbd_debug(1, "Wrote %d revoke records\n", count);
+#endif
 }
 
 /*
