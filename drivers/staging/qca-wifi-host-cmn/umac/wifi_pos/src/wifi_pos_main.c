@@ -93,7 +93,8 @@ static uint8_t *
 wifi_pos_prepare_reg_resp(uint32_t *rsp_len,
 			  struct app_reg_rsp_vdev_info *vdevs_info)
 {
-	uint32_t *nl_sign;
+	uint32_t nl_sign;
+	uint8_t *flags;
 	uint8_t *resp_buf;
 	struct wifi_app_reg_rsp *app_reg_rsp;
 
@@ -113,8 +114,10 @@ wifi_pos_prepare_reg_resp(uint32_t *rsp_len,
 	qdf_mem_copy(&app_reg_rsp->vdevs, vdevs_info,
 		     sizeof(struct app_reg_rsp_vdev_info) * vdev_idx);
 
-	nl_sign = (uint32_t *)&app_reg_rsp->vdevs[vdev_idx];
-	*nl_sign |= NL_ENABLE_OEM_REQ_RSP;
+	flags = (uint8_t *)&app_reg_rsp->vdevs[vdev_idx];
+	qdf_mem_copy(&nl_sign, flags, sizeof(nl_sign));
+	nl_sign |= NL_ENABLE_OEM_REQ_RSP;
+	qdf_mem_copy(flags, &nl_sign, sizeof(nl_sign));
 
 	return resp_buf;
 }
