@@ -336,6 +336,7 @@ uint32_t wmi_display_size = 100;
  * wmi_ext_dbg_msg_enqueue() - enqueue wmi message
  *
  * @wmi_handle: wmi handler
+ * @msg: Message to append to the extended-debug queue
  *
  * Return: size of wmi message queue after enqueue
  */
@@ -1042,14 +1043,9 @@ wmi_print_mgmt_event_log(wmi_unified_t wmi, uint32_t count,
 /* debugfs routines*/
 
 /**
- * debug_wmi_##func_base##_show() - debugfs functions to display content of
- * command and event buffers. Macro uses max buffer length to display
- * buffer when it is wraparound.
- *
- * @m: debugfs handler to access wmi_handle
- * @v: Variable arguments (not used)
- *
- * Return: Length of characters printed
+ * GENERATE_COMMAND_DEBUG_SHOW_FUNCS() - Generate the command-log seq-file display callback
+ * @func_base: Log name used to form the callback and buffer member names
+ * @wmi_ring_size: Maximum number of ring entries to display
  */
 #define GENERATE_COMMAND_DEBUG_SHOW_FUNCS(func_base, wmi_ring_size)	\
 	static int debug_wmi_##func_base##_show(struct seq_file *m,	\
@@ -1213,15 +1209,10 @@ static int debug_wmi_log_size_show(struct seq_file *m, void *v)
 }
 
 /**
- * debug_wmi_##func_base##_write() - debugfs functions to clear
- * wmi logging command/event buffer and management command/event buffer.
- *
- * @file: file handler to access wmi_handle
- * @buf: received data buffer
- * @count: length of received buffer
- * @ppos: Not used
- *
- * Return: count
+ * GENERATE_DEBUG_WRITE_FUNCS() - Generate a debugfs write callback to clear a WMI log ring
+ * @func_base: Log name used to form the callback and buffer member names
+ * @wmi_ring_size: Number of ring records to clear
+ * @wmi_record_type: Record structure type stored in the selected ring
  */
 #define GENERATE_DEBUG_WRITE_FUNCS(func_base, wmi_ring_size, wmi_record_type)\
 	static ssize_t debug_wmi_##func_base##_write(struct file *file,	\
@@ -1331,13 +1322,8 @@ struct wmi_debugfs_info {
 	.ops = &debug_##func_base##_ops }
 
 /**
- * debug_##func_base##_open() - Open debugfs entry for respective command
- * and event buffer.
- *
- * @inode: node for debug dir entry
- * @file: file handler
- *
- * Return: open status
+ * GENERATE_DEBUG_STRUCTS() - Generate the debugfs open callback and file operations
+ * @func_base: Name prefix for the open, show and write callbacks
  */
 #define GENERATE_DEBUG_STRUCTS(func_base)				\
 	static int debug_##func_base##_open(struct inode *inode,	\
@@ -1396,7 +1382,6 @@ struct wmi_debugfs_info wmi_debugfs_infos[NUM_DEBUG_INFOS] = {
  *
  * @wmi_handle: wmi handle
  * @par_entry: debug directory entry
- * @id: Index to debug info data array
  *
  * Return: none
  */
@@ -1430,8 +1415,6 @@ out:
 /**
  * wmi_debugfs_remove() - Remove debugfs entry for wmi logging.
  * @wmi_handle: wmi handle
- * @dentry: debugfs directory entry
- * @id: Index to debug info data array
  *
  * Return: none
  */
@@ -1455,7 +1438,8 @@ static void wmi_debugfs_remove(wmi_unified_t wmi_handle)
  * wmi_debugfs_init() - debugfs functions to create debugfs directory and to
  * create debugfs enteries.
  *
- * @h: wmi handler
+ * @wmi_handle: wmi handler
+ * @pdev_idx: Pdev index used in the debugfs directory name
  *
  * Return: init status
  */
@@ -1511,8 +1495,6 @@ void wmi_mgmt_cmd_record(wmi_unified_t wmi_handle, uint32_t cmd,
 /**
  * wmi_debugfs_remove() - Remove debugfs entry for wmi logging.
  * @wmi_handle: wmi handle
- * @dentry: debugfs directory entry
- * @id: Index to debug info data array
  *
  * Return: none
  */
@@ -2150,9 +2132,8 @@ static QDF_STATUS wmi_process_fw_event_handler(struct scheduler_msg *msg)
 /**
  * wmi_process_fw_event_sched_thread_ctx() - common event handler to serialize
  *                                  event processing through scheduler thread
- * @ctx: wmi context
+ * @wmi: wmi context
  * @ev: event buffer
- * @rx_ctx: rx execution context
  *
  * Return: 0 on success, errno on failure
  */
@@ -2614,7 +2595,7 @@ static void wmi_runtime_pm_init(struct wmi_unified *wmi_handle)
 
 /**
  * wmi_unified_get_soc_handle: Get WMI SoC handle
- * @param wmi_handle: WMI context got from wmi_attach
+ * @wmi_handle: WMI context got from wmi_attach
  *
  * return: Pointer to Soc handle
  */
@@ -2625,7 +2606,8 @@ void *wmi_unified_get_soc_handle(struct wmi_unified *wmi_handle)
 
 /**
  * wmi_interface_logging_init: Interface looging init
- * @param wmi_handle: Pointer to wmi handle object
+ * @wmi_handle: Pointer to wmi handle object
+ * @pdev_idx: Pdev index passed to logging debugfs initialization
  *
  * return: None
  */
@@ -2647,8 +2629,8 @@ static inline void wmi_interface_logging_init(struct wmi_unified *wmi_handle,
 
 /**
  * wmi_unified_get_pdev_handle: Get WMI SoC handle
- * @param wmi_soc: Pointer to wmi soc object
- * @param pdev_idx: pdev index
+ * @soc: Pointer to wmi soc object
+ * @pdev_idx: pdev index
  *
  * return: Pointer to wmi handle or NULL on failure
  */
@@ -2729,7 +2711,7 @@ qdf_export_symbol(wmi_unified_register_module);
  * wmi_wbuff_register() - register wmi with wbuff
  * @wmi_handle: handle to wmi
  *
- * @Return: void
+ * Return: void
  */
 static void wmi_wbuff_register(struct wmi_unified *wmi_handle)
 {
@@ -2752,7 +2734,7 @@ static void wmi_wbuff_register(struct wmi_unified *wmi_handle)
  * wmi_wbuff_deregister() - deregister wmi with wbuff
  * @wmi_handle: handle to wmi
  *
- * @Return: void
+ * Return: void
  */
 static inline void wmi_wbuff_deregister(struct wmi_unified *wmi_handle)
 {
@@ -2763,13 +2745,9 @@ static inline void wmi_wbuff_deregister(struct wmi_unified *wmi_handle)
 /**
  * wmi_unified_attach() -  attach for unified WMI
  * @scn_handle: handle to SCN
- * @osdev: OS device context
- * @target_type: TLV or not-TLV based target
- * @use_cookie: cookie based allocation enabled/disabled
- * @ops: umac rx callbacks
- * @psoc: objmgr psoc
+ * @param: Target, device, callback and allocation settings for WMI attachment
  *
- * @Return: wmi handle.
+ * Return: wmi handle.
  */
 void *wmi_unified_attach(void *scn_handle,
 			 struct wmi_unified_attach_params *param)
@@ -2862,7 +2840,7 @@ error:
  *
  * @wmi_handle  : handle to wmi.
  *
- * @Return: none.
+ * Return: none.
  */
 void wmi_unified_detach(struct wmi_unified *wmi_handle)
 {
@@ -2950,9 +2928,9 @@ wmi_unified_remove_work(struct wmi_unified *wmi_handle)
  * wmi_htc_tx_complete() - Process htc tx completion
  *
  * @ctx: handle to wmi
- * @htc_packet: pointer to htc packet
+ * @htc_pkt: pointer to htc packet
  *
- * @Return: none.
+ * Return: none.
  */
 static void wmi_htc_tx_complete(void *ctx, HTC_PACKET *htc_pkt)
 {
@@ -3008,7 +2986,7 @@ static void wmi_htc_tx_complete(void *ctx, HTC_PACKET *htc_pkt)
  * @ctx: handle of WMI context
  * @htc_pkt: handle of HTC packet
  *
- * @Return: none
+ * Return: none
  */
 static void wmi_htc_log_pkt(void *ctx, HTC_PACKET *htc_pkt)
 {
@@ -3031,10 +3009,10 @@ static void wmi_htc_log_pkt(void *ctx, HTC_PACKET *htc_pkt)
 /**
  * wmi_connect_pdev_htc_service() -  WMI API to get connect to HTC service
  *
- * @wmi_handle: handle to WMI.
+ * @soc: WMI SoC that owns the HTC transport and pdev endpoints
  * @pdev_idx: Pdev index
  *
- * @Return: QDF_STATUS
+ * Return: QDF_STATUS
  */
 static QDF_STATUS wmi_connect_pdev_htc_service(struct wmi_soc *soc,
 					       uint32_t pdev_idx)
@@ -3107,7 +3085,7 @@ wmi_unified_connect_htc_service(struct wmi_unified *wmi_handle,
  *
  * @wmi_handle: handle to WMI.
  *
- * @Return: updated host_credits.
+ * Return: updated host_credits.
  */
 int wmi_get_host_credits(wmi_unified_t wmi_handle)
 {
@@ -3124,7 +3102,7 @@ int wmi_get_host_credits(wmi_unified_t wmi_handle)
  *
  * @wmi_handle: handle to WMI.
  *
- * @Return: Pending Commands in the HTC queue.
+ * Return: Pending Commands in the HTC queue.
  */
 int wmi_get_pending_cmds(wmi_unified_t wmi_handle)
 {
@@ -3137,7 +3115,7 @@ int wmi_get_pending_cmds(wmi_unified_t wmi_handle)
  * @wmi_handle: handle to WMI.
  * @val: suspend state boolean.
  *
- * @Return: none.
+ * Return: none.
  */
 void wmi_set_target_suspend(wmi_unified_t wmi_handle, A_BOOL val)
 {
@@ -3170,9 +3148,9 @@ bool wmi_is_qmi_stats_enabled(struct wmi_unified *wmi_handle)
 #endif
 
 /**
- * WMI API to set crash injection state
- * @param wmi_handle:	handle to WMI.
- * @param val:		crash injection state boolean.
+ * wmi_tag_crash_inject() - set crash injection state
+ * @wmi_handle:	handle to WMI.
+ * @flag:		crash injection state boolean.
  */
 void wmi_tag_crash_inject(wmi_unified_t wmi_handle, A_BOOL flag)
 {
@@ -3180,9 +3158,9 @@ void wmi_tag_crash_inject(wmi_unified_t wmi_handle, A_BOOL flag)
 }
 
 /**
- * WMI API to set bus suspend state
- * @param wmi_handle:	handle to WMI.
- * @param val:		suspend state boolean.
+ * wmi_set_is_wow_bus_suspended() - set bus suspend state
+ * @wmi_handle:	handle to WMI.
+ * @val:		suspend state boolean.
  */
 void wmi_set_is_wow_bus_suspended(wmi_unified_t wmi_handle, A_BOOL val)
 {
@@ -3198,7 +3176,7 @@ void wmi_set_tgt_assert(wmi_unified_t wmi_handle, bool val)
  * wmi_stop() - generic function to block unified WMI command
  * @wmi_handle: handle to WMI.
  *
- * @Return: success always.
+ * Return: success always.
  */
 int
 wmi_stop(wmi_unified_t wmi_handle)
@@ -3213,7 +3191,7 @@ wmi_stop(wmi_unified_t wmi_handle)
  * wmi_start() - generic function to allow unified WMI command
  * @wmi_handle: handle to WMI.
  *
- * @Return: success always.
+ * Return: success always.
  */
 int
 wmi_start(wmi_unified_t wmi_handle)
@@ -3225,9 +3203,9 @@ wmi_start(wmi_unified_t wmi_handle)
 }
 
 /**
- * API to flush all the previous packets  associated with the wmi endpoint
+ * wmi_flush_endpoint() - flush queued packets for the WMI endpoint
  *
- * @param wmi_handle      : handle to WMI.
+ * @wmi_handle: handle to WMI.
  */
 void
 wmi_flush_endpoint(wmi_unified_t wmi_handle)
@@ -3241,8 +3219,8 @@ qdf_export_symbol(wmi_flush_endpoint);
  * wmi_pdev_id_conversion_enable() - API to enable pdev_id/phy_id conversion
  *                     in WMI. By default pdev_id conversion is not done in WMI.
  *                     This API can be used enable conversion in WMI.
- * @param wmi_handle   : handle to WMI
- * @param pdev_map     : pointer to pdev_map
+ * @wmi_handle: handle to WMI
+ * @pdev_id_map: pointer to pdev_map
  * @size               : size of pdev_id_map
  * Return none
  */
