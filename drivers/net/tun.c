@@ -3341,7 +3341,7 @@ static int tun_chr_open(struct inode *inode, struct file * file)
 	tfile->ifindex = 0;
 
 	init_waitqueue_head(&tfile->wq.wait);
-	RCU_INIT_POINTER(tfile->socket.wq, &tfile->wq);
+	tfile->socket.wq = &tfile->wq;
 
 	tfile->socket.file = file;
 	tfile->socket.ops = &tun_socket_ops;
