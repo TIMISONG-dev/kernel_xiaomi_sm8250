@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2018-2019, The Linux Foundation. All rights reserved.*/
 
+#include <linux/msm_pcie.h>
 #include <linux/interrupt.h>
 #include <linux/iommu.h>
 #include <linux/ipc_logging.h>
@@ -123,7 +124,7 @@ static int msm_msi_domain_prepare(struct irq_domain *domain, struct device *dev,
 	return 0;
 }
 
-void msm_msi_domain_finish(msi_alloc_info_t *arg, int retval)
+static void msm_msi_domain_finish(msi_alloc_info_t *arg, int retval)
 {
 	struct device *dev = arg->desc->dev;
 	struct irq_domain *domain = dev_get_msi_domain(dev);
