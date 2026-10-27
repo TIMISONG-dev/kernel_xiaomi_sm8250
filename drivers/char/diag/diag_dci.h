@@ -213,7 +213,7 @@ struct dci_channel_status_t {
 	int retry_count;
 	struct timer_list wait_time;
 	struct work_struct handshake_work;
-} __packed;
+};
 
 extern struct dci_ops_tbl_t dci_ops_tbl[NUM_DCI_PROC];
 
