@@ -149,7 +149,16 @@ static inline u32 tcf_auto_prio(struct tcf_proto *tp)
 	return TC_H_MAJ(first);
 }
 
-static struct tcf_proto *tcf_proto_create(const char *kind, u32 protocol,
+/*
+ * tcm_info is a native-endian u32 with an already network-order EtherType
+ * in its low 16 bits. Extract the representation without swapping its bytes.
+ */
+static __be16 tcf_protocol_from_info(u32 info)
+{
+	return (__force __be16)TC_H_MIN(info);
+}
+
+static struct tcf_proto *tcf_proto_create(const char *kind, __be16 protocol,
 					  u32 prio, struct tcf_chain *chain,
 					  struct netlink_ext_ack *extack)
 {
@@ -1081,7 +1090,7 @@ static void tcf_chain_tp_remove(struct tcf_chain *chain,
 
 static struct tcf_proto *tcf_chain_tp_find(struct tcf_chain *chain,
 					   struct tcf_chain_info *chain_info,
-					   u32 protocol, u32 prio,
+					   __be16 protocol, u32 prio,
 					   bool prio_allocate)
 {
 	struct tcf_proto __rcu **pprev;
@@ -1129,7 +1138,8 @@ static int tcf_fill_node(struct net *net, struct sk_buff *skb,
 		tcm->tcm_ifindex = TCM_IFINDEX_MAGIC_BLOCK;
 		tcm->tcm_block_index = block->index;
 	}
-	tcm->tcm_info = TC_H_MAKE(tp->prio, tp->protocol);
+	/* Keep the EtherType's network-order representation in the low bits. */
+	tcm->tcm_info = TC_H_MAKE(tp->prio, (__force u16)tp->protocol);
 	if (nla_put_string(skb, TCA_KIND, tp->ops->kind))
 		goto nla_put_failure;
 	if (nla_put_u32(skb, TCA_CHAIN, tp->chain->index))
@@ -1230,7 +1240,7 @@ static int tc_new_tfilter(struct sk_buff *skb, struct nlmsghdr *n,
 	struct net *net = sock_net(skb->sk);
 	struct nlattr *tca[TCA_MAX + 1];
 	struct tcmsg *t;
-	u32 protocol;
+	__be16 protocol;
 	u32 prio;
 	bool prio_allocate;
 	u32 parent;
@@ -1257,7 +1267,7 @@ replay:
 		return err;
 
 	t = nlmsg_data(n);
-	protocol = TC_H_MIN(t->tcm_info);
+	protocol = tcf_protocol_from_info(t->tcm_info);
 	prio = TC_H_MAJ(t->tcm_info);
 	prio_allocate = false;
 	parent = t->tcm_parent;
@@ -1389,7 +1399,7 @@ static int tc_del_tfilter(struct sk_buff *skb, struct nlmsghdr *n,
 	struct net *net = sock_net(skb->sk);
 	struct nlattr *tca[TCA_MAX + 1];
 	struct tcmsg *t;
-	u32 protocol;
+	__be16 protocol;
 	u32 prio;
 	u32 parent;
 	u32 chain_index;
@@ -1411,7 +1421,7 @@ static int tc_del_tfilter(struct sk_buff *skb, struct nlmsghdr *n,
 		return err;
 
 	t = nlmsg_data(n);
-	protocol = TC_H_MIN(t->tcm_info);
+	protocol = tcf_protocol_from_info(t->tcm_info);
 	prio = TC_H_MAJ(t->tcm_info);
 	parent = t->tcm_parent;
 
@@ -1509,7 +1519,7 @@ static int tc_get_tfilter(struct sk_buff *skb, struct nlmsghdr *n,
 	struct net *net = sock_net(skb->sk);
 	struct nlattr *tca[TCA_MAX + 1];
 	struct tcmsg *t;
-	u32 protocol;
+	__be16 protocol;
 	u32 prio;
 	u32 parent;
 	u32 chain_index;
@@ -1528,7 +1538,7 @@ static int tc_get_tfilter(struct sk_buff *skb, struct nlmsghdr *n,
 		return err;
 
 	t = nlmsg_data(n);
-	protocol = TC_H_MIN(t->tcm_info);
+	protocol = tcf_protocol_from_info(t->tcm_info);
 	prio = TC_H_MAJ(t->tcm_info);
 	parent = t->tcm_parent;
 
@@ -1617,6 +1627,7 @@ static bool tcf_chain_dump(struct tcf_chain *chain, struct Qdisc *q, u32 parent,
 	struct net *net = sock_net(skb->sk);
 	struct tcf_block *block = chain->block;
 	struct tcmsg *tcm = nlmsg_data(cb->nlh);
+	__be16 protocol = tcf_protocol_from_info(tcm->tcm_info);
 	struct tcf_dump_args arg;
 	struct tcf_proto *tp;
 
@@ -1627,8 +1638,7 @@ static bool tcf_chain_dump(struct tcf_chain *chain, struct Qdisc *q, u32 parent,
 		if (TC_H_MAJ(tcm->tcm_info) &&
 		    TC_H_MAJ(tcm->tcm_info) != tp->prio)
 			continue;
-		if (TC_H_MIN(tcm->tcm_info) &&
-		    TC_H_MIN(tcm->tcm_info) != tp->protocol)
+		if (protocol && protocol != tp->protocol)
 			continue;
 		if (*p_index > index_start)
 			memset(&cb->args[1], 0,
