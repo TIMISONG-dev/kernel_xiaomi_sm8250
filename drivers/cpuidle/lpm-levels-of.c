@@ -102,7 +102,7 @@ static ssize_t lpm_latency_show(struct kobject *kobj,
 	return ret;
 }
 
-ssize_t lpm_enable_show(struct kobject *kobj, struct kobj_attribute *attr,
+static ssize_t lpm_enable_show(struct kobject *kobj, struct kobj_attribute *attr,
 				char *buf)
 {
 	int ret = 0;
@@ -125,7 +125,7 @@ ssize_t lpm_enable_show(struct kobject *kobj, struct kobj_attribute *attr,
 	return ret;
 }
 
-ssize_t lpm_enable_store(struct kobject *kobj, struct kobj_attribute *attr,
+static ssize_t lpm_enable_store(struct kobject *kobj, struct kobj_attribute *attr,
 				const char *buf, size_t len)
 {
 	int ret = 0;
@@ -586,7 +586,7 @@ void free_cluster_node(struct lpm_cluster *cluster)
  * level of a cluster is consistent with reference to its
  * child nodes.
  */
-struct lpm_cluster *parse_cluster(struct device_node *node,
+static struct lpm_cluster *parse_cluster(struct device_node *node,
 				  struct lpm_cluster *parent)
 {
 	struct lpm_cluster *c;
