@@ -237,7 +237,7 @@ static QDF_STATUS send_nan_req_cmd_tlv(wmi_unified_t wmi_handle,
 	wmi_buf_t buf;
 	wmi_nan_host_config_param *cfg;
 	uint16_t len = sizeof(*cmd) + sizeof(*cfg) + 2 * WMI_TLV_HDR_SIZE;
-	uint16_t nan_data_len, nan_data_len_aligned;
+	uint16_t nan_data_len_aligned;
 	uint8_t *buf_ptr;
 
 	/*
@@ -255,7 +255,6 @@ static QDF_STATUS send_nan_req_cmd_tlv(wmi_unified_t wmi_handle,
 		WMI_LOGE("%s:nan req is not valid", __func__);
 		return QDF_STATUS_E_FAILURE;
 	}
-	nan_data_len = nan_msg->request_data_len;
 	nan_data_len_aligned = roundup(nan_msg->request_data_len,
 				       sizeof(uint32_t));
 	if (nan_data_len_aligned < nan_msg->request_data_len) {
