@@ -1468,7 +1468,7 @@ struct rx_radar_status {
 	uint32_t tsf_offset;
 	int      rssi;
 	int      pulse_duration;
-	int      is_chirp:1;
+	unsigned int is_chirp:1;
 	int      delta_peak;
 	int      delta_diff;
 	int      sidx;
