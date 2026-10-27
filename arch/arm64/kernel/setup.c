@@ -45,6 +45,7 @@
 
 #include <asm/acpi.h>
 #include <asm/fixmap.h>
+#include <asm/boot.h>
 #include <asm/cpu.h>
 #include <asm/cputype.h>
 #include <asm/daifflags.h>

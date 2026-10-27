@@ -24,6 +24,13 @@
 #include <linux/cpumask.h>
 #include <linux/tracepoint.h>
 
+DECLARE_PER_CPU(u32, old_pid);
+DECLARE_PER_CPU(u32, hotplug_flag);
+void tracectr_notifier(void *ignore, bool preempt,
+		      struct task_struct *prev, struct task_struct *next);
+int init_tracecounters(void);
+int exit_tracecounters(void);
+
 DECLARE_PER_CPU(u32, cntenset_val);
 DECLARE_PER_CPU(u32, previous_ccnt);
 DECLARE_PER_CPU(u32[NUM_L1_CTRS], previous_l1_cnts);

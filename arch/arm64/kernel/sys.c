@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <linux/build_bug.h>
 #include <linux/compiler.h>
 #include <linux/errno.h>
 #include <linux/fs.h>
@@ -66,7 +67,14 @@ asmlinkage long __arm64_sys_ni_syscall(const struct pt_regs *__unused)
 #undef __SYSCALL
 #define __SYSCALL(nr, sym)	[nr] = __arm64_##sym,
 
+static_assert(__NR_syscalls == __NR_epoll_pwait2 + 1,
+	      "Update reserved syscall ranges when extending this ABI");
+
 const syscall_fn_t sys_call_table[__NR_syscalls] = {
-	[0 ... __NR_syscalls - 1] = __arm64_sys_ni_syscall,
+	/* Reserved ABI slots; implemented entries are supplied below. */
+	[__NR_arch_specific_syscall ... __NR_wait4 - 1] = __arm64_sys_ni_syscall,
+	[__NR_rseq + 1 ... __NR_pidfd_send_signal - 1] = __arm64_sys_ni_syscall,
+	[__NR_pidfd_send_signal + 1 ... __NR_pidfd_open - 1] = __arm64_sys_ni_syscall,
+	[__NR_close_range + 1 ... __NR_epoll_pwait2 - 1] = __arm64_sys_ni_syscall,
 #include <asm/unistd.h>
 };
