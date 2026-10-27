@@ -507,6 +507,10 @@ static int __init msm_performance_init(void)
 		"msm_performance_cpu_hotplug",
 		hotplug_notify,
 		NULL);
+	if (rc < 0) {
+		cpufreq_unregister_notifier(&perf_cpufreq_nb, CPUFREQ_POLICY_NOTIFIER);
+		return rc;
+	}
 
 	init_events_group();
 	init_notify_group();
