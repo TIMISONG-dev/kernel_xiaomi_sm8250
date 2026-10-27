@@ -66,6 +66,7 @@ MODULE_PARM_DESC(pmdown_time, "DAPM stream powerdown time (msecs)");
  * "Type2 - Board Manufacturer" or  "Type1 - TBD by OEM"), it will be taken
  * as invalid and dropped when setting the card long name from DMI info.
  */
+#ifdef CONFIG_DMI
 static const char * const dmi_blacklist[] = {
 	"To be filled by OEM",
 	"TBD by OEM",
@@ -75,6 +76,7 @@ static const char * const dmi_blacklist[] = {
 	"Board Product Name",
 	NULL,	/* terminator */
 };
+#endif
 
 static ssize_t pmdown_time_show(struct device *dev,
 				struct device_attribute *attr, char *buf)

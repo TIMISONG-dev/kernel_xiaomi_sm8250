@@ -2763,7 +2763,7 @@ static void dpcm_be_async_prepare(void *data, async_cookie_t cookie)
 	be->dpcm[stream].state = SND_SOC_DPCM_STATE_PREPARE;
 }
 
-void dpcm_be_dai_prepare_async(struct snd_soc_pcm_runtime *fe, int stream,
+static void dpcm_be_dai_prepare_async(struct snd_soc_pcm_runtime *fe, int stream,
 					    struct async_domain *domain)
 {
 	struct snd_soc_dpcm *dpcm;
