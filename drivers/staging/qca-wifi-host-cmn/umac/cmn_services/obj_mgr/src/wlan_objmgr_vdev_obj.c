@@ -336,7 +336,6 @@ static QDF_STATUS wlan_objmgr_vdev_obj_destroy(struct wlan_objmgr_vdev *vdev)
 
 QDF_STATUS wlan_objmgr_vdev_obj_delete(struct wlan_objmgr_vdev *vdev)
 {
-	uint8_t print_idx;
 
 	if (!vdev) {
 		obj_mgr_err("vdev is NULL");
@@ -345,7 +344,6 @@ QDF_STATUS wlan_objmgr_vdev_obj_delete(struct wlan_objmgr_vdev *vdev)
 
 	obj_mgr_debug("Logically deleting vdev %d", vdev->vdev_objmgr.vdev_id);
 
-	print_idx = qdf_get_pidx();
 	wlan_objmgr_print_ref_ids(vdev->vdev_objmgr.ref_id_dbg,
 				  QDF_TRACE_LEVEL_DEBUG);
 	/*
