@@ -562,7 +562,7 @@ static int mdm_register_ssr(struct esoc_clink *esoc_clink)
 	return esoc_clink_register_ssr(esoc_clink);
 }
 
-int esoc_ssr_probe(struct esoc_clink *esoc_clink, struct esoc_drv *drv)
+static int esoc_ssr_probe(struct esoc_clink *esoc_clink, struct esoc_drv *drv)
 {
 	int ret;
 	struct mdm_drv *mdm_drv;
@@ -643,7 +643,7 @@ static struct esoc_drv esoc_ssr_drv = {
 	},
 };
 
-int __init esoc_ssr_init(void)
+static int __init esoc_ssr_init(void)
 {
 	return esoc_drv_register(&esoc_ssr_drv);
 }
