@@ -1372,7 +1372,7 @@ static struct platform_driver spmi_pmic_arb_driver = {
 	},
 };
 
-int __init spmi_pmic_arb_init(void)
+static int __init spmi_pmic_arb_init(void)
 {
 	return platform_driver_register(&spmi_pmic_arb_driver);
 }
