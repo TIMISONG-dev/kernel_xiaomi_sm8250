@@ -293,6 +293,8 @@ out:
 	return f;
 }
 
+void cfi_slowpath_handler(uint64_t id, void *ptr, void *diag);
+
 void cfi_slowpath_handler(uint64_t id, void *ptr, void *diag)
 {
 	cfi_check_fn check = find_cfi_check(ptr);
@@ -304,6 +306,9 @@ void cfi_slowpath_handler(uint64_t id, void *ptr, void *diag)
 }
 EXPORT_SYMBOL_GPL(cfi_slowpath_handler);
 #endif /* CONFIG_MODULES */
+
+void cfi_failure_handler(void *data, void *ptr, void *vtable);
+void __cfi_check_fail(void *data, void *ptr);
 
 void cfi_failure_handler(void *data, void *ptr, void *vtable)
 {
