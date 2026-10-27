@@ -18,6 +18,7 @@
 #include <linux/ratelimit.h>
 #include <linux/reboot.h>
 #include <asm/current.h>
+#include <asm/unaligned.h>
 #include <soc/qcom/restart.h>
 #include <linux/sched/signal.h>
 #include <linux/vmalloc.h>
@@ -966,7 +967,7 @@ void extract_dci_ctrl_pkt(unsigned char *buf, int len, int token)
 	/* Skip the Control packet command code */
 	temp += sizeof(uint8_t);
 	len -= sizeof(uint8_t);
-	ctrl_pkt_id = *(uint32_t *)temp;
+	ctrl_pkt_id = get_unaligned((uint32_t *)temp);
 	switch (ctrl_pkt_id) {
 	case DIAG_CTRL_MSG_DCI_CONNECTION_STATUS:
 		dci_process_ctrl_status(temp, len, token);
