@@ -1021,10 +1021,10 @@ void rcu_irq_enter_irqson(void)
 /**
  * rcu_is_watching - see if RCU thinks that the current CPU is idle
  *
- * Return true if RCU is watching the running CPU, which means that this
+ * Return: true if RCU is watching the running CPU, which means that this
  * CPU can safely enter RCU read-side critical sections.  In other words,
  * if the current CPU is in its idle loop and is neither in an interrupt
- * or NMI handler, return true.
+ * or NMI handler, return false.
  */
 bool notrace rcu_is_watching(void)
 {
@@ -1101,9 +1101,10 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
 /**
  * rcu_is_cpu_rrupt_from_idle - see if idle or immediately interrupted from idle
  *
- * If the current CPU is idle or running at a first-level (not nested)
- * interrupt from idle, return true.  The caller must have at least
- * disabled preemption.
+ * Context: The caller must have disabled preemption.
+ *
+ * Return: true if idle or in a first-level (not nested) interrupt from idle,
+ * false otherwise.
  */
 static int rcu_is_cpu_rrupt_from_idle(void)
 {
@@ -3215,7 +3216,7 @@ EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
 /**
  * get_state_synchronize_rcu - Snapshot current RCU state
  *
- * Returns a cookie that is used by a later call to cond_synchronize_rcu()
+ * Return: a cookie that is used by a later call to cond_synchronize_rcu()
  * to determine whether or not a full grace period has elapsed in the
  * meantime.
  */
@@ -3256,7 +3257,7 @@ EXPORT_SYMBOL_GPL(cond_synchronize_rcu);
 /**
  * get_state_synchronize_sched - Snapshot current RCU-sched state
  *
- * Returns a cookie that is used by a later call to cond_synchronize_sched()
+ * Return: a cookie that is used by a later call to cond_synchronize_sched()
  * to determine whether or not a full grace period has elapsed in the
  * meantime.
  */
