@@ -395,6 +395,8 @@ static ssize_t aw2015_led_time_store(struct device *dev,
 
 	rc = sscanf(buf, "%d %d %d %d %d %d", &delay_time_ms, &rise_time_ms,
 		    &hold_time_ms, &fall_time_ms, &slot_time_ms, &off_time_ms);
+	if (rc != 6)
+		return -EINVAL;
 
 	mutex_lock(&led->pdata->led->lock);
 	led->pdata->delay_time_ms = (delay_time_ms > MAX_DELAY_TIME_MS) ?
