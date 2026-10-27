@@ -10,6 +10,7 @@
 
 //Chirp Microsystems Firmware Header Generator
 
+#include "ch101_gpr.h"
 #include "ch101.h"
 #include <linux/types.h>
 

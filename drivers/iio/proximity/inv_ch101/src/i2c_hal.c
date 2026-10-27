@@ -20,7 +20,7 @@
 #include "../ch101_client.h"
 
 
-unsigned long i2c_master_read_register(int bus_index, unsigned char Address,
+static unsigned long i2c_master_read_register(int bus_index, unsigned char Address,
 	unsigned char RegAddr, unsigned short RegLen,
 	unsigned char *RegValue)
 {
@@ -48,7 +48,7 @@ unsigned long i2c_master_read_register(int bus_index, unsigned char Address,
 	return res;
 }
 
-unsigned long i2c_master_write_register(int bus_index, unsigned char Address,
+static unsigned long i2c_master_write_register(int bus_index, unsigned char Address,
 	unsigned char RegAddr, unsigned short RegLen,
 	unsigned char *RegValue)
 {
@@ -76,7 +76,7 @@ unsigned long i2c_master_write_register(int bus_index, unsigned char Address,
 	return res;
 }
 
-unsigned long i2c_master_read_sync(int bus_index, unsigned char Address,
+static unsigned long i2c_master_read_sync(int bus_index, unsigned char Address,
 	unsigned short RegLen, unsigned char *RegValue)
 {
 	int res = 0;
@@ -105,7 +105,7 @@ unsigned long i2c_master_read_sync(int bus_index, unsigned char Address,
 	return (res == 0 ? RegLen : res);
 }
 
-unsigned long i2c_master_write_sync(int bus_index, unsigned char Address,
+static unsigned long i2c_master_write_sync(int bus_index, unsigned char Address,
 	unsigned short RegLen, unsigned char *RegValue)
 {
 	int res = 0;
