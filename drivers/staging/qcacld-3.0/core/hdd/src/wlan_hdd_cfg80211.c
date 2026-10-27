@@ -1176,6 +1176,7 @@ hdd_convert_hang_reason(enum qdf_hang_reason reason)
  * @hdd_ctx: Pointer to hdd context
  * @reason: cds recovery reason
  * @data: Hang Data
+ * @data_len: Number of bytes of hang data to include in the event
  *
  * Return: 0 on success or failure reason
  */
@@ -2284,7 +2285,7 @@ hdd_update_reg_chan_info(struct hdd_adapter *adapter,
  * hdd_cfg80211_update_channel_info() - add channel info attributes
  * @hdd_ctx: pointer to hdd context
  * @skb: pointer to sk buff
- * @hdd_ctx: pointer to hdd station context
+ * @sap_config: SAP configuration containing the channel information array
  * @idx: attribute index
  *
  * Return: Success(0) or reason code for failure
@@ -2374,7 +2375,7 @@ fail:
  * hdd_cfg80211_update_pcl() - add pcl info attributes
  * @hdd_ctx: pointer to hdd context
  * @skb: pointer to sk buff
- * @hdd_ctx: pointer to hdd station context
+ * @ch_list_count: Number of entries in the PCL frequency and weight arrays
  * @idx: attribute index
  * @vendor_pcl_list: PCL list
  * @vendor_weight_list: PCL weights
@@ -2438,7 +2439,7 @@ static void hdd_get_scan_band(struct hdd_context *hdd_ctx,
 
 /**
  * wlan_hdd_sap_get_valid_channellist() - Get SAPs valid channel list
- * @ap_adapter: adapter
+ * @adapter: adapter
  * @channel_count: valid channel count
  * @freq_list: valid channel frequency (MHz) list
  * @band: frequency band
@@ -2899,7 +2900,7 @@ static void hdd_avoid_acs_channels(struct hdd_context *hdd_ctx,
  * intersection of PCL
  * @pcl: preferred channel list
  * @pcl_count: Preferred channel list count
- * @org_ch_list: ACS channel list from user space
+ * @org_freq_list: ACS frequency list from user space, filtered in place
  * @org_ch_list_count: ACS channel count from user space
  *
  * Return: None
@@ -2936,7 +2937,9 @@ static void wlan_hdd_trim_acs_channel_list(uint32_t *pcl, uint8_t pcl_count,
  * wlan_hdd_handle_zero_acs_list() - Handle worst case of acs channel
  * trimmed to zero
  * @hdd_ctx: struct hdd_context
- * @org_ch_list: ACS channel list from user space
+ * @acs_freq_list: Filtered ACS frequency list to receive a fallback frequency
+ * @acs_ch_list_count: Filtered list count, changed from zero to one on fallback
+ * @org_freq_list: Original ACS frequency list from user space
  * @org_ch_list_count: ACS channel count from user space
  *
  * When all chan in ACS freq list is filtered out
@@ -3502,8 +3505,6 @@ static int hdd_get_acs_evt_data_len(void)
 /**
  * wlan_hdd_cfg80211_acs_ch_select_evt: Callback function for ACS evt
  * @adapter: Pointer to SAP adapter struct
- * @pri_channel: SAP ACS procedure selected Primary channel
- * @sec_channel: SAP ACS procedure selected secondary channel
  *
  * This is a callback function from SAP module on ACS procedure is completed.
  * This function send the ACS selected channel information to hostapd
@@ -5220,7 +5221,7 @@ out:
 
 /**
  * hdd_send_roam_control_config() - Send the roam config as vendor cmd reply
- * @mac_handle: Opaque handle to the MAC context
+ * @hdd_ctx: HDD context used to allocate and populate the vendor reply
  * @vdev_id: vdev id
  * @tb: List of attributes
  *
@@ -5312,7 +5313,8 @@ static int hdd_get_roam_control_config(struct hdd_context *hdd_ctx,
  * hdd_set_ext_roam_params() - parse ext roam params
  * @hdd_ctx:        HDD context
  * @roam_params:   roam params
- * @tb:            list of attributes
+ * @data: Netlink attribute payload containing the extended roaming command
+ * @data_len: Length of the netlink attribute payload in bytes
  * @vdev_id:    vdev id
  *
  * Return: 0 on success; error number on failure
@@ -11938,6 +11940,7 @@ static int __wlan_hdd_cfg80211_setband(struct wiphy *wiphy,
  *wlan_hdd_validate_acs_channel() - validate channel frequency provided by ACS
  * @adapter: hdd adapter
  * @chan_freq: channel frequency in MHz
+ * @chan_bw: Channel bandwidth used to check leakage into the NOL
  *
  * return: QDF status based on success or failure
  */
@@ -12352,7 +12355,7 @@ hdd_extract_external_acs_channels(struct hdd_context *hdd_ctx,
 /**
  * hdd_parse_vendor_acs_chan_config() - API to parse vendor acs channel config
  * @hdd_ctx: pointer to hdd context
- * @channel_list: pointer to hdd_vendor_chan_info
+ * @chan_list_ptr: Receives the allocated array of vendor channel information
  * @reason: channel change reason
  * @channel_cnt: channel count
  * @data: data
@@ -13403,10 +13406,12 @@ static inline uint8_t *hdd_dns_unmake_name_query(uint8_t *name)
  *				to DNS name
  * @string: Name as a NUL-terminated string
  * @buf: Buffer in which to place DNS name
+ * @len: Input string length in bytes, including the terminating NUL
  *
  * DNS names consist of "<length>element" pairs.
  *
- * Return: Byte following constructed DNS name
+ * Return: Byte following constructed DNS name, or NULL if the input byte
+ * at offset @len - 1 is not NUL
  */
 static uint8_t *hdd_dns_make_name_query(const uint8_t *string,
 					uint8_t *buf, uint8_t len)
@@ -16595,7 +16600,7 @@ void wlan_hdd_update_wiphy(struct hdd_context *hdd_ctx)
 
 /**
  * wlan_hdd_update_11n_mode - update 11n mode in hdd cfg
- * @cfg: hdd cfg
+ * @hdd_ctx: HDD context containing the configuration to update
  *
  * this function update 11n mode in hdd cfg
  *
@@ -17944,8 +17949,8 @@ static int wlan_hdd_cfg80211_get_key(struct wiphy *wiphy,
  * @wiphy: wiphy interface context
  * @ndev: pointer to net device
  * @key_index: Key index used in 802.11 frames
- * @unicast: true if it is unicast key
- * @multicast: true if it is multicast key
+ * @pairwise: true for a pairwise key (unused)
+ * @mac_addr: Peer address, or NULL for a group key (unused)
  *
  * This function is required for cfg80211_ops API.
  * It is used to delete the key information
@@ -18715,8 +18720,9 @@ int wlan_hdd_cfg80211_check_pmf_valid(struct csr_roam_profile *roam_profile)
  * @ssid_len: Length of ssid
  * @bssid: Pointer to bssid
  * @bssid_hint: Pointer to bssid hint
- * @operatingChannel: Operating channel
+ * @oper_freq: Operating channel frequency in MHz, or zero for no restriction
  * @ch_width: channel width. this is needed only for IBSS
+ * @ch_freq_hint: Channel frequency hint passed to the roaming profile
  *
  * This function is used to start the association process
  *
@@ -19703,7 +19709,7 @@ static void hdd_populate_crypto_auth_type(struct wlan_objmgr_vdev *vdev,
 /**
  * hdd_populate_crypto_akm_type() - populate akm type for crypto
  * @vdev: pointed to vdev obmgr
- * @akm_type: legacy akm_type
+ * @key_mgmt: legacy akm_type
  *
  * set the crypto akm type for corresponding akm type received
  * from NL
@@ -19819,7 +19825,7 @@ static void hdd_set_crypto_key_mgmt_param(struct hdd_adapter *adapter)
  * wlan_hdd_cfg80211_set_ie() - set IEs
  * @adapter: Pointer to adapter
  * @ie: Pointer ot ie
- * @ie: IE length
+ * @ie_len: IE length
  *
  * Return: 0 for success, non-zero for failure
  */
@@ -20232,7 +20238,7 @@ static bool hdd_is_wpaie_present(const uint8_t *ie, uint8_t ie_len)
 /**
  * wlan_hdd_cfg80211_set_privacy_ibss() - set ibss privacy
  * @adapter: Pointer to adapter
- * @param: Pointer to IBSS parameters
+ * @params: Pointer to IBSS parameters
  *
  * This function is used to initialize the security settings in IBSS mode
  *
@@ -20336,7 +20342,7 @@ static int wlan_hdd_cfg80211_set_privacy_ibss(struct hdd_adapter *adapter,
  * __wlan_hdd_cfg80211_join_ibss() - join ibss
  * @wiphy: Pointer to wiphy
  * @dev: Pointer to network device
- * @param: Pointer to IBSS join parameters
+ * @params: Pointer to IBSS join parameters
  *
  * This function is used to create/join an IBSS network
  *
@@ -20527,7 +20533,7 @@ static int __wlan_hdd_cfg80211_join_ibss(struct wiphy *wiphy,
  * wlan_hdd_cfg80211_join_ibss() - join ibss
  * @wiphy: Pointer to wiphy
  * @dev: Pointer to network device
- * @param: Pointer to IBSS join parameters
+ * @params: Pointer to IBSS join parameters
  *
  * This function is used to create/join an IBSS network
  *
@@ -20674,7 +20680,7 @@ static int wlan_hdd_cfg80211_leave_ibss(struct wiphy *wiphy,
  * wlan_hdd_cfg80211_join_ibss() - join ibss
  * @wiphy: Pointer to wiphy
  * @dev: Pointer to network device
- * @param: Pointer to IBSS join parameters
+ * @params: Pointer to IBSS join parameters
  *
  * This function is dummy
  *
@@ -21167,7 +21173,7 @@ static inline void hdd_dump_connect_req(struct hdd_adapter *adapter,
 /**
  * __wlan_hdd_cfg80211_connect() - cfg80211 connect api
  * @wiphy: Pointer to wiphy
- * @dev: Pointer to network device
+ * @ndev: Pointer to network device
  * @req: Pointer to cfg80211 connect request
  *
  * This function is used to start the association process
@@ -21337,7 +21343,7 @@ static int __wlan_hdd_cfg80211_connect(struct wiphy *wiphy,
 /**
  * wlan_hdd_cfg80211_connect() - cfg80211 connect api
  * @wiphy: Pointer to wiphy
- * @dev: Pointer to network device
+ * @ndev: Pointer to network device
  * @req: Pointer to cfg80211 connect request
  *
  * Return: 0 for success, non-zero for failure
@@ -21911,7 +21917,7 @@ static int wlan_hdd_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed)
  * __wlan_hdd_set_default_mgmt_key() - dummy implementation of set default mgmt
  *				     key
  * @wiphy: Pointer to wiphy
- * @dev: Pointer to network device
+ * @netdev: Pointer to network device
  * @key_index: Key index
  *
  * Return: 0
@@ -22019,7 +22025,7 @@ static int __wlan_hdd_set_txq_params(struct wiphy *wiphy,
 /**
  * wlan_hdd_set_txq_params() - SSR wrapper for wlan_hdd_set_txq_params
  * @wiphy: pointer to wiphy
- * @netdev: pointer to net_device structure
+ * @dev: pointer to net_device structure
  * @params: pointer to ieee80211_txq_params
  *
  * Return: 0 on success, error number on failure
@@ -22046,7 +22052,6 @@ static int wlan_hdd_set_txq_params(struct wiphy *wiphy,
  * hdd_softap_deauth_current_sta() - Deauth current sta
  * @sta_info: pointer to the current station info structure
  * @adapter: pointer to adapter structure
- * @hdd_ctx: pointer to hdd context
  * @hapd_state: pointer to hostapd state structure
  * @param: pointer to del sta params
  *
@@ -22096,7 +22101,6 @@ QDF_STATUS hdd_softap_deauth_current_sta(struct hdd_adapter *adapter,
 
 /**
  * hdd_softap_deauth_all_sta() - Deauth all sta in the sta list
- * @hdd_ctx: pointer to hdd context
  * @adapter: pointer to adapter structure
  * @hapd_state: pointer to hostapd state structure
  * @param: pointer to del sta params
@@ -22346,8 +22350,9 @@ int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy, struct net_device *dev,
 /**
  * __wlan_hdd_cfg80211_add_station() - add station
  * @wiphy: Pointer to wiphy
+ * @dev: Network device whose station is being added
  * @mac: Pointer to station mac address
- * @pmksa: Pointer to add station parameter
+ * @params: Pointer to add station parameter
  *
  * Return: 0 for success, non-zero for failure
  */
@@ -22406,8 +22411,9 @@ static int __wlan_hdd_cfg80211_add_station(struct wiphy *wiphy,
 /**
  * wlan_hdd_cfg80211_add_station() - add station
  * @wiphy: Pointer to wiphy
+ * @dev: Network device whose station is being added
  * @mac: Pointer to station mac address
- * @pmksa: Pointer to add station parameter
+ * @params: Pointer to add station parameter
  *
  * Return: 0 for success, non-zero for failure
  */
@@ -23039,7 +23045,7 @@ __wlan_hdd_cfg80211_update_owe_info(struct wiphy *wiphy,
 /**
  * wlan_hdd_cfg80211_update_owe_info() - update OWE info
  * @wiphy: Pointer to wiphy
- * @dev: Pointer to network device
+ * @net_dev: Pointer to network device
  * @owe_info: Pointer to OWE info
  *
  * Return: 0 for success, non-zero for failure
@@ -23251,7 +23257,7 @@ int wlan_hdd_cfg80211_set_rekey_data(struct wiphy *wiphy,
  * __wlan_hdd_cfg80211_set_mac_acl() - set access control policy
  * @wiphy: Pointer to wiphy
  * @dev: Pointer to network device
- * @param: Pointer to access control parameter
+ * @params: Pointer to access control parameter
  *
  * Return: 0 for success, non-zero for failure
  */
@@ -23398,7 +23404,7 @@ wlan_hdd_cfg80211_set_mac_acl(struct wiphy *wiphy,
 /**
  * wlan_hdd_cfg80211_lphb_ind_handler() - handle low power heart beat indication
  * @hdd_ctx: Pointer to hdd context
- * @lphbInd: Pointer to low power heart beat indication parameter
+ * @lphb_ind: Pointer to low power heart beat indication parameter
  *
  * Return: none
  */
@@ -23569,7 +23575,7 @@ static int __wlan_hdd_cfg80211_testmode(struct wiphy *wiphy,
 /**
  * wlan_hdd_cfg80211_testmode() - test mode
  * @wiphy: Pointer to wiphy
- * @dev: Pointer to network device
+ * @wdev: Wireless device supplied by cfg80211 (unused)
  * @data: Data pointer
  * @len: Data length
  *
@@ -24495,7 +24501,7 @@ static int wlan_hdd_cfg80211_nan_change_conf(struct wiphy *wiphy,
 
 /**
  * wlan_hdd_chan_info_cb() - channel info callback
- * @chan_info: struct scan_chan_info
+ * @info: struct scan_chan_info
  *
  * Store channel info into HDD context
  *
