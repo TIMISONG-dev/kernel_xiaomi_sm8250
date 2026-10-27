@@ -887,7 +887,7 @@ int put_timespec64(const struct timespec64 *ts,
 }
 EXPORT_SYMBOL_GPL(put_timespec64);
 
-int __compat_get_timespec64(struct timespec64 *ts64,
+static int __compat_get_timespec64(struct timespec64 *ts64,
 				   const struct compat_timespec __user *cts)
 {
 	struct compat_timespec ts;
@@ -903,7 +903,7 @@ int __compat_get_timespec64(struct timespec64 *ts64,
 	return 0;
 }
 
-int __compat_put_timespec64(const struct timespec64 *ts64,
+static int __compat_put_timespec64(const struct timespec64 *ts64,
 				   struct compat_timespec __user *cts)
 {
 	struct compat_timespec ts = {
