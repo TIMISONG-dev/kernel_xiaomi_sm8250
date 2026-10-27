@@ -4,6 +4,7 @@
  * @b: Second integer operand
  */
 
+#include <linux/us_prox.h>
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/jiffies.h>
@@ -367,7 +368,7 @@ static int32_t process_sensorhub_msg(uint32_t *payload, uint32_t payload_size)
 
 #endif
 
-extern int us_afe_callback(int data);
+
 static int ups_event;
 
 int32_t mius_process_apr_payload(uint32_t *payload)
