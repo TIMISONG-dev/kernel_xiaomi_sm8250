@@ -468,7 +468,6 @@ static void hif_pci_device_warm_reset(struct hif_pci_softc *sc)
 	void __iomem *mem = sc->mem;
 	int i;
 	uint32_t val;
-	uint32_t fw_indicator;
 	struct hif_softc *scn = HIF_GET_SOFTC(sc);
 
 	/* NB: Don't check resetok here.  This form of reset is
@@ -520,7 +519,7 @@ static void hif_pci_device_warm_reset(struct hif_pci_softc *sc)
 
 	/* Clear FW_INDICATOR_ADDRESS */
 	if (HAS_FW_INDICATOR) {
-		fw_indicator = hif_read32_mb(sc, mem + FW_INDICATOR_ADDRESS);
+		hif_read32_mb(sc, mem + FW_INDICATOR_ADDRESS);
 		hif_write32_mb(sc, mem + FW_INDICATOR_ADDRESS, 0);
 	}
 
@@ -2573,7 +2572,6 @@ void hif_pci_nointrs(struct hif_softc *scn)
 void hif_pci_disable_bus(struct hif_softc *scn)
 {
 	struct hif_pci_softc *sc = HIF_GET_PCI_SOFTC(scn);
-	struct pci_dev *pdev;
 	void __iomem *mem;
 	struct hif_target_info *tgt_info = &scn->target_info;
 
@@ -2583,7 +2581,6 @@ void hif_pci_disable_bus(struct hif_softc *scn)
 	if (!sc)
 		return;
 
-	pdev = sc->pdev;
 	if (ADRASTEA_BU) {
 		hif_vote_link_down(GET_HIF_OPAQUE_HDL(scn));
 
