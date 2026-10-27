@@ -187,7 +187,8 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
 	inode->i_mapping = mapping;
 	INIT_HLIST_HEAD(&inode->i_dentry);	/* buggered by rcu freeing */
 #ifdef CONFIG_FS_POSIX_ACL
-	inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
+	RCU_INIT_POINTER(inode->i_acl, ACL_NOT_CACHED);
+	RCU_INIT_POINTER(inode->i_default_acl, ACL_NOT_CACHED);
 #endif
 
 #ifdef CONFIG_FSNOTIFY
@@ -258,10 +259,7 @@ void __destroy_inode(struct inode *inode)
 	}
 
 #ifdef CONFIG_FS_POSIX_ACL
-	if (inode->i_acl && !is_uncached_acl(inode->i_acl))
-		posix_acl_release(inode->i_acl);
-	if (inode->i_default_acl && !is_uncached_acl(inode->i_default_acl))
-		posix_acl_release(inode->i_default_acl);
+	forget_all_cached_acls(inode);
 #endif
 	this_cpu_dec(nr_inodes);
 }

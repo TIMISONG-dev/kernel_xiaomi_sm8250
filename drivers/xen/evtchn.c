@@ -72,7 +72,7 @@ struct per_user_data {
 
 	/* Processes wait on this queue when ring is empty. */
 	wait_queue_head_t evtchn_wait;
-	struct fasync_struct *evtchn_async_queue;
+	struct fasync_struct __rcu *evtchn_async_queue;
 	const char *name;
 
 	domid_t restrict_domid;

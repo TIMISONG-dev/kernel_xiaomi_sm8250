@@ -130,7 +130,7 @@ static irqreturn_t hpet_rtc_interrupt(int irq, void *dev_id)
  *	ioctls.
  */
 
-static struct fasync_struct *rtc_async_queue;
+static struct fasync_struct __rcu *rtc_async_queue;
 
 static DECLARE_WAIT_QUEUE_HEAD(rtc_wait);
 

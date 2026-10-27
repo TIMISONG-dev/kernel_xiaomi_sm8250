@@ -180,7 +180,7 @@ struct tun_file {
 	struct socket socket;
 	struct socket_wq wq;
 	struct tun_struct __rcu *tun;
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	/* only used for fasnyc */
 	unsigned int flags;
 	union {

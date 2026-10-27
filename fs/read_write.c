@@ -479,7 +479,7 @@ static ssize_t new_sync_write(struct file *filp, const char __user *buf, size_t 
 	return ret;
 }
 
-ssize_t __vfs_write(struct file *file, const char __user *p, size_t count,
+static ssize_t __vfs_write(struct file *file, const char __user *p, size_t count,
 		    loff_t *pos)
 {
 	if (file->f_op->write)

@@ -6123,7 +6123,8 @@ static const struct file_operations perf_fops = {
  * to user-space before waking everybody up.
  */
 
-static inline struct fasync_struct **perf_event_fasync(struct perf_event *event)
+static inline struct fasync_struct __rcu **
+perf_event_fasync(struct perf_event *event)
 {
 	/* only the parent has fasync state */
 	if (event->parent)

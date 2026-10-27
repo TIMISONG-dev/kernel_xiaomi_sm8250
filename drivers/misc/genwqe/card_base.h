@@ -407,7 +407,7 @@ struct genwqe_file {
 	struct genwqe_driver *client;
 	struct file *filp;
 
-	struct fasync_struct *async_queue;
+	struct fasync_struct __rcu *async_queue;
 	struct pid *opener;
 	struct list_head list;		/* entry in list of open files */
 

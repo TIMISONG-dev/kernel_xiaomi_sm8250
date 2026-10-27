@@ -10,6 +10,9 @@
 #include <linux/user_namespace.h>
 #include <linux/nsfs.h>
 #include <linux/uaccess.h>
+#include <linux/proc_fs.h>
+
+#include "internal.h"
 
 static struct vfsmount *nsfs_mnt;
 

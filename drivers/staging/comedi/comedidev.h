@@ -561,7 +561,7 @@ struct comedi_device {
 	struct comedi_subdevice *read_subdev;
 	struct comedi_subdevice *write_subdev;
 
-	struct fasync_struct *async_queue;
+	struct fasync_struct __rcu *async_queue;
 
 	int (*open)(struct comedi_device *dev);
 	void (*close)(struct comedi_device *dev);

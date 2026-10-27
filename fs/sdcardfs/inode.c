@@ -534,7 +534,7 @@ static int sdcardfs_permission_wrn(struct inode *inode, int mask)
 	return -EINVAL;
 }
 
-void copy_attrs(struct inode *dest, const struct inode *src)
+static void copy_attrs(struct inode *dest, const struct inode *src)
 {
 	dest->i_mode = src->i_mode;
 	dest->i_uid = src->i_uid;

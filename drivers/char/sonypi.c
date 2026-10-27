@@ -489,7 +489,7 @@ static struct sonypi_device {
 	struct kfifo fifo;
 	spinlock_t fifo_lock;
 	wait_queue_head_t fifo_proc_list;
-	struct fasync_struct *fifo_async;
+	struct fasync_struct __rcu *fifo_async;
 	int open_count;
 	int model;
 	struct input_dev *input_jog_dev;

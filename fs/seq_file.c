@@ -1036,9 +1036,9 @@ struct hlist_node *seq_hlist_next_rcu(void *v,
 
 	++*ppos;
 	if (v == SEQ_START_TOKEN)
-		return rcu_dereference(head->first);
+		return rcu_dereference(hlist_first_rcu(head));
 	else
-		return rcu_dereference(node->next);
+		return rcu_dereference(hlist_next_rcu(node));
 }
 EXPORT_SYMBOL(seq_hlist_next_rcu);
 
