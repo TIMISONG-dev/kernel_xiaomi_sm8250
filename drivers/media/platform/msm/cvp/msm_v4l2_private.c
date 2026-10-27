@@ -5,18 +5,24 @@
 
 #include "msm_v4l2_private.h"
 #include "cvp_hfi_api.h"
+#include <linux/stddef.h>
+
+/* User buffers need not have the alignment of the ABI's C structure. */
+#define cvp_user_ptr(ptr, member) \
+	((typeof(&(ptr)->member))((u8 __user *)(ptr) + \
+	 offsetof(typeof(*(ptr)), member)))
 
 static int _get_pkt_hdr_from_user(struct cvp_kmd_arg __user *up,
 		struct cvp_hal_session_cmd_pkt *pkt_hdr)
 {
 	struct cvp_kmd_hfi_packet __user *u;
 
-	u = &up->data.hfi_pkt;
+	u = cvp_user_ptr(up, data.hfi_pkt);
 
-	if (get_user(pkt_hdr->size, &u->pkt_data[0]))
+	if (get_user(pkt_hdr->size, cvp_user_ptr(u, pkt_data[0])))
 		return -EFAULT;
 
-	if (get_user(pkt_hdr->packet_type, &u->pkt_data[1]))
+	if (get_user(pkt_hdr->packet_type, cvp_user_ptr(u, pkt_data[1])))
 		return -EFAULT;
 
 	if (get_pkt_index(pkt_hdr) < 0) {
@@ -42,12 +48,12 @@ static int _get_fence_pkt_hdr_from_user(struct cvp_kmd_arg __user *up,
 {
 	struct cvp_kmd_hfi_fence_packet __user *u;
 
-	u = &up->data.hfi_fence_pkt;
+	u = cvp_user_ptr(up, data.hfi_fence_pkt);
 
-	if (get_user(pkt_hdr->size, &u->pkt_data[0]))
+	if (get_user(pkt_hdr->size, cvp_user_ptr(u, pkt_data[0])))
 		return -EFAULT;
 
-	if (get_user(pkt_hdr->packet_type, &u->pkt_data[1]))
+	if (get_user(pkt_hdr->packet_type, cvp_user_ptr(u, pkt_data[1])))
 		return -EFAULT;
 
 	if (pkt_hdr->size > (MAX_HFI_PKT_SIZE*sizeof(unsigned int)))
@@ -66,9 +72,9 @@ static int _copy_pkt_from_user(struct cvp_kmd_arg *kp,
 	int i;
 
 	k = &kp->data.hfi_pkt;
-	u = &up->data.hfi_pkt;
+	u = cvp_user_ptr(up, data.hfi_pkt);
 	for (i = 0; i < size; i++)
-		if (get_user(k->pkt_data[i], &u->pkt_data[i]))
+		if (get_user(k->pkt_data[i], cvp_user_ptr(u, pkt_data[i])))
 			return -EFAULT;
 
 	return 0;
@@ -84,13 +90,13 @@ static int _copy_fence_pkt_from_user(struct cvp_kmd_arg *kp,
 	int i;
 
 	k = &kp->data.hfi_fence_pkt;
-	u = &up->data.hfi_fence_pkt;
+	u = cvp_user_ptr(up, data.hfi_fence_pkt);
 	for (i = 0; i < MAX_HFI_FENCE_OFFSET; i++) {
-		if (get_user(k->pkt_data[i], &u->pkt_data[i]))
+		if (get_user(k->pkt_data[i], cvp_user_ptr(u, pkt_data[i])))
 			return -EFAULT;
 	}
 	for (i = 0; i < MAX_HFI_FENCE_SIZE; i++) {
-		if (get_user(k->fence_data[i], &u->fence_data[i]))
+		if (get_user(k->fence_data[i], cvp_user_ptr(u, fence_data[i])))
 			return -EFAULT;
 	}
 	return 0;
@@ -103,9 +109,9 @@ static int _copy_sysprop_from_user(struct cvp_kmd_arg *kp,
 	struct cvp_kmd_sys_properties __user *u;
 
 	k = &kp->data.sys_properties;
-	u = &up->data.sys_properties;
+	u = cvp_user_ptr(up, data.sys_properties);
 
-	if (get_user(k->prop_num, &u->prop_num))
+	if (get_user(k->prop_num, cvp_user_ptr(u, prop_num)))
 		return -EFAULT;
 
 	if (k->prop_num < 1 || k->prop_num > 32) {
@@ -126,9 +132,9 @@ static int _copy_pkt_to_user(struct cvp_kmd_arg *kp,
 	int i;
 
 	k = &kp->data.hfi_pkt;
-	u = &up->data.hfi_pkt;
+	u = cvp_user_ptr(up, data.hfi_pkt);
 	for (i = 0; i < size; i++)
-		if (put_user(k->pkt_data[i], &u->pkt_data[i]))
+		if (put_user(k->pkt_data[i], cvp_user_ptr(u, pkt_data[i])))
 			return -EFAULT;
 
 	return 0;
@@ -143,13 +149,13 @@ static int _copy_fence_pkt_to_user(struct cvp_kmd_arg *kp,
 	int i;
 
 	k = &kp->data.hfi_fence_pkt;
-	u = &up->data.hfi_fence_pkt;
+	u = cvp_user_ptr(up, data.hfi_fence_pkt);
 	for (i = 0; i < MAX_HFI_FENCE_OFFSET; i++) {
-		if (put_user(k->pkt_data[i], &u->pkt_data[i]))
+		if (put_user(k->pkt_data[i], cvp_user_ptr(u, pkt_data[i])))
 			return -EFAULT;
 	}
 	for (i = 0; i < MAX_HFI_FENCE_SIZE; i++) {
-		if (put_user(k->fence_data[i], &u->fence_data[i]))
+		if (put_user(k->fence_data[i], cvp_user_ptr(u, fence_data[i])))
 			return -EFAULT;
 	}
 	return 0;
@@ -162,9 +168,9 @@ static int _copy_sysprop_to_user(struct cvp_kmd_arg *kp,
 	struct cvp_kmd_sys_properties __user *u;
 
 	k = &kp->data.sys_properties;
-	u = &up->data.sys_properties;
+	u = cvp_user_ptr(up, data.sys_properties);
 
-	if (put_user(k->prop_data.data, &u->prop_data.data))
+	if (put_user(k->prop_data.data, cvp_user_ptr(u, prop_data.data)))
 		return -EFAULT;
 
 	return 0;
@@ -207,12 +213,12 @@ static void print_hfi_short(struct cvp_kmd_arg __user *up)
 	struct cvp_kmd_hfi_packet __user *pkt;
 	unsigned int words[5];
 
-	pkt = &up->data.hfi_pkt;
-	if (get_user(words[0], &up->type) ||
-			get_user(words[1], &up->buf_offset) ||
-			get_user(words[2], &up->buf_num) ||
-			get_user(words[3], &pkt->pkt_data[0]) ||
-			get_user(words[4], &pkt->pkt_data[1])) {
+	pkt = cvp_user_ptr(up, data.hfi_pkt);
+	if (get_user(words[0], cvp_user_ptr(up, type)) ||
+	    get_user(words[1], cvp_user_ptr(up, buf_offset)) ||
+	    get_user(words[2], cvp_user_ptr(up, buf_num)) ||
+	    get_user(words[3], cvp_user_ptr(pkt, pkt_data[0])) ||
+	    get_user(words[4], cvp_user_ptr(pkt, pkt_data[1]))) {
 		dprintk(CVP_ERR, "Failed to print ioctl cmd\n");
 		return;
 	}
@@ -227,10 +233,10 @@ static int _copy_session_ctrl_to_user(
 {
 	int i;
 
-	if (put_user(k->ctrl_type, &u->ctrl_type))
+	if (put_user(k->ctrl_type, cvp_user_ptr(u, ctrl_type)))
 		return -EFAULT;
 	for (i = 0; i < 8; i++)
-		if (put_user(k->ctrl_data[i], &u->ctrl_data[i]))
+		if (put_user(k->ctrl_data[i], cvp_user_ptr(u, ctrl_data[i])))
 			return -EFAULT;
 	return 0;
 }
@@ -241,11 +247,11 @@ static int _get_session_ctrl_from_user(
 {
 	int i;
 
-	if (get_user(k->ctrl_type, &u->ctrl_type))
+	if (get_user(k->ctrl_type, cvp_user_ptr(u, ctrl_type)))
 		return -EFAULT;
 
 	for (i = 0; i < 8; i++)
-		if (get_user(k->ctrl_data[i], &u->ctrl_data[i]))
+		if (get_user(k->ctrl_data[i], cvp_user_ptr(u, ctrl_data[i])))
 			return -EFAULT;
 	return 0;
 }
@@ -266,13 +272,13 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 
 	print_hfi_short(up);
 
-	if (get_user(kp->type, &up->type))
+	if (get_user(kp->type, cvp_user_ptr(up, type)))
 		return -EFAULT;
 
 	_set_deprecate_bitmask(kp, inst);
 
-	if (get_user(kp->buf_offset, &up->buf_offset) ||
-		get_user(kp->buf_num, &up->buf_num))
+	if (get_user(kp->buf_offset, cvp_user_ptr(up, buf_offset)) ||
+	    get_user(kp->buf_num, cvp_user_ptr(up, buf_num)))
 		return -EFAULT;
 
 	switch (kp->type) {
@@ -282,11 +288,11 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_session_info __user *u;
 
 		k = &kp->data.session;
-		u = &up->data.session;
-		if (get_user(k->session_id, &u->session_id))
+		u = cvp_user_ptr(up, data.session);
+		if (get_user(k->session_id, cvp_user_ptr(u, session_id)))
 			return -EFAULT;
 		for (i = 0; i < 10; i++)
-			if (get_user(k->reserved[i], &u->reserved[i]))
+			if (get_user(k->reserved[i], cvp_user_ptr(u, reserved[i])))
 				return -EFAULT;
 		break;
 	}
@@ -296,14 +302,14 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_request_power __user *u;
 
 		k = &kp->data.req_power;
-		u = &up->data.req_power;
-		if (get_user(k->clock_cycles_a, &u->clock_cycles_a) ||
-			get_user(k->clock_cycles_b, &u->clock_cycles_b) ||
-			get_user(k->ddr_bw, &u->ddr_bw) ||
-			get_user(k->sys_cache_bw, &u->sys_cache_bw))
+		u = cvp_user_ptr(up, data.req_power);
+		if (get_user(k->clock_cycles_a, cvp_user_ptr(u, clock_cycles_a)) ||
+		    get_user(k->clock_cycles_b, cvp_user_ptr(u, clock_cycles_b)) ||
+		    get_user(k->ddr_bw, cvp_user_ptr(u, ddr_bw)) ||
+		    get_user(k->sys_cache_bw, cvp_user_ptr(u, sys_cache_bw)))
 			return -EFAULT;
 		for (i = 0; i < 8; i++)
-			if (get_user(k->reserved[i], &u->reserved[i]))
+			if (get_user(k->reserved[i], cvp_user_ptr(u, reserved[i])))
 				return -EFAULT;
 		break;
 	}
@@ -313,17 +319,17 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_buffer __user *u;
 
 		k = &kp->data.regbuf;
-		u = &up->data.regbuf;
-		if (get_user(k->type, &u->type) ||
-			get_user(k->index, &u->index) ||
-			get_user(k->fd, &u->fd) ||
-			get_user(k->size, &u->size) ||
-			get_user(k->offset, &u->offset) ||
-			get_user(k->pixelformat, &u->pixelformat) ||
-			get_user(k->flags, &u->flags))
+		u = cvp_user_ptr(up, data.regbuf);
+		if (get_user(k->type, cvp_user_ptr(u, type)) ||
+		    get_user(k->index, cvp_user_ptr(u, index)) ||
+		    get_user(k->fd, cvp_user_ptr(u, fd)) ||
+		    get_user(k->size, cvp_user_ptr(u, size)) ||
+		    get_user(k->offset, cvp_user_ptr(u, offset)) ||
+		    get_user(k->pixelformat, cvp_user_ptr(u, pixelformat)) ||
+		    get_user(k->flags, cvp_user_ptr(u, flags)))
 			return -EFAULT;
 		for (i = 0; i < 5; i++)
-			if (get_user(k->reserved[i], &u->reserved[i]))
+			if (get_user(k->reserved[i], cvp_user_ptr(u, reserved[i])))
 				return -EFAULT;
 		break;
 	}
@@ -333,17 +339,17 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_buffer __user *u;
 
 		k = &kp->data.unregbuf;
-		u = &up->data.unregbuf;
-		if (get_user(k->type, &u->type) ||
-			get_user(k->index, &u->index) ||
-			get_user(k->fd, &u->fd) ||
-			get_user(k->size, &u->size) ||
-			get_user(k->offset, &u->offset) ||
-			get_user(k->pixelformat, &u->pixelformat) ||
-			get_user(k->flags, &u->flags))
+		u = cvp_user_ptr(up, data.unregbuf);
+		if (get_user(k->type, cvp_user_ptr(u, type)) ||
+		    get_user(k->index, cvp_user_ptr(u, index)) ||
+		    get_user(k->fd, cvp_user_ptr(u, fd)) ||
+		    get_user(k->size, cvp_user_ptr(u, size)) ||
+		    get_user(k->offset, cvp_user_ptr(u, offset)) ||
+		    get_user(k->pixelformat, cvp_user_ptr(u, pixelformat)) ||
+		    get_user(k->flags, cvp_user_ptr(u, flags)))
 			return -EFAULT;
 		for (i = 0; i < 5; i++)
-			if (get_user(k->reserved[i], &u->reserved[i]))
+			if (get_user(k->reserved[i], cvp_user_ptr(u, reserved[i])))
 				return -EFAULT;
 		break;
 	}
@@ -353,12 +359,12 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_send_cmd __user *u;
 
 		k = &kp->data.send_cmd;
-		u = &up->data.send_cmd;
-		if (get_user(k->cmd_address_fd, &u->cmd_address_fd) ||
-			get_user(k->cmd_size, &u->cmd_size))
+		u = cvp_user_ptr(up, data.send_cmd);
+		if (get_user(k->cmd_address_fd, cvp_user_ptr(u, cmd_address_fd)) ||
+		    get_user(k->cmd_size, cvp_user_ptr(u, cmd_size)))
 			return -EFAULT;
 		for (i = 0; i < 10; i++)
-			if (get_user(k->reserved[i], &u->reserved[i]))
+			if (get_user(k->reserved[i], cvp_user_ptr(u, reserved[i])))
 				return -EFAULT;
 		break;
 	}
@@ -415,7 +421,7 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_session_control __user *u;
 
 		k = &kp->data.session_ctrl;
-		u = &up->data.session_ctrl;
+		u = cvp_user_ptr(up, data.session_ctrl);
 
 		rc = _get_session_ctrl_from_user(k, u);
 		break;
@@ -460,7 +466,7 @@ static int convert_to_user(struct cvp_kmd_arg *kp,
 		return -EINVAL;
 	}
 
-	if (put_user(kp->type, &up->type))
+	if (put_user(kp->type, cvp_user_ptr(up, type)))
 		return -EFAULT;
 
 	switch (kp->type) {
@@ -470,9 +476,9 @@ static int convert_to_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_hfi_packet __user *u;
 
 		k = &kp->data.hfi_pkt;
-		u = &up->data.hfi_pkt;
+		u = cvp_user_ptr(up, data.hfi_pkt);
 		for (i = 0; i < size; i++)
-			if (put_user(k->pkt_data[i], &u->pkt_data[i]))
+			if (put_user(k->pkt_data[i], cvp_user_ptr(u, pkt_data[i])))
 				return -EFAULT;
 		break;
 	}
@@ -482,11 +488,11 @@ static int convert_to_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_session_info __user *u;
 
 		k = &kp->data.session;
-		u = &up->data.session;
-		if (put_user(k->session_id, &u->session_id))
+		u = cvp_user_ptr(up, data.session);
+		if (put_user(k->session_id, cvp_user_ptr(u, session_id)))
 			return -EFAULT;
 		for (i = 0; i < 10; i++)
-			if (put_user(k->reserved[i], &u->reserved[i]))
+			if (put_user(k->reserved[i], cvp_user_ptr(u, reserved[i])))
 				return -EFAULT;
 		break;
 	}
@@ -496,14 +502,14 @@ static int convert_to_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_request_power __user *u;
 
 		k = &kp->data.req_power;
-		u = &up->data.req_power;
-		if (put_user(k->clock_cycles_a, &u->clock_cycles_a) ||
-			put_user(k->clock_cycles_b, &u->clock_cycles_b) ||
-			put_user(k->ddr_bw, &u->ddr_bw) ||
-			put_user(k->sys_cache_bw, &u->sys_cache_bw))
+		u = cvp_user_ptr(up, data.req_power);
+		if (put_user(k->clock_cycles_a, cvp_user_ptr(u, clock_cycles_a)) ||
+		    put_user(k->clock_cycles_b, cvp_user_ptr(u, clock_cycles_b)) ||
+		    put_user(k->ddr_bw, cvp_user_ptr(u, ddr_bw)) ||
+		    put_user(k->sys_cache_bw, cvp_user_ptr(u, sys_cache_bw)))
 			return -EFAULT;
 		for (i = 0; i < 8; i++)
-			if (put_user(k->reserved[i], &u->reserved[i]))
+			if (put_user(k->reserved[i], cvp_user_ptr(u, reserved[i])))
 				return -EFAULT;
 		break;
 	}
@@ -513,17 +519,17 @@ static int convert_to_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_buffer __user *u;
 
 		k = &kp->data.regbuf;
-		u = &up->data.regbuf;
-		if (put_user(k->type, &u->type) ||
-			put_user(k->index, &u->index) ||
-			put_user(k->fd, &u->fd) ||
-			put_user(k->size, &u->size) ||
-			put_user(k->offset, &u->offset) ||
-			put_user(k->pixelformat, &u->pixelformat) ||
-			put_user(k->flags, &u->flags))
+		u = cvp_user_ptr(up, data.regbuf);
+		if (put_user(k->type, cvp_user_ptr(u, type)) ||
+		    put_user(k->index, cvp_user_ptr(u, index)) ||
+		    put_user(k->fd, cvp_user_ptr(u, fd)) ||
+		    put_user(k->size, cvp_user_ptr(u, size)) ||
+		    put_user(k->offset, cvp_user_ptr(u, offset)) ||
+		    put_user(k->pixelformat, cvp_user_ptr(u, pixelformat)) ||
+		    put_user(k->flags, cvp_user_ptr(u, flags)))
 			return -EFAULT;
 		for (i = 0; i < 5; i++)
-			if (put_user(k->reserved[i], &u->reserved[i]))
+			if (put_user(k->reserved[i], cvp_user_ptr(u, reserved[i])))
 				return -EFAULT;
 		break;
 	}
@@ -533,17 +539,17 @@ static int convert_to_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_buffer __user *u;
 
 		k = &kp->data.unregbuf;
-		u = &up->data.unregbuf;
-		if (put_user(k->type, &u->type) ||
-			put_user(k->index, &u->index) ||
-			put_user(k->fd, &u->fd) ||
-			put_user(k->size, &u->size) ||
-			put_user(k->offset, &u->offset) ||
-			put_user(k->pixelformat, &u->pixelformat) ||
-			put_user(k->flags, &u->flags))
+		u = cvp_user_ptr(up, data.unregbuf);
+		if (put_user(k->type, cvp_user_ptr(u, type)) ||
+		    put_user(k->index, cvp_user_ptr(u, index)) ||
+		    put_user(k->fd, cvp_user_ptr(u, fd)) ||
+		    put_user(k->size, cvp_user_ptr(u, size)) ||
+		    put_user(k->offset, cvp_user_ptr(u, offset)) ||
+		    put_user(k->pixelformat, cvp_user_ptr(u, pixelformat)) ||
+		    put_user(k->flags, cvp_user_ptr(u, flags)))
 			return -EFAULT;
 		for (i = 0; i < 5; i++)
-			if (put_user(k->reserved[i], &u->reserved[i]))
+			if (put_user(k->reserved[i], cvp_user_ptr(u, reserved[i])))
 				return -EFAULT;
 		break;
 	}
@@ -556,12 +562,12 @@ static int convert_to_user(struct cvp_kmd_arg *kp,
 					__func__);
 
 		k = &kp->data.send_cmd;
-		u = &up->data.send_cmd;
-		if (put_user(k->cmd_address_fd, &u->cmd_address_fd) ||
-			put_user(k->cmd_size, &u->cmd_size))
+		u = cvp_user_ptr(up, data.send_cmd);
+		if (put_user(k->cmd_address_fd, cvp_user_ptr(u, cmd_address_fd)) ||
+		    put_user(k->cmd_size, cvp_user_ptr(u, cmd_size)))
 			return -EFAULT;
 		for (i = 0; i < 10; i++)
-			if (put_user(k->reserved[i], &u->reserved[i]))
+			if (put_user(k->reserved[i], cvp_user_ptr(u, reserved[i])))
 				return -EFAULT;
 		break;
 	}
@@ -602,7 +608,7 @@ static int convert_to_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_session_control __user *u;
 
 		k = &kp->data.session_ctrl;
-		u = &up->data.session_ctrl;
+		u = cvp_user_ptr(up, data.session_ctrl);
 		rc = _copy_session_ctrl_to_user(k, u);
 		break;
 	}
@@ -638,6 +644,10 @@ static long cvp_ioctl(struct msm_cvp_inst *inst,
 		dprintk(CVP_ERR, "%s: invalid params\n", __func__);
 		return -EINVAL;
 	}
+
+	/* Validate the mandatory header range before computing user offsets. */
+	if (!access_ok(VERIFY_READ, arg, offsetof(struct cvp_kmd_arg, data)))
+		return -EFAULT;
 
 	karg = kzalloc(sizeof(*karg), GFP_KERNEL);
 	if (!karg)
