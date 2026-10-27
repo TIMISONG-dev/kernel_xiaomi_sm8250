@@ -7,4 +7,6 @@ unsigned char ow_reset(void);
 unsigned char read_byte(void);
 void write_byte(char val);
 
+int onewire_gpio_get_status(void);
+
 #endif
