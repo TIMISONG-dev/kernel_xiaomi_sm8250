@@ -608,7 +608,7 @@ static int vs_block_submit_read(struct block_server *server,
 	}
 
 	if (err) {
-		bio->bi_status = err;
+		bio->bi_status = errno_to_blk_status(err);
 		bio_endio(bio);
 	} else {
 		dev_vdbg(&server->service->dev,
@@ -673,7 +673,7 @@ static int vs_block_server_io_req_read(struct vs_server_block_state *state,
 		/* Fall back to a bounce buffer */
 		req->mbuf = NULL;
 	} else if (IS_ERR(req->mbuf)) {
-		bio->bi_status = PTR_ERR(req->mbuf);
+		bio->bi_status = errno_to_blk_status(PTR_ERR(req->mbuf));
 		bio_endio(bio);
 		return 0;
 	}
@@ -879,7 +879,7 @@ static int vs_block_server_io_req_write(struct vs_server_block_state *state,
 	return 0;
 
 fail_bio:
-	bio->bi_status = err;
+	bio->bi_status = errno_to_blk_status(err);
 	bio_endio(bio);
 	return 0;
 }
