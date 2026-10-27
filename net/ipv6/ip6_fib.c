@@ -1708,7 +1708,9 @@ static struct fib6_node *fib6_repair_tree(struct net *net,
 	int nstate;
 	struct fib6_node *child;
 	struct fib6_walker *w;
+#if RT6_DEBUG >= 3
 	int iter = 0;
+#endif
 
 	/* Set fn->leaf to null_entry for root node. */
 	if (fn->fn_flags & RTN_TL_ROOT) {
@@ -1733,8 +1735,7 @@ static struct fib6_node *fib6_repair_tree(struct net *net,
 					    lockdep_is_held(&table->tb6_lock));
 		struct fib6_info *new_fn_leaf;
 
-		RT6_TRACE("fixing tree: plen=%d iter=%d\n", fn->fn_bit, iter);
-		iter++;
+		RT6_TRACE("fixing tree: plen=%d iter=%d\n", fn->fn_bit, iter++);
 
 		WARN_ON(fn->fn_flags & RTN_RTINFO);
 		WARN_ON(fn->fn_flags & RTN_TL_ROOT);
