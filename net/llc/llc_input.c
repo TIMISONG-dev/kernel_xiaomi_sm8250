@@ -194,7 +194,7 @@ int llc_rcv(struct sk_buff *skb, struct net_device *dev,
 	 * First the upper layer protocols that don't need the full
 	 * LLC functionality
 	 */
-	rcv = rcu_dereference(sap->rcv_func);
+	rcv = READ_ONCE(sap->rcv_func);
 	dest = llc_pdu_type(skb);
 	sap_handler = dest ? READ_ONCE(llc_type_handlers[dest - 1]) : NULL;
 	if (unlikely(!sap_handler)) {
