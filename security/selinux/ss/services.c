@@ -1098,14 +1098,15 @@ allow:
 
 /**
  * security_compute_av - Compute access vector decisions.
+ * @state: SELinux state containing the security server and policy to use
  * @ssid: source security identifier
  * @tsid: target security identifier
- * @tclass: target security class
+ * @orig_tclass: target security class in the kernel class mapping
  * @avd: access vector decisions
  * @xperms: extended permissions
  *
  * Compute a set of access vector decisions based on the
- * SID pair (@ssid, @tsid) for the permissions in @tclass.
+ * SID pair (@ssid, @tsid) for the permissions in @orig_tclass.
  */
 void security_compute_av(struct selinux_state *state,
 			 u32 ssid,
@@ -1357,6 +1358,7 @@ out:
 
 /**
  * security_sid_to_context - Obtain a context for a given SID.
+ * @state: SELinux state containing the security server and policy to use
  * @sid: security identifier, SID
  * @scontext: security context
  * @scontext_len: length in bytes
@@ -1560,6 +1562,7 @@ out:
 
 /**
  * security_context_to_sid - Obtain a SID for a given security context.
+ * @state: SELinux state containing the security server and policy to use
  * @scontext: security context
  * @scontext_len: length in bytes
  * @sid: security identifier, SID
@@ -1588,11 +1591,12 @@ int security_context_str_to_sid(struct selinux_state *state,
 /**
  * security_context_to_sid_default - Obtain a SID for a given security context,
  * falling back to specified default if needed.
- *
+ * @state: SELinux state containing the security server and policy to use
  * @scontext: security context
  * @scontext_len: length in bytes
  * @sid: security identifier, SID
  * @def_sid: default SID to assign on error
+ * @gfp_flags: allocation flags for copying the security context string
  *
  * Obtains a SID associated with the security context that
  * has the string representation specified by @scontext.
@@ -1859,9 +1863,11 @@ out:
 
 /**
  * security_transition_sid - Compute the SID for a new subject/object.
+ * @state: SELinux state containing the security server and policy to use
  * @ssid: source security identifier
  * @tsid: target security identifier
  * @tclass: target security class
+ * @qstr: new object name for filename transitions, or NULL if unavailable
  * @out_sid: security identifier for new subject/object
  *
  * Compute a SID to use for labeling a new subject or object in the
@@ -1890,6 +1896,7 @@ int security_transition_sid_user(struct selinux_state *state,
 
 /**
  * security_member_sid - Compute the SID for member selection.
+ * @state: SELinux state containing the security server and policy to use
  * @ssid: source security identifier
  * @tsid: target security identifier
  * @tclass: target security class
@@ -1914,6 +1921,7 @@ int security_member_sid(struct selinux_state *state,
 
 /**
  * security_change_sid - Compute the SID for object relabeling.
+ * @state: SELinux state containing the security server and policy to use
  * @ssid: source security identifier
  * @tsid: target security identifier
  * @tclass: target security class
@@ -2128,6 +2136,7 @@ static int security_preserve_bools(struct selinux_state *state,
 
 /**
  * security_load_policy - Load a security policy configuration.
+ * @state: SELinux state containing the security server and policy to use
  * @data: binary policy data
  * @len: length of data in bytes
  *
@@ -2307,6 +2316,7 @@ size_t security_policydb_len(struct selinux_state *state)
 
 /**
  * security_port_sid - Obtain the SID for a port.
+ * @state: SELinux state containing the security server and policy to use
  * @protocol: protocol number
  * @port: port number
  * @out_sid: security identifier
@@ -2349,7 +2359,8 @@ out:
 }
 
 /**
- * security_pkey_sid - Obtain the SID for a pkey.
+ * security_ib_pkey_sid - Obtain the SID for a pkey.
+ * @state: SELinux state containing the security server and policy to use
  * @subnet_prefix: Subnet Prefix
  * @pkey_num: pkey number
  * @out_sid: security identifier
@@ -2394,8 +2405,9 @@ out:
 
 /**
  * security_ib_endport_sid - Obtain the SID for a subnet management interface.
+ * @state: SELinux state containing the security server and policy to use
  * @dev_name: device name
- * @port: port number
+ * @port_num: port number
  * @out_sid: security identifier
  */
 int security_ib_endport_sid(struct selinux_state *state,
@@ -2438,6 +2450,7 @@ out:
 
 /**
  * security_netif_sid - Obtain the SID for a network interface.
+ * @state: SELinux state containing the security server and policy to use
  * @name: interface name
  * @if_sid: interface SID
  */
@@ -2494,6 +2507,7 @@ static int match_ipv6_addrmask(u32 *input, u32 *addr, u32 *mask)
 
 /**
  * security_node_sid - Obtain the SID for a node (host).
+ * @state: SELinux state containing the security server and policy to use
  * @domain: communication domain aka address family
  * @addrp: address
  * @addrlen: address length in bytes
@@ -2574,6 +2588,7 @@ out:
 
 /**
  * security_get_user_sids - Obtain reachable SIDs for a user.
+ * @state: SELinux state containing the security server and policy to use
  * @fromsid: starting SID
  * @username: username
  * @sids: array of reachable SIDs for user
@@ -2700,9 +2715,10 @@ out:
 
 /**
  * __security_genfs_sid - Helper to obtain a SID for a file in a filesystem
+ * @state: SELinux state containing the security server and policy to use
  * @fstype: filesystem type
  * @path: path from root of mount
- * @sclass: file security class
+ * @orig_sclass: file security class in the kernel class mapping
  * @sid: SID for path
  *
  * Obtain a SID to use for a file in a filesystem that
@@ -2765,9 +2781,10 @@ out:
 
 /**
  * security_genfs_sid - Obtain a SID for a file in a filesystem
+ * @state: SELinux state containing the security server and policy to use
  * @fstype: filesystem type
  * @path: path from root of mount
- * @sclass: file security class
+ * @orig_sclass: file security class in the kernel class mapping
  * @sid: SID for path
  *
  * Acquire policy_rwlock before calling __security_genfs_sid() and release
@@ -2789,6 +2806,7 @@ int security_genfs_sid(struct selinux_state *state,
 
 /**
  * security_fs_use - Determine how to handle labeling for a filesystem.
+ * @state: SELinux state containing the security server and policy to use
  * @sb: superblock in question
  */
 int security_fs_use(struct selinux_state *state, struct super_block *sb)
@@ -3077,9 +3095,11 @@ out:
 
 /**
  * security_net_peersid_resolve - Compare and resolve two network peer SIDs
+ * @state: SELinux state containing the security server and policy to use
  * @nlbl_sid: NetLabel SID
  * @nlbl_type: NetLabel labeling protocol type
  * @xfrm_sid: XFRM SID
+ * @peer_sid: output for the resolved peer SID, or SECSID_NULL on failure
  *
  * Description:
  * Compare the @nlbl_sid and @xfrm_sid values and if the two SIDs can be
@@ -3281,6 +3301,7 @@ int security_get_allow_unknown(struct selinux_state *state)
 
 /**
  * security_policycap_supported - Check for a specific policy capability
+ * @state: SELinux state containing the security server and policy to use
  * @req_cap: capability
  *
  * Description:
@@ -3607,6 +3628,7 @@ static void security_netlbl_cache_add(struct netlbl_lsm_secattr *secattr,
 
 /**
  * security_netlbl_secattr_to_sid - Convert a NetLabel secattr to a SELinux SID
+ * @state: SELinux state containing the security server and policy to use
  * @secattr: the NetLabel packet security attributes
  * @sid: the SELinux SID
  *
@@ -3682,6 +3704,7 @@ out:
 
 /**
  * security_netlbl_sid_to_secattr - Convert a SELinux SID to a NetLabel secattr
+ * @state: SELinux state containing the security server and policy to use
  * @sid: the SELinux SID
  * @secattr: the NetLabel packet security attributes
  *
@@ -3725,6 +3748,7 @@ out:
 
 /**
  * security_read_policy - read the policy.
+ * @state: SELinux state containing the security server and policy to use
  * @data: binary policy data
  * @len: length of data in bytes
  *
