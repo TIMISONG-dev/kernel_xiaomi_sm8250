@@ -328,7 +328,6 @@ static QDF_STATUS wlan_objmgr_peer_obj_destroy(struct wlan_objmgr_peer *peer)
 
 QDF_STATUS wlan_objmgr_peer_obj_delete(struct wlan_objmgr_peer *peer)
 {
-	uint8_t print_idx;
 	uint8_t *macaddr;
 
 	if (!peer) {
@@ -343,7 +342,6 @@ QDF_STATUS wlan_objmgr_peer_obj_delete(struct wlan_objmgr_peer *peer)
 	obj_mgr_debug("Logically deleting peer " QDF_MAC_ADDR_FMT,
 		      QDF_MAC_ADDR_REF(macaddr));
 
-	print_idx = qdf_get_pidx();
 	wlan_objmgr_print_peer_ref_ids(peer, QDF_TRACE_LEVEL_DEBUG);
 	/**
 	 * Update VDEV object state to LOGICALLY DELETED
