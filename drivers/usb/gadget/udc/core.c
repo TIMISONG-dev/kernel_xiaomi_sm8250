@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /**
+ * DOC: Core UDC Framework
+ *
  * udc.c - Core UDC Framework
  *
  * Copyright (C) 2010 Texas Instruments
@@ -23,11 +25,11 @@
 
 /**
  * struct usb_udc - describes one usb device controller
- * @driver - the gadget driver pointer. For use by the class code
- * @dev - the child device to the actual controller
- * @gadget - the gadget. For use by the class code
- * @list - for use by the udc class driver
- * @vbus - for udcs who care about vbus status, this value is real vbus status;
+ * @driver: the gadget driver pointer. For use by the class code
+ * @dev: the child device to the actual controller
+ * @gadget: the gadget. For use by the class code
+ * @list: for use by the udc class driver
+ * @vbus: for udcs who care about vbus status, this value is real vbus status;
  * for udcs who do not care about vbus status, this value is always true
  *
  * This represents the internal data structure which is used by the UDC-class
@@ -508,6 +510,9 @@ EXPORT_SYMBOL_GPL(usb_gadget_wakeup);
 
 /**
  * usb_gsi_ep_op - performs operation on GSI accelerated EP based on EP op code
+ * @ep: USB endpoint passed to the controller GSI endpoint operation
+ * @req: Operation specific request passed to the controller GSI callback
+ * @op: GSI endpoint operation selector passed to the controller callback
  *
  * Operations such as EP configuration, TRB allocation, StartXfer etc.
  * See gsi_ep_op for more details.
@@ -923,6 +928,8 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
 
 /**
  * usb_gadget_giveback_request - give the request back to the gadget layer
+ * @ep: Endpoint whose completed request is returned to the gadget driver
+ * @req: Completed USB request passed to its completion callback
  * Context: in_interrupt()
  *
  * This is called by device controller drivers in order to return the
@@ -1121,8 +1128,7 @@ static inline int usb_gadget_udc_start(struct usb_udc *udc)
 
 /**
  * usb_gadget_udc_stop - tells usb device controller we don't need it anymore
- * @gadget: The device we want to stop activity
- * @driver: The driver to unbind from @gadget
+ * @udc: USB device controller whose gadget stop operation is invoked
  *
  * This call is issued by the UDC Class driver after calling
  * gadget driver's unbind() method.
