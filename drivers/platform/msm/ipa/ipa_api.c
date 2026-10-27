@@ -277,7 +277,7 @@ u8 *ipa_write_16(u16 hw, u8 *dest)
 
 /**
  * ipa_write_8() - convert 8 bit value to byte array
- * @hw: 8 bit integer
+ * @b: 8 bit integer
  * @dest: byte array
  *
  * Return value: converted value
@@ -552,7 +552,7 @@ EXPORT_SYMBOL(ipa_cfg_ep_conn_track);
 /**
  * ipa_cfg_ep_hdr() -  IPA end-point header configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_hdr:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -591,7 +591,7 @@ EXPORT_SYMBOL(ipa_cfg_ep_hdr_ext);
 /**
  * ipa_cfg_ep_mode() - IPA end-point mode configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_mode:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -610,7 +610,7 @@ EXPORT_SYMBOL(ipa_cfg_ep_mode);
 /**
  * ipa_cfg_ep_aggr() - IPA end-point aggregation configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_aggr:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -649,7 +649,7 @@ EXPORT_SYMBOL(ipa_cfg_ep_deaggr);
 /**
  * ipa_cfg_ep_route() - IPA end-point routing configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_route:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -675,7 +675,7 @@ EXPORT_SYMBOL(ipa_cfg_ep_route);
  * and indefinite blocking is avoided.
  *
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_holb:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  */
@@ -693,7 +693,7 @@ EXPORT_SYMBOL(ipa_cfg_ep_holb);
 /**
  * ipa_cfg_ep_cfg() - IPA end-point cfg configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @cfg:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -712,7 +712,7 @@ EXPORT_SYMBOL(ipa_cfg_ep_cfg);
 /**
  * ipa_cfg_ep_metadata_mask() - IPA end-point meta-data mask configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @metadata_mask:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  *
@@ -738,7 +738,7 @@ EXPORT_SYMBOL(ipa_cfg_ep_metadata_mask);
  * client handle.
  *
  * @client:	[in] client name
- * @ipa_ep_cfg:	[in] IPA end-point configuration params
+ * @ep_holb:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  */
@@ -756,7 +756,7 @@ EXPORT_SYMBOL(ipa_cfg_ep_holb_by_client);
 /**
  * ipa_cfg_ep_ctrl() -  IPA end-point Control configuration
  * @clnt_hdl:	[in] opaque client handle assigned by IPA to client
- * @ipa_ep_cfg_ctrl:	[in] IPA end-point configuration params
+ * @ep_ctrl:	[in] IPA end-point configuration params
  *
  * Returns:	0 on success, negative on failure
  */
@@ -1160,6 +1160,7 @@ EXPORT_SYMBOL(ipa_query_rt_index);
 /**
  * ipa_mdfy_rt_rule() - Modify the specified routing rules in SW and optionally
  * commit to IPA HW
+ * @hdls: Routing rule handles, replacement rules and commit flag
  *
  * Returns:	0 on success, negative on failure
  *
@@ -1178,6 +1179,7 @@ EXPORT_SYMBOL(ipa_mdfy_rt_rule);
 /**
  * ipa_mdfy_rt_rule_v2() - Modify the specified routing rules in
  * SW and optionally commit to IPA HW
+ * @hdls: Routing rule handles, replacement rules and commit flag
  *
  * Returns:	0 on success, negative on failure
  *
@@ -1276,6 +1278,7 @@ EXPORT_SYMBOL(ipa_add_flt_rule_usr_v2);
 /**
  * ipa_del_flt_rule() - Remove the specified filtering rules from SW and
  * optionally commit to IPA HW
+ * @hdls: Filtering rule handles and commit flag
  *
  * Returns:	0 on success, negative on failure
  *
@@ -1294,6 +1297,7 @@ EXPORT_SYMBOL(ipa_del_flt_rule);
 /**
  * ipa_mdfy_flt_rule() - Modify the specified filtering rules in SW and
  * optionally commit to IPA HW
+ * @hdls: Filtering rule handles, replacement rules and commit flag
  *
  * Returns:	0 on success, negative on failure
  *
@@ -1312,6 +1316,7 @@ EXPORT_SYMBOL(ipa_mdfy_flt_rule);
 /**
  * ipa_mdfy_flt_rule_v2() - Modify the specified filtering rules
  * in SW and optionally commit to IPA HW
+ * @hdls: Filtering rule handles, replacement rules and commit flag
  *
  * Returns:	0 on success, negative on failure
  *
@@ -1769,7 +1774,7 @@ EXPORT_SYMBOL(ipa_set_single_ndp_per_mbim);
  * ipa_tx_dp() - Data-path tx handler
  * @dst:	[in] which IPA destination to route tx packets to
  * @skb:	[in] the packet to send
- * @metadata:	[in] TX packet meta-data
+ * @meta:	[in] TX packet meta-data
  *
  * Data-path tx handler, this is used for both SW data-path which by-passes most
  * IPA HW blocks AND the regular HW data-path for WLAN AMPDU traffic only. If
@@ -1806,7 +1811,7 @@ EXPORT_SYMBOL(ipa_tx_dp);
 /**
  * ipa_tx_dp_mul() - Data-path tx handler for multiple packets
  * @src: [in] - Client that is sending data
- * @ipa_tx_data_desc:	[in] data descriptors from wlan
+ * @data_desc:	[in] data descriptors from wlan
  *
  * this is used for to transfer data descriptors that received
  * from WLAN1_PROD pipe to IPA HW
@@ -2100,8 +2105,8 @@ EXPORT_SYMBOL(ipa_get_smem_restr_bytes);
 
 /**
  * ipa_broadcast_wdi_quota_reach_ind() - quota reach
- * @uint32_t fid: [in] input netdev ID
- * @uint64_t num_bytes: [in] used bytes
+ * @fid: [in] input netdev ID
+ * @num_bytes: [in] used bytes
  *
  * Returns:	0 on success, negative on failure
  */
@@ -2200,7 +2205,7 @@ EXPORT_SYMBOL(ipa_uc_dereg_rdyCB);
 
 /**
  * teth_bridge_init() - Initialize the Tethering bridge driver
- * @params - in/out params for USB initialization API (please look at struct
+ * @params: in/out params for USB initialization API (please look at struct
  *  definition for more info)
  *
  * USB driver gets a pointer to a callback function (usb_notify_cb) and an
@@ -2225,6 +2230,7 @@ EXPORT_SYMBOL(teth_bridge_init);
 
 /**
  * teth_bridge_disconnect() - Disconnect tethering bridge module
+ * @client: IPA client whose tethering bridge is disconnected
  */
 int teth_bridge_disconnect(enum ipa_client_type client)
 {
@@ -2269,9 +2275,9 @@ EXPORT_SYMBOL(ipa_set_client);
 
 /**
  * ipa_get_client() - provide client mapping
- * @client: client type
+ * @pipe_idx: IPA endpoint index
  *
- * Return value: none
+ * Return: Client mapping, or IPACM_CLIENT_MAX for an invalid index
  */
 enum ipacm_client_enum ipa_get_client(int pipe_idx)
 {
@@ -2285,9 +2291,9 @@ EXPORT_SYMBOL(ipa_get_client);
 
 /**
  * ipa_get_client_uplink() - provide client mapping
- * @client: client type
+ * @pipe_idx: IPA endpoint index
  *
- * Return value: none
+ * Return: True if the endpoint belongs to an uplink client
  */
 bool ipa_get_client_uplink(int pipe_idx)
 {
@@ -2485,8 +2491,7 @@ EXPORT_SYMBOL(ipa_connect_mhi_pipe);
 /**
  * ipa_disconnect_mhi_pipe() - Disconnect pipe from IPA and reset corresponding
  * MHI channel
- * @in: connect parameters
- * @clnt_hdl: [out] client handle for this pipe
+ * @clnt_hdl: Client handle for the connected pipe
  *
  * This function is called by IPA MHI client driver on MHI channel reset.
  * This function is called after MHI channel was started.
@@ -2854,6 +2859,7 @@ EXPORT_SYMBOL(ipa_get_hw_type);
 
 /**
  * ipa_is_client_handle_valid() - check if IPA client handle is valid handle
+ * @clnt_hdl: IPA endpoint handle to validate
  *
  * Return value: true for yes; false for no
  */
@@ -2946,6 +2952,8 @@ EXPORT_SYMBOL(ipa_get_smmu_domain);
 /**
  * ipa_disable_apps_wan_cons_deaggr()- set
  * ipa_ctx->ipa_client_apps_wan_cons_agg_gro
+ * @agg_size: Aggregation size argument; unused by the IPA v3 implementation
+ * @agg_count: Aggregation count argument; unused by the IPA v3 implementation
  *
  * Return value: 0 or negative in case of failure
  */
@@ -3033,6 +3041,7 @@ EXPORT_SYMBOL(ipa_get_gsi_ep_info);
 
 /**
  * ipa_stop_gsi_channel()- Stops a GSI channel in IPA
+ * @clnt_hdl: IPA endpoint handle for the GSI channel to stop
  *
  * Return value: 0 on success, negative otherwise
  */
@@ -3048,6 +3057,7 @@ EXPORT_SYMBOL(ipa_stop_gsi_channel);
 
 /**
  * ipa_start_gsi_channel()- Startsa GSI channel in IPA
+ * @clnt_hdl: IPA endpoint handle for the GSI channel to start
  *
  * Return value: 0 on success, negative otherwise
  */
@@ -3063,8 +3073,8 @@ EXPORT_SYMBOL(ipa_start_gsi_channel);
 
 /**
  * ipa_is_vlan_mode - check if a LAN driver should load in VLAN mode
- * @iface - type of vlan capable device
- * @res - query result: true for vlan mode, false for non vlan mode
+ * @iface: type of vlan capable device
+ * @res: query result: true for vlan mode, false for non vlan mode
  *
  * API must be called after ipa_is_ready() returns true, otherwise it will fail
  *
@@ -3300,6 +3310,7 @@ EXPORT_SYMBOL(ipa_register_ipa_ready_cb);
 /**
  * ipa_inc_client_enable_clks() - Increase active clients counter, and
  * enable ipa clocks if necessary
+ * @id: Active-client identity and source location used for logging
  *
  * Please do not use this API, use the wrapper macros instead (ipa_i.h)
  * IPA_ACTIVE_CLIENTS_INC_XXX();
@@ -3314,8 +3325,9 @@ void ipa_inc_client_enable_clks(struct ipa_active_client_logging_info *id)
 EXPORT_SYMBOL(ipa_inc_client_enable_clks);
 
 /**
- * ipa_dec_client_disable_clks() - Increase active clients counter, and
- * enable ipa clocks if necessary
+ * ipa_dec_client_disable_clks() - Decrease active clients counter, and
+ * disable IPA clocks if necessary
+ * @id: Active-client identity and source location used for logging
  *
  * Please do not use this API, use the wrapper macros instead (ipa_i.h)
  * IPA_ACTIVE_CLIENTS_DEC_XXX();
@@ -3333,6 +3345,7 @@ EXPORT_SYMBOL(ipa_dec_client_disable_clks);
  * ipa_inc_client_enable_clks_no_block() - Only increment the number of active
  * clients if no asynchronous actions should be done.Asynchronous actions are
  * locking a mutex and waking up IPA HW.
+ * @id: Active-client identity and source location used for logging
  *
  * Please do not use this API, use the wrapper macros instead(ipa_i.h)
  *
@@ -3465,6 +3478,7 @@ void ipa_assert(void)
 /**
  * ipa_rx_poll() - Poll the rx packets from IPA HW in the
  * softirq context
+ * @clnt_hdl: IPA endpoint handle of the receive pipe
  *
  * @budget: number of packets to be polled in single iteration
  *
@@ -3495,6 +3509,11 @@ EXPORT_SYMBOL(ipa_recycle_wan_skb);
 
 /**
  * ipa_setup_uc_ntn_pipes() - setup uc offload pipes
+ * @inp: Uplink and downlink client, ring and buffer setup parameters
+ * @notify: Uplink endpoint event callback
+ * @priv: Private data passed to the uplink event callback
+ * @hdr_len: Header length configured on both endpoints
+ * @outp: Receives the uplink and downlink uC doorbell physical addresses
  */
 int ipa_setup_uc_ntn_pipes(struct ipa_ntn_conn_in_params *inp,
 		ipa_notify_cb notify, void *priv, u8 hdr_len,
@@ -3510,6 +3529,9 @@ int ipa_setup_uc_ntn_pipes(struct ipa_ntn_conn_in_params *inp,
 
 /**
  * ipa_tear_down_uc_offload_pipes() - tear down uc offload pipes
+ * @ipa_ep_idx_ul: IPA endpoint index of the connected uplink pipe
+ * @ipa_ep_idx_dl: IPA endpoint index of the connected downlink pipe
+ * @params: Original connection parameters used to unmap both pipes
  */
 int ipa_tear_down_uc_offload_pipes(int ipa_ep_idx_ul,
 		int ipa_ep_idx_dl, struct ipa_ntn_conn_in_params *params)
@@ -3569,6 +3591,9 @@ EXPORT_SYMBOL(ipa_get_smmu_params);
 
 /**
  * ipa_conn_wdi_pipes() - connect wdi pipes
+ * @in: WDI pipe connection parameters
+ * @out: Receives WDI pipe connection results
+ * @wdi_notify: Callback for WDI metering notifications
  */
 int ipa_conn_wdi_pipes(struct ipa_wdi_conn_in_params *in,
 	struct ipa_wdi_conn_out_params *out,
@@ -3583,6 +3608,8 @@ int ipa_conn_wdi_pipes(struct ipa_wdi_conn_in_params *in,
 
 /**
  * ipa_disconn_wdi_pipes() - disconnect wdi pipes
+ * @ipa_ep_idx_tx: IPA endpoint index of the WDI transmit pipe
+ * @ipa_ep_idx_rx: IPA endpoint index of the WDI receive pipe
  */
 int ipa_disconn_wdi_pipes(int ipa_ep_idx_tx, int ipa_ep_idx_rx)
 {
@@ -3596,6 +3623,8 @@ int ipa_disconn_wdi_pipes(int ipa_ep_idx_tx, int ipa_ep_idx_rx)
 
 /**
  * ipa_enable_wdi_pipes() - enable wdi pipes
+ * @ipa_ep_idx_tx: IPA endpoint index of the WDI transmit pipe
+ * @ipa_ep_idx_rx: IPA endpoint index of the WDI receive pipe
  */
 int ipa_enable_wdi_pipes(int ipa_ep_idx_tx, int ipa_ep_idx_rx)
 {
@@ -3609,6 +3638,8 @@ int ipa_enable_wdi_pipes(int ipa_ep_idx_tx, int ipa_ep_idx_rx)
 
 /**
  * ipa_disable_wdi_pipes() - disable wdi pipes
+ * @ipa_ep_idx_tx: IPA endpoint index of the WDI transmit pipe
+ * @ipa_ep_idx_rx: IPA endpoint index of the WDI receive pipe
  */
 int ipa_disable_wdi_pipes(int ipa_ep_idx_tx, int ipa_ep_idx_rx)
 {
@@ -3623,6 +3654,12 @@ int ipa_disable_wdi_pipes(int ipa_ep_idx_tx, int ipa_ep_idx_rx)
 /**
  * ipa_wigig_uc_msi_init() - smmu map\unmap msi related wigig HW registers
  *	and init\deinit uC msi config
+ * @init: True to map and initialize MSI; false to deinitialize and unmap
+ * @periph_baddr_pa: Physical peripheral base address
+ * @pseudo_cause_pa: Physical address of the pseudo-cause register
+ * @int_gen_tx_pa: Physical address of the transmit interrupt generation register
+ * @int_gen_rx_pa: Physical address of the receive interrupt generation register
+ * @dma_ep_misc_pa: Physical address of the DMA endpoint miscellaneous register
  */
 int ipa_wigig_uc_msi_init(bool init,
 	phys_addr_t periph_baddr_pa,
@@ -3646,6 +3683,9 @@ EXPORT_SYMBOL(ipa_wigig_uc_msi_init);
 
 /**
  * ipa_conn_wigig_rx_pipe_i() - connect wigig rx pipe
+ * @in: Receive connection parameters for the configured SMMU mode
+ * @out: Receives the IPA client type allocated to the connected pipe
+ * @parent: Receives the WiGig debugfs parent directory
  */
 int ipa_conn_wigig_rx_pipe_i(void *in, struct ipa_wigig_conn_out_params *out,
 	struct dentry **parent)
@@ -3660,6 +3700,10 @@ EXPORT_SYMBOL(ipa_conn_wigig_rx_pipe_i);
 
 /**
  * ipa_conn_wigig_client_i() - connect a wigig client
+ * @in: Transmit connection parameters for the configured SMMU mode
+ * @out: Receives the IPA client type allocated to the connected pipe
+ * @tx_notify: Transmit endpoint event callback
+ * @priv: Private data passed to the transmit callback
  */
 int ipa_conn_wigig_client_i(void *in,
 	struct ipa_wigig_conn_out_params *out,
@@ -3677,6 +3721,9 @@ EXPORT_SYMBOL(ipa_conn_wigig_client_i);
 
 /**
  * ipa_disconn_wigig_pipe_i() - disconnect a wigig pipe
+ * @client: WiGig client whose pipe is disconnected
+ * @pipe_smmu: Pipe SMMU mappings to release when SMMU is enabled
+ * @dbuff: Data buffer information used to release SMMU mappings
  */
 int ipa_disconn_wigig_pipe_i(enum ipa_client_type client,
 	struct ipa_wigig_pipe_setup_info_smmu *pipe_smmu,
@@ -3692,7 +3739,8 @@ int ipa_disconn_wigig_pipe_i(enum ipa_client_type client,
 EXPORT_SYMBOL(ipa_disconn_wigig_pipe_i);
 
 /**
- * ipa_enable_wigig_pipe() - enable a wigig pipe
+ * ipa_enable_wigig_pipe_i() - enable a wigig pipe
+ * @client: WiGig client identifying the endpoint
  */
 int ipa_enable_wigig_pipe_i(enum ipa_client_type client)
 {
@@ -3706,6 +3754,7 @@ EXPORT_SYMBOL(ipa_enable_wigig_pipe_i);
 
 /**
  * ipa_disable_wigig_pipe_i() - disable a wigig pipe
+ * @client: WiGig client identifying the endpoint
  */
 int ipa_disable_wigig_pipe_i(enum ipa_client_type client)
 {
@@ -3732,6 +3781,8 @@ EXPORT_SYMBOL(ipa_get_lan_rx_napi);
 
 /**
  * ipa_tz_unlock_reg() - Allow AP access to memory regions controlled by TZ
+ * @reg_info: Array describing the register regions to unlock
+ * @num_regs: Number of entries in the register-region array
  */
 int ipa_tz_unlock_reg(struct ipa_tz_unlock_reg_info *reg_info, u16 num_regs)
 {
