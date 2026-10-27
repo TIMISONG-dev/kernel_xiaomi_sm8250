@@ -1,4 +1,5 @@
 #include <linux/debugfs.h>
+#include <linux/ras.h>
 
 struct dentry *ras_debugfs_dir;
 
