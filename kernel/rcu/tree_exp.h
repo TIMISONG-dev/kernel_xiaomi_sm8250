@@ -654,7 +654,6 @@ static void wait_rcu_exp_gp(struct work_struct *wp)
 static void _synchronize_rcu_expedited(struct rcu_state *rsp,
 				       smp_call_func_t func)
 {
-	struct rcu_data *rdp;
 	struct rcu_exp_work rew;
 	struct rcu_node *rnp;
 	unsigned long s;
@@ -684,7 +683,6 @@ static void _synchronize_rcu_expedited(struct rcu_state *rsp,
 	}
 
 	/* Wait for expedited grace period to complete. */
-	rdp = per_cpu_ptr(rsp->rda, raw_smp_processor_id());
 	rnp = rcu_get_root(rsp);
 	wait_event(rnp->exp_wq[rcu_seq_ctr(s) & 0x3],
 		   sync_exp_work_done(rsp, s));
