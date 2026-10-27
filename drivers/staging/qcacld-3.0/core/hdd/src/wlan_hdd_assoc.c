@@ -2210,13 +2210,11 @@ QDF_STATUS hdd_update_dp_vdev_flags(void *cbk_data,
 	QDF_STATUS status = QDF_STATUS_SUCCESS;
 	void *soc = cds_get_context(QDF_MODULE_ID_SOC);
 	struct hdd_context *hdd_ctx;
-	struct wlan_objmgr_psoc **psoc;
 	cdp_config_param_type val;
 
 	if (!cbk_data)
 		return status;
 
-	psoc = cbk_data;
 
 	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
 	if (!hdd_ctx) {
