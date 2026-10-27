@@ -332,7 +332,7 @@ struct hal_srng {
 	 * TBD: See if this is required - register address can be derived
 	 * from ring ID
 	 */
-	void *hwreg_base[MAX_SRNG_REG_GROUPS];
+	qdf_iomem_t hwreg_base[MAX_SRNG_REG_GROUPS];
 
 	/* Source or Destination ring */
 	enum hal_srng_dir ring_dir;
@@ -663,7 +663,7 @@ struct hal_soc {
 	qdf_device_t qdf_dev;
 
 	/* Device base address */
-	void *dev_base_addr;
+	qdf_iomem_t dev_base_addr;
 
 	/* HAL internal state for all SRNG rings.
 	 * TODO: See if this is required

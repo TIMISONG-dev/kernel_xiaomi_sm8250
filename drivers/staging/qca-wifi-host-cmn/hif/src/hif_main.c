@@ -405,7 +405,7 @@ void hif_get_hw_info(struct hif_opaque_softc *scn, u32 *version, u32 *revision,
  *
  * Return: n/a
  */
-void *hif_get_dev_ba(struct hif_opaque_softc *hif_handle)
+qdf_iomem_t hif_get_dev_ba(struct hif_opaque_softc *hif_handle)
 {
 	struct hif_softc *scn = (struct hif_softc *)hif_handle;
 
