@@ -65,8 +65,10 @@ void dph_hash_table_init(struct mac_context *mac,
  *
  * NOTE:
  *
- * @param staAddr MAC address of the station
- * @return None
+ * @staAddr: MAC address of the station
+ * @numSta: Number of hash buckets used as the modulus of the MAC address hash
+ * Return: MAC address byte sum modulo numSta
+ * @mac: Pointer to Global MAC structure
  */
 
 static uint16_t hash_function(struct mac_context *mac, uint8_t staAddr[],
@@ -94,10 +96,12 @@ static uint16_t hash_function(struct mac_context *mac, uint8_t staAddr[],
  *
  * NOTE:
  *
- * @param staAddr MAC address of the station
- * @param pStaId pointer to the Station ID assigned to the station
+ * @staAddr: MAC address of the station
+ * @pAssocId: pointer to the Station ID assigned to the station
+ * @hash_table: Station hash table whose node array and buckets are accessed
  * @return pointer to STA hash entry if lookup was a success \n
  *         NULL if lookup was a failure
+ * @mac: Pointer to Global MAC structure
  */
 
 tpDphHashNode dph_lookup_hash_entry(struct mac_context *mac, uint8_t staAddr[],
@@ -134,9 +138,11 @@ tpDphHashNode dph_lookup_hash_entry(struct mac_context *mac, uint8_t staAddr[],
  *
  * NOTE:
  *
- * @param staId Station ID
+ * @peerIdx: Station ID
+ * @hash_table: Station hash table whose node array and buckets are accessed
  * @return pointer to STA hash entry if lookup was a success \n
  *         NULL if lookup was a failure
+ * @mac: Pointer to Global MAC structure
  */
 
 tpDphHashNode dph_get_hash_entry(struct mac_context *mac, uint16_t peerIdx,
@@ -214,9 +220,11 @@ tpDphHashNode dph_init_sta_state(struct mac_context *mac, tSirMacAddr staAddr,
  *
  * NOTE:
  *
- * @param staAddr MAC address of the station
- * @param staId Station ID assigned to the station
+ * @staAddr: MAC address of the station
+ * @assocId: Station ID assigned to the station
+ * @hash_table: Station hash table whose node array and buckets are accessed
  * @return Pointer to STA hash entry
+ * @mac: Pointer to Global MAC structure
  */
 
 tpDphHashNode dph_add_hash_entry(struct mac_context *mac, tSirMacAddr staAddr,
@@ -286,10 +294,12 @@ tpDphHashNode dph_add_hash_entry(struct mac_context *mac, tSirMacAddr staAddr,
  *
  * NOTE:
  *
- * @param staAddr MAC address of the station
- * @param staId Station ID assigned to the station
+ * @staAddr: MAC address of the station
+ * @assocId: Station ID assigned to the station
+ * @hash_table: Station hash table whose node array and buckets are accessed
  * @return QDF_STATUS_SUCCESS if successful,
  *         QDF_STATUS_E_FAILURE otherwise
+ * @mac: Pointer to Global MAC structure
  */
 
 QDF_STATUS dph_delete_hash_entry(struct mac_context *mac, tSirMacAddr staAddr,
