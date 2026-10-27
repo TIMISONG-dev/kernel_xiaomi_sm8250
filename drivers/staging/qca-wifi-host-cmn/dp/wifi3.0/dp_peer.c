@@ -1546,13 +1546,13 @@ static inline struct dp_peer *dp_peer_find_add_id(struct dp_soc *soc,
 
 /**
  * dp_rx_peer_map_handler() - handle peer map event from firmware
- * @soc_handle - genereic soc handle
- * @peeri_id - peer_id from firmware
- * @hw_peer_id - ast index for this peer
- * @vdev_id - vdev ID
- * @peer_mac_addr - mac address of the peer
- * @ast_hash - ast hash value
- * @is_wds - flag to indicate peer map event for WDS ast entry
+ * @soc: genereic soc handle
+ * @peer_id: peer_id from firmware
+ * @hw_peer_id: ast index for this peer
+ * @vdev_id: vdev ID
+ * @peer_mac_addr: mac address of the peer
+ * @ast_hash: ast hash value
+ * @is_wds: flag to indicate peer map event for WDS ast entry
  *
  * associate the peer_id that firmware provided with peer entry
  * and update the ast table in the host with the hw_peer_id.
@@ -1664,11 +1664,11 @@ dp_rx_peer_map_handler(struct dp_soc *soc, uint16_t peer_id,
 
 /**
  * dp_rx_peer_unmap_handler() - handle peer unmap event from firmware
- * @soc_handle - genereic soc handle
- * @peeri_id - peer_id from firmware
- * @vdev_id - vdev ID
- * @mac_addr - mac address of the peer or wds entry
- * @is_wds - flag to indicate peer map event for WDS ast entry
+ * @soc: genereic soc handle
+ * @peer_id: peer_id from firmware
+ * @vdev_id: vdev ID
+ * @mac_addr: mac address of the peer or wds entry
+ * @is_wds: flag to indicate peer map event for WDS ast entry
  *
  * Return: none
  */
@@ -3119,10 +3119,8 @@ end:
  * @soc: Datapath soc handle
  * @peer_mac: Datapath peer mac address
  * @vdev_id: id of atapath vdev
- * @vdev: Datapath vdev
- * @pdev - data path device instance
- * @sec_type - security type
- * @rx_pn - Receive pn starting number
+ * @sec_type: security type
+ * @rx_pn: Receive pn starting number
  *
  */
 
@@ -3238,10 +3236,8 @@ fail:
  * @soc: Datapath soc handle
  * @peer_mac: Datapath peer mac address
  * @vdev_id: id of atapath vdev
- * @vdev: Datapath vdev
- * @pdev - data path device instance
- * @sec_type - security type
- * #is_unicast - key type
+ * @sec_type: security type
+ * @is_unicast: Select the unicast key slot when true, multicast slot otherwise
  *
  */
 
@@ -3451,9 +3447,9 @@ dp_clear_peer(struct cdp_soc_t *soc_hdl, uint8_t pdev_id,
 
 /**
  * dp_find_peer_by_addr_and_vdev() - Find peer by peer mac address within vdev
- * @pdev - data path device instance
- * @vdev - virtual interface instance
- * @peer_addr - peer mac address
+ * @pdev_handle: data path device instance
+ * @vdev_handle: virtual interface instance
+ * @peer_addr: peer mac address
  *
  * Find peer by peer mac address within vdev
  *
@@ -3560,7 +3556,7 @@ dp_get_vdev_by_peer_addr(struct cdp_pdev *pdev_handle,
 
 /**
  * dp_get_vdev_for_peer() - Get virtual interface instance which peer belongs
- * @peer - peer instance
+ * @peer_handle: peer instance
  *
  * Get virtual interface instance which peer belongs
  *
@@ -3577,7 +3573,7 @@ struct cdp_vdev *dp_get_vdev_for_peer(void *peer_handle)
 
 /**
  * dp_peer_get_peer_mac_addr() - Get peer mac address
- * @peer - peer instance
+ * @peer_handle: peer instance
  *
  * Get peer mac address
  *
@@ -3615,7 +3611,7 @@ int dp_get_peer_state(struct cdp_soc_t *soc_hdl, uint8_t vdev_id,
 
 /**
  * dp_local_peer_id_pool_init() - local peer id pool alloc for physical device
- * @pdev - data path device instance
+ * @pdev: data path device instance
  *
  * local peer id pool alloc for physical device
  *
@@ -3644,8 +3640,8 @@ void dp_local_peer_id_pool_init(struct dp_pdev *pdev)
 
 /**
  * dp_local_peer_id_alloc() - allocate local peer id
- * @pdev - data path device instance
- * @peer - new peer instance
+ * @pdev: data path device instance
+ * @peer: new peer instance
  *
  * allocate local peer id
  *
@@ -3672,8 +3668,8 @@ void dp_local_peer_id_alloc(struct dp_pdev *pdev, struct dp_peer *peer)
 
 /**
  * dp_local_peer_id_free() - remove local peer id
- * @pdev - data path device instance
- * @peer - peer instance should be removed
+ * @pdev: data path device instance
+ * @peer: peer instance should be removed
  *
  * remove local peer id
  *
@@ -3750,7 +3746,7 @@ bool dp_find_peer_exist(struct cdp_soc_t *soc_hdl, uint8_t pdev_id,
 #endif
 
 /**
- * dp_peer_rxtid_stats: Retried Rx TID (REO queue) stats from HW
+ * dp_peer_rxtid_stats() - Retried Rx TID (REO queue) stats from HW
  * @peer: DP peer handle
  * @dp_stats_cmd_cb: REO command callback function
  * @cb_ctxt: Callback context
