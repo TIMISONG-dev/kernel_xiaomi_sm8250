@@ -276,10 +276,10 @@ static int Nanosic_chardev_fops_open(struct inode *inode, struct file *file)
  * process has a file open.
  ** */
 
-static unsigned int Nanosic_chardev_fops_poll(struct file *file,
+static __poll_t Nanosic_chardev_fops_poll(struct file *file,
 					      struct poll_table_struct *wait)
 {
-	return -ENOSYS;
+	return EPOLLERR;
 }
 
 /** ***************************************************************************
