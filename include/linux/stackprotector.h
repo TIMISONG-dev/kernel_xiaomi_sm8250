@@ -6,6 +6,8 @@
 #include <linux/sched.h>
 #include <linux/random.h>
 
+void __stack_chk_fail(void);
+
 #ifdef CONFIG_STACKPROTECTOR
 # include <asm/stackprotector.h>
 #else
