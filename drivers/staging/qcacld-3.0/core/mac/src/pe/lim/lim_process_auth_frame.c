@@ -63,9 +63,11 @@
  *
  ***NOTE:
  *
- * @param  *auth - Pointer to extracted auth frame body
+ * @auth: Pointer to extracted auth frame body
  *
  * @return 0 or 1 (Valid)
+ * @mac: Pointer to Global MAC structure
+ * @pe_session: PE session entry used for this operation
  */
 
 static inline unsigned int is_auth_valid(struct mac_context *mac,
@@ -1247,9 +1249,9 @@ static void lim_process_auth_frame_type4(struct mac_context *mac_ctx,
 
 /**
  * lim_process_auth_frame() - to process auth frame
- * @mac_ctx - Pointer to Global MAC structure
- * @rx_pkt_info - A pointer to Rx packet info structure
- * @session - A pointer to session
+ * @mac_ctx: Pointer to Global MAC structure
+ * @rx_pkt_info: A pointer to Rx packet info structure
+ * @pe_session: A pointer to session
  *
  * This function is called by limProcessMessageQueue() upon Authentication
  * frame reception.
@@ -1718,12 +1720,16 @@ bool lim_process_sae_preauth_frame(struct mac_context *mac, uint8_t *rx_pkt)
 }
 
 /**
+ * lim_process_auth_frame_no_session() - Process authentication without a session
+ * @pBd: Received packet from which the authentication header and payload are extracted
+ * @body: Unused message body argument
  *
  * Pass the received Auth frame. This is possibly the pre-auth from the
  * neighbor AP, in the same mobility domain.
  * This will be used in case of 11r FT.
  *
  ***----------------------------------------------------------------------
+ * @mac: Pointer to Global MAC structure
  */
 QDF_STATUS lim_process_auth_frame_no_session(struct mac_context *mac, uint8_t *pBd,
 						void *body)

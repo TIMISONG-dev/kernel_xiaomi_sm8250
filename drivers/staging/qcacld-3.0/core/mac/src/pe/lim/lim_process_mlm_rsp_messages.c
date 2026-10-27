@@ -69,9 +69,9 @@ void lim_process_mlm_purge_sta_ind(struct mac_context *, uint32_t *);
  *
  ***NOTE:
  *
- * @param mac       Pointer to Global MAC structure
- * @param  msgType   Indicates the MLM message type
- * @param  *msg_buf  A pointer to the MLM message buffer
+ * @mac: Pointer to Global MAC structure
+ * @msgType: Indicates the MLM message type
+ * @msg_buf: A pointer to the MLM message buffer
  *
  * @return None
  */
@@ -143,8 +143,8 @@ lim_process_mlm_rsp_messages(struct mac_context *mac, uint32_t msgType,
  *
  ***NOTE:
  *
- * @param mac       Pointer to Global MAC structure
- * @param msg_buf    A pointer to the MLM message buffer
+ * @mac: Pointer to Global MAC structure
+ * @msg_buf: A pointer to the MLM message buffer
  *
  * @return None
  */
@@ -319,8 +319,8 @@ void lim_process_mlm_join_cnf(struct mac_context *mac_ctx,
 
 /**
  * lim_send_mlm_assoc_req() - Association request will be processed
- * mac_ctx:  Pointer to Global MAC structure
- * session_entry:  Pointer to session etnry
+ * @mac_ctx: Pointer to Global MAC structure
+ * @session_entry: Pointer to session etnry
  *
  * This function is sends ASSOC request MLM message to MLM State machine.
  * ASSOC request packet would be by picking parameters from pe_session
@@ -784,8 +784,8 @@ lim_fill_sme_assoc_ind_params(
 /**
  * lim_process_mlm_assoc_ind() - This function is called to processes MLM_ASSOC_IND
  * message from MLM State machine.
- * @mac       Pointer to Global MAC structure
- * @msg_buf   A pointer to the MLM message buffer
+ * @mac: Pointer to Global MAC structure
+ * @msg_buf: A pointer to the MLM message buffer
  *
  * Return: None
  */
@@ -1021,8 +1021,8 @@ static void lim_process_mlm_deauth_ind(struct mac_context *mac_ctx,
  *
  ***NOTE:
  *
- * @param mac       Pointer to Global MAC structure
- * @param msg_buf    A pointer to the MLM message buffer
+ * @mac: Pointer to Global MAC structure
+ * @msg_buf: A pointer to the MLM message buffer
  *
  * @return None
  */
@@ -1097,8 +1097,8 @@ void lim_process_mlm_deauth_cnf(struct mac_context *mac, uint32_t *msg_buf)
  *
  ***NOTE:
  *
- * @param mac       Pointer to Global MAC structure
- * @param msg_buf    A pointer to the MLM message buffer
+ * @mac: Pointer to Global MAC structure
+ * @msg_buf: A pointer to the MLM message buffer
  *
  * @return None
  */
@@ -1181,8 +1181,8 @@ void lim_process_mlm_purge_sta_ind(struct mac_context *mac, uint32_t *msg_buf)
  *
  ***NOTE:
  *
- * @param mac       Pointer to Global MAC structure
- * @param msg_buf    A pointer to the MLM message buffer
+ * @mac: Pointer to Global MAC structure
+ * @msg_buf: A pointer to the MLM message buffer
  *
  * @return None
  */
@@ -1334,8 +1334,8 @@ error:
  * lim_handle_sme_join_result() - Handles sme join result
  * @mac_ctx:  Pointer to Global MAC structure
  * @result_code: Failure code to be sent
- * @prot_status_code : Protocol status code
- * @session_entry: PE session handle
+ * @prot_status_code: Protocol status code
+ * @session: PE session handle
  *
  * This function is called to process join/auth/assoc failures
  * upon receiving MLM_JOIN/AUTH/ASSOC_CNF with a failure code or
@@ -1397,11 +1397,12 @@ void lim_handle_sme_join_result(struct mac_context *mac_ctx,
  *
  ***NOTE:
  *
- * @param  mac      Pointer to Global MAC structure
- * @param  struct scheduler_msg  The MsgQ header, which contains the
+ * @mac: Pointer to Global MAC structure
+ * @limMsgQ: The MsgQ header, which contains the
  *  response buffer
  *
  * @return None
+ * @pe_session: PE session entry used for this operation
  */
 void lim_process_mlm_add_sta_rsp(struct mac_context *mac,
 				 struct scheduler_msg *limMsgQ,
@@ -2625,9 +2626,9 @@ void lim_process_mlm_set_bss_key_rsp(struct mac_context *mac_ctx,
  ***NOTE:
  * NA
  *
- * @param  mac          - Pointer to Global MAC structure.
- * @param  pe_session - session related information.
- * @param  status        - channel switch success/failure.
+ * @mac: Pointer to Global MAC structure.
+ * @pe_session: session related information.
+ * @status: channel switch success/failure.
  *
  * @return None
  */
@@ -2689,9 +2690,9 @@ end:
 /**
  * lim_process_switch_channel_join_req() -Initiates probe request
  *
- * @mac_ctx - A pointer to Global MAC structure
- * @pe_session - session related information.
- * @status        - channel switch success/failure
+ * @mac_ctx: A pointer to Global MAC structure
+ * @session_entry: session related information.
+ * @status: channel switch success/failure
  *
  * This function is called to send the probe req mgmt frame
  * after the switchChannelRsp message is received from HAL.
@@ -2888,8 +2889,8 @@ static void lim_handle_mon_switch_channel_rsp(struct pe_session *session,
  ***NOTE:
  * NA
  *
- * @param  mac    - Pointer to Global MAC structure
- * @param  body - message body.
+ * @mac: Pointer to Global MAC structure
+ * @rsp: message body.
  *
  * @return None
  */

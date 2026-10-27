@@ -391,7 +391,7 @@ QDF_STATUS lim_start(struct mac_context *mac)
  ***NOTE:
  * NA
  *
- * @param  mac - Pointer to global MAC structure
+ * @mac: Pointer to global MAC structure
  * @return None
  */
 
@@ -450,7 +450,7 @@ QDF_STATUS lim_initialize(struct mac_context *mac)
  ***NOTE:
  * NA
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @return None
  */
 
@@ -527,7 +527,7 @@ void lim_cleanup(struct mac_context *mac)
 #ifdef WLAN_FEATURE_MEMDUMP_ENABLE
 /**
  * lim_state_info_dump() - print state information of lim layer
- * @buf: buffer pointer
+ * @buf_ptr: buffer pointer
  * @size: size of buffer to be filled
  *
  * This function is used to print state information of lim layer
@@ -1031,7 +1031,7 @@ QDF_STATUS pe_mc_process_handler(struct scheduler_msg *msg)
 }
 
 /**
- * pe_drop_pending_rx_mgmt_frames: To drop pending RX mgmt frames
+ * pe_drop_pending_rx_mgmt_frames() - To drop pending RX mgmt frames
  * @mac_ctx: Pointer to global MAC structure
  * @hdr: Management header
  * @cds_pkt: Packet
@@ -1235,7 +1235,7 @@ static QDF_STATUS pe_handle_probe_req_frames(struct mac_context *mac_ctx,
  * @psoc: psoc context
  * @peer: peer
  * @buf: buffer
- * @mgmt_rx_params; rx event params
+ * @mgmt_rx_params: rx event params
  * @frm_type: frame type
  *
  * This function handles the mgmt rx frame from mgmt txrx component and forms
@@ -1376,8 +1376,10 @@ void pe_deregister_mgmt_rx_frm_callback(struct mac_context *mac_ctx)
 
 /**
  * pe_register_callbacks_with_wma() - register SME and PE callback functions to
+ * @ready_req: SME ready request whose PE callback fields are initialized
  * WMA.
  * (function documentation in lim_api.h)
+ * @mac: Pointer to Global MAC structure
  */
 void pe_register_callbacks_with_wma(struct mac_context *mac,
 				    struct sme_ready_req *ready_req)
@@ -1453,8 +1455,8 @@ lim_update_overlap_sta_param(struct mac_context *mac, tSirMacAddr bssId,
 #ifdef QCA_IBSS_SUPPORT
 /**
  * lim_ibss_enc_type_matched() - API to check enc type match
- * @param  pBeacon  - Parsed Beacon Frame structure
- * @param  pSession - Pointer to the PE session
+ * @pBeacon: Parsed Beacon Frame structure
+ * @pSession: Pointer to the PE session
  *
  * This function compares the encryption type of the peer with self
  * while operating in IBSS mode and detects mismatch.
@@ -1537,9 +1539,9 @@ lim_handle_ibss_coalescing(struct mac_context *mac,
 /**
  * lim_enc_type_matched() - matches security type of incoming beracon with
  * current
- * @mac_ctx      Pointer to Global MAC structure
- * @bcn          Pointer to parsed Beacon structure
- * @session      PE session entry
+ * @mac_ctx: Pointer to Global MAC structure
+ * @bcn: Pointer to parsed Beacon structure
+ * @session: PE session entry
  *
  * This function matches security type of incoming beracon with current
  *
@@ -1630,9 +1632,10 @@ lim_enc_type_matched(struct mac_context *mac_ctx,
  * Notification is enabled for STA product only since
  * it is not a requirement on BP side.
  *
- * @param  mac      Pointer to Global MAC structure
- * @param  pBeacon   Pointer to parsed Beacon structure
+ * @mac: Pointer to Global MAC structure
+ * @pBeacon: Pointer to parsed Beacon structure
  * @return None
+ * @pe_session: PE session entry used for this operation
  */
 
 void
@@ -1748,6 +1751,8 @@ lim_detect_change_in_ap_capabilities(struct mac_context *mac,
 /* --------------------------------------------------------------------- */
 /**
  * lim_update_short_slot
+ * @pBeacon: Parsed beacon whose short slot capability is read
+ * @pBeaconParams: Output beacon update flags and short slot time
  *
  * FUNCTION:
  * Enable/Disable short slot
@@ -1758,8 +1763,9 @@ lim_detect_change_in_ap_capabilities(struct mac_context *mac,
  *
  * NOTE:
  *
- * @param enable        Flag to enable/disable short slot
- * @return None
+ * Return: QDF_STATUS_SUCCESS
+ * @mac: Pointer to Global MAC structure
+ * @pe_session: PE session entry used for this operation
  */
 
 QDF_STATUS lim_update_short_slot(struct mac_context *mac,

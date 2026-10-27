@@ -73,6 +73,7 @@ static void get_local_power_constraint_probe_response(
  * @session: A pointer to session entry.
  *
  * Return: None
+ * @mac_ctx: Pointer to Global MAC structure
  */
 static void get_ese_version_ie_probe_response(struct mac_context *mac_ctx,
 					tpSirProbeRespBeacon beacon_struct,
@@ -627,7 +628,7 @@ void lim_extract_ap_capability(struct mac_context *mac_ctx, uint8_t *p_ie,
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @aniCBMode: Airgo channel bonding enumeration translated to an HT offset
  * @return The corresponding HT enumeration
  */
 ePhyChanBondState lim_get_htcb_state(ePhyChanBondState aniCBMode)

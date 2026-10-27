@@ -1041,8 +1041,8 @@ static bool __lim_process_sme_start_bss_req(struct mac_context *mac,
  * NOTE:
  * 1. geneartes the unique random number for bssid in ibss
  *
- *  @param  mac      Pointer to Global MAC structure
- *  @param  *data      Pointer to  bssid  buffer
+ *  @mac: Pointer to Global MAC structure
+ *  @data: Pointer to  bssid  buffer
  *  @return None
  */
 void lim_get_random_bssid(struct mac_context *mac, uint8_t *data)
@@ -1105,7 +1105,7 @@ static QDF_STATUS lim_send_join_req(struct pe_session *session,
 /**
  * lim_send_reassoc_req() - send vdev start request for reassoc
  *@session: pe session
- *@mlm_join_req: join req
+ *@reassoc_req: join req
  *
  * Return: QDF_STATUS
  */
@@ -1131,7 +1131,7 @@ static QDF_STATUS lim_send_reassoc_req(struct pe_session *session,
 /**
  * lim_send_ft_reassoc_req() - send vdev start request for ft_reassoc
  *@session: pe session
- *@mlm_join_req: join req
+ *@reassoc_req: join req
  *
  * Return: QDF_STATUS
  */
@@ -1996,8 +1996,8 @@ bool send_disassoc_frame = 1;
  *
  ***NOTE:
  *
- * @param  mac      Pointer to Global MAC structure
- * @param  *msg_buf  A pointer to the SME message buffer
+ * @mac: Pointer to Global MAC structure
+ * @msg_buf: A pointer to the SME message buffer
  * @return None
  */
 
@@ -2551,8 +2551,9 @@ send_deauth:
  *
  ***NOTE:
  *
- * @param  mac      Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @return None
+ * @pe_session: PE session entry used for this operation
  */
 
 static void __lim_counter_measures(struct mac_context *mac, struct pe_session *pe_session)
@@ -3870,8 +3871,9 @@ static void __lim_process_sme_set_ht2040_mode(struct mac_context *mac,
  *
  * NOTE:
  *
- * @param None
+ * @pMsg: Scheduler message containing the received RRM report
  * @return None
+ * @mac: Pointer to Global MAC structure
  */
 
 static void __lim_process_report_message(struct mac_context *mac,
@@ -3901,9 +3903,10 @@ static void __lim_process_report_message(struct mac_context *mac,
  *
  * NOTE:
  *
- * @param txPower txPower to be set.
- * @param pe_session session entry.
+ * @txPower: txPower to be set.
+ * @pe_session: session entry.
  * @return None
+ * @mac: Pointer to Global MAC structure
  */
 QDF_STATUS
 lim_send_set_max_tx_power_req(struct mac_context *mac, int8_t txPower,
@@ -4060,7 +4063,7 @@ static void __lim_process_sme_reset_ap_caps_change(struct mac_context *mac,
 /**
  * lim_register_mgmt_frame_ind_cb() - Save the Management frame
  * indication callback in PE.
- * @mac_ptr: Mac pointer
+ * @mac_ctx: Mac pointer
  * @msg_buf: Msg pointer containing the callback
  *
  * This function is used save the Management frame
@@ -4332,7 +4335,7 @@ static void lim_process_set_pdev_IEs(struct mac_context *mac_ctx, uint32_t *msg_
 }
 
 /**
- * lim_process_sme_update_access_policy_vendor_ie: function updates vendor IE
+ * lim_process_sme_update_access_policy_vendor_ie() - function updates vendor IE
  *
  * access policy
  * @mac_ctx: pointer to mac context
@@ -4568,9 +4571,8 @@ static void lim_process_sme_deauth_req(struct mac_context *mac_ctx,
  *
  ***NOTE:
  *
- * @param  mac      Pointer to Global MAC structure
- * @param  msgType   Indicates the SME message type
- * @param  *msg_buf  A pointer to the SME message buffer
+ * @mac: Pointer to Global MAC structure
+ * @pMsg: A pointer to the SME message buffer
  * @return Boolean - true - if msg_buf is consumed and can be freed.
  *                   false - if msg_buf is not to be freed.
  */
@@ -4813,9 +4815,8 @@ bool lim_process_sme_req_messages(struct mac_context *mac,
  *
  ***NOTE:
  *
- * @param  mac      Pointer to Global MAC structure
- * @param  msgType   Indicates the SME message type
- * @param  *msg_buf  A pointer to the SME message buffer
+ * @mac: Pointer to Global MAC structure
+ * @pMsg: A pointer to the SME message buffer
  * @return Boolean - true - if msg_buf is consumed and can be freed.
  *                   false - if msg_buf is not to be freed.
  */
@@ -5036,11 +5037,11 @@ static void lim_process_sme_channel_change_request(struct mac_context *mac_ctx,
 *
 ***NOTE:
 *
-* @param  mac      Pointer to Global MAC structure
-* @param  **pDstData_buff  A pointer to pointer of  uint8_t dst buffer
-* @param  *pDstDataLen  A pointer to pointer of  uint16_t dst buffer length
-* @param  *pSrcData_buff  A pointer of  uint8_t  src buffer
-* @param  srcDataLen  src buffer length
+* @mac: Pointer to Global MAC structure
+* @pDstData_buff: A pointer to pointer of  uint8_t dst buffer
+* @pDstDataLen: A pointer to pointer of  uint16_t dst buffer length
+* @pSrcData_buff: A pointer of  uint8_t  src buffer
+* @srcDataLen: src buffer length
 ******************************************************************************/
 
 static void
@@ -5078,11 +5079,11 @@ lim_start_bss_update_add_ie_buffer(struct mac_context *mac,
 *
 ***NOTE:
 *
-* @param  mac      Pointer to Global MAC structure
-* @param  **pDstData_buff  A pointer to pointer of  uint8_t dst buffer
-* @param  *pDstDataLen  A pointer to pointer of  uint16_t dst buffer length
-* @param  *pSrcData_buff  A pointer of  uint8_t  src buffer
-* @param  srcDataLen  src buffer length
+* @mac: Pointer to Global MAC structure
+* @pDstData_buff: A pointer to pointer of  uint8_t dst buffer
+* @pDstDataLen: A pointer to pointer of  uint16_t dst buffer length
+* @pSrcData_buff: A pointer of  uint8_t  src buffer
+* @srcDataLen: src buffer length
 ******************************************************************************/
 
 static void
@@ -5119,10 +5120,10 @@ lim_update_add_ie_buffer(struct mac_context *mac,
 #ifdef QCA_IBSS_SUPPORT
 /**
  * lim_update_ibss_prop_add_ies() - update IBSS prop IE
- * @mac          : Pointer to Global MAC structure
- * @pDstData_buff : A pointer to pointer of  dst buffer
- * @pDstDataLen  :  A pointer to pointer of  dst buffer length
- * @pModifyIE    :  A pointer to tSirModifyIE
+ * @mac: Pointer to Global MAC structure
+ * @pDstData_buff: A pointer to pointer of  dst buffer
+ * @pDstDataLen:  A pointer to pointer of  dst buffer length
+ * @pModifyIE:  A pointer to tSirModifyIE
  *
  * This function replaces previous ibss prop_ie with new ibss prop_ie.
  *
@@ -5726,7 +5727,7 @@ static void lim_process_ext_change_channel(struct mac_context *mac_ctx,
 
 /**
  * lim_nss_update_rsp() - send NSS update response to SME
- * @mac_ctx Pointer to Global MAC structure
+ * @mac_ctx: Pointer to Global MAC structure
  * @vdev_id: vdev id
  * @status: nss update status
  *
