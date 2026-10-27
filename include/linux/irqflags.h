@@ -31,6 +31,8 @@
 #ifdef CONFIG_TRACE_IRQFLAGS
   extern void trace_hardirqs_on(void);
   extern void trace_hardirqs_off(void);
+  extern void trace_hardirqs_on_caller(unsigned long caller_addr);
+  extern void trace_hardirqs_off_caller(unsigned long caller_addr);
 # define trace_hardirq_context(p)	((p)->hardirq_context)
 # define trace_softirq_context(p)	((p)->softirq_context)
 # define trace_hardirqs_enabled(p)	((p)->hardirqs_enabled)
