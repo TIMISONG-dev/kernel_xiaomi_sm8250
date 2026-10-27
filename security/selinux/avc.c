@@ -131,6 +131,7 @@ static inline int avc_hash(u32 ssid, u32 tsid, u16 tclass)
 
 /**
  * avc_dump_av - Display an access vector in human-readable form.
+ * @ab: audit buffer receiving the formatted access decision
  * @tclass: target security class
  * @av: access vector
  */
@@ -167,6 +168,8 @@ static void avc_dump_av(struct audit_buffer *ab, u16 tclass, u32 av)
 
 /**
  * avc_dump_query - Display a SID pair and a class in human-readable form.
+ * @ab: audit buffer receiving the formatted access decision
+ * @state: SELinux state supplying SID-to-context mappings
  * @ssid: source security identifier
  * @tsid: target security identifier
  * @tclass: target security class
@@ -616,6 +619,7 @@ static inline struct avc_node *avc_search_node(struct selinux_avc *avc,
 
 /**
  * avc_lookup - Look up an AVC entry.
+ * @avc: access vector cache to search
  * @ssid: source security identifier
  * @tsid: target security identifier
  * @tclass: target security class
@@ -666,6 +670,7 @@ static int avc_latest_notif_update(struct selinux_avc *avc,
 
 /**
  * avc_insert - Insert an AVC entry.
+ * @avc: access vector cache receiving the new decision
  * @ssid: source security identifier
  * @tsid: target security identifier
  * @tclass: target security class
@@ -819,10 +824,15 @@ out:
 }
 
 /**
- * avc_update_node Update an AVC entry
+ * avc_update_node - Update an AVC entry
+ * @avc: access vector cache containing the entry to update
  * @event : Updating event
  * @perms : Permission mask bits
- * @ssid,@tsid,@tclass : identifier of an AVC entry
+ * @driver: extended-permission driver identifying a 256-permission set
+ * @xperm: extended permission within the driver set
+ * @ssid: source security identifier of the entry
+ * @tsid: target security identifier of the entry
+ * @tclass: target security class of the entry
  * @seqno : sequence number when decision was made
  * @xpd: extended_perms_decision to be added to the node
  * @flags: the AVC_* flags, e.g. AVC_NONBLOCKING, AVC_EXTENDED_PERMS, or 0.
@@ -938,6 +948,7 @@ out:
 
 /**
  * avc_flush - Flush the cache
+ * @avc: access vector cache whose entries are discarded
  */
 static void avc_flush(struct selinux_avc *avc)
 {
@@ -966,6 +977,7 @@ static void avc_flush(struct selinux_avc *avc)
 
 /**
  * avc_ss_reset - Flush the cache and revalidate migrated permissions.
+ * @avc: access vector cache reset for the new policy sequence
  * @seqno: policy sequence number
  */
 int avc_ss_reset(struct selinux_avc *avc, u32 seqno)
@@ -1114,6 +1126,7 @@ decision:
 
 /**
  * avc_has_perm_noaudit - Check permissions but perform no auditing.
+ * @state: SELinux state supplying the policy, SID mappings and access vector cache
  * @ssid: source security identifier
  * @tsid: target security identifier
  * @tclass: target security class
@@ -1164,6 +1177,7 @@ inline int avc_has_perm_noaudit(struct selinux_state *state,
 
 /**
  * avc_has_perm - Check permissions and perform any appropriate auditing.
+ * @state: SELinux state supplying the policy, SID mappings and access vector cache
  * @ssid: source security identifier
  * @tsid: target security identifier
  * @tclass: target security class
