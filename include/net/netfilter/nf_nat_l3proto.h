@@ -3,6 +3,9 @@
 #define _NF_NAT_L3PROTO_H
 
 struct nf_nat_l4proto;
+struct nf_hook_state;
+unsigned int nf_nat_ipv4_fn(void *priv, struct sk_buff *skb,
+			    const struct nf_hook_state *state);
 struct nf_nat_l3proto {
 	u8	l3proto;
 
