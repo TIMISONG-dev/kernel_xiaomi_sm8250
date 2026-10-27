@@ -516,7 +516,7 @@ static void *bpf_array_map_seq_start(struct seq_file *seq, loff_t *pos)
 	array = container_of(map, struct bpf_array, map);
 	index = info->index & array->index_mask;
 	if (info->percpu_value_buf)
-	       return array->pptrs[index];
+		return &array->pptrs[index];
 	return array->value + array->elem_size * index;
 }
 
@@ -535,7 +535,7 @@ static void *bpf_array_map_seq_next(struct seq_file *seq, void *v, loff_t *pos)
 	array = container_of(map, struct bpf_array, map);
 	index = info->index & array->index_mask;
 	if (info->percpu_value_buf)
-	       return array->pptrs[index];
+		return &array->pptrs[index];
 	return array->value + array->elem_size * index;
 }
 
@@ -567,7 +567,7 @@ static int __bpf_array_map_seq_show(struct seq_file *seq, void *v)
 			size = round_up(map->value_size, 8);
 			for_each_possible_cpu(cpu) {
 				bpf_long_memcpy(info->percpu_value_buf + off,
-						per_cpu_ptr(pptr, cpu),
+						per_cpu_ptr(*pptr, cpu),
 						size);
 				off += size;
 			}
