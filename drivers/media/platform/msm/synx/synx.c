@@ -1295,7 +1295,7 @@ static long synx_ioctl(struct file *filep,
 	}
 
 	if (copy_from_user(&k_ioctl,
-		(struct synx_private_ioctl_arg *)arg,
+		(struct synx_private_ioctl_arg __user *)arg,
 		sizeof(k_ioctl))) {
 		pr_err("invalid ioctl args\n");
 		return -EFAULT;
@@ -1327,7 +1327,7 @@ static long synx_ioctl(struct file *filep,
 		break;
 	case SYNX_WAIT:
 		rc = synx_handle_wait(&k_ioctl);
-		if (copy_to_user((void *)arg,
+		if (copy_to_user((void __user *)arg,
 			&k_ioctl,
 			sizeof(k_ioctl))) {
 			pr_err("invalid ioctl args\n");
@@ -1398,10 +1398,10 @@ static ssize_t synx_read(struct file *filep,
 	return rc;
 }
 
-static unsigned int synx_poll(struct file *filep,
+static __poll_t synx_poll(struct file *filep,
 	struct poll_table_struct *poll_table)
 {
-	int rc = 0;
+	__poll_t rc = 0;
 	struct synx_client *client = NULL;
 
 	pr_debug("Enter %s\n", __func__);
@@ -1412,7 +1412,7 @@ static unsigned int synx_poll(struct file *filep,
 	mutex_lock(&client->eventq_lock);
 	/* if list has pending cb events, notify */
 	if (!list_empty(&client->eventq))
-		rc = POLLPRI;
+		rc = EPOLLPRI;
 	mutex_unlock(&client->eventq_lock);
 
 	pr_debug("Exit %s\n", __func__);
