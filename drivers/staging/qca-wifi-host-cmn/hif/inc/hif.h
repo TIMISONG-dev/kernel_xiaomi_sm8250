@@ -1374,7 +1374,7 @@ void hif_allow_link_low_power_states(struct hif_opaque_softc *hif)
 }
 #endif
 
-void *hif_get_dev_ba(struct hif_opaque_softc *hif_handle);
+qdf_iomem_t hif_get_dev_ba(struct hif_opaque_softc *hif_handle);
 
 /**
  * hif_set_initial_wakeup_cb() - set the initial wakeup event handler function
