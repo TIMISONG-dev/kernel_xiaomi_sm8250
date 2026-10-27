@@ -96,7 +96,7 @@ static void rrm_ll_purge_neighbor_cache(struct mac_context *mac,
  * rrm_indicate_neighbor_report_result() -calls the callback registered for
  *                                                      neighbor report
  * @mac: Pointer to the Hal Handle.
- * @qdf_status - QDF_STATUS_SUCCESS/QDF_STATUS_FAILURE based on whether a valid
+ * @qdf_status: QDF_STATUS_SUCCESS/QDF_STATUS_FAILURE based on whether a valid
  *                       report is received or neighbor timer expired
  *
  * This function calls the callback register by the caller while requesting for
@@ -149,11 +149,11 @@ static void rrm_indicate_neighbor_report_result(struct mac_context *mac,
 
 /**
  * sme_RrmBeaconReportXmitInd () - Send beacon report
- * @mac_ctx  Pointer to mac context
+ * @mac_ctx: Pointer to mac context
  * @measurement_index: Measurement index
- * @result_arr scan results
- * @msrmnt_status flag to indicate that the measurement is done.
- * @bss_count  bss count
+ * @result_arr: scan results
+ * @msrmnt_status: flag to indicate that the measurement is done.
+ * @bss_count: bss count
  *
  * Create and send the beacon report Xmit ind message to PE.
  *
@@ -665,7 +665,7 @@ rrm_send_scan_results_done:
 
 /**
  * sme_rrm_scan_request_callback() -Sends the beacon report xmit to PE
- * @mac_handle: Opaque handle to the MAC context
+ * @mac: Opaque handle to the MAC context
  * @pSmeRrmContext: SME rrm context for measurement request
  * @sessionId: session id
  * @scanId: Scan ID.
@@ -823,6 +823,7 @@ static void sme_rrm_scan_event_callback(struct wlan_objmgr_vdev *vdev,
 /**
  * sme_rrm_issue_scan_req() - To issue rrm scan request
  * @mac_ctx: pointer to mac context
+ * @idx: Measurement request index selecting the RRM request context
  *
  * This routine is called to issue rrm scan request
  *
@@ -1356,10 +1357,12 @@ cleanup:
  *        Neighbor report from the peer.
  * @sessionId: session identifier on which the request should be made.
  * @pNeighborReq: a pointer to a neighbor report request.
+ * @callbackInfo: Neighbor report callback and timeout information to retain
  *
  * This is API can be used to trigger a  Neighbor report from the peer.
  *
  * Return: QDF_STATUS_SUCCESS - Validation is successful.
+ * @mac: Pointer to Global MAC structure
  */
 QDF_STATUS sme_rrm_neighbor_report_request(struct mac_context *mac, uint8_t
 					sessionId, tpRrmNeighborReq
@@ -1426,7 +1429,7 @@ QDF_STATUS sme_rrm_neighbor_report_request(struct mac_context *mac, uint8_t
 /**
  * rrm_calculate_neighbor_ap_roam_score() - caclulates roam score
  * @mac_ctx:                mac global context
- * @pNeighborReportDesc:    Neighbor BSS Descriptor node for which roam score
+ * @nbr_report_desc:    Neighbor BSS Descriptor node for which roam score
  *                          should be calculated
  *
  * This API is called while handling individual neighbor reports from the APs
@@ -1511,7 +1514,7 @@ check_11r_assoc:
 /**
  * rrm_store_neighbor_rpt_by_roam_score()-store Neighbor BSS descriptor
  * @mac: Pointer to mac context
- * @pNeighborReportDesc - Neighbor BSS Descriptor node to be stored in cache
+ * @pNeighborReportDesc: Neighbor BSS Descriptor node to be stored in cache
  * @index: RRM sme context index
  *
  * This API is called to store a given
@@ -1583,8 +1586,8 @@ static void rrm_store_neighbor_rpt_by_roam_score(struct mac_context *mac,
 /**
  * sme_rrm_process_neighbor_report() -Process the Neighbor report received
  *                                                     from PE
- * @mac - Global MAC structure
- * @msg_buf - a pointer to a buffer that maps to various structures base
+ * @mac: Global MAC structure
+ * @msg_buf: a pointer to a buffer that maps to various structures base
  *                  on the message type.
  *                  The beginning of the buffer can always map to tSirSmeRsp.
  * This is called to process the Neighbor report received from PE.
@@ -1664,9 +1667,9 @@ end:
 
 /**
  * sme_rrm_msg_processor()-Process RRM message
- * @mac - Pointer to the global MAC parameter structure.
- * @msg_type - the type of msg passed by PE as defined in wni_api.h
- * @msg_buf - a pointer to a buffer that maps to various structures base
+ * @mac: Pointer to the global MAC parameter structure.
+ * @msg_type: the type of msg passed by PE as defined in wni_api.h
+ * @msg_buf: a pointer to a buffer that maps to various structures base
  *                  on the message type.
  *                  The beginning of the buffer can always map to tSirSmeRsp.
  * sme_process_msg() calls this function for the
@@ -1699,6 +1702,7 @@ QDF_STATUS sme_rrm_msg_processor(struct mac_context *mac, uint16_t msg_type,
 
 /**
  * rrm_iter_meas_timer_handle() - Timer handler to handlet the timeout
+ * @data: RRM SME context whose measurement index selects the next scan request
  * @ mac - The handle returned by mac_open.
  *
  * Timer handler to handlet the timeout condition when a specific BT
@@ -1727,7 +1731,7 @@ static void rrm_iter_meas_timer_handle(void *data)
 
 /**
  * rrm_neighbor_rsp_timeout_handler() - Timer handler to handlet the timeout
- * @mac - The handle returned by mac_open.
+ * @userData: The handle returned by mac_open.
  *
  * Timer handler to handle the timeout condition when a neighbor request is sent
  * and no neighbor response is received from the AP
@@ -1744,7 +1748,7 @@ static void rrm_neighbor_rsp_timeout_handler(void *userData)
 
 /**
  * rrm_change_default_config_param() - Changing default config param to new
- * @mac - The handle returned by mac_open.
+ * @mac: The handle returned by mac_open.
  *
  * Return: None
  */
@@ -1769,6 +1773,7 @@ static void rrm_change_default_config_param(struct mac_context *mac)
  * Initialze all RRM module.
  *
  * Return: QDF_STATUS
+ * @mac: Pointer to Global MAC structure
  */
 QDF_STATUS rrm_open(struct mac_context *mac)
 {
@@ -1823,7 +1828,7 @@ QDF_STATUS rrm_open(struct mac_context *mac)
 
 /**
  * rrm_close() - Release all RRM modules and their resources.
- * @mac - The handle returned by mac_open.
+ * @mac: The handle returned by mac_open.
  *
  * Release all RRM modules and their resources.
  *
