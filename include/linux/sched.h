@@ -889,7 +889,7 @@ struct task_struct {
 	u32 init_load_pct;
 	u64 last_wake_ts;
 	u64 last_enqueued_ts;
-	struct related_thread_group *grp;
+	struct related_thread_group __rcu *grp;
 	struct list_head grp_list;
 	u64 cpu_cycles;
 	bool misfit;
@@ -1874,6 +1874,7 @@ extern int idle_cpu(int cpu);
 extern int available_idle_cpu(int cpu);
 extern int sched_setscheduler(struct task_struct *, int, const struct sched_param *);
 extern int sched_setscheduler_nocheck(struct task_struct *, int, const struct sched_param *);
+extern void sched_set_stop_task(int cpu, struct task_struct *stop);
 extern int sched_set_fifo(struct task_struct *p);
 extern int sched_set_fifo_low(struct task_struct *p);
 extern int sched_set_normal(struct task_struct *p, int nice);

@@ -858,7 +858,7 @@ struct root_domain {
 	 * NULL-terminated list of performance domains intersecting with the
 	 * CPUs of the rd. Protected by RCU.
 	 */
-	struct perf_domain	*pd;
+	struct perf_domain __rcu	*pd;
 
 	/* First cpu with maximum and minimum original capacity */
 	int max_cap_orig_cpu, min_cap_orig_cpu;
@@ -1458,9 +1458,10 @@ extern void sched_ttwu_pending(void);
  */
 #define for_each_domain(cpu, __sd) \
 	for (__sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd); \
-			__sd; __sd = __sd->parent)
+			__sd; __sd = rcu_dereference_check_sched_domain(__sd->parent))
 
-#define for_each_lower_domain(sd) for (; sd; sd = sd->child)
+#define for_each_lower_domain(sd) \
+	for (; sd; sd = rcu_dereference_check_sched_domain(sd->child))
 
 /**
  * highest_flag_domain - Return highest sched_domain containing flag.
@@ -1587,6 +1588,12 @@ static inline void unregister_sched_domain_sysctl(void)
 static inline void sched_ttwu_pending(void) { }
 
 #endif /* CONFIG_SMP */
+
+/* The rq lock pins its current task and excludes context-switch updates. */
+static inline struct task_struct *rq_curr_locked(struct rq *rq)
+{
+	return rcu_dereference_protected(rq->curr, lockdep_is_held(&rq->lock));
+}
 
 #include "stats.h"
 #include "autogroup.h"
@@ -1742,7 +1749,7 @@ static inline u64 global_rt_runtime(void)
 
 static inline int task_current(struct rq *rq, struct task_struct *p)
 {
-	return rq->curr == p;
+	return rcu_access_pointer(rq->curr) == p;
 }
 
 static inline int task_running(struct rq *rq, struct task_struct *p)
@@ -2004,6 +2011,7 @@ extern void resched_curr(struct rq *rq);
 extern void resched_cpu(int cpu);
 
 extern struct rt_bandwidth def_rt_bandwidth;
+bool sched_rt_bandwidth_account(struct rt_rq *rt_rq);
 extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime);
 
 extern struct dl_bandwidth def_dl_bandwidth;
@@ -2554,7 +2562,7 @@ static inline u64 irq_time_read(int cpu)
 #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
 
 #ifdef CONFIG_CPU_FREQ
-DECLARE_PER_CPU(struct update_util_data *, cpufreq_update_util_data);
+DECLARE_PER_CPU(struct update_util_data __rcu *, cpufreq_update_util_data);
 
 /**
  * cpufreq_update_util - Take a note about CPU utilization changes.
@@ -3017,6 +3025,7 @@ extern void clear_top_tasks_bitmap(unsigned long *bitmap);
 extern bool task_sched_boost(struct task_struct *p);
 extern int sync_cgroup_colocation(struct task_struct *p, bool insert);
 extern bool schedtune_task_colocated(struct task_struct *p);
+extern long schedtune_task_margin(struct task_struct *task);
 extern void update_cgroup_boost_settings(void);
 extern void restore_cgroup_boost_settings(void);
 
