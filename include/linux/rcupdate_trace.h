@@ -36,12 +36,14 @@ void rcu_read_unlock_trace_special(struct task_struct *t, int nesting);
 /**
  * rcu_read_lock_trace - mark beginning of RCU-trace read-side critical section
  *
- * When synchronize_rcu_tasks_trace() is invoked by one task, then that
- * task is guaranteed to block until all other tasks exit their read-side
- * critical sections.  Similarly, if call_rcu_trace() is invoked on one
- * task while other tasks are within RCU read-side critical sections,
- * invocation of the corresponding RCU callback is deferred until after
- * the all the other tasks exit their critical sections.
+ * A Tasks Trace RCU read-side critical section begins with this function
+ * and ends with the matching rcu_read_unlock_trace(). Nesting is allowed,
+ * and a task may block within a section.
+ *
+ * synchronize_rcu_tasks_trace() waits for all pre-existing Tasks Trace RCU
+ * read-side critical sections to complete. call_rcu_trace() defers
+ * its callback until after a Tasks Trace RCU grace period. Context switches
+ * do not end these read-side critical sections.
  *
  * For more details, please see the documentation for rcu_read_lock().
  */
