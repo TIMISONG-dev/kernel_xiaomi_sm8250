@@ -414,7 +414,7 @@ fail_lock_client:
 fail_get_client:
 
 	if (err < 0) {
-		bio->bi_status = err;
+		bio->bi_status = errno_to_blk_status(err);
 		bio_endio(bio);
 	}
 
@@ -747,7 +747,7 @@ static int vs_block_client_ack_read(struct vs_client_block_state *state,
 
 	vs_client_block_io_free_ack_read(state, &pbuf, mbuf);
 
-	bio->bi_status = err;
+	bio->bi_status = errno_to_blk_status(err);
 	bio_endio(bio);
 
 	return 0;
@@ -821,7 +821,7 @@ static int vs_block_client_nack_io(struct vs_client_block_state *state,
 	if (WARN_ON(!bio))
 		return -EPROTO;
 
-	bio->bi_status = block_client_vs_to_linux_error(err);
+	bio->bi_status = errno_to_blk_status(block_client_vs_to_linux_error(err));
 	bio_endio(bio);
 
 	wake_up(&state->service->quota_wq);
