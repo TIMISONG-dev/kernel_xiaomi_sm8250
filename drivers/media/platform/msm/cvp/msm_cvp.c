@@ -1737,7 +1737,11 @@ exit:
 }
 
 /**
- * Use of cvp_kmd_request_power structure
+ * msm_cvp_request_power() - Apply a session's clock and bandwidth request
+ * @inst: CVP session requesting the resources
+ * @power: Requested clock rates and DDR bandwidth, with firmware vote fields
+ *
+ * Use of cvp_kmd_request_power structure:
  * clock_cycles_a: CVP core clock freq
  * clock_cycles_b: CVP controller clock freq
  * ddr_bw: b/w vote in Bps
