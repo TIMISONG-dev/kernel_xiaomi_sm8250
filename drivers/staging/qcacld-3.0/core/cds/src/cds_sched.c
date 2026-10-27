@@ -17,9 +17,9 @@
  */
 
 /**
- *  File: cds_sched.c
+ * DOC: CDS Scheduler Implementation
  *
- *  DOC: CDS Scheduler Implementation
+ * File: cds_sched.c
  */
 
 #include <cds_api.h>
@@ -576,7 +576,7 @@ pkt_freeqalloc_failure:
 #ifdef QCA_CONFIG_SMP
 /**
  * cds_free_ol_rx_pkt_freeq() - free cds buffer free queue
- * @pSchedContext - pointer to the global CDS Sched Context
+ * @pSchedContext: pointer to the global CDS Sched Context
  *
  * This API does mem free of the buffers available in free cds buffer
  * queue which is used for Data rx processing.
@@ -601,7 +601,7 @@ void cds_free_ol_rx_pkt_freeq(p_cds_sched_context pSchedContext)
 
 /**
  * cds_alloc_ol_rx_pkt_freeq() - Function to allocate free buffer queue
- * @pSchedContext - pointer to the global CDS Sched Context
+ * @pSchedContext: pointer to the global CDS Sched Context
  *
  * This API allocates CDS_MAX_OL_RX_PKT number of cds message buffers
  * which are used for Rx data processing.
@@ -684,7 +684,7 @@ struct cds_ol_rx_pkt *cds_alloc_ol_rx_pkt(p_cds_sched_context pSchedContext)
 
 /**
  * cds_indicate_rxpkt() - indicate rx data packet
- * @Arg: Pointer to the global CDS Sched Context
+ * @pSchedContext: Pointer to the global CDS Sched Context
  * @pkt: CDS data message buffer
  *
  * This api enqueues the rx packet into ol_rx_thread_queue and notifies
@@ -806,7 +806,7 @@ static void cds_rx_from_queue(p_cds_sched_context pSchedContext)
 
 /**
  * cds_ol_rx_thread() - cds main tlshim rx thread
- * @Arg: pointer to the global CDS Sched Context
+ * @arg: pointer to the global CDS Sched Context
  *
  * This api is the thread handler for Tlshim Data packet processing.
  *
@@ -952,8 +952,8 @@ void cds_ssr_protect_init(void)
 
 /**
  * cds_shutdown_notifier_register() - Register for shutdown notification
- * @cb          : Call back to be called
- * @priv        : Private pointer to be passed back to call back
+ * @cb: Call back to be called
+ * @priv: Private pointer to be passed back to call back
  *
  * During driver remove or shutdown (recovery), external threads might be stuck
  * waiting on some event from firmware at lower layers. Remove or shutdown can't
@@ -1076,7 +1076,7 @@ int cds_get_gfp_flags(void)
 #ifdef WLAN_FEATURE_PKT_CAPTURE
 /**
  * cds_free_ol_mon_pkt_freeq() - free cds buffer free queue
- * @pSchedContext - pointer to the global CDS Sched Context
+ * @pschedcontext: pointer to the global CDS Sched Context
  *
  * This API does mem free of the buffers available in free cds buffer
  * queue which is used for mon Data processing.
@@ -1108,7 +1108,7 @@ void cds_free_ol_mon_pkt_freeq(p_cds_sched_context pschedcontext)
 
 /**
  * cds_alloc_ol_mon_pkt_freeq() - Function to allocate free buffer queue
- * @pSchedContext - pointer to the global CDS Sched Context
+ * @pschedcontext: pointer to the global CDS Sched Context
  *
  * This API allocates CDS_MAX_OL_MON_PKT number of cds message buffers
  * which are used for mon data processing.
@@ -1158,7 +1158,7 @@ free:
 /**
  * cds_free_ol_mon_pkt() - api to release cds message to the freeq
  * This api returns the cds message used for mon data to the free queue
- * @pSchedContext: Pointer to the global CDS Sched Context
+ * @pschedcontext: Pointer to the global CDS Sched Context
  * @pkt: CDS message buffer to be returned to free queue.
  *
  * Return: none
@@ -1176,7 +1176,7 @@ cds_free_ol_mon_pkt(p_cds_sched_context pschedcontext,
 
 /**
  * cds_alloc_ol_mon_pkt() - API to return next available cds message
- * @pSchedContext: Pointer to the global CDS Sched Context
+ * @pschedcontext: Pointer to the global CDS Sched Context
  *
  * This api returns next available cds message buffer used for mon data
  * processing
@@ -1203,7 +1203,7 @@ struct cds_ol_mon_pkt *cds_alloc_ol_mon_pkt(p_cds_sched_context pschedcontext)
 
 /**
  * cds_indicate_monpkt() - indicate mon data packet
- * @Arg: Pointer to the global CDS Sched Context
+ * @pschedcontext: Pointer to the global CDS Sched Context
  * @pkt: CDS data message buffer
  *
  * This api enqueues the mon packet into ol_mon_thread_queue and notifies
@@ -1225,7 +1225,7 @@ cds_indicate_monpkt(p_cds_sched_context pschedcontext,
 
 /**
  * cds_wakeup_mon_thread() - wakeup mon thread
- * @Arg: Pointer to the global CDS Sched Context
+ * @pschedcontext: Pointer to the global CDS Sched Context
  *
  * This api wake up cds_ol_mon_thread() to process pkt
  *
@@ -1280,6 +1280,7 @@ QDF_STATUS cds_close_mon_thread(void)
 
 /**
  * cds_open_mon_thread() - open the Tlshim Rx thread
+ * @pschedcontext: CDS scheduler context that owns the monitor thread and its queues
  *
  * This api open the Tlshim Rx thread:
  *
@@ -1384,7 +1385,7 @@ static void cds_mon_from_queue(p_cds_sched_context pschedcontext)
 
 /**
  * cds_ol_mon_thread() - cds main tlshim mon thread
- * @Arg: pointer to the global CDS Sched Context
+ * @arg: pointer to the global CDS Sched Context
  *
  * This api is the thread handler for mon Data packet processing.
  *
