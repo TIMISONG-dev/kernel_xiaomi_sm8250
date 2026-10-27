@@ -318,7 +318,7 @@ static long esoc_dev_ioctl(struct file *file, unsigned int cmd,
 			}
 			put_user(evt, (unsigned int __user *)uarg);
 			esoc_mdm_log("ESOC_WAIT_FOR_CRASH: Event arrived: %u\n",
-					req);
+					evt);
 		}
 		return err;
 	case ESOC_GET_LINK_ID:
