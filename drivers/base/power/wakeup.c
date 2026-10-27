@@ -481,6 +481,7 @@ EXPORT_SYMBOL_GPL(device_init_wakeup);
 /**
  * device_set_wakeup_enable - Enable or disable a device to wake up the system.
  * @dev: Device to handle.
+ * @enable: true to enable the device wakeup source, false to disable it
  */
 int device_set_wakeup_enable(struct device *dev, bool enable)
 {
@@ -734,10 +735,10 @@ EXPORT_SYMBOL_GPL(pm_relax);
 
 /**
  * pm_wakeup_timer_fn - Delayed finalization of a wakeup event.
- * @data: Address of the wakeup source object associated with the event source.
+ * @t: Timer embedded in the wakeup source whose event is expiring.
  *
- * Call wakeup_source_deactivate() for the wakeup source whose address is stored
- * in @data if it is currently active and its timer has not been canceled and
+ * Call wakeup_source_deactivate() for the wakeup source containing @t if it
+ * is currently active and its timer has not been canceled and
  * the expiration time of the timer is not in future.
  */
 static void pm_wakeup_timer_fn(struct timer_list *t)
@@ -1016,7 +1017,7 @@ bool pm_save_wakeup_count(unsigned int count)
 #ifdef CONFIG_PM_AUTOSLEEP
 /**
  * pm_wakep_autosleep_enabled - Modify autosleep_enabled for all wakeup sources.
- * @enabled: Whether to set or to clear the autosleep_enabled flags.
+ * @set: Whether to set or to clear the autosleep_enabled flags.
  */
 void pm_wakep_autosleep_enabled(bool set)
 {

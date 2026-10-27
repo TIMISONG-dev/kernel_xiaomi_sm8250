@@ -901,7 +901,7 @@ static void pm_runtime_work(struct work_struct *work)
 
 /**
  * pm_suspend_timer_fn - Timer function for pm_schedule_suspend().
- * @data: Device pointer passed by pm_schedule_suspend().
+ * @t: Timer embedded in the device power-management state.
  *
  * Check if the time is right and queue a suspend request.
  */

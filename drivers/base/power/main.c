@@ -504,7 +504,7 @@ struct dpm_watchdog {
 
 /**
  * dpm_watchdog_handler - Driver suspend / resume watchdog handler.
- * @data: Watchdog object address.
+ * @t: Timer embedded in the watchdog object for the stalled device.
  *
  * Called when a driver has timed out suspending or resuming.
  * There's not much we can do here to recover so panic() to
