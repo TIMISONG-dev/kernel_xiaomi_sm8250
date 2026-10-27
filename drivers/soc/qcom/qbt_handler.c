@@ -568,16 +568,16 @@ static ssize_t qbt_read(struct file *filp, char __user *ubuf,
 	return num_bytes;
 }
 
-static unsigned int qbt_poll(struct file *filp,
+static __poll_t qbt_poll(struct file *filp,
 	struct poll_table_struct *wait)
 {
 	struct qbt_drvdata *drvdata;
-	unsigned int mask = 0;
+	__poll_t mask = 0;
 	int minor_no = -1;
 
 	if (!filp || !filp->private_data) {
 		pr_err("NULL pointer passed\n");
-		return -EINVAL;
+		return EPOLLERR;
 	}
 	drvdata = filp->private_data;
 
@@ -585,14 +585,14 @@ static unsigned int qbt_poll(struct file *filp,
 	if (minor_no == MINOR_NUM_FD) {
 		poll_wait(filp, &drvdata->read_wait_queue_fd, wait);
 		if (kfifo_len(&drvdata->fd_events) > 0)
-			mask |= (POLLIN | POLLRDNORM);
+			mask |= (EPOLLIN | EPOLLRDNORM);
 	} else if (minor_no == MINOR_NUM_IPC) {
 		poll_wait(filp, &drvdata->read_wait_queue_ipc, wait);
 		if (kfifo_len(&drvdata->ipc_events) > 0)
-			mask |= (POLLIN | POLLRDNORM);
+			mask |= (EPOLLIN | EPOLLRDNORM);
 	} else {
 		pr_err("Invalid minor number\n");
-		return -EINVAL;
+		return EPOLLERR;
 	}
 
 	return mask;
