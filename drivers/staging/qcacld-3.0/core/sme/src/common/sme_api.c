@@ -9458,7 +9458,6 @@ QDF_STATUS sme_ap_disable_intra_bss_fwd(mac_handle_t mac_handle,
 {
 	struct mac_context *mac = MAC_CONTEXT(mac_handle);
 	int status = QDF_STATUS_SUCCESS;
-	QDF_STATUS qdf_status = QDF_STATUS_SUCCESS;
 	struct scheduler_msg message = {0};
 	tpDisableIntraBssFwd pSapDisableIntraFwd = NULL;
 
@@ -9481,7 +9480,7 @@ QDF_STATUS sme_ap_disable_intra_bss_fwd(mac_handle_t mac_handle,
 	/* serialize the req through MC thread */
 	message.bodyptr = pSapDisableIntraFwd;
 	message.type = WMA_SET_SAP_INTRABSS_DIS;
-	qdf_status = scheduler_post_message(QDF_MODULE_ID_SME,
+	scheduler_post_message(QDF_MODULE_ID_SME,
 					    QDF_MODULE_ID_WMA,
 					    QDF_MODULE_ID_WMA,
 					    &message);
@@ -15086,7 +15085,6 @@ void sme_enable_roaming_on_connected_sta(mac_handle_t mac_handle,
 int16_t sme_get_oper_chan_freq(struct wlan_objmgr_vdev *vdev)
 {
 	uint8_t vdev_id;
-	struct csr_roam_session *session;
 	struct mac_context *mac_ctx;
 	mac_handle_t mac_handle;
 
@@ -15107,7 +15105,6 @@ int16_t sme_get_oper_chan_freq(struct wlan_objmgr_vdev *vdev)
 		return 0;
 	}
 
-	session = CSR_GET_SESSION(mac_ctx, vdev_id);
 
 	return csr_get_infra_operation_chan_freq(mac_ctx, vdev_id);
 }
@@ -15148,9 +15145,8 @@ enum phy_ch_width sme_get_oper_ch_width(struct wlan_objmgr_vdev *vdev)
 int sme_get_sec20chan_freq_mhz(struct wlan_objmgr_vdev *vdev,
 						uint16_t *sec20chan_freq)
 {
-	uint8_t vdev_id;
 
-	vdev_id = wlan_vdev_get_id(vdev);
+	wlan_vdev_get_id(vdev);
 	/* Need to extend */
 	return 0;
 }
