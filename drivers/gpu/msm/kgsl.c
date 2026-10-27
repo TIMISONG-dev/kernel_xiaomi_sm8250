@@ -1020,6 +1020,7 @@ static struct kgsl_process_private *kgsl_process_private_new(
 	}
 
 	kref_init(&private->refcount);
+	mutex_init(&private->private_mutex);
 
 	private->fd_count = 1;
 	private->pid = cur_pid;
