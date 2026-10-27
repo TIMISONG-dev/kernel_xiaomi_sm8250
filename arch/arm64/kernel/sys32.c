@@ -22,6 +22,7 @@
  */
 #define __COMPAT_SYSCALL_NR
 
+#include <linux/build_bug.h>
 #include <linux/compat.h>
 #include <linux/compiler.h>
 #include <linux/syscalls.h>
@@ -140,7 +141,13 @@ COMPAT_SYSCALL_DEFINE6(aarch32_fallocate, int, fd, int, mode,
 #undef __SYSCALL
 #define __SYSCALL(nr, sym)	[nr] = __arm64_##sym,
 
+static_assert(__NR_compat_syscalls == __NR_epoll_pwait2 + 1,
+	      "Update reserved syscall ranges when extending this ABI");
+
 const syscall_fn_t compat_sys_call_table[__NR_compat_syscalls] = {
-	[0 ... __NR_compat_syscalls - 1] = __arm64_sys_ni_syscall,
+	/* Reserved ABI slots; implemented entries are supplied below. */
+	[__NR_rseq + 1 ... __NR_pidfd_send_signal - 1] = __arm64_sys_ni_syscall,
+	[__NR_pidfd_send_signal + 1 ... __NR_pidfd_open - 1] = __arm64_sys_ni_syscall,
+	[__NR_close_range + 1 ... __NR_epoll_pwait2 - 1] = __arm64_sys_ni_syscall,
 #include <asm/unistd32.h>
 };
