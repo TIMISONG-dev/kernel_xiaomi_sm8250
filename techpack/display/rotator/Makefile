@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
-ccflags-y += -I$(src) -Idrivers/staging/android
+ccflags-y += -I$(src) -I$(srctree)/drivers/staging/android
 
 obj-$(CONFIG_MSM_SDE_ROTATOR) += sde_rotator_dev.o \
 	sde_rotator_dev.o \
