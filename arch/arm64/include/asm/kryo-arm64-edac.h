@@ -6,10 +6,12 @@
 #ifndef ASM_KRYO_EDAC_H
 #define ASM_KRYO_EDAC_H
 
+struct edac_device_ctl_info;
+
 #if defined(CONFIG_EDAC_KRYO_ARM64)
-void kryo_poll_cache_errors(void *info);
+void kryo_poll_cache_errors(struct edac_device_ctl_info *info);
 #else
-static inline void kryo_poll_cache_errors(void *info) { }
+static inline void kryo_poll_cache_errors(struct edac_device_ctl_info *info) { }
 #endif
 
 #endif
