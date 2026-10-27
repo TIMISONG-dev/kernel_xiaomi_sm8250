@@ -3,6 +3,7 @@
  * Copyright (c) 2020, The Linux Foundation. All rights reserved.
  */
 
+#include <linux/leds-qpnp-flash.h>
 #include "leds.h"
 
 struct flash_data {
