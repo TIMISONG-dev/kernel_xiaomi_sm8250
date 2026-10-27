@@ -658,8 +658,6 @@ static void rcu_read_unlock_special(struct task_struct *t)
  */
 static void rcu_preempt_check_blocked_tasks(struct rcu_node *rnp)
 {
-	struct task_struct *t;
-
 	RCU_LOCKDEP_WARN(preemptible(), "rcu_preempt_check_blocked_tasks() invoked with preemption enabled!!!\n");
 	raw_lockdep_assert_held_rcu_node(rnp);
 	if (WARN_ON_ONCE(rcu_preempt_blocked_readers_cgp(rnp)))
@@ -667,10 +665,10 @@ static void rcu_preempt_check_blocked_tasks(struct rcu_node *rnp)
 	if (rcu_preempt_has_tasks(rnp) &&
 	    (rnp->qsmaskinit || rnp->wait_blkd_tasks)) {
 		WRITE_ONCE(rnp->gp_tasks, rnp->blkd_tasks.next);
-		t = container_of(rnp->gp_tasks, struct task_struct,
-				 rcu_node_entry);
 		trace_rcu_unlock_preempted_task(TPS("rcu_preempt-GPS"),
-						rnp->gp_seq, t->pid);
+				rnp->gp_seq,
+				container_of(rnp->gp_tasks, struct task_struct,
+					     rcu_node_entry)->pid);
 	}
 	WARN_ON_ONCE(rnp->qsmask);
 }
