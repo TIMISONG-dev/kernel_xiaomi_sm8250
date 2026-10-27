@@ -72,7 +72,8 @@ static int notifier_chain_unregister(struct notifier_block **nl,
  *			value of this parameter is -1.
  *	@nr_calls:	Records the number of notifications sent. Don't care
  *			value of this field is NULL.
- *	@returns:	notifier_call_chain returns the value returned by the
+ *
+ * Return: notifier_call_chain returns the value returned by the
  *			last notifier function called.
  */
 static int notifier_call_chain(struct notifier_block **nl,

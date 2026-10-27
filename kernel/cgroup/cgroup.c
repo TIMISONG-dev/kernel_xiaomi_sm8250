@@ -2313,7 +2313,6 @@ EXPORT_SYMBOL_GPL(task_cgroup_path);
 
 /**
  * cgroup_attach_lock - Lock for ->attach()
- * @lock_threadgroup: whether to down_write cgroup_threadgroup_rwsem
  *
  * cgroup migration sometimes needs to stabilize threadgroups against forks and
  * exits by write-locking cgroup_threadgroup_rwsem. However, some ->attach()
@@ -2342,7 +2341,6 @@ static void cgroup_attach_lock(void)
 
 /**
  * cgroup_attach_unlock - Undo cgroup_attach_lock()
- * @lock_threadgroup: whether to up_write cgroup_threadgroup_rwsem
  */
 static void cgroup_attach_unlock(void)
 {

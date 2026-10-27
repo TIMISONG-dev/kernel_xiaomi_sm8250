@@ -376,6 +376,7 @@ static bool is_dump_unreclaim_slabs(void)
  * @totalpages: total present RAM allowed for page allocation
  * @memcg: task's memory controller, if constrained
  * @nodemask: nodemask passed to page allocator for mempolicy ooms
+ * @only_positive_adj: Exclude tasks with a negative oom_score_adj
  *
  * The heuristic for determining which task to kill is made to be as simple and
  * predictable as possible.  The goal is to return the highest value for the
