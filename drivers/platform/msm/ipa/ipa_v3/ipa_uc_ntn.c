@@ -380,6 +380,11 @@ fail:
 
 /**
  * ipa3_setup_uc_ntn_pipes() - setup uc offload pipes
+ * @in: Uplink and downlink client, ring and buffer setup parameters
+ * @notify: Uplink endpoint event callback
+ * @priv: Private data passed to the uplink event callback
+ * @hdr_len: Header length configured on both endpoints
+ * @outp: Receives the uplink and downlink uC doorbell physical addresses
  */
 int ipa3_setup_uc_ntn_pipes(struct ipa_ntn_conn_in_params *in,
 	ipa_notify_cb notify, void *priv, u8 hdr_len,
@@ -525,6 +530,9 @@ fail:
 
 /**
  * ipa3_tear_down_uc_offload_pipes() - tear down uc offload pipes
+ * @ipa_ep_idx_ul: IPA endpoint index of the connected uplink pipe
+ * @ipa_ep_idx_dl: IPA endpoint index of the connected downlink pipe
+ * @params: Original connection parameters used to unmap both pipes
  */
 
 int ipa3_tear_down_uc_offload_pipes(int ipa_ep_idx_ul,
