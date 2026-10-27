@@ -3931,10 +3931,12 @@ static const struct net_device_ops mcp25xxfd_netdev_ops = {
 	.ndo_change_mtu = can_change_mtu,
 };
 
+static const enum mcp25xxfd_model mcp2517fd_model = CAN_MCP2517FD;
+
 static const struct of_device_id mcp25xxfd_of_match[] = {
 	{
 		.compatible	= "microchip,mcp2517fd",
-		.data		= (void *)CAN_MCP2517FD,
+		.data		= &mcp2517fd_model,
 	},
 	{ }
 };
@@ -4259,7 +4261,7 @@ static int mcp25xxfd_can_probe(struct spi_device *spi)
 		CAN_CTRLMODE_ONE_SHOT;
 
 	if (of_id)
-		priv->model = (enum mcp25xxfd_model)of_id->data;
+		priv->model = *(const enum mcp25xxfd_model *)of_id->data;
 	else
 		priv->model = spi_get_device_id(spi)->driver_data;
 
