@@ -2457,7 +2457,7 @@ static int mcp25xxfd_can_ist_handle_rxif(struct spi_device *spi)
 	else
 		ret = mcp25xxfd_read_fifos(spi);
 
-	return 0;
+	return ret;
 }
 
 static void mcp25xxfd_mark_tx_processed(struct spi_device *spi,
@@ -2493,12 +2493,16 @@ static int mcp25xxfd_can_ist_handle_tefif_handle_single(struct spi_device *spi)
 				   */
 				  sizeof(*tef) - 1,
 				  priv->spi_speed_hz);
+	if (ret)
+		return ret;
 	/* increment the counter to read next */
 	ret = mcp25xxfd_cmd_write_mask(spi,
 				       CAN_TEFCON,
 				       CAN_TEFCON_UINC,
 				       CAN_TEFCON_UINC,
 				       priv->spi_speed_hz);
+	if (ret)
+		return ret;
 
 	/* transform the data to system byte order */
 	mcp25xxfd_obj_ts_from_le(&tef->header);
