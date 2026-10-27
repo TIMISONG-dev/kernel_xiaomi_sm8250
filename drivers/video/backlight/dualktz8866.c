@@ -183,7 +183,7 @@ static ssize_t bl_selftest_read(struct file *file, char __user *buf, size_t coun
 
 static ssize_t bl_selftest_write(struct file *file, const char __user *buf, size_t count, loff_t *pos)
 {
-	char tmp[6] = { 0 };
+	char tmp[7] = { 0 };
 	int pwm_value = 0;
 	int ret;
 
