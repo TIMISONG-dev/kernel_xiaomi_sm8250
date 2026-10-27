@@ -236,17 +236,19 @@ static uint8_t dp_soc_ring_if_nss_offloaded(struct dp_soc *soc,
 #define DP_MON_REAP_BUDGET 1024
 
 /**
- * default_dscp_tid_map - Default DSCP-TID mapping
+ * DOC: default_dscp_tid_map - Default DSCP-TID mapping
  *
- * DSCP        TID
- * 000000      0
- * 001000      1
- * 010000      2
- * 011000      3
- * 100000      4
- * 101000      5
- * 110000      6
- * 111000      7
+ * Mapping::
+ *
+ *     DSCP        TID
+ *     000000      0
+ *     001000      1
+ *     010000      2
+ *     011000      3
+ *     100000      4
+ *     101000      5
+ *     110000      6
+ *     111000      7
  */
 static uint8_t default_dscp_tid_map[DSCP_TID_MAP_MAX] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -260,24 +262,29 @@ static uint8_t default_dscp_tid_map[DSCP_TID_MAP_MAX] = {
 };
 
 /**
- * default_pcp_tid_map - Default PCP-TID mapping
+ * DOC: default_pcp_tid_map - Default PCP-TID mapping
  *
- * PCP     TID
- * 000      0
- * 001      1
- * 010      2
- * 011      3
- * 100      4
- * 101      5
- * 110      6
- * 111      7
+ * Mapping::
+ *
+ *     PCP     TID
+ *     000      0
+ *     001      1
+ *     010      2
+ *     011      3
+ *     100      4
+ *     101      5
+ *     110      6
+ *     111      7
  */
 static uint8_t default_pcp_tid_map[PCP_TID_MAP_MAX] = {
 	0, 1, 2, 3, 4, 5, 6, 7,
 };
 
 /**
- * @brief Cpu to tx ring map
+ * DOC: dp_cpu_ring_map - CPU to transmit ring mapping
+ *
+ * Rows select an NSS offload configuration from enum dp_cpu_ring_map_types.
+ * Columns select an interrupt context and contain its transmit ring number.
  */
 uint8_t
 dp_cpu_ring_map[DP_NSS_CPU_RING_MAP_MAX][WLAN_CFG_INT_NUM_CONTEXTS_MAX] = {
@@ -292,7 +299,10 @@ dp_cpu_ring_map[DP_NSS_CPU_RING_MAP_MAX][WLAN_CFG_INT_NUM_CONTEXTS_MAX] = {
 };
 
 /**
- * @brief Select the type of statistics
+ * enum dp_stats_type - Select the type of statistics
+ * @STATS_FW: Firmware statistics column in dp_stats_mapping_table
+ * @STATS_HOST: Host statistics column in dp_stats_mapping_table
+ * @STATS_TYPE_MAX: Number of statistics columns
  */
 enum dp_stats_type {
 	STATS_FW = 0,
@@ -301,16 +311,19 @@ enum dp_stats_type {
 };
 
 /**
- * @brief General Firmware statistics options
- *
+ * enum dp_fw_stats - General firmware statistics options
+ * @TXRX_FW_STATS_INVALID: No firmware statistics request for this table entry
  */
 enum dp_fw_stats {
 	TXRX_FW_STATS_INVALID	= -1,
 };
 
 /**
- * dp_stats_mapping_table - Firmware and Host statistics
- * currently supported
+ * DOC: dp_stats_mapping_table - Firmware and host statistics request mapping
+ *
+ * Each request index selects firmware and host statistics identifiers in the
+ * STATS_FW and STATS_HOST columns. An invalid identifier disables that side
+ * of the request.
  */
 const int dp_stats_mapping_table[][STATS_TYPE_MAX] = {
 	{HTT_DBG_EXT_STATS_RESET, TXRX_HOST_STATS_INVALID},
@@ -801,7 +814,7 @@ static void dp_wds_flush_ast_table_wifi3(struct cdp_soc_t  *soc_hdl)
  *                                       of first ast entry found in the
  *                                       table with given mac address
  *
- * @soc : data path soc handle
+ * @soc_hdl : data path soc handle
  * @ast_mac_addr : AST entry mac address
  * @ast_entry_info : ast entry information
  *
@@ -843,7 +856,7 @@ static bool dp_peer_get_ast_info_by_soc_wifi3
  *                                          and return ast entry information
  *                                          if mac address and pdev_id matches
  *
- * @soc : data path soc handle
+ * @soc_hdl : data path soc handle
  * @ast_mac_addr : AST entry mac address
  * @pdev_id : pdev_id
  * @ast_entry_info : ast entry information
@@ -887,14 +900,13 @@ static bool dp_peer_get_ast_info_by_pdevid_wifi3
  * dp_peer_ast_entry_del_by_soc() - delete the ast entry from soc AST hash table
  *                            with given mac address
  *
- * @soc : data path soc handle
- * @ast_mac_addr : AST entry mac address
+ * @soc_handle : data path soc handle
+ * @mac_addr : AST entry mac address
  * @callback : callback function to called on ast delete response from FW
  * @cookie : argument to be passed to callback
  *
- * return : QDF_STATUS_SUCCESS if ast entry found with ast_mac_addr and delete
- *          is sent
- *          QDF_STATUS_E_INVAL false if ast entry not found
+ * Return: QDF_STATUS_SUCCESS if the AST entry is found and deletion is
+ * requested or already in progress; -QDF_STATUS_E_INVAL if no entry is found.
  */
 static QDF_STATUS dp_peer_ast_entry_del_by_soc(struct cdp_soc_t *soc_handle,
 					       uint8_t *mac_addr,
@@ -944,15 +956,14 @@ static QDF_STATUS dp_peer_ast_entry_del_by_soc(struct cdp_soc_t *soc_handle,
  * dp_peer_ast_entry_del_by_pdev() - delete the ast entry from soc AST hash
  *                                   table if mac address and pdev_id matches
  *
- * @soc : data path soc handle
- * @ast_mac_addr : AST entry mac address
+ * @soc_handle : data path soc handle
+ * @mac_addr : AST entry mac address
  * @pdev_id : pdev id
  * @callback : callback function to called on ast delete response from FW
  * @cookie : argument to be passed to callback
  *
- * return : QDF_STATUS_SUCCESS if ast entry found with ast_mac_addr and delete
- *          is sent
- *          QDF_STATUS_E_INVAL false if ast entry not found
+ * Return: QDF_STATUS_SUCCESS if the AST entry is found and deletion is
+ * requested or already in progress; -QDF_STATUS_E_INVAL if no entry is found.
  */
 
 static QDF_STATUS dp_peer_ast_entry_del_by_pdev(struct cdp_soc_t *soc_handle,
@@ -1272,6 +1283,7 @@ static void dp_print_peer_table(struct dp_vdev *vdev)
  * @ring_params: per ring specific parameters
  * @ring_type: Ring type
  * @ring_num: Ring number for a given ring type
+ * @num_entries: Ring capacity; unused with per-ring-type configuration
  *
  * Fill the ring params with the interrupt threshold
  * configuration parameters available in the per ring type wlan_srng_cfg
@@ -1534,8 +1546,10 @@ static inline void dp_srng_mem_free_consistent(struct dp_soc *soc,
  * @soc: datapath soc handle
  * @srng: srng handle
  * @ring_type: ring that needs to be configured
+ * @ring_num: Ring number within the selected ring type
  * @mac_id: mac number
  * @num_entries: Total number of entries for a given ring
+ * @cached: Allocate cached ring memory instead of coherent DMA memory
  *
  * Return: non-zero - failure/zero - success
  */
@@ -1659,6 +1673,11 @@ static void dp_srng_deinit(struct dp_soc *soc, struct dp_srng *srng,
 
 /**
  * dp_srng_cleanup - Internal function to cleanup SRNG rings used by data path
+ * @soc: Datapath SOC owning the ring and its DMA device
+ * @srng: Ring state and backing-memory allocation to release
+ * @ring_type: Ring type used in diagnostics
+ * @ring_num: Ring number used in diagnostics
+ *
  * Any buffers allocated and attached to ring entries are expected to be freed
  * before calling this function.
  */
@@ -2060,7 +2079,7 @@ static QDF_STATUS dp_soc_attach_poll(struct cdp_soc_t *txrx_soc)
 
 /**
  * dp_soc_set_interrupt_mode() - Set the interrupt mode in soc
- * soc: DP soc handle
+ * @soc: DP soc handle
  *
  * Set the appropriate interrupt mode flag in the soc
  */
@@ -2920,19 +2939,14 @@ static void dp_soc_reset_intr_mask(struct dp_soc *soc)
 
 #ifdef IPA_OFFLOAD
 /**
- * dp_reo_remap_config() - configure reo remap register value based
- *                         nss configuration.
- *		based on offload_radio value below remap configuration
- *		get applied.
- *		0 - both Radios handled by host (remap rings 1, 2, 3 & 4)
- *		1 - 1st Radio handled by NSS (remap rings 2, 3 & 4)
- *		2 - 2nd Radio handled by NSS (remap rings 1, 2 & 4)
- *		3 - both Radios handled by NSS (remap not required)
- *		4 - IPA OFFLOAD enabled (remap rings 1,2 & 3)
+ * dp_reo_remap_config() - Configure the fixed IPA REO destination mapping
+ * @soc: Datapath SOC handle; unused for the fixed IPA ring mapping
+ * @remap1: Output value for REO destination entries 16 through 23
+ * @remap2: Output value for REO destination entries 24 through 31
  *
- * @remap1: output parameter indicates reo remap 1 register value
- * @remap2: output parameter indicates reo remap 2 register value
- * Return: bool type, true if remap is configured else false.
+ * Route entries across software rings 1, 2 and 3, leaving ring 4 for IPA.
+ *
+ * Return: true after setting both output register values.
  */
 bool dp_reo_remap_config(struct dp_soc *soc, uint32_t *remap1, uint32_t *remap2)
 {
@@ -3559,7 +3573,7 @@ static int dp_rxdma_ring_setup(struct dp_soc *soc,
 
 /**
  * dp_dscp_tid_map_setup(): Initialize the dscp-tid maps
- * @pdev - DP_PDEV handle
+ * @pdev: DP_PDEV handle
  *
  * Return: void
  */
@@ -3587,7 +3601,7 @@ dp_dscp_tid_map_setup(struct dp_pdev *pdev)
 
 /**
  * dp_pcp_tid_map_setup(): Initialize the pcp-tid maps
- * @pdev - DP_PDEV handle
+ * @pdev: DP_PDEV handle
  *
  * Return: void
  */
@@ -5571,7 +5585,7 @@ static void dp_peer_flush_ast_entry(struct dp_soc *soc,
 
 /**
  * dp_vdev_flush_peers() - Forcibily Flush peers of vdev
- * @vdev: Datapath VDEV handle
+ * @vdev_handle: Datapath VDEV handle
  * @unmap_only: Flag to indicate "only unmap"
  *
  * Return: void
@@ -6973,7 +6987,7 @@ static int dp_get_opmode(struct cdp_soc_t *soc_hdl, uint8_t vdev_id)
  * @soc_hdl: ol_txrx_soc_handle handle
  * @vdev_id: vdev id for which os rx handles are needed
  * @stack_fn_p: pointer to stack function pointer
- * @osif_handle_p: pointer to ol_osif_vdev_handle
+ * @osif_vdev_p: pointer to ol_osif_vdev_handle
  *
  * Return: void
  */
@@ -7063,6 +7077,7 @@ dp_pdev_disable_mcopy_code(struct dp_pdev *pdev)
  * dp_reset_monitor_mode() - Disable monitor mode
  * @soc_hdl: Datapath soc handle
  * @pdev_id: id of datapath PDEV handle
+ * @special_monitor: Reset smart-monitor filters when mcopy mode is inactive
  *
  * Return: QDF_STATUS
  */
@@ -7126,7 +7141,7 @@ static uint32_t dp_get_tx_pending(struct cdp_pdev *pdev_handle)
 
 /**
  * dp_get_peer_mac_from_peer_id() - get peer mac
- * @pdev_handle: Datapath PDEV handle
+ * @soc: Datapath SOC handle
  * @peer_id: Peer ID
  * @peer_mac: MAC addr of PEER
  *
@@ -7154,8 +7169,9 @@ static QDF_STATUS dp_get_peer_mac_from_peer_id(struct cdp_soc_t *soc,
 
 /**
  * dp_vdev_set_monitor_mode() - Set DP VDEV to monitor mode
- * @vdev_handle: Datapath VDEV handle
- * @smart_monitor: Flag to denote if its smart monitor mode
+ * @soc: Datapath SOC handle used to look up the VDEV
+ * @vdev_id: Identifier of the VDEV to use for monitoring
+ * @special_monitor: Skip normal monitor ring/filter setup for smart/lite mode
  *
  * Return: 0 on success, not 0 on failure
  */
@@ -7213,7 +7229,7 @@ static QDF_STATUS dp_vdev_set_monitor_mode(struct cdp_soc_t *soc,
 
 /**
  * dp_pdev_set_advance_monitor_filter() - Set DP PDEV monitor filter
- * @soc: soc handle
+ * @soc_hdl: soc handle
  * @pdev_id: id of Datapath PDEV handle
  * @filter_val: Flag to select Filter for monitor mode
  * Return: 0 on success, not 0 on failure
@@ -7305,8 +7321,7 @@ dp_mon_set_bsscolor(struct dp_pdev *pdev, uint8_t bsscolor)
 
 /**
  * dp_pdev_get_filter_ucast_data() - get DP PDEV monitor ucast filter
- * @soc : data path soc handle
- * @pdev_id : pdev_id
+ * @pdev_handle: Datapath PDEV whose monitor filters are queried
  * Return: true on ucast filter flag set
  */
 static bool dp_pdev_get_filter_ucast_data(struct cdp_pdev *pdev_handle)
@@ -7483,6 +7498,7 @@ void dp_rx_bar_stats_cb(struct dp_soc *soc, void *cb_ctxt,
 /**
  * dp_aggregate_vdev_stats(): Consolidate stats at VDEV level
  * @vdev: DP VDEV handle
+ * @vdev_stats: Output buffer receiving VDEV statistics with peer totals
  *
  * return: void
  */
@@ -7849,8 +7865,8 @@ static void dp_txrx_stats_help(void)
 
 /**
  * dp_print_host_stats()- Function to print the stats aggregated at host
- * @vdev_handle: DP_VDEV handle
- * @type: host stats type
+ * @vdev: DP_VDEV handle
+ * @req: Request selecting the host statistics type and peer address
  *
  * Return: 0 on success, print error message in case of failure
  */
@@ -9180,7 +9196,7 @@ dp_txrx_stats_publish(struct cdp_soc_t *soc, uint8_t pdev_id,
 
 /**
  * dp_set_pdev_dscp_tid_map_wifi3(): update dscp tid map in pdev
- * @soc: soc handle
+ * @soc_handle: soc handle
  * @pdev_id: id of DP_PDEV handle
  * @map_id: ID of map that needs to be updated
  * @tos: index value in map
@@ -9215,7 +9231,7 @@ dp_set_pdev_dscp_tid_map_wifi3(struct cdp_soc_t *soc_handle,
 
 /**
  * dp_fw_stats_process(): Process TxRX FW stats request
- * @vdev_handle: DP VDEV handle
+ * @vdev: DP VDEV handle
  * @req: stats request
  *
  * return: int
@@ -9259,7 +9275,7 @@ static int dp_fw_stats_process(struct dp_vdev *vdev,
 
 /**
  * dp_txrx_stats_request - function to map to firmware and host stats
- * @soc: soc handle
+ * @soc_handle: soc handle
  * @vdev_id: virtual device ID
  * @req: stats request
  *
@@ -9391,8 +9407,9 @@ static QDF_STATUS dp_txrx_dump_stats(struct cdp_soc_t *psoc, uint16_t value,
 
 /**
  * dp_txrx_clear_dump_stats() - clear dumpStats
- * @soc- soc handle
- * @value - stats option
+ * @soc_hdl: Datapath SOC handle whose statistics are cleared
+ * @pdev_id: Physical-device identifier; unused for SOC-wide TSO statistics
+ * @value: Statistics option; only CDP_TXRX_TSO_STATS is supported
  *
  * Return: 0 - Success, non-zero - failure
  */
@@ -9426,7 +9443,7 @@ QDF_STATUS dp_txrx_clear_dump_stats(struct cdp_soc_t *soc_hdl, uint8_t pdev_id,
  * dp_update_flow_control_parameters() - API to store datapath
  *                            config parameters
  * @soc: soc handle
- * @cfg: ini parameter handle
+ * @params: Configuration values for transmit flow-control thresholds
  *
  * Return: void
  */
@@ -9494,8 +9511,8 @@ void dp_update_rx_soft_irq_limit_params(struct dp_soc *soc,
 /**
  * dp_update_config_parameters() - API to store datapath
  *                            config parameters
- * @soc: soc handle
- * @cfg: ini parameter handle
+ * @psoc: soc handle
+ * @params: Datapath offload, NAPI and flow-control configuration values
  *
  * Return: status
  */
@@ -9846,7 +9863,7 @@ fail:
 #ifdef ATH_SUPPORT_NAC_RSSI
 /**
  * dp_vdev_get_neighbour_rssi(): Store RSSI for configured NAC
- * @soc_hdl: DP soc handle
+ * @soc: DP soc handle
  * @vdev_id: id of DP vdev handle
  * @mac_addr: neighbour mac
  * @rssi: rssi value
@@ -9982,17 +9999,18 @@ dp_dump_pdev_rx_protocol_tag_stats(struct cdp_soc_t  *soc, uint8_t pdev_id,
 
 #ifndef WLAN_SUPPORT_RX_PROTOCOL_TYPE_TAG
 /**
- * dp_update_pdev_rx_protocol_tag - Add/remove a protocol tag that should be
- * applied to the desired protocol type packets
+ * dp_update_pdev_rx_protocol_tag - Accept a protocol-tag request when disabled
  * @soc: soc handle
  * @pdev_id: id of cdp_pdev handle
- * @enable_rx_protocol_tag - bitmask that indicates what protocol types
+ * @enable_rx_protocol_tag: bitmask that indicates what protocol types
  * are enabled for tagging. zero indicates disable feature, non-zero indicates
  * enable feature
  * @protocol_type: new protocol type for which the tag is being added
  * @tag: user configured tag for the new protocol
  *
- * Return: Success
+ * This feature-disabled implementation leaves tagging unchanged.
+ *
+ * Return: QDF_STATUS_SUCCESS
  */
 static inline QDF_STATUS
 dp_update_pdev_rx_protocol_tag(struct cdp_soc_t  *soc, uint8_t pdev_id,
@@ -10006,12 +10024,14 @@ dp_update_pdev_rx_protocol_tag(struct cdp_soc_t  *soc, uint8_t pdev_id,
 
 #ifndef WLAN_SUPPORT_RX_FLOW_TAG
 /**
- * dp_set_rx_flow_tag - add/delete a flow
- * @soc: soc handle
+ * dp_set_rx_flow_tag - Accept a flow-tag request when flow tagging is disabled
+ * @cdp_soc: soc handle
  * @pdev_id: id of cdp_pdev handle
  * @flow_info: flow tuple that is to be added to/deleted from flow search table
  *
- * Return: Success
+ * This feature-disabled implementation leaves the flow table unchanged.
+ *
+ * Return: QDF_STATUS_SUCCESS
  */
 static inline QDF_STATUS
 dp_set_rx_flow_tag(struct cdp_soc_t *cdp_soc, uint8_t pdev_id,
@@ -10537,7 +10557,8 @@ static struct cdp_cfr_ops dp_ops_cfr = {
  * dp_flush_ring_hptp() - Update ring shadow
  *			  register HP/TP address when runtime
  *                        resume
- * @opaque_soc: DP soc context
+ * @soc: DP soc context
+ * @hal_srng: Ring whose pending flush event and shadow pointers are updated
  *
  * Return: None
  */
@@ -10650,7 +10671,7 @@ static QDF_STATUS dp_runtime_resume(struct cdp_soc_t *soc_hdl, uint8_t pdev_id)
 /**
  * dp_tx_get_success_ack_stats() - get tx success completion count
  * @soc_hdl: Datapath soc handle
- * @vdevid: vdev identifier
+ * @vdev_id: vdev identifier
  *
  * Return: tx success ack count
  */
@@ -11382,7 +11403,7 @@ fail0:
 
 /**
  * dp_soc_init() - Initialize txrx SOC
- * @dp_soc: Opaque DP SOC handle
+ * @soc: Opaque DP SOC handle
  * @htc_handle: Opaque HTC handle
  * @hif_handle: Opaque HIF handle
  *
@@ -12021,7 +12042,7 @@ static uint8_t dp_bucket_index(uint32_t delay, uint16_t *array)
  * @pdev: pdev handle
  * @delay: delay in ms
  * @tid: tid value
- * @mode: type of tx delay mode
+ * @mode: Transmit or receive delay statistic to update
  * @ring_id: ring number
  * Return: pointer to cdp_delay_stats structure
  */
@@ -12108,8 +12129,8 @@ dp_fill_delay_buckets(struct dp_pdev *pdev, uint32_t delay,
  * @pdev: pdev handle
  * @delay: delay in ms
  * @tid: tid value
- * @mode: type of tx delay mode
- * @ring id: ring number
+ * @mode: Transmit or receive delay statistic to update
+ * @ring_id: ring number
  * Return: none
  */
 void dp_update_delay_stats(struct dp_pdev *pdev, uint32_t delay,
