@@ -68,7 +68,8 @@ static inline void dma_write_reg(void *base, u32 offset, u32 val)
 static inline void dma_write_reg_field(void *base, u32 offset,
 				       const u32 mask, u32 val)
 {
-	u32 shift = find_first_bit((void *)&mask, 32);
+	unsigned long bitmap = mask;
+	u32 shift = find_first_bit(&bitmap, 32);
 	u32 tmp = ioread32(base + offset);
 
 	tmp &= ~mask;		/* clear written bits */

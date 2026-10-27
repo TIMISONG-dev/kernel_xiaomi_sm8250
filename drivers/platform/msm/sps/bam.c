@@ -774,6 +774,7 @@ static inline u32 bam_read_reg(void *base, enum bam_regs reg, u32 param)
 static inline u32 bam_read_reg_field(void *base, enum bam_regs reg, u32 param,
 								const u32 mask)
 {
+	unsigned long bitmap = mask;
 	u32 val, shift, offset = 0;
 	struct sps_bam *dev = to_sps_bam_dev(base);
 
@@ -782,7 +783,7 @@ static inline u32 bam_read_reg_field(void *base, enum bam_regs reg, u32 param,
 				__func__, base);
 		return SPS_ERROR;
 	}
-	shift = find_first_bit((void *)&mask, 32);
+	shift = find_first_bit(&bitmap, 32);
 	offset = bam_get_register_offset(base, reg, param);
 	if (offset < 0) {
 		SPS_ERR(dev, "%s:Failed to get the register offset\n",
@@ -839,6 +840,7 @@ static inline void bam_write_reg(void *base, enum bam_regs reg,
 static inline void bam_write_reg_field(void *base, enum bam_regs reg,
 					u32 param, const u32 mask, u32 val)
 {
+	unsigned long bitmap = mask;
 	u32 tmp, shift, offset = 0;
 	struct sps_bam *dev = to_sps_bam_dev(base);
 
@@ -847,7 +849,7 @@ static inline void bam_write_reg_field(void *base, enum bam_regs reg,
 				__func__, base);
 		return;
 	}
-	shift = find_first_bit((void *)&mask, 32);
+	shift = find_first_bit(&bitmap, 32);
 	offset = bam_get_register_offset(base, reg, param);
 	if (offset < 0) {
 		SPS_ERR(dev, "%s:Failed to get the register offset\n",
