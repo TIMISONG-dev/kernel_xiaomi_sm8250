@@ -14,6 +14,9 @@
 
 #include <asm/sections.h>
 
+int arch_get_kallsym(unsigned int symnum, unsigned long *value,
+		     char *type, char *name);
+
 #define KSYM_NAME_LEN 192
 #define KSYM_SYMBOL_LEN (sizeof("%s+%#lx/%#lx [%s]") + (KSYM_NAME_LEN - 1) + \
 			 2*(BITS_PER_LONG*3/10) + (MODULE_NAME_LEN - 1) + 1)
