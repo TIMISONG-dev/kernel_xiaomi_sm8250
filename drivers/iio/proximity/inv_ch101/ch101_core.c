@@ -1134,6 +1134,12 @@ int ch101_core_probe(struct i2c_client *client, struct regmap *regmap,
 
 	thread_st = kthread_run(control_thread_fn, data,
 		"CH101 Control Thread");
+	if (IS_ERR(thread_st)) {
+		ret = PTR_ERR(thread_st);
+		iio_device_unregister(indio_dev);
+		iio_triggered_buffer_cleanup(indio_dev);
+		goto error_dmp_sysfs;
+	}
 	}
 
 	dev_info(dev, "%s: End\n", __func__);
