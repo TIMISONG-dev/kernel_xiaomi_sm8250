@@ -689,7 +689,7 @@ static void nf_nat_l3proto_clean(u8 l3proto)
 /* Protocol registration. */
 int nf_nat_l4proto_register(u8 l3proto, const struct nf_nat_l4proto *l4proto)
 {
-	const struct nf_nat_l4proto **l4protos;
+	const struct nf_nat_l4proto __rcu **l4protos;
 	unsigned int i;
 	int ret = 0;
 
