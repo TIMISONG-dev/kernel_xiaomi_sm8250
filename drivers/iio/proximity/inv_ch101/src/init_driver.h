@@ -15,6 +15,9 @@
 #ifndef INITDRIVER_H_
 #define INITDRIVER_H_
 
+int is_sensor_connected(int ind);
+void set_output_samples(int ind, int val);
+
 #include "soniclib.h"
 #include "../ch101_client.h"
 

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 //Chirp Microsystems Firmware Header Generator
 
+#include "ch101_gpr_sr_open.h"
 #include "ch101.h"
 
-char *ch101_gpr_sr_open_version;
+const char *ch101_gpr_sr_open_version;
 
 #define RAM_INIT_ADDRESS 1660
 #define RAM_INIT_WRITE_SIZE   18
