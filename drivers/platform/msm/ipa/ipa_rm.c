@@ -304,27 +304,6 @@ int ipa_rm_add_dependency_sync(enum ipa_rm_resource_name resource_name,
 }
 EXPORT_SYMBOL(ipa_rm_add_dependency_sync);
 
-/**
- * ipa_rm_add_dependency_sync_from_ioctl() - Create a dependency between 2
- * resources in a synchronized fashion. In case a producer resource is in
- * GRANTED state and the newly added consumer resource is in RELEASED state,
- * the consumer entity will be requested and the function will block until
- * the consumer is granted.
- * @resource_name: name of dependent resource
- * @depends_on_name: name of its dependency
- *
- * Returns: 0 on success, negative on failure
- *
- * Side effects: May block. See documentation above.
- */
-int ipa_rm_add_dependency_sync_from_ioctl(
-	enum ipa_rm_resource_name resource_name,
-	enum ipa_rm_resource_name depends_on_name)
-{
-	return _ipa_rm_add_dependency_sync(resource_name, depends_on_name,
-		true);
-}
-
 static int _ipa_rm_delete_dependency(enum ipa_rm_resource_name resource_name,
 			enum ipa_rm_resource_name depends_on_name,
 			bool userspace_dep)
