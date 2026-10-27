@@ -2402,7 +2402,8 @@ static int spcom_rpdev_cb(struct rpmsg_device *rpdev,
 		spcom_pr_err("%s: invalid ch\n", __func__);
 		return -EINVAL;
 	}
-	if (len > SPCOM_RX_BUF_SIZE || len <= 0) {
+	if (len > SPCOM_RX_BUF_SIZE ||
+	    len < (int)sizeof(struct spcom_msg_hdr)) {
 		spcom_pr_err("got msg size %d, max allowed %d\n",
 		       len, SPCOM_RX_BUF_SIZE);
 		return -EINVAL;
