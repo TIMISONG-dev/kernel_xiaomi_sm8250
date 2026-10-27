@@ -1804,9 +1804,8 @@ int wlan_vendor_abort_scan(struct wlan_objmgr_pdev *pdev,
 	int ret = -EINVAL;
 	wlan_scan_id scan_id;
 	uint64_t cookie;
-	uint8_t pdev_id;
 
-	pdev_id = wlan_objmgr_pdev_get_pdev_id(pdev);
+	wlan_objmgr_pdev_get_pdev_id(pdev);
 	if (wlan_cfg80211_nla_parse(tb, QCA_WLAN_VENDOR_ATTR_SCAN_MAX, data,
 				    data_len, scan_policy)) {
 		osif_err("Invalid ATTR");
