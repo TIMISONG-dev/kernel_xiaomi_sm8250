@@ -5671,7 +5671,7 @@ static ssize_t aw8697_custom_wave_store(struct device *dev,
 	if (!period_size)
 		return -EAGAIN;
 	offset = 0;
-	pr_debug(" write szie %d, period size %d", count, period_size);
+	pr_debug(" write size %zu, period size %lu", count, period_size);
 	end = count % period_size || count < period_size;
 	atomic_set(&aw8697->is_in_write_loop, 1);
 
