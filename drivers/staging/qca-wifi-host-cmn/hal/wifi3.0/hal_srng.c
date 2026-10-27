@@ -950,7 +950,7 @@ qdf_export_symbol(hal_attach);
 void hal_get_meminfo(hal_soc_handle_t hal_soc_hdl, struct hal_mem_info *mem)
 {
 	struct hal_soc *hal = (struct hal_soc *)hal_soc_hdl;
-	mem->dev_base_addr = (void *)hal->dev_base_addr;
+	mem->dev_base_addr = hal->dev_base_addr;
         mem->shadow_rdptr_mem_vaddr = (void *)hal->shadow_rdptr_mem_vaddr;
 	mem->shadow_wrptr_mem_vaddr = (void *)hal->shadow_wrptr_mem_vaddr;
         mem->shadow_rdptr_mem_paddr = (void *)hal->shadow_rdptr_mem_paddr;
@@ -1138,7 +1138,8 @@ void hal_srng_dst_init_hp(struct hal_soc_handle *hal_soc,
 		return;
 
 	srng->u.dst_ring.hp_addr = vaddr;
-	reg_offset = SRNG_DST_ADDR(srng, HP) - hal->dev_base_addr;
+	reg_offset = (uint8_t __iomem *)SRNG_DST_ADDR(srng, HP) -
+		     (uint8_t __iomem *)hal->dev_base_addr;
 	HAL_REG_WRITE_CONFIRM_RETRY(
 		hal, reg_offset, srng->u.dst_ring.cached_hp, true);
 
@@ -1201,7 +1202,7 @@ void *hal_srng_setup(void *hal_soc, int ring_type, int ring_num,
 	struct hal_srng *srng;
 	struct hal_hw_srng_config *ring_config =
 		HAL_SRNG_CONFIG(hal, ring_type);
-	void *dev_base_addr;
+	qdf_iomem_t dev_base_addr;
 	int i;
 
 	ring_id = hal_get_srng_ring_id(hal_soc, ring_type, ring_num, mac_id);
