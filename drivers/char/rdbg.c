@@ -345,7 +345,7 @@ bail:
 
 static int smq_alloc_send(struct smq *smq, const uint8_t *pcb, int nsize)
 {
-	void *pv = 0;
+	void *pv = NULL;
 	int num_blocks;
 	uint32_t index_block = 0;
 	int err = SMQ_SUCCESS;

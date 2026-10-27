@@ -813,7 +813,7 @@ void *ipc_log_context_create(int max_num_pages,
 
 	ctxt = kzalloc(sizeof(struct ipc_log_context), GFP_KERNEL);
 	if (!ctxt)
-		return 0;
+		return NULL;
 
 	init_completion(&ctxt->read_avail);
 	INIT_LIST_HEAD(&ctxt->page_list);
@@ -868,7 +868,7 @@ release_ipc_log_context:
 		kfree(pg);
 	}
 	kfree(ctxt);
-	return 0;
+	return NULL;
 }
 EXPORT_SYMBOL(ipc_log_context_create);
 
