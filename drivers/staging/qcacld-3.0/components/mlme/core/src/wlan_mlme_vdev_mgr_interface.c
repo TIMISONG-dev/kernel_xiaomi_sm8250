@@ -1329,30 +1329,30 @@ QDF_STATUS vdevmgr_mlme_ext_post_hdl_create(struct vdev_mlme_obj *vdev_mlme)
 }
 
 /**
- * struct sta_mlme_ops - VDEV MLME operation callbacks strucutre for sta
- * @mlme_vdev_start_send:               callback to initiate actions of VDEV
+ * DOC: Station VDEV MLME callback table
+ * mlme_vdev_start_send:               callback to initiate actions of VDEV
  *                                      MLME start operation
- * @mlme_vdev_restart_send:             callback to initiate actions of VDEV
+ * mlme_vdev_restart_send:             callback to initiate actions of VDEV
  *                                      MLME restart operation
- * @mlme_vdev_stop_start_send:          callback to block start/restart VDEV
+ * mlme_vdev_stop_start_send:          callback to block start/restart VDEV
  *                                      request command
- * @mlme_vdev_sta_conn_start:           callback to initiate connection
- * @mlme_vdev_start_continue:           callback to initiate operations on
+ * mlme_vdev_sta_conn_start:           callback to initiate connection
+ * mlme_vdev_start_continue:           callback to initiate operations on
  *                                      LMAC/FW start response
- * @mlme_vdev_up_send:                  callback to initiate actions of VDEV
+ * mlme_vdev_up_send:                  callback to initiate actions of VDEV
  *                                      MLME up operation
- * @mlme_vdev_notify_up_complete:       callback to notify VDEV MLME on moving
+ * mlme_vdev_notify_up_complete:       callback to notify VDEV MLME on moving
  *                                      to UP state
- * @mlme_vdev_update_beacon:            callback to initiate beacon update
- * @mlme_vdev_disconnect_peers:         callback to initiate disconnection of
+ * mlme_vdev_update_beacon:            callback to initiate beacon update
+ * mlme_vdev_disconnect_peers:         callback to initiate disconnection of
  *                                      peers
- * @mlme_vdev_stop_send:                callback to initiate actions of VDEV
+ * mlme_vdev_stop_send:                callback to initiate actions of VDEV
  *                                      MLME stop operation
- * @mlme_vdev_stop_continue:            callback to initiate operations on
+ * mlme_vdev_stop_continue:            callback to initiate operations on
  *                                      LMAC/FW stop response
- * @mlme_vdev_down_send:                callback to initiate actions of VDEV
+ * mlme_vdev_down_send:                callback to initiate actions of VDEV
  *                                      MLME down operation
- * @mlme_vdev_notify_down_complete:     callback to notify VDEV MLME on moving
+ * mlme_vdev_notify_down_complete:     callback to notify VDEV MLME on moving
  *                                      to INIT state
  */
 static struct vdev_mlme_ops sta_mlme_ops = {
@@ -1374,33 +1374,32 @@ static struct vdev_mlme_ops sta_mlme_ops = {
 };
 
 /**
- * struct ap_mlme_ops - VDEV MLME operation callbacks strucutre for beaconing
- *                      interface
- * @mlme_vdev_start_send:               callback to initiate actions of VDEV
+ * DOC: Beaconing VDEV MLME callback table
+ * mlme_vdev_start_send:               callback to initiate actions of VDEV
  *                                      MLME start operation
- * @mlme_vdev_restart_send:             callback to initiate actions of VDEV
+ * mlme_vdev_restart_send:             callback to initiate actions of VDEV
  *                                      MLME restart operation
- * @mlme_vdev_stop_start_send:          callback to block start/restart VDEV
+ * mlme_vdev_stop_start_send:          callback to block start/restart VDEV
  *                                      request command
- * @mlme_vdev_start_continue:           callback to initiate operations on
+ * mlme_vdev_start_continue:           callback to initiate operations on
  *                                      LMAC/FW start response
- * @mlme_vdev_up_send:                  callback to initiate actions of VDEV
+ * mlme_vdev_up_send:                  callback to initiate actions of VDEV
  *                                      MLME up operation
- * @mlme_vdev_notify_up_complete:       callback to notify VDEV MLME on moving
+ * mlme_vdev_notify_up_complete:       callback to notify VDEV MLME on moving
  *                                      to UP state
- * @mlme_vdev_update_beacon:            callback to initiate beacon update
- * @mlme_vdev_disconnect_peers:         callback to initiate disconnection of
+ * mlme_vdev_update_beacon:            callback to initiate beacon update
+ * mlme_vdev_disconnect_peers:         callback to initiate disconnection of
  *                                      peers
- * @mlme_vdev_dfs_cac_timer_stop:       callback to stop the DFS CAC timer
- * @mlme_vdev_stop_send:                callback to initiate actions of VDEV
+ * mlme_vdev_dfs_cac_timer_stop:       callback to stop the DFS CAC timer
+ * mlme_vdev_stop_send:                callback to initiate actions of VDEV
  *                                      MLME stop operation
- * @mlme_vdev_stop_continue:            callback to initiate operations on
+ * mlme_vdev_stop_continue:            callback to initiate operations on
  *                                      LMAC/FW stop response
- * @mlme_vdev_down_send:                callback to initiate actions of VDEV
+ * mlme_vdev_down_send:                callback to initiate actions of VDEV
  *                                      MLME down operation
- * @mlme_vdev_notify_down_complete:     callback to notify VDEV MLME on moving
+ * mlme_vdev_notify_down_complete:     callback to notify VDEV MLME on moving
  *                                      to INIT state
- * @mlme_vdev_is_newchan_no_cac:        callback to check if new channel is DFS
+ * mlme_vdev_is_newchan_no_cac:        callback to check if new channel is DFS
  *                                      and cac is not required
  */
 static struct vdev_mlme_ops ap_mlme_ops = {
