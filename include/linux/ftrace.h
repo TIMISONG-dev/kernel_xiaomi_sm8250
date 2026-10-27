@@ -513,6 +513,12 @@ unsigned long ftrace_location_range(unsigned long start, unsigned long end);
 unsigned long ftrace_get_addr_new(struct dyn_ftrace *rec);
 unsigned long ftrace_get_addr_curr(struct dyn_ftrace *rec);
 
+/* Architecture overrides and their weak generic fallbacks. */
+void arch_ftrace_trampoline_free(struct ftrace_ops *ops);
+void *arch_ftrace_trampoline_func(struct ftrace_ops *ops, struct dyn_ftrace *rec);
+char *arch_ftrace_match_adjust(char *str, const char *search);
+void arch_ftrace_update_trampoline(struct ftrace_ops *ops);
+
 extern ftrace_func_t ftrace_trace_function;
 
 int ftrace_regex_open(struct ftrace_ops *ops, int flag,
