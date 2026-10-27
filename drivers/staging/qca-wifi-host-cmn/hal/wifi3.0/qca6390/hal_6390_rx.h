@@ -442,22 +442,15 @@ static
 void hal_rx_proc_phyrx_other_receive_info_tlv_6390(void *rx_tlv_hdr,
 						   void *ppdu_info_handle)
 {
-	uint32_t tlv_tag, tlv_len;
-	uint32_t temp_len, other_tlv_len, other_tlv_tag;
+	uint32_t other_tlv_len, other_tlv_tag;
 	void *rx_tlv = (uint8_t *)rx_tlv_hdr + HAL_RX_TLV32_HDR_SIZE;
 	void *other_tlv_hdr = NULL;
-	void *other_tlv = NULL;
 
-	tlv_tag = HAL_RX_GET_USER_TLV32_TYPE(rx_tlv_hdr);
-	tlv_len = HAL_RX_GET_USER_TLV32_LEN(rx_tlv_hdr);
-	temp_len = 0;
 
 	other_tlv_hdr = rx_tlv + HAL_RX_TLV32_HDR_SIZE;
 
 	other_tlv_tag = HAL_RX_GET_USER_TLV32_TYPE(other_tlv_hdr);
 	other_tlv_len = HAL_RX_GET_USER_TLV32_LEN(other_tlv_hdr);
-	temp_len += other_tlv_len;
-	other_tlv = other_tlv_hdr + HAL_RX_TLV32_HDR_SIZE;
 
 	switch (other_tlv_tag) {
 	default:

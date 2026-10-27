@@ -704,11 +704,9 @@ htt_tx_desc_frag(htt_pdev_handle pdev,
 		uint64_t u64  = (uint64_t)frag_phys_addr;
 		uint32_t u32l = (u64 & 0xffffffff);
 		uint32_t u32h = (uint32_t)((u64 >> 32) & 0x1f);
-		uint64_t *word64;
 
 		word32 = (uint32_t *) (((char *)desc) +
 			 HTT_TX_DESC_LEN + frag_num * 8);
-		word64 = (uint64_t *)word32;
 		*word32 = u32l;
 		word32++;
 		*word32 = (u32h << 16) | frag_len;

@@ -754,14 +754,12 @@ dp_rx_bar_frame_handle(struct dp_soc *soc,
 	qdf_nbuf_t nbuf;
 	struct dp_pdev *pdev;
 	struct dp_peer *peer;
-	struct rx_desc_pool *rx_desc_pool;
 	uint16_t peer_id;
 	uint8_t *rx_tlv_hdr;
 	uint32_t tid;
 	uint8_t reo_err_code;
 
 	nbuf = rx_desc->nbuf;
-	rx_desc_pool = &soc->rx_desc_buf[rx_desc->pool_id];
 	dp_ipa_handle_rx_buf_smmu_mapping(soc, nbuf,
 					  false);
 	qdf_nbuf_unmap_single(soc->osdev, nbuf,
@@ -1548,7 +1546,7 @@ dp_rx_err_process(struct dp_intr *int_ctx, struct dp_soc *soc,
 	uint32_t rx_bufs_reaped[MAX_PDEV_CNT] = { 0 };
 	uint8_t mac_id = 0;
 	uint8_t buf_type;
-	uint8_t error, rbm;
+	uint8_t error;
 	struct hal_rx_mpdu_desc_info mpdu_desc_info;
 	struct hal_buf_info hbi;
 	struct dp_pdev *dp_pdev;
@@ -1620,7 +1618,7 @@ dp_rx_err_process(struct dp_intr *int_ctx, struct dp_soc *soc,
 		/*
 		 * Check if the buffer is to be processed on this processor
 		 */
-		rbm = hal_rx_ret_buf_manager_get(ring_desc);
+		hal_rx_ret_buf_manager_get(ring_desc);
 
 		hal_rx_reo_buf_paddr_get(ring_desc, &hbi);
 		link_desc_va = dp_rx_cookie_2_link_desc_va(soc, &hbi);
@@ -2198,7 +2196,6 @@ dp_rx_err_mpdu_pop(struct dp_soc *soc, uint32_t mac_id,
 {
 	void *rx_msdu_link_desc;
 	qdf_nbuf_t msdu;
-	qdf_nbuf_t last;
 	struct hal_rx_msdu_list msdu_list;
 	uint16_t num_msdus;
 	struct hal_buf_info buf_info;
@@ -2214,7 +2211,6 @@ dp_rx_err_mpdu_pop(struct dp_soc *soc, uint32_t mac_id,
 
 	msdu = 0;
 
-	last = NULL;
 
 	hal_rx_reo_ent_buf_paddr_get(rxdma_dst_ring_desc, &buf_info,
 					&msdu_cnt);
@@ -2396,7 +2392,6 @@ dp_wbm_int_err_mpdu_pop(struct dp_soc *soc, uint32_t mac_id,
 {
 	void *rx_msdu_link_desc;
 	qdf_nbuf_t msdu;
-	qdf_nbuf_t last;
 	struct hal_rx_msdu_list msdu_list;
 	uint16_t num_msdus;
 	struct hal_buf_info buf_info;
@@ -2405,7 +2400,6 @@ dp_wbm_int_err_mpdu_pop(struct dp_soc *soc, uint32_t mac_id,
 
 	msdu = 0;
 
-	last = NULL;
 
 	hal_rx_reo_ent_buf_paddr_get(rxdma_dst_ring_desc, &buf_info,
 				     &msdu_cnt);
@@ -2482,7 +2476,6 @@ dp_handle_wbm_internal_error(struct dp_soc *soc, void *hal_desc,
 			     uint32_t buf_type)
 {
 	struct hal_buf_info buf_info = {0};
-	struct dp_pdev *dp_pdev;
 	struct dp_rx_desc *rx_desc = NULL;
 	uint32_t rx_buf_cookie;
 	uint32_t rx_bufs_reaped = 0;
@@ -2528,7 +2521,7 @@ dp_handle_wbm_internal_error(struct dp_soc *soc, void *hal_desc,
 		struct dp_srng *dp_rxdma_srng;
 
 		DP_STATS_INC(soc, tx.wbm_internal_error[WBM_INT_ERROR_REO_BUFF_REAPED], 1);
-		dp_pdev = dp_get_pdev_for_lmac_id(soc, pool_id);
+		dp_get_pdev_for_lmac_id(soc, pool_id);
 		dp_rxdma_srng = &soc->rx_refill_buf_ring[pool_id];
 		rx_desc_pool = &soc->rx_desc_buf[pool_id];
 
