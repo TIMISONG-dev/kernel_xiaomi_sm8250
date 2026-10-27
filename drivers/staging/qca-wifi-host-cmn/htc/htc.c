@@ -495,11 +495,6 @@ A_STATUS htc_setup_target_buffer_assignments(HTC_TARGET *target)
 	struct htc_service_tx_credit_allocation *pEntry;
 	A_STATUS status;
 	int credits;
-	int creditsPerMaxMsg;
-
-	creditsPerMaxMsg = MAX_MESSAGE_SIZE / target->TargetCreditSize;
-	if (MAX_MESSAGE_SIZE % target->TargetCreditSize)
-		creditsPerMaxMsg++;
 
 	/* TODO, this should be configured by the caller! */
 

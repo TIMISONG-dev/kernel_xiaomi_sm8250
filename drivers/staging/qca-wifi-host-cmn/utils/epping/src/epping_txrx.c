@@ -139,18 +139,16 @@ static netdev_tx_t epping_hard_start_xmit(struct sk_buff *skb,
 					  struct net_device *dev)
 {
 	epping_adapter_t *adapter;
-	int ret = 0;
 
 	adapter = netdev_priv(dev);
 	if (!adapter) {
 		EPPING_LOG(QDF_TRACE_LEVEL_FATAL,
 			   "%s: EPPING adapter context is Null", __func__);
 		kfree_skb(skb);
-		ret = -ENODEV;
 		goto end;
 	}
 	qdf_net_buf_debug_acquire_skb(skb, __FILE__, __LINE__);
-	ret = epping_tx_send(skb, adapter);
+	epping_tx_send(skb, adapter);
 end:
 	return NETDEV_TX_OK;
 }
