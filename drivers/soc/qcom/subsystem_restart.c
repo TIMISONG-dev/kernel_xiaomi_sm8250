@@ -960,7 +960,7 @@ int wait_for_shutdown_ack(struct subsys_desc *desc)
 }
 EXPORT_SYMBOL(wait_for_shutdown_ack);
 
-void *__subsystem_get(const char *name, const char *fw_name)
+static void *__subsystem_get(const char *name, const char *fw_name)
 {
 	struct subsys_device *subsys;
 	struct subsys_device *subsys_d;
