@@ -3,6 +3,7 @@
  */
 #define pr_fmt(fmt)	"[Onewire] %s: " fmt, __func__
 
+#include "onewire_gpio.h"
 #include <linux/slab.h> /* kfree() */
 #include <linux/module.h>
 #include <linux/err.h>
@@ -105,7 +106,7 @@ unsigned char ow_reset(void)
 }
 EXPORT_SYMBOL(ow_reset);
 
-unsigned char read_bit(void)
+static unsigned char read_bit(void)
 {
 	unsigned int vamm;
 
@@ -122,7 +123,7 @@ unsigned char read_bit(void)
 	return((unsigned char)vamm & 0x01);
 }
 
-void write_bit(char bitval)
+static void write_bit(char bitval)
 {
 	ONE_WIRE_OUT_LOW;
 	Delay_us(1);//
