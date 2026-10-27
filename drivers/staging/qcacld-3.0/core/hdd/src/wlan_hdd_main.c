@@ -34,6 +34,7 @@
 #include <linux/etherdevice.h>
 #include <linux/firmware.h>
 #include <linux/kernel.h>
+#include <linux/mutex.h>
 #include <wlan_hdd_tx_rx.h>
 #include <wni_api.h>
 #include <wlan_hdd_cfg.h>
@@ -15648,6 +15649,8 @@ static void hdd_inform_wifi_on(void)
 #endif
 
 static int hdd_driver_load(void);
+static DEFINE_MUTEX(hdd_state_ctrl_lock);
+
 static ssize_t wlan_hdd_state_ctrl_param_write(struct file *filp,
 						const char __user *user_buf,
 						size_t count,
@@ -15656,38 +15659,44 @@ static ssize_t wlan_hdd_state_ctrl_param_write(struct file *filp,
 	char buf[3];
 	static const char wlan_off_str[] = "OFF";
 	static const char wlan_on_str[] = "ON";
-	int ret;
+	ssize_t ret = count;
 	unsigned long rc;
-	struct hdd_context *hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
+	struct hdd_context *hdd_ctx;
 	bool turning_on = false;
 
+	mutex_lock(&hdd_state_ctrl_lock);
 	if (copy_from_user(buf, user_buf, 3)) {
 		pr_err("Failed to read buffer\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto unlock;
 	}
 
 	if (strncmp(buf, wlan_off_str, strlen(wlan_off_str)) == 0) {
-		hdd_info("Wifi turning off from UI\n");
-		hdd_inform_wifi_off();
-		goto exit;
+		if (hdd_loaded) {
+			hdd_info("Wifi turning off from UI\n");
+			hdd_inform_wifi_off();
+		}
+		goto unlock;
 	}
 
-	if (strncmp(buf, wlan_on_str, strlen(wlan_on_str)) == 0) {
-		hdd_info("Wifi Turning On from UI\n");
+	if (strncmp(buf, wlan_on_str, strlen(wlan_on_str)) == 0)
 		turning_on = true;
-	}
 
-	if (strncmp(buf, wlan_on_str, strlen(wlan_on_str)) != 0) {
+	if (!turning_on) {
 		pr_err("Invalid value received from framework");
-		goto exit;
+		goto unlock;
 	}
 
 	if (!hdd_loaded) {
-		if (hdd_driver_load()) {
+		ret = hdd_driver_load();
+		if (ret) {
 			pr_err("%s: Failed to init hdd module\n", __func__);
-			goto exit;
+			goto unlock;
 		}
+		ret = count;
 	}
+	hdd_info("Wifi Turning On from UI\n");
+	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
 
 	hdd_info("is_driver_loaded %d is_driver_recovering %d",
 		 cds_is_driver_loaded(), cds_is_driver_recovering());
@@ -15698,21 +15707,18 @@ static ssize_t wlan_hdd_state_ctrl_param_write(struct file *filp,
 		if (!rc) {
 			pr_err("Timed-out!!");
 			ret = -EINVAL;
-			return ret;
+			goto unlock;
 		}
 	}
 
-	/*
-	 * Flush idle shutdown work for cases to synchronize the wifi on
-	 * during the idle shutdown.
-	 */
+	/* Synchronize wifi on with the idle shutdown work. */
 	if (hdd_ctx)
 		hdd_psoc_idle_timer_stop(hdd_ctx);
-exit:
 	if (turning_on)
 		hdd_inform_wifi_on();
-
-	return count;
+unlock:
+	mutex_unlock(&hdd_state_ctrl_lock);
+	return ret;
 }
 
 /**
@@ -16583,9 +16589,7 @@ pld_deinit:
 	pld_deinit();
 
 	hdd_start_complete(errno);
-	/* Wait for any ref taken on /dev/wlan to be released */
-	while (qdf_atomic_read(&wlan_hdd_state_fops_ref))
-		;
+	/* The requesting /dev/wlan write still owns a file reference. */
 wakelock_destroy:
 	qdf_wake_lock_destroy(&wlan_wake_lock);
 comp_deinit:
