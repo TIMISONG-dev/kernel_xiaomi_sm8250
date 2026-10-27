@@ -111,7 +111,6 @@ static const struct drm_framebuffer_funcs msm_framebuffer_funcs = {
 #ifdef CONFIG_DEBUG_FS
 void msm_framebuffer_describe(struct drm_framebuffer *fb, struct seq_file *m)
 {
-	struct msm_framebuffer *msm_fb;
 	int i, n;
 
 	if (!fb) {
@@ -119,7 +118,6 @@ void msm_framebuffer_describe(struct drm_framebuffer *fb, struct seq_file *m)
 		return;
 	}
 
-	msm_fb = to_msm_framebuffer(fb);
 	n = fb->format->num_planes;
 	seq_printf(m, "fb: %dx%d@%4.4s (%2d, ID:%d)\n",
 			fb->width, fb->height, (char *)&fb->format->format,
