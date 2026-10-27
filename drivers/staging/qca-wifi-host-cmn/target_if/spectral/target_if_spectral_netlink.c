@@ -46,7 +46,6 @@ target_if_spectral_create_samp_msg(struct target_if_spectral *spectral,
 	uint16_t *binptr_16 = NULL;
 	int idx = 0;
 	struct spectral_samp_data *samp_data;
-	static int samp_msg_index;
 	size_t pwr_count = 0;
 	size_t pwr_count_sec80 = 0;
 	enum spectral_msg_type msg_type;
@@ -245,7 +244,6 @@ target_if_spectral_create_samp_msg(struct target_if_spectral *spectral,
 		if (spectral->send_phy_data(spectral->pdev_obj,
 					    msg_type) == 0)
 			spectral->spectral_sent_msg++;
-		samp_msg_index++;
 	}
 
 	/* Take care of state transitions for 160MHz/ 80p80 */
