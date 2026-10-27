@@ -358,7 +358,7 @@ static void mmc_manage_gp_partitions(struct mmc_card *card, u8 *ext_csd)
 }
 
 /* check whether the eMMC card supports HPI */
-void mmc_check_hpi_support(struct mmc_card *card, u8 *ext_csd)
+static void mmc_check_hpi_support(struct mmc_card *card, u8 *ext_csd)
 {
 	if ((ext_csd[EXT_CSD_HPI_FEATURES] & 0x1) &&
 		!(card->quirks & MMC_QUIRK_BROKEN_HPI)) {
@@ -381,7 +381,7 @@ void mmc_check_hpi_support(struct mmc_card *card, u8 *ext_csd)
 }
 
 /* Check bkops support of card */
-void mmc_check_bkops_support(struct mmc_card *card, u8 *ext_csd)
+static void mmc_check_bkops_support(struct mmc_card *card, u8 *ext_csd)
 {
 	if (!mmc_card_broken_hpi(card) &&
 	    (ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x1) &&
@@ -1910,7 +1910,7 @@ out:
 	return err;
 }
 
-void mmc_init_setup_scaling(struct mmc_card *card,
+static void mmc_init_setup_scaling(struct mmc_card *card,
 			struct mmc_host *host)
 {
 	card->clk_scaling_lowest = host->f_min;
