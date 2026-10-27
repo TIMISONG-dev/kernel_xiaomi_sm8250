@@ -520,7 +520,6 @@ void reg_freq_to_chan_op_class(struct wlan_objmgr_pdev *pdev,
 			       uint8_t *chan_num)
 {
 	enum channel_enum chan_enum;
-	struct regulatory_channel *cur_chan_list;
 	struct wlan_regulatory_pdev_priv_obj *pdev_priv_obj;
 	struct ch_params chan_params;
 
@@ -531,7 +530,6 @@ void reg_freq_to_chan_op_class(struct wlan_objmgr_pdev *pdev,
 		return;
 	}
 
-	cur_chan_list = pdev_priv_obj->cur_chan_list;
 
 	chan_enum = reg_get_chan_enum_for_freq(freq);
 
