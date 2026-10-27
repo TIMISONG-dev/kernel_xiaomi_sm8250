@@ -327,9 +327,10 @@ static inline int pm_qos_set_value_for_cpus(struct pm_qos_constraints *c,
  * @node: request to add to the list, to update or to remove
  * @action: action to take on the constraints list
  * @value: value of the request to add or update
+ * @dev_req: true for a device request, which skips per-CPU constraint updates
  *
- * This function returns 1 if the aggregated constraint value has changed, 0
- *  otherwise.
+ * Return: 1 if a per-CPU constraint changed, or if the aggregate changed
+ * for a constraint set other than %PM_QOS_CPU_DMA_LATENCY; 0 otherwise.
  */
 int pm_qos_update_target(struct pm_qos_constraints *c, struct plist_node *node,
 			 enum pm_qos_req_action action, int value, bool dev_req)
@@ -690,7 +691,7 @@ EXPORT_SYMBOL_GPL(pm_qos_add_request);
 /**
  * pm_qos_update_request - modifies an existing qos request
  * @req : handle to list element holding a pm_qos request to use
- * @value: defines the qos request
+ * @new_value: defines the qos request
  *
  * Updates an existing qos request for the pm_qos_class of parameters along
  * with updating the target pm_qos_class value.
