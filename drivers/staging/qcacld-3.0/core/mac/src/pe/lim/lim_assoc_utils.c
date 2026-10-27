@@ -94,11 +94,12 @@ uint32_t lim_cmp_ssid(tSirMacSSid *rx_ssid, struct pe_session *session_entry)
  ***NOTE:
  * NA
  *
- * @param  mac         - Pointer to Global MAC structure
- * @param  pAssocReq    - Pointer to received Assoc Req frame
- * @param  pLocalCapabs - Pointer to local capabilities
+ * @mac: Pointer to Global MAC structure
+ * @pAssocReq: Pointer to received Assoc Req frame
+ * @pLocalCapabs: Pointer to local capabilities
  *
  * @return status - true for Capabilitity match else false.
+ * @pe_session: PE session entry used for this operation
  */
 
 uint8_t
@@ -174,10 +175,12 @@ lim_compare_capabilities(struct mac_context *mac,
  ***NOTE:
  * NA
  *
- * @param  rxRateSet - pointer to SSID structure
+ * @rxRateSet: Received rate set checked against the BSS basic rates
  *
  * @return status - true if ALL BSS basic rates are present in the
  *                  received rateset else false.
+ * @mac: Pointer to Global MAC structure
+ * @pe_session: PE session entry used for this operation
  */
 
 uint8_t
@@ -249,10 +252,11 @@ lim_check_rx_basic_rates(struct mac_context *mac, tSirMacRateSet rxRateSet,
  ***NOTE:
  * NA
  *
- * @param  supportedMCSSet - pointer to Supported MCS Rate Set
+ * @supportedMCSSet: pointer to Supported MCS Rate Set
  *
  * @return status - true if ALL MCS Basic Rate Set rates are present in the
  *                  received rateset else false.
+ * @mac: Pointer to Global MAC structure
  */
 
 uint8_t lim_check_mcs_set(struct mac_context *mac, uint8_t *supportedMCSSet)
@@ -324,11 +328,12 @@ uint8_t lim_check_mcs_set(struct mac_context *mac, uint8_t *supportedMCSSet)
  ***NOTE:
  * NA
  *
- * @param mac    Pointer to Global MAC structure
- * @param sta  Pointer to the per STA data structure
+ * @mac: Pointer to Global MAC structure
+ * @sta: Pointer to the per STA data structure
  *                initialized by LIM and maintained at DPH
  *
  * @return None
+ * @pe_session: PE session entry used for this operation
  */
 
 QDF_STATUS
@@ -1774,6 +1779,7 @@ QDF_STATUS lim_populate_peer_rate_set(struct mac_context *mac,
  * @supported_mcs_set: pointer to supported rate set
  * @session_entry: pointer to pe session entry
  * @vht_caps: pointer to vht capabilities
+ * @he_caps: Peer HE capabilities used while populating the matching rate set
  *
  * This is called at the time of Association Request
  * processing on AP and while adding peer's context
@@ -2540,12 +2546,13 @@ lim_add_sta(struct mac_context *mac_ctx,
  ***NOTE:
  * NA
  *
- * @param  mac    - Pointer to Global MAC structure
- * @param  sta  - Pointer to the STA datastructure created by
+ * @mac: Pointer to Global MAC structure
+ * @sta: Pointer to the STA datastructure created by
  *                   LIM and maintained by DPH
- * @param  fRespReqd - flag to indicate whether the delete is synchronous (true)
+ * @fRespReqd: flag to indicate whether the delete is synchronous (true)
  *                   or not (false)
  * @return retCode - Indicates success or failure return code
+ * @pe_session: PE session entry used for this operation
  */
 
 QDF_STATUS
@@ -2681,10 +2688,10 @@ static void lim_set_mbssid_info(struct pe_session *pe_session)
  ***NOTE:
  * NA
  *
- * @param  mac    - Pointer to Global MAC structure
- * @param  sta  - Pointer to the STA datastructure created by
- *                   LIM and maintained by DPH
+ * @mac: Pointer to Global MAC structure
+ * @updateSta: Update flag copied into the self station add request
  * @return retCode - Indicates success or failure return code
+ * @pe_session: PE session entry used for this operation
  */
 
 QDF_STATUS
@@ -2835,8 +2842,8 @@ lim_add_sta_self(struct mac_context *mac, uint8_t updateSta,
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
- * @param  sta - Pointer to a sta descriptor
+ * @mac: Pointer to Global MAC structure
+ * @staId: Station identifier used to locate the station for confirmation timeout handling
  * @return None
  */
 
@@ -2987,7 +2994,7 @@ lim_delete_dph_hash_entry(struct mac_context *mac_ctx, tSirMacAddr sta_addr,
 /**
  * lim_check_and_announce_join_success()- function to check if the received
  * Beacon/Probe Response is from the BSS that we're attempting to join.
- * @mac: pointer to global mac structure
+ * @mac_ctx: pointer to global mac structure
  * @beacon_probe_rsp: pointer to reveived beacon/probe response frame
  * @header: pointer to received management frame header
  * @session_entry: pe session entry
@@ -3190,10 +3197,10 @@ lim_check_and_announce_join_success(struct mac_context *mac_ctx,
  *
  ***NOTE:
  *
- * @param   mac         Pointer to Global MAC structure
- * @param   pIE          Pointer to starting IE in Beacon/Probe Response
- * @param   ieLen        Length of all IEs combined
- * @param   beaconStruct A pointer to tSirProbeRespBeacon that needs to be
+ * @mac: Pointer to Global MAC structure
+ * @pIE: Pointer to starting IE in Beacon/Probe Response
+ * @ieLen: Length of all IEs combined
+ * @beaconStruct: A pointer to tSirProbeRespBeacon that needs to be
  *                       populated
  * @return  status       A status reporting QDF_STATUS_SUCCESS or QDF_STATUS_E_FAILURE
  */
@@ -3232,10 +3239,12 @@ QDF_STATUS lim_extract_ap_capabilities(struct mac_context *mac,
  ***NOTE:
  * NA
  *
- * @param  mac    - Pointer to Global MAC structure
- * @param  sta  - Pointer to the STA datastructure created by
+ * @mac: Pointer to Global MAC structure
+ * @sta: Pointer to the STA datastructure created by
  *                   LIM and maintained by DPH
+ * @bss_idx: BSS index copied into the delete BSS request
  * @return retCode - Indicates success or failure return code
+ * @pe_session: PE session entry used for this operation
  */
 
 QDF_STATUS
@@ -3290,11 +3299,11 @@ lim_del_bss(struct mac_context *mac, tpDphHashNode sta, uint16_t bss_idx,
 }
 
 /**
- * lim_update_vhtcaps_assoc_resp : Update VHT caps in assoc response.
- * @mac_ctx Pointer to Global MAC structure
+ * lim_update_vhtcaps_assoc_resp() - Update VHT caps in assoc response.
+ * @mac_ctx: Pointer to Global MAC structure
  * @pAddBssParams: parameters required for add bss params.
  * @vht_caps: VHT capabilities.
- * @pe_session : session entry.
+ * @pe_session: session entry.
  *
  * Return : void
  */
@@ -3351,11 +3360,11 @@ void lim_update_vhtcaps_assoc_resp(struct mac_context *mac_ctx,
 }
 
 /**
- * lim_update_vht_oper_assoc_resp : Update VHT Operations in assoc response.
- * @mac_ctx Pointer to Global MAC structure
+ * lim_update_vht_oper_assoc_resp() - Update VHT Operations in assoc response.
+ * @mac_ctx: Pointer to Global MAC structure
  * @pAddBssParams: parameters required for add bss params.
  * @vht_oper: VHT Operations to update.
- * @pe_session : session entry.
+ * @pe_session: session entry.
  *
  * Return : void
  */

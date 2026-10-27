@@ -170,7 +170,7 @@ lim_send_sme_join_reassoc_rsp_after_resume(struct mac_context *mac_ctx,
  * @session_entry:      PE Session Info
  * @result_code:        Indicates the result of previously issued
  *                      eWNI_SME_msgType_REQ message
- * @sme_join_rsp        The received response.
+ * @sme_join_rsp: The received response.
  *
  * This function will handle both the success and failure status
  * of the received response.
@@ -925,10 +925,10 @@ lim_send_sme_deauth_ind(struct mac_context *mac, tpDphHashNode sta,
  ***NOTE:
  * NA
  *
- * @param  mac   - Pointer to global MAC structure
- * @param  sta - Pointer to internal STA Datastructure
- * @param  pe_session - Pointer to the session entry
- * @param  reasonCode - Reason for TDLS sta deletion
+ * @mac: Pointer to global MAC structure
+ * @sta: Pointer to internal STA Datastructure
+ * @pe_session: Pointer to the session entry
+ * @reasonCode: Reason for TDLS sta deletion
  * @return None
  */
 void
@@ -963,9 +963,9 @@ lim_send_sme_tdls_del_sta_ind(struct mac_context *mac, tpDphHashNode sta,
  ***NOTE:
  * NA
  *
- * @param  mac   - Pointer to global MAC structure
- * @param  pe_session - Pointer to the session entry
- * @param  txCompleteStatus - TX Complete Status of Mgmt Frames
+ * @mac: Pointer to global MAC structure
+ * @vdev_id: Virtual device identifier included in the transmit completion indication
+ * @txCompleteStatus: TX Complete Status of Mgmt Frames
  * @return None
  */
 void
@@ -1140,7 +1140,7 @@ void lim_send_sme_deauth_ntf(struct mac_context *mac, tSirMacAddr peerMacAddr,
  *                       change in the wireless medium.
  * @info_len:            Indicates the length of status change information
  *                       being sent.
- * @session_id           SessionID
+ * @session_id: SessionID
  *
  * This function is called by limProcessSmeMessages() to send
  * eWNI_SME_WM_STATUS_CHANGE_NTF message to host.

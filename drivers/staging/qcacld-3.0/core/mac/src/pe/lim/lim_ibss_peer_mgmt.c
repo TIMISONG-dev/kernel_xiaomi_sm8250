@@ -47,9 +47,10 @@
  *
  ***NOTE:
  *
- * @param  macAddr - MAC address of the peer
+ * @macAddr: MAC address of the peer
  *
  * @return Pointer to peer node if found, else NULL
+ * @mac: Pointer to Global MAC structure
  */
 
 static tLimIbssPeerNode *ibss_peer_find(struct mac_context *mac,
@@ -81,8 +82,8 @@ static tLimIbssPeerNode *ibss_peer_find(struct mac_context *mac,
  *
  ***NOTE:
  *
- * @param  mac      - Pointer to Global MAC structure
- * @param  pPeerNode - Pointer to peer node to be added to the list.
+ * @mac: Pointer to Global MAC structure
+ * @pPeerNode: Pointer to peer node to be added to the list.
  *
  * @return None
  */
@@ -135,12 +136,13 @@ ibss_peer_add(struct mac_context *mac, tLimIbssPeerNode *pPeerNode)
  *
  ***NOTE:
  *
- * @param  mac    - Pointer to Global MAC structure
- * @param  pBeacon - Parsed Beacon Frame structure
- * @param  pBD     - Pointer to received BD
- * @param  peer   - Pointer to IBSS peer node
+ * @mac: Pointer to Global MAC structure
+ * @pBeacon: Parsed Beacon Frame structure
+ * @pHdr: Received management frame header used to obtain the peer MAC address
+ * @peer: Pointer to IBSS peer node
  *
  * @return None
+ * @pe_session: PE session entry used for this operation
  */
 
 static void
@@ -336,11 +338,12 @@ ibss_sta_rates_update(struct mac_context *mac,
  *
  ***NOTE:
  *
- * @param  mac   - Pointer to Global MAC structure
- * @param  sta - Pointer to DPH node
- * @param  peer  - Pointer to IBSS peer node
+ * @mac: Pointer to Global MAC structure
+ * @sta: Pointer to DPH node
+ * @peer: Pointer to IBSS peer node
  *
  * @return None
+ * @pe_session: PE session entry used for this operation
  */
 
 static void
@@ -619,7 +622,7 @@ void ibss_bss_delete(struct mac_context *mac_ctx, struct pe_session *session)
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @return None
  */
 
@@ -645,8 +648,9 @@ void lim_ibss_init(struct mac_context *mac)
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @return None
+ * @pe_session: PE session entry used for this operation
  */
 void lim_ibss_delete_all_peers(struct mac_context *mac,
 			       struct pe_session *pe_session)
@@ -942,7 +946,7 @@ lim_ibss_sta_add(struct mac_context *mac, void *pBody, struct pe_session *pe_ses
  * lim_ibss_search_and_delete_peer()- to cleanup the IBSS
  * peer from lim ibss peer list
  *
- * @mac_ptr: Pointer to Global MAC structure
+ * @mac_ctx: Pointer to Global MAC structure
  * @session_entry: Session entry
  * @mac_addr: Mac Address of the IBSS peer
  *
@@ -1005,7 +1009,7 @@ lim_ibss_search_and_delete_peer(struct mac_context *mac_ctx,
 /**
  * lim_ibss_delete_peer()- to delete IBSS peer
  *
- * @mac_ptr: Pointer to Global MAC structure
+ * @mac_ctx: Pointer to Global MAC structure
  * @session_entry: Session entry
  * @mac_addr: Mac Address of the IBSS peer
  * @del_sta: del sta sent to firmware if true

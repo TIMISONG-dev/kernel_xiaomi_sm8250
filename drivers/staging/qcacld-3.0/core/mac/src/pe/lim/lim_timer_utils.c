@@ -167,13 +167,13 @@ static bool lim_create_non_ap_timers(struct mac_context *mac)
 /**
  * lim_create_timers()
  *
- * @mac : Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  *
  * This function is called upon receiving
  * 1. SME_START_REQ for STA in ESS role
  * 2. SME_START_BSS_REQ for AP role & STA in IBSS role
  *
- * @return : status of operation
+ * @return: status of operation
  */
 
 uint32_t lim_create_timers(struct mac_context *mac)
@@ -306,9 +306,10 @@ err_timer:
  ***NOTE:
  * NA
  *
- * @param  param - Message corresponding to the timer that expired
+ * @param: Message corresponding to the timer that expired
  *
  * @return None
+ * @pMacGlobal: Global MAC context used to post the timer expiry message
  */
 
 void lim_timer_handler(void *pMacGlobal, uint32_t param)
@@ -345,9 +346,10 @@ void lim_timer_handler(void *pMacGlobal, uint32_t param)
  ***NOTE:
  * NA
  *
- * @param  param - pointer to pre-auth node
+ * @param: Timer callback value copied to the timeout message body value
  *
  * @return None
+ * @pMacGlobal: Global MAC context used to post the timer expiry message
  */
 
 void lim_addts_response_timer_handler(void *pMacGlobal, uint32_t param)
@@ -380,9 +382,10 @@ void lim_addts_response_timer_handler(void *pMacGlobal, uint32_t param)
  ***NOTE:
  * NA
  *
- * @param  param - pointer to pre-auth node
+ * @param: Timer callback value copied to the timeout message body value
  *
  * @return None
+ * @pMacGlobal: Global MAC context used to post the timer expiry message
  */
 
 void lim_auth_response_timer_handler(void *pMacGlobal, uint32_t param)
@@ -402,8 +405,8 @@ void lim_auth_response_timer_handler(void *pMacGlobal, uint32_t param)
 /**
  * lim_assoc_failure_timer_handler()
  *
- * @mac_global  : Pointer to Global MAC structure
- * @param       : Indicates whether this is assoc or reassoc failure timeout
+ * @mac_global: Pointer to Global MAC structure
+ * @param: Indicates whether this is assoc or reassoc failure timeout
  *
  * This function is called upon Re/Assoc failure timer expiration on STA.
  * Message SIR_LIM_ASSOC_FAIL_TIMEOUT is posted to gSirLimMsgQ when this
@@ -462,9 +465,10 @@ void lim_assoc_failure_timer_handler(void *mac_global, uint32_t param)
  ***NOTE:
  * NA
  *
- * @param
+ * @param: Unused timer callback value; the posted message body value is zero
  *
  * @return None
+ * @pMacGlobal: Global MAC context used to post the timer expiry message
  */
 void lim_update_olbc_cache_timer_handler(void *pMacGlobal, uint32_t param)
 {
@@ -495,8 +499,8 @@ void lim_update_olbc_cache_timer_handler(void *pMacGlobal, uint32_t param)
  ***NOTE:
  * NA
  *
- * @param  mac    - Pointer to Global MAC structure
- * @param  timerId - enum of timer to be deactivated and changed
+ * @mac: Pointer to Global MAC structure
+ * @timerId: enum of timer to be deactivated and changed
  *                   This enum is defined in lim_utils.h file
  *
  * @return None
@@ -736,7 +740,7 @@ void lim_deactivate_and_change_timer(struct mac_context *mac, uint32_t timerId)
  * lim_deactivate_and_change_per_sta_id_timer()
  *
  *
- * @brief: This function is called to deactivate and change a per STA timer
+ * Description: This function is called to deactivate and change a per STA timer
  * for future re-activation
  *
  ***LOGIC:
@@ -746,10 +750,10 @@ void lim_deactivate_and_change_timer(struct mac_context *mac, uint32_t timerId)
  *
  * @note   staId for eLIM_AUTH_RSP_TIMER is auth Node Index.
  *
- * @param  mac    - Pointer to Global MAC structure
- * @param  timerId - enum of timer to be deactivated and changed
+ * @mac: Pointer to Global MAC structure
+ * @timerId: enum of timer to be deactivated and changed
  *                   This enum is defined in lim_utils.h file
- * @param  staId   - staId
+ * @staId: staId
  *
  * @return None
  */
@@ -843,10 +847,11 @@ lim_deactivate_and_change_per_sta_id_timer(struct mac_context *mac, uint32_t tim
  ***NOTE:
  * NA
  *
- * @param  mac    - Pointer to Global MAC structure
- * @param  StaId   - staId
+ * @mac: Pointer to Global MAC structure
+ * @staId: staId
  *
  * @return None
+ * @pe_session: PE session entry used for this operation
  */
 
 void lim_activate_cnf_timer(struct mac_context *mac, uint16_t staId,
@@ -874,8 +879,8 @@ void lim_activate_cnf_timer(struct mac_context *mac, uint16_t staId,
  ***NOTE:
  * NA
  *
- * @param  mac    - Pointer to Global MAC structure
- * @param  id      - id
+ * @mac: Pointer to Global MAC structure
+ * @pAuthNode: Pre-authentication node whose response timer is activated
  *
  * @return None
  */
@@ -902,9 +907,10 @@ void lim_activate_auth_rsp_timer(struct mac_context *mac, tLimPreAuthNode *pAuth
  ***NOTE:
  * NA
  *
- * @param
+ * @param: Station identifier posted as the confirmation timeout message body value
  *
  * @return None
+ * @pMacGlobal: Global MAC context used to post the timer expiry message
  */
 
 void lim_cnf_wait_tmer_handler(void *pMacGlobal, uint32_t param)

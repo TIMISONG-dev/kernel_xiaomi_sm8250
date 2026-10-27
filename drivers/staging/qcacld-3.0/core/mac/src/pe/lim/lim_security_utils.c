@@ -61,13 +61,15 @@
  ***NOTE:
  * NA
  *
- * @param authType Indicates MAC based authentication type
+ * @authType: Indicates MAC based authentication type
  *                 (eSIR_OPEN_SYSTEM or eSIR_SHARED_KEY)
  *                 If Shared Key authentication to be used,
  *                 'Privacy Option Implemented' flag is also
  *                 checked.
  *
  * @return true if passed authType is enabled else false
+ * @mac: Pointer to Global MAC structure
+ * @pe_session: PE session entry used for this operation
  */
 uint8_t
 lim_is_auth_algo_supported(struct mac_context *mac, tAniAuthType authType,
@@ -126,7 +128,7 @@ lim_is_auth_algo_supported(struct mac_context *mac, tAniAuthType authType,
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @return None
  */
 
@@ -149,7 +151,7 @@ void lim_init_pre_auth_list(struct mac_context *mac)
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @return None
  */
 
@@ -182,10 +184,11 @@ void lim_delete_pre_auth_list(struct mac_context *mac)
  *
  ***NOTE:
  *
- * @param  macAddr - MAC address of the STA that sent
+ * @macAddr: MAC address of the STA that sent
  *                       Authentication frame.
  *
  * @return Pointer to pre-auth node if found, else NULL
+ * @mac: Pointer to Global MAC structure
  */
 
 struct tLimPreAuthNode *lim_search_pre_auth_list(struct mac_context *mac,
@@ -269,8 +272,8 @@ lim_delete_open_auth_pre_auth_node(struct mac_context *mac_ctx)
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
- * @param  pAuthNode - Pointer to pre-auth node to be added to the list.
+ * @mac: Pointer to Global MAC structure
+ * @pAuthNode: Pointer to pre-auth node to be added to the list.
  *
  * @return None
  */
@@ -297,8 +300,8 @@ void lim_add_pre_auth_node(struct mac_context *mac, struct tLimPreAuthNode *pAut
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
- * @param  pAuthNode - Pointer to Pre Auth node to be released
+ * @mac: Pointer to Global MAC structure
+ * @pAuthNode: Pointer to Pre Auth node to be released
  * @return None
  */
 
@@ -340,8 +343,8 @@ void lim_release_pre_auth_node(struct mac_context *mac,
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
- * @param  peerMacAddr - MAC address of the STA that need to be deleted
+ * @mac: Pointer to Global MAC structure
+ * @macAddr: MAC address of the STA that need to be deleted
  *                       from pre-auth node list.
  *
  * @return None
@@ -416,9 +419,11 @@ void lim_delete_pre_auth_node(struct mac_context *mac, tSirMacAddr macAddr)
  *
  ***NOTE:
  *
- * @param  mac       - Pointer to Global MAC structure
- * @param  resultCode - result of authentication attempt
+ * @mac: Pointer to Global MAC structure
+ * @resultCode: result of authentication attempt
+ * @protStatusCode: Protocol status code copied into the MLM authentication confirmation
  * @return None
+ * @pe_session: PE session entry used for this operation
  */
 
 void
@@ -496,12 +501,12 @@ lim_restore_from_auth_state(struct mac_context *mac, tSirResultCodes resultCode,
  ***NOTE:
  * NA
  *
- * @param  mac           Pointer to Global MAC structure
- * @param  keyId          key id to used
- * @param  pKey           Pointer to the key to be used for encryption
- * @param  pPlainText     Pointer to the body to be encrypted
- * @param  pEncrBody      Pointer to the encrypted auth frame body
- * @param  keyLength      8 (WEP40) or 16 (WEP104)
+ * @mac: Pointer to Global MAC structure
+ * @keyId: key id to used
+ * @pKey: Pointer to the key to be used for encryption
+ * @pPlainText: Pointer to the body to be encrypted
+ * @pEncrBody: Pointer to the encrypted auth frame body
+ * @keyLength: 8 (WEP40) or 16 (WEP104)
  * @return None
  */
 
@@ -561,9 +566,9 @@ lim_encrypt_auth_frame(struct mac_context *mac, uint8_t keyId, uint8_t *pKey,
  ***NOTE:
  * NA
  *
- * @param  pDest    Destination location for computed CRC
- * @param  pSrc     Source location to be CRC computed
- * @param  len      Length over which CRC to be computed
+ * @pDest: Destination location for computed CRC
+ * @pSrc: Source location to be CRC computed
+ * @len: Length over which CRC to be computed
  * @return None
  */
 
@@ -601,11 +606,11 @@ void lim_compute_crc32(uint8_t *pDest, uint8_t *pSrc, uint16_t len)
  ***NOTE:
  * NA
  *
- * @param  pDest          Destination location for encrypted text
- * @param  pSrc           Source location to be encrypted
- * @param  seed           Contains seed (IV + key) for PRNG
- * @param  keyLength      8 (WEP40) or 16 (WEP104)
- * @param  frameLen       Length of the frame
+ * @pDest: Destination location for encrypted text
+ * @pSrc: Source location to be encrypted
+ * @seed: Contains seed (IV + key) for PRNG
+ * @keyLength: 8 (WEP40) or 16 (WEP104)
+ * @frameLen: Length of the frame
  *
  * @return None
  */
@@ -690,11 +695,12 @@ lim_rc4(uint8_t *pDest, uint8_t *pSrc, uint8_t *seed, uint32_t keyLength,
  ***NOTE:
  * NA
  *
- * @param mac       Pointer to Global MAC structure
- * @param pKey       Pointer to the key to be used for decryption
- * @param pEncrBody  Pointer to the body to be decrypted
- * @param pPlainBody Pointer to the decrypted body
- * @param keyLength  8 (WEP40) or 16 (WEP104)
+ * @mac: Pointer to Global MAC structure
+ * @pKey: Pointer to the key to be used for decryption
+ * @pEncrBody: Pointer to the body to be decrypted
+ * @pPlainBody: Pointer to the decrypted body
+ * @keyLength: 8 (WEP40) or 16 (WEP104)
+ * @frameLen: Length of the encrypted authentication frame body
  *
  * @return Decrypt result - QDF_STATUS_SUCCESS for success and
  *                          LIM_DECRYPT_ICV_FAIL for ICV mismatch.
@@ -742,8 +748,11 @@ lim_decrypt_auth_frame(struct mac_context *mac, uint8_t *pKey, uint8_t *pEncrBod
 
 /**
  * lim_post_sme_set_keys_cnf
+ * @pMlmSetKeysReq: Set keys request whose peer MAC address is copied before the request is cleared and freed
+ * @mlmSetKeysCnf: Set keys confirmation sent to SME
  *
  * A utility API to send MLM_SETKEYS_CNF to SME
+ * @mac: Pointer to Global MAC structure
  */
 void lim_post_sme_set_keys_cnf(struct mac_context *mac,
 			       tLimMlmSetKeysReq *pMlmSetKeysReq,

@@ -44,8 +44,8 @@
 /**
  * lim_is_rsn_ie_valid_in_sme_req_message()
  *
- * @mac_ctx   Pointer to Global MAC structure
- * @rsn_ie    Pointer to received RSN IE
+ * @mac_ctx: Pointer to Global MAC structure
+ * @rsn_ie: Pointer to received RSN IE
  *
  * This function is called to verify if the RSN IE received in various SME_REQ
  * messages is valid or not
@@ -166,9 +166,9 @@ lim_is_rsn_ie_valid_in_sme_req_message(struct mac_context *mac_ctx,
  *
  ***NOTE:
  *
- * @param  mac   Pointer to Global MAC structure
- * @param  pWSCie Pointer to received WSC IE
- * @return true when WSC IE is valid, false otherwise
+ * @mac: Pointer to Global MAC structure
+ * @pAddie: Additional information elements whose length is validated
+ * Return: true when the additional IE length is valid, false otherwise
  */
 
 static uint8_t
@@ -202,9 +202,9 @@ lim_is_addie_valid_in_sme_req_message(struct mac_context *mac, tpSirAddie pAddie
 /**
  * lim_set_rs_nie_wp_aiefrom_sme_start_bss_req_message() - to set rsnie/wpaie
  *
- * @mac_ctx : Pointer to Global MAC structure
- * @rsn_ie  : Pointer to received RSN IE
- * @session : Pointer to pe session
+ * @mac_ctx: Pointer to Global MAC structure
+ * @rsn_ie: Pointer to received RSN IE
+ * @session: Pointer to pe session
  *
  * This function is called to verify if the RSN IE received in various
  * SME_REQ messages is valid or not. RSN IE validity checks are performed in
@@ -335,8 +335,8 @@ lim_set_rs_nie_wp_aiefrom_sme_start_bss_req_message(struct mac_context *mac_ctx,
  *
  ***NOTE:
  *
- * @param  mac      Pointer to Global MAC structure
- * @param  pBssDescr Pointer to received Bss Descritipion
+ * @mac: Pointer to Global MAC structure
+ * @pBssDescr: Pointer to received Bss Descritipion
  * @return true when BSS description is valid, false otherwise
  */
 
@@ -646,7 +646,7 @@ end:
  *
  ***NOTE:
  *
- * @param  pMsg - Pointer to received SME_STOP_BSS_REQ message
+ * @pMsg: Pointer to received SME_STOP_BSS_REQ message
  * @return true  when received SME_STOP_BSS_REQ is formatted correctly
  *         false otherwise
  */

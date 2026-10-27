@@ -48,7 +48,7 @@
  * @mac_ctx: Pointer to Global MAC structure
  * @sta_ds: Station Descriptor in DPH
  * @assoc_rsp: Pointer to Association Response Structure
- * @session_entry : PE session Entry
+ * @session_entry: PE session Entry
  *
  * This function is called to Update the HT capabilities in
  * Station Descriptor (dph) Details from
@@ -117,10 +117,11 @@ static void lim_update_stads_htcap(struct mac_context *mac_ctx,
 
 /**
  * lim_update_assoc_sta_datas() - Updates station Descriptor
- * mac_ctx: Pointer to Global MAC structure
- * sta_ds: Station Descriptor in DPH
- * assoc_rsp: Pointer to Association Response Structure
- * session_entry : PE session Entry
+ * @mac_ctx: Pointer to Global MAC structure
+ * @sta_ds: Station Descriptor in DPH
+ * @assoc_rsp: Pointer to Association Response Structure
+ * @session_entry: PE session Entry
+ * @beacon: Beacon information used to update station association capabilities
  *
  * This function is called to Update the Station Descriptor (dph) Details from
  * Association / ReAssociation Response Frame
@@ -418,6 +419,7 @@ static void lim_update_ese_tsm(struct mac_context *mac_ctx,
  * @mac_ctx: Pointer to Global MAC structure
  * @session_entry: PE session handle
  * @assoc_rsp:  pointer to assoc response
+ * @sta_ds: Station descriptor whose extended capabilities are updated
  *
  * This function is called by lim_process_assoc_rsp_frame() to
  * update STA DS with ext capablities.
@@ -478,6 +480,7 @@ static void lim_stop_reassoc_retry_timer(struct mac_context *mac_ctx)
  * lim_get_nss_supported_by_ap() - finds out nss from AP's beacons
  * @vht_caps: VHT capabilities
  * @ht_caps: HT capabilities
+ * @he_caps: AP HE capabilities used to determine the supported spatial streams
  *
  * Return: nss advertised by AP in beacon
  */
@@ -597,14 +600,15 @@ lim_handle_pmfcomeback_timer(struct pe_session *session_entry,
 /**
  * lim_process_assoc_rsp_frame() - Processes assoc response
  * @mac_ctx: Pointer to Global MAC structure
- * @rx_packet_info    - A pointer to Rx packet info structure
- * @sub_type - Indicates whether it is Association Response (=0) or
+ * @rx_pkt_info: A pointer to Rx packet info structure
+ * @subtype: Indicates whether it is Association Response (=0) or
  *                   Reassociation Response (=1) frame
  *
  * This function is called by limProcessMessageQueue() upon
  * Re/Association Response frame reception.
  *
  * Return: None
+ * @session_entry: PE session entry used for this operation
  */
 
 void
