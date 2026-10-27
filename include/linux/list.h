@@ -516,7 +516,7 @@ static inline void list_splice_tail_init(struct list_head *list,
  * @member:	the name of the list_head within the struct.
  */
 #define list_entry_is_head(pos, head, member)				\
-	(&pos->member == (head))
+	((pos) == list_entry((head), typeof(*(pos)), member))
 
 /**
  * list_for_each_entry	-	iterate over list of given type
