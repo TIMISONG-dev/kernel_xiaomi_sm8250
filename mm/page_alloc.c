@@ -2706,7 +2706,7 @@ retry:
 #ifdef CONFIG_CMA
 static struct page *__rmqueue_cma(struct zone *zone, unsigned int order)
 {
-	struct page *page = 0;
+	struct page *page = NULL;
 
 	if (IS_ENABLED(CONFIG_CMA))
 		if (!zone->cma_alloc)
