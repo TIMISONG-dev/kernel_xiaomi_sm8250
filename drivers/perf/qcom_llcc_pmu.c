@@ -248,6 +248,7 @@ static void qcom_llcc_event_del(struct perf_event *event, int flags)
 static int qcom_llcc_pmu_probe(struct platform_device *pdev)
 {
 	struct llcc_pmu *llccpmu;
+	const enum llcc_pmu_version *version;
 	struct resource *res;
 	int ret;
 
@@ -255,12 +256,12 @@ static int qcom_llcc_pmu_probe(struct platform_device *pdev)
 	if (!llccpmu)
 		return -ENOMEM;
 
-	llccpmu->ver = (enum llcc_pmu_version)
-			of_device_get_match_data(&pdev->dev);
-	if (!llccpmu->ver) {
+	version = of_device_get_match_data(&pdev->dev);
+	if (!version || !*version) {
 		pr_err("Unknown device type!\n");
 		return -ENODEV;
 	}
+	llccpmu->ver = *version;
 
 	llccpmu->pmu = (struct pmu) {
 		.task_ctx_nr = perf_invalid_context,
@@ -295,9 +296,12 @@ static int qcom_llcc_pmu_probe(struct platform_device *pdev)
 	return 0;
 }
 
+static const enum llcc_pmu_version llcc_pmu_ver1 = LLCC_PMU_VER1;
+static const enum llcc_pmu_version llcc_pmu_ver2 = LLCC_PMU_VER2;
+
 static const struct of_device_id qcom_llcc_pmu_match_table[] = {
-	{ .compatible = "qcom,llcc-pmu-ver1", .data = (void *) LLCC_PMU_VER1 },
-	{ .compatible = "qcom,llcc-pmu-ver2", .data = (void *) LLCC_PMU_VER2 },
+	{ .compatible = "qcom,llcc-pmu-ver1", .data = &llcc_pmu_ver1 },
+	{ .compatible = "qcom,llcc-pmu-ver2", .data = &llcc_pmu_ver2 },
 	{}
 };
 
