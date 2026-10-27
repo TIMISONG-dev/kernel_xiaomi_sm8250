@@ -63,9 +63,8 @@ static bool Nanosic_i2c_specified_packets_detect(char *data)
 	} else if (command == 0x1 && source == FIELD_176X &&
 		   object == FIELD_HOST) {
 		/*keypad->host 上传keypad版本号*/
-		char len;
 		short version;
-		STREAM_TO_UINT8(len, data);
+		data++;
 		STREAM_TO_UINT16(version, data);
 		snprintf(gVers176x, sizeof(gVers176x), "%x", version);
 		return true;
@@ -248,11 +247,9 @@ int Nanosic_i2c_parse(char *data, size_t datalen)
 	char *p = data;
 	char left;
 	unsigned char first_byte; /*fixed data 0x57*/
-	unsigned char second_byte; /*sqe*/
 	unsigned char third_byte; /*fixed data 0x39 , 0x4A , 0x5B , 0x6C*/
 	unsigned char
 		fourth_byte; /*fixed data 0x2: mouse  0x5: keyboard 0x19: touch*/
-	unsigned short seq = 0;
 
 	if (datalen < 0) {
 		dbgprint(ERROR_LEVEL, "invalid data length\n");
@@ -270,7 +267,7 @@ int Nanosic_i2c_parse(char *data, size_t datalen)
 		return -1;
 	}
 
-	STREAM_TO_UINT8(second_byte, p);
+	p++;
 	left--;
 
 	STREAM_TO_UINT8(third_byte, p);
@@ -292,7 +289,7 @@ int Nanosic_i2c_parse(char *data, size_t datalen)
 
 	while (left > 0) {
 		STREAM_TO_UINT8(fourth_byte, p);
-		STREAM_TO_UINT16(seq, p);
+		p += 2;
 		p -= 3;
 
 		switch (fourth_byte) {
