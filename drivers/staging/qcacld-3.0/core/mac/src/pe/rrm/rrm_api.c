@@ -55,8 +55,10 @@
  *
  * NOTE:
  *
- * @param pe_session session entry.
+ * @pe_session: session entry.
+ * @txPower: Management frame transmit power cached in the session or RRM context
  * @return None
+ * @mac: Pointer to Global MAC structure
  */
 void
 rrm_cache_mgmt_tx_power(struct mac_context *mac, int8_t txPower,
@@ -82,8 +84,9 @@ rrm_cache_mgmt_tx_power(struct mac_context *mac, int8_t txPower,
  *
  * NOTE:
  *
- * @param pe_session session entry.
+ * @pe_session: session entry.
  * @return txPower
+ * @mac: Pointer to Global MAC structure
  */
 int8_t rrm_get_mgmt_tx_power(struct mac_context *mac, struct pe_session *pe_session)
 {
@@ -107,9 +110,10 @@ int8_t rrm_get_mgmt_tx_power(struct mac_context *mac, struct pe_session *pe_sess
  *
  * NOTE:
  *
- * @param txPower txPower to be set.
- * @param pe_session session entry.
+ * @txPower: txPower to be set.
+ * @pe_session: session entry.
  * @return None
+ * @mac: Pointer to Global MAC structure
  */
 QDF_STATUS
 rrm_send_set_max_tx_power_req(struct mac_context *mac, int8_t txPower,
@@ -156,6 +160,7 @@ rrm_send_set_max_tx_power_req(struct mac_context *mac, int8_t txPower,
 /* -------------------------------------------------------------------- */
 /**
  * rrm_set_max_tx_power_rsp
+ * @limMsgQ: Scheduler message containing the maximum transmit power response
  *
  * FUNCTION:  Process WMA_SET_MAX_TX_POWER_RSP message.
  *
@@ -165,9 +170,8 @@ rrm_send_set_max_tx_power_req(struct mac_context *mac, int8_t txPower,
  *
  * NOTE:
  *
- * @param txPower txPower to be set.
- * @param pe_session session entry.
  * @return None
+ * @mac: Pointer to Global MAC structure
  */
 QDF_STATUS rrm_set_max_tx_power_rsp(struct mac_context *mac,
 				    struct scheduler_msg *limMsgQ)
@@ -232,10 +236,11 @@ static void rrm_calculate_and_fill_rcpi(uint8_t *rcpi, int8_t cur_rssi)
  *
  * NOTE:
  *
- * @param pBd pointer to BD to extract RSSI and SNR
- * @param pLinkReq pointer to the Link request frame structure.
- * @param pe_session session entry.
+ * @pRxPacketInfo: pointer to BD to extract RSSI and SNR
+ * @pLinkReq: pointer to the Link request frame structure.
+ * @pe_session: session entry.
  * @return None
+ * @mac: Pointer to Global MAC structure
  */
 QDF_STATUS
 rrm_process_link_measurement_request(struct mac_context *mac,
@@ -313,9 +318,10 @@ rrm_process_link_measurement_request(struct mac_context *mac,
  *
  * NOTE:
  *
- * @param pNeighborRep pointer to the Neighbor report frame structure.
- * @param pe_session session entry.
+ * @pNeighborRep: pointer to the Neighbor report frame structure.
+ * @pe_session: session entry.
  * @return None
+ * @mac: Pointer to Global MAC structure
  */
 QDF_STATUS
 rrm_process_neighbor_report_response(struct mac_context *mac,
@@ -441,8 +447,9 @@ rrm_process_neighbor_report_response(struct mac_context *mac,
  *
  * NOTE:
  *
- * @param pNeighborReq Neighbor report request params .
+ * @pNeighborReq: Neighbor report request params .
  * @return None
+ * @mac: Pointer to Global MAC structure
  */
 QDF_STATUS
 rrm_process_neighbor_report_req(struct mac_context *mac,
@@ -538,10 +545,11 @@ rrm_get_country_code_from_connected_profile(
  *
  * NOTE:
  *
- * @param pCurrentReq pointer to the current Req comtext.
- * @param pBeaconReq pointer to the beacon report request IE from the peer.
- * @param pe_session session entry.
+ * @pCurrentReq: pointer to the current Req comtext.
+ * @pBeaconReq: pointer to the beacon report request IE from the peer.
+ * @pe_session: session entry.
  * @return None
+ * @mac: Pointer to Global MAC structure
  */
 static tRrmRetStatus
 rrm_process_beacon_report_req(struct mac_context *mac,
@@ -791,16 +799,17 @@ rrm_process_beacon_report_req(struct mac_context *mac,
 /**
  * rrm_fill_beacon_ies() - Fills fixed fields and Ies in bss description to an
  * array of uint8_t.
- * @pIes - pointer to the buffer that should be populated with ies.
- * @pNumIes - returns the num of ies filled in this param.
- * @pIesMaxSize - Max size of the buffer pIes.
- * @eids - pointer to array of eids. If NULL, all ies will be populated.
- * @numEids - number of elements in array eids.
+ * @pIes: pointer to the buffer that should be populated with ies.
+ * @pNumIes: returns the num of ies filled in this param.
+ * @pIesMaxSize: Max size of the buffer pIes.
+ * @eids: pointer to array of eids. If NULL, all ies will be populated.
+ * @numEids: number of elements in array eids.
  * @start_offset: Offset from where the IEs in the bss_desc should be parsed
- * @bss_desc - pointer to Bss Description.
+ * @bss_desc: pointer to Bss Description.
  *
  * Return: Remaining length of IEs in current bss_desc which are not included
  *	   in pIes.
+ * @mac: Pointer to Global MAC structure
  */
 static uint8_t
 rrm_fill_beacon_ies(struct mac_context *mac, uint8_t *pIes,
@@ -1463,8 +1472,9 @@ end:
  *
  * NOTE:
  *
- * @param startTSF - store star TSF in this buffer.
- * @return txPower
+ * @pStartTSF: store star TSF in this buffer.
+ * Return: None
+ * @mac: Pointer to Global MAC structure
  */
 void rrm_get_start_tsf(struct mac_context *mac, uint32_t *pStartTSF)
 {
@@ -1486,8 +1496,9 @@ void rrm_get_start_tsf(struct mac_context *mac, uint32_t *pStartTSF)
  *
  * NOTE:
  *
- * @param pe_session
+ * @pe_session: PE session entry whose RRM capabilities are requested
  * @return pointer to tRRMCaps
+ * @mac: Pointer to Global MAC structure
  */
 tpRRMCaps rrm_get_capabilities(struct mac_context *mac, struct pe_session *pe_session)
 {
