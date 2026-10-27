@@ -39,7 +39,7 @@ static void d_packet_set_instance(cp_buffer_t *in)
 
 }
 
-void js_irq_enable(struct js_spi_client   *spi_client, bool enable)
+static void js_irq_enable(struct js_spi_client   *spi_client, bool enable)
 {
 	if (spi_client->irqstate == enable) {
 		pr_debug("js irq already =%d\n", enable);
