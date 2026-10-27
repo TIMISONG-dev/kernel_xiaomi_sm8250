@@ -625,10 +625,10 @@ fail_priv_get:
 static int
 vs_devio_check_perms(struct file *file, unsigned flags)
 {
-	if ((flags & MAY_READ) & !(file->f_mode & FMODE_READ))
+	if ((flags & MAY_READ) && !(file->f_mode & FMODE_READ))
 		return -EBADF;
 
-	if ((flags & MAY_WRITE) & !(file->f_mode & FMODE_WRITE))
+	if ((flags & MAY_WRITE) && !(file->f_mode & FMODE_WRITE))
 		return -EBADF;
 
 	return security_file_permission(file, flags);
