@@ -930,7 +930,6 @@ static void qcom_glink_handle_intent_req(struct qcom_glink *glink,
 	struct glink_core_rx_intent *intent = NULL;
 	struct glink_core_rx_intent *tmp;
 	struct glink_channel *channel;
-	struct rpmsg_endpoint *ept;
 	unsigned long flags;
 	int iid;
 
@@ -954,8 +953,6 @@ static void qcom_glink_handle_intent_req(struct qcom_glink *glink,
 		qcom_glink_channel_ref_put(channel);
 		return;
 	}
-
-	ept = &channel->ept;
 	intent = qcom_glink_alloc_intent(glink, channel, size, false);
 	if (intent && channel->channel_ready)
 		qcom_glink_advertise_intent(glink, channel, intent);
