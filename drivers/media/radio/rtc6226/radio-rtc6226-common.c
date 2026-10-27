@@ -553,10 +553,6 @@ int rtc6226_cancel_seek(struct rtc6226_device *radio)
 
 void rtc6226_search(struct rtc6226_device *radio, bool on)
 {
-	int current_freq_khz;
-
-	current_freq_khz = radio->tuned_freq_khz;
-
 	if (on) {
 		FMDBG("%s: Queuing the work onto scan work q\n", __func__);
 		queue_delayed_work(radio->wqueue_scan, &radio->work_scan,
@@ -1424,7 +1420,7 @@ int rtc6226_reset_rds_data(struct rtc6226_device *radio)
 	return 0;
 }
 
-int rtc6226_set_rssi_threshold(struct rtc6226_device *radio, u16 rssi)
+static int rtc6226_set_rssi_threshold(struct rtc6226_device *radio, u16 rssi)
 {
 	int retval = 0;
 
@@ -1618,7 +1614,7 @@ static unsigned int rtc6226_fops_poll(struct file *file,
 }
 
 /* static */
-int rtc6226_vidioc_g_ctrl(struct file *file, void *priv,
+static int rtc6226_vidioc_g_ctrl(struct file *file, void *priv,
 	struct v4l2_control *ctrl)
 {
 	struct rtc6226_device *radio = video_drvdata(file);
@@ -1805,7 +1801,7 @@ done:
 
 }
 
-bool rtc6226_is_valid_srch_mode(int srch_mode)
+static bool rtc6226_is_valid_srch_mode(int srch_mode)
 {
 	if ((srch_mode >= RTC6226_MIN_SRCH_MODE) &&
 			(srch_mode <= RTC6226_MAX_SRCH_MODE))
@@ -1817,7 +1813,7 @@ bool rtc6226_is_valid_srch_mode(int srch_mode)
 /*
  * rtc6226_vidioc_s_ctrl - set the value of a control
  */
-int rtc6226_vidioc_s_ctrl(struct file *file, void *priv,
+static int rtc6226_vidioc_s_ctrl(struct file *file, void *priv,
 	struct v4l2_control *ctrl)
 {
 	struct rtc6226_device *radio = video_drvdata(file);
