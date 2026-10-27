@@ -36,6 +36,7 @@
 #define __LINUX_REGULATOR_CONSUMER_H_
 
 #include <linux/err.h>
+#include <linux/suspend.h>
 
 struct device;
 struct notifier_block;
@@ -177,6 +178,9 @@ struct regulator_bulk_data {
 };
 
 #if defined(CONFIG_REGULATOR)
+int regulator_set_suspend_voltage(struct regulator *regulator, int min_uV,
+				  int max_uV, suspend_state_t state);
+
 
 /* regulator get and put */
 struct regulator *__must_check regulator_get(struct device *dev,
