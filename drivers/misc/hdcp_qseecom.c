@@ -1142,7 +1142,7 @@ error:
 	return rc;
 }
 
-int hdcp2_force_encryption_utility(struct hdcp2_handle *handle, uint32_t enable)
+static int hdcp2_force_encryption_utility(struct hdcp2_handle *handle, uint32_t enable)
 {
 	int rc = 0;
 
