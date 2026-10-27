@@ -18,6 +18,7 @@
 #include <linux/ratelimit.h>
 #include <linux/reboot.h>
 #include <asm/current.h>
+#include <asm/unaligned.h>
 #include <soc/qcom/restart.h>
 #include <linux/sched/signal.h>
 #include <linux/vmalloc.h>
@@ -39,12 +40,12 @@ static struct timer_list dci_drain_timer;
 static int dci_timer_in_progress;
 static struct work_struct dci_data_drain_work;
 
-struct diag_dci_partial_pkt_t partial_pkt;
+static struct diag_dci_partial_pkt_t partial_pkt;
 
 unsigned int dci_max_reg = 100;
 unsigned int dci_max_clients = 10;
-struct mutex dci_log_mask_mutex;
-struct mutex dci_event_mask_mutex;
+static struct mutex dci_log_mask_mutex;
+static struct mutex dci_event_mask_mutex;
 
 /*
  * DCI_HANDSHAKE_RETRY_TIME: Time to wait (in microseconds) before checking the
@@ -55,9 +56,6 @@ struct mutex dci_event_mask_mutex;
  */
 #define DCI_HANDSHAKE_RETRY_TIME	500000
 #define DCI_HANDSHAKE_WAIT_TIME		200
-
-spinlock_t ws_lock;
-unsigned long ws_lock_flags;
 
 struct dci_ops_tbl_t dci_ops_tbl[NUM_DCI_PROC] = {
 	{
@@ -85,7 +83,7 @@ struct dci_ops_tbl_t dci_ops_tbl[NUM_DCI_PROC] = {
 #endif
 };
 
-struct dci_channel_status_t dci_channel_status[NUM_DCI_PROC] = {
+static struct dci_channel_status_t dci_channel_status[NUM_DCI_PROC] = {
 	{
 		.id = 0,
 		.open = 0,
@@ -969,7 +967,7 @@ void extract_dci_ctrl_pkt(unsigned char *buf, int len, int token)
 	/* Skip the Control packet command code */
 	temp += sizeof(uint8_t);
 	len -= sizeof(uint8_t);
-	ctrl_pkt_id = *(uint32_t *)temp;
+	ctrl_pkt_id = get_unaligned((uint32_t *)temp);
 	switch (ctrl_pkt_id) {
 	case DIAG_CTRL_MSG_DCI_CONNECTION_STATUS:
 		dci_process_ctrl_status(temp, len, token);
@@ -2889,7 +2887,6 @@ int diag_dci_init(void)
 	mutex_init(&driver->dci_mutex);
 	mutex_init(&dci_log_mask_mutex);
 	mutex_init(&dci_event_mask_mutex);
-	spin_lock_init(&ws_lock);
 	spin_lock_init(&driver->dci_mempool_lock);
 
 	ret = diag_dci_init_ops_tbl();
