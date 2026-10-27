@@ -876,6 +876,7 @@ static void tick_broadcast_init_next_event(struct cpumask *mask,
 
 /**
  * tick_broadcast_setup_oneshot - setup the broadcast device
+ * @bc: Broadcast clock event device, or NULL if none is available
  */
 static void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
 {

@@ -623,6 +623,7 @@ void clockevents_resume(void)
 #ifdef CONFIG_HOTPLUG_CPU
 /**
  * tick_cleanup_dead_cpu - Cleanup the tick and clockevents of a dead cpu
+ * @cpu: Offline CPU whose tick and clock event devices are cleaned up
  */
 void tick_cleanup_dead_cpu(int cpu)
 {

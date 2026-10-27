@@ -392,6 +392,7 @@ static inline u64 timekeeping_cycles_to_ns(const struct tk_read_base *tkr, u64 c
 /**
  * update_fast_timekeeper - Update the fast and NMI safe monotonic timekeeper.
  * @tkr: Timekeeping readout base from which we take the update
+ * @tkf: Fast timekeeper whose two readout bases are updated
  *
  * We want to use this from any context including NMI and tracing /
  * instrumenting the timekeeping code itself.
@@ -422,7 +423,8 @@ static void update_fast_timekeeper(const struct tk_read_base *tkr,
 }
 
 /**
- * ktime_get_mono_fast_ns - Fast NMI safe access to clock monotonic
+ * __ktime_get_fast_ns - Fast NMI safe access to a timekeeper
+ * @tkf: Fast monotonic or raw timekeeper to read
  *
  * This timestamp is not guaranteed to be monotonic across an update.
  * The timestamp is calculated by:
@@ -585,6 +587,7 @@ static void update_pvclock_gtod(struct timekeeper *tk, bool was_set)
 
 /**
  * pvclock_gtod_register_notifier - register a pvclock timedata update listener
+ * @nb: Notifier block for pvclock time data updates
  */
 int pvclock_gtod_register_notifier(struct notifier_block *nb)
 {
@@ -604,6 +607,7 @@ EXPORT_SYMBOL_GPL(pvclock_gtod_register_notifier);
 /**
  * pvclock_gtod_unregister_notifier - unregister a pvclock
  * timedata update listener
+ * @nb: Notifier block for pvclock time data updates
  */
 int pvclock_gtod_unregister_notifier(struct notifier_block *nb)
 {
@@ -694,6 +698,7 @@ static void timekeeping_update(struct timekeeper *tk, unsigned int action)
 
 /**
  * timekeeping_forward_now - update clock to the current time
+ * @tk: Timekeeper whose clock state is advanced
  *
  * Forward the current clock to update its state since the last call to
  * update_wall_time(). This is useful before significant clock changes,
@@ -1266,7 +1271,7 @@ EXPORT_SYMBOL(do_settimeofday64);
 
 /**
  * timekeeping_inject_offset - Adds or subtracts from the current time.
- * @tv:		pointer to the timespec variable containing the offset
+ * @ts:		pointer to the timespec variable containing the offset
  *
  * Adds or subtracts an offset value from the current time.
  */
@@ -1344,6 +1349,8 @@ void timekeeping_warp_clock(void)
 
 /**
  * __timekeeping_set_tai_offset - Sets the TAI offset from UTC and monotonic
+ * @tk: Timekeeper whose TAI offset is updated
+ * @tai_offset: TAI minus UTC offset in seconds
  *
  */
 static void __timekeeping_set_tai_offset(struct timekeeper *tk, s32 tai_offset)
@@ -1354,6 +1361,7 @@ static void __timekeeping_set_tai_offset(struct timekeeper *tk, s32 tai_offset)
 
 /**
  * change_clocksource - Swaps clocksources if a new one is available
+ * @data: New struct clocksource to install
  *
  * Accumulates current time interval and initializes new clocksource
  */
@@ -1475,6 +1483,7 @@ u64 timekeeping_max_deferment(void)
 
 /**
  * read_persistent_clock -  Return time from the persistent clock.
+ * @ts: Receives persistent wall time, or zero when unsupported
  *
  * Weak dummy function for arches that do not yet support it.
  * Reads the time from the battery backed persistent clock.
@@ -1499,10 +1508,10 @@ void __weak read_persistent_clock64(struct timespec64 *ts64)
 /**
  * read_persistent_wall_and_boot_offset - Read persistent clock, and also offset
  *                                        from the boot.
+ * @wall_time: Receives the current persistent wall-clock time
+ * @boot_offset: Receives wall time minus boot time; defaults to local_clock()
  *
  * Weak dummy function for arches that do not yet support it.
- * wall_time	- current time as returned by persistent clock
- * boot_offset	- offset that is defined as wall_time - boot_time
  * The default function calculates offset based on the current value of
  * local_clock(). This way architectures that support sched_clock() but don't
  * support dedicated boot time clock will provide the best estimate of the
@@ -1587,6 +1596,7 @@ static struct timespec64 timekeeping_suspend_time;
 
 /**
  * __timekeeping_inject_sleeptime - Internal function to add sleep interval
+ * @tk: Timekeeper to advance by the suspend interval
  * @delta: pointer to a timespec delta value
  *
  * Takes a timespec offset measuring a suspend interval and properly
@@ -1960,6 +1970,7 @@ static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
 
 /**
  * accumulate_nsecs_to_secs - Accumulates nsecs into secs
+ * @tk: Timekeeper whose accumulated wall time is normalized
  *
  * Helper function that accumulates the nsecs greater than a second
  * from the xtime_nsec field to the xtime_secs field.
@@ -2008,6 +2019,10 @@ static inline unsigned int accumulate_nsecs_to_secs(struct timekeeper *tk)
 
 /**
  * logarithmic_accumulation - shifted accumulation of cycles
+ * @tk: Timekeeper whose clock cycles and NTP error are accumulated
+ * @offset: Clock cycles still to consume
+ * @shift: Power-of-two shift applied to the accumulation interval
+ * @clock_set: Updated with TK_CLOCK_WAS_SET when a leap second changes time
  *
  * This functions accumulates a shifted interval of cycles into
  * into a shifted interval nanoseconds. Allows for O(log) accumulation
@@ -2251,6 +2266,7 @@ ktime_t ktime_get_update_offsets_now(unsigned int *cwsseq, ktime_t *offs_real,
 
 /**
  * timekeeping_validate_timex - Ensures the timex is ok for use in do_adjtimex
+ * @txc: Requested NTP modes and values to validate
  */
 static int timekeeping_validate_timex(const struct timex *txc)
 {
@@ -2331,6 +2347,7 @@ EXPORT_SYMBOL_GPL(random_get_entropy_fallback);
 
 /**
  * do_adjtimex() - Accessor function to NTP __do_adjtimex function
+ * @txc: NTP adjustment request and returned clock status
  */
 int do_adjtimex(struct timex *txc)
 {
@@ -2388,6 +2405,8 @@ int do_adjtimex(struct timex *txc)
 #ifdef CONFIG_NTP_PPS
 /**
  * hardpps() - Accessor function to NTP __hardpps function
+ * @phase_ts: PPS timestamp in real time for phase correction
+ * @raw_ts: PPS timestamp in monotonic raw time for frequency correction
  */
 void hardpps(const struct timespec64 *phase_ts, const struct timespec64 *raw_ts)
 {
