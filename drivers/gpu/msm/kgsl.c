@@ -536,7 +536,6 @@ static void kgsl_mem_entry_detach_process(struct kgsl_mem_entry *entry)
 
 /**
  * kgsl_context_dump() - dump information about a draw context
- * @device: KGSL device that owns the context
  * @context: KGSL context to dump information about
  *
  * Dump specific information about the context to the kernel log.  Used for
@@ -959,7 +958,7 @@ kgsl_process_private_put(struct kgsl_process_private *private)
 /**
  * kgsl_process_private_find() - Find the process associated with the specified
  * name
- * @name: pid_t of the process to search for
+ * @pid: Process ID to search for
  * Return the process struct for the given ID.
  */
 struct kgsl_process_private *kgsl_process_private_find(pid_t pid)
@@ -1013,6 +1012,7 @@ static struct kgsl_process_private *kgsl_process_private_new(
 	}
 
 	kref_init(&private->refcount);
+	mutex_init(&private->private_mutex);
 
 	private->fd_count = 1;
 	private->pid = cur_pid;
@@ -1399,7 +1399,7 @@ kgsl_sharedmem_find_id(struct kgsl_process_private *process, unsigned int id)
 
 /**
  * kgsl_mem_entry_unset_pend() - Unset the pending free flag of an entry
- * @entry - The memory entry
+ * @entry: The memory entry
  */
 static inline void kgsl_mem_entry_unset_pend(struct kgsl_mem_entry *entry)
 {
@@ -1439,7 +1439,7 @@ struct msm_bus_scale_pdata *kgsl_get_bus_scale_table(struct kgsl_device *device)
 
 /**
  * kgsl_mem_entry_set_pend() - Set the pending free flag of a memory entry
- * @entry - The memory entry
+ * @entry: The memory entry
  *
  * @returns - true if pending flag was 0 else false
  *
@@ -2756,7 +2756,7 @@ static int kgsl_setup_dmabuf_useraddr(struct kgsl_device *device,
 	mmap_read_lock(current->mm);
 	vma = find_vma(current->mm, hostptr);
 
-	if (vma && vma->vm_file) {
+	if (vma && hostptr >= vma->vm_start && vma->vm_file) {
 		int fd;
 
 		ret = check_vma_flags(vma, entry->memdesc.flags);
@@ -3327,11 +3327,12 @@ long kgsl_ioctl_map_user_mem(struct kgsl_device_private *dev_priv,
 	param->gpuaddr = (unsigned long)
 		entry->memdesc.gpuaddr + (param->offset & PAGE_MASK);
 
-	KGSL_STATS_ADD(param->len, &kgsl_driver.stats.mapped,
-		&kgsl_driver.stats.mapped_max);
+	KGSL_STATS_ADD(entry->memdesc.size, &kgsl_driver.stats.mapped,
+		       &kgsl_driver.stats.mapped_max);
 
 	kgsl_process_add_stats(private,
-			kgsl_memdesc_usermem_type(&entry->memdesc), param->len);
+			kgsl_memdesc_usermem_type(&entry->memdesc),
+			entry->memdesc.size);
 
 	trace_kgsl_mem_map(entry, param->fd);
 
@@ -4664,9 +4665,9 @@ long kgsl_ioctl_gpuobj_set_info(struct kgsl_device_private *dev_priv,
 
 /**
  * kgsl_ioctl_timestamp_event - Register a new timestamp event from userspace
- * @dev_priv - pointer to the private device structure
- * @cmd - the ioctl cmd passed from kgsl_ioctl
- * @data - the user data buffer from kgsl_ioctl
+ * @dev_priv: pointer to the private device structure
+ * @cmd: the ioctl cmd passed from kgsl_ioctl
+ * @data: the user data buffer from kgsl_ioctl
  * @returns 0 on success or error code on failure
  */
 

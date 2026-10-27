@@ -200,7 +200,7 @@ ret:
 /**
  * fault_detect_read_compare() - Read the fault detect registers and compare
  * them to the current value
- * @device: Pointer to the KGSL device struct
+ * @adreno_dev: Pointer to the Adreno device struct
  *
  * Read the set of fault detect registers and compare them to the current set
  * of registers.  Return 1 if any of the register values changed. Also, compare
@@ -508,7 +508,7 @@ static inline int adreno_dispatcher_requeue_cmdobj(
 
 /**
  * dispatcher_queue_context() - Queue a context in the dispatcher pending list
- * @dispatcher: Pointer to the adreno dispatcher struct
+ * @adreno_dev: Pointer to the Adreno device struct
  * @drawctxt: Pointer to the adreno draw context
  *
  * Add a context to the dispatcher pending list.
@@ -537,8 +537,8 @@ static void  dispatcher_queue_context(struct adreno_device *adreno_dev,
 
 /**
  * sendcmd() - Send a drawobj to the GPU hardware
- * @dispatcher: Pointer to the adreno dispatcher struct
- * @drawobj: Pointer to the KGSL drawobj being sent
+ * @adreno_dev: Pointer to the Adreno device struct
+ * @cmdobj: Pointer to the KGSL command object being sent
  *
  * Send a KGSL drawobj to the GPU hardware
  */
@@ -1011,10 +1011,10 @@ done:
 
 /**
  * get_timestamp() - Return the next timestamp for the context
- * @drawctxt - Pointer to an adreno draw context struct
- * @drawobj - Pointer to a drawobj
- * @timestamp - Pointer to a timestamp value possibly passed from the user
- * @user_ts - user generated timestamp
+ * @drawctxt: Pointer to an Adreno draw context struct
+ * @drawobj: Pointer to the draw object receiving the timestamp
+ * @timestamp: Output pointer for the assigned timestamp
+ * @user_ts: User generated timestamp, if enabled for the context
  *
  * Assign a timestamp based on the settings of the draw context and the command
  * batch.
@@ -1183,7 +1183,7 @@ static inline int _verify_cmdobj(struct kgsl_device_private *dev_priv,
 }
 
 static inline int _wait_for_room_in_context_queue(
-	struct adreno_context *drawctxt)
+	struct adreno_context *drawctxt) __must_hold(&drawctxt->lock)
 {
 	int ret = 0;
 
@@ -1213,17 +1213,6 @@ static inline int _wait_for_room_in_context_queue(
 	}
 
 	return 0;
-}
-
-static unsigned int _check_context_state_to_queue_cmds(
-	struct adreno_context *drawctxt)
-{
-	int ret = _check_context_state(&drawctxt->base);
-
-	if (ret)
-		return ret;
-
-	return _wait_for_room_in_context_queue(drawctxt);
 }
 
 static void _queue_drawobj(struct adreno_context *drawctxt,
@@ -1400,7 +1389,9 @@ int adreno_dispatcher_queue_cmds(struct kgsl_device_private *dev_priv,
 
 	spin_lock(&drawctxt->lock);
 
-	ret = _check_context_state_to_queue_cmds(drawctxt);
+	ret = _check_context_state(&drawctxt->base);
+	if (!ret)
+		ret = _wait_for_room_in_context_queue(drawctxt);
 	if (ret) {
 		spin_unlock(&drawctxt->lock);
 		return ret;
@@ -1430,13 +1421,12 @@ int adreno_dispatcher_queue_cmds(struct kgsl_device_private *dev_priv,
 		case MARKEROBJ_TYPE:
 			ret = drawctxt_queue_markerobj(adreno_dev, drawctxt,
 				drawobj[i], timestamp, user_ts);
-			if (ret)
+			if (ret) {
 				spin_unlock(&drawctxt->lock);
-
-			if (ret == 1)
-				goto done;
-			else if (ret)
+				if (ret == 1)
+					goto done;
 				return ret;
+			}
 			break;
 		case CMDOBJ_TYPE:
 			ret = drawctxt_queue_cmdobj(adreno_dev, drawctxt,
@@ -2599,8 +2589,8 @@ void adreno_dispatcher_schedule(struct kgsl_device *device)
 
 /**
  * adreno_dispatcher_queue_context() - schedule a drawctxt in the dispatcher
- * device: pointer to the KGSL device
- * drawctxt: pointer to the drawctxt to schedule
+ * @device: Pointer to the KGSL device
+ * @drawctxt: Pointer to the Adreno draw context to schedule
  *
  * Put a draw context on the dispatcher pending queue and schedule the
  * dispatcher. This is used to reschedule changes that might have been blocked
@@ -2667,7 +2657,7 @@ static void adreno_dispatcher_timer(struct timer_list *t)
 
 /**
  * adreno_dispatcher_start() - activate the dispatcher
- * @adreno_dev: pointer to the adreno device structure
+ * @device: Pointer to the KGSL device structure
  *
  */
 void adreno_dispatcher_start(struct kgsl_device *device)

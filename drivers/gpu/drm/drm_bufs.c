@@ -212,11 +212,11 @@ static int drm_addmap_core(struct drm_device *dev, resource_size_t offset,
 		}
 		if (map->type == _DRM_REGISTERS) {
 			if (map->flags & _DRM_WRITE_COMBINING)
-				map->handle = ioremap_wc(map->offset,
-							 map->size);
+				map->iomem = ioremap_wc(map->offset,
+							map->size);
 			else
-				map->handle = ioremap(map->offset, map->size);
-			if (!map->handle) {
+				map->iomem = ioremap(map->offset, map->size);
+			if (!map->iomem) {
 				kfree(map);
 				return -ENOMEM;
 			}
@@ -330,7 +330,7 @@ static int drm_addmap_core(struct drm_device *dev, resource_size_t offset,
 	list = kzalloc(sizeof(*list), GFP_KERNEL);
 	if (!list) {
 		if (map->type == _DRM_REGISTERS)
-			iounmap(map->handle);
+			iounmap(map->iomem);
 		kfree(map);
 		return -EINVAL;
 	}
@@ -347,7 +347,7 @@ static int drm_addmap_core(struct drm_device *dev, resource_size_t offset,
 			     (map->type == _DRM_SHM));
 	if (ret) {
 		if (map->type == _DRM_REGISTERS)
-			iounmap(map->handle);
+			iounmap(map->iomem);
 		kfree(map);
 		kfree(list);
 		mutex_unlock(&dev->struct_mutex);
@@ -513,7 +513,7 @@ int drm_legacy_rmmap_locked(struct drm_device *dev, struct drm_local_map *map)
 
 	switch (map->type) {
 	case _DRM_REGISTERS:
-		iounmap(map->handle);
+		iounmap(map->iomem);
 		/* FALLTHROUGH */
 	case _DRM_FRAME_BUFFER:
 		arch_phys_wc_del(map->mtrr);

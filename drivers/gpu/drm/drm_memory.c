@@ -36,6 +36,7 @@
 #include <linux/highmem.h>
 #include <linux/export.h>
 #include <drm/drmP.h>
+#include <drm/drm_cache.h>
 #include "drm_legacy.h"
 
 #if IS_ENABLED(CONFIG_AGP)
@@ -125,7 +126,7 @@ void drm_legacy_ioremap(struct drm_local_map *map, struct drm_device *dev)
 	if (dev->agp && dev->agp->cant_use_aperture && map->type == _DRM_AGP)
 		map->handle = agp_remap(map->offset, map->size, dev);
 	else
-		map->handle = ioremap(map->offset, map->size);
+		map->iomem = ioremap(map->offset, map->size);
 }
 EXPORT_SYMBOL(drm_legacy_ioremap);
 
@@ -134,7 +135,7 @@ void drm_legacy_ioremap_wc(struct drm_local_map *map, struct drm_device *dev)
 	if (dev->agp && dev->agp->cant_use_aperture && map->type == _DRM_AGP)
 		map->handle = agp_remap(map->offset, map->size, dev);
 	else
-		map->handle = ioremap_wc(map->offset, map->size);
+		map->iomem = ioremap_wc(map->offset, map->size);
 }
 EXPORT_SYMBOL(drm_legacy_ioremap_wc);
 
@@ -146,7 +147,7 @@ void drm_legacy_ioremapfree(struct drm_local_map *map, struct drm_device *dev)
 	if (dev->agp && dev->agp->cant_use_aperture && map->type == _DRM_AGP)
 		vunmap(map->handle);
 	else
-		iounmap(map->handle);
+		iounmap(map->iomem);
 }
 EXPORT_SYMBOL(drm_legacy_ioremapfree);
 
