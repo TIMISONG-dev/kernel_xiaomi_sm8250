@@ -2422,7 +2422,6 @@ QDF_STATUS wma_vdev_stop_resp_handler(struct vdev_mlme_obj *vdev_mlme,
 				      struct vdev_stop_response *rsp)
 {
 	tp_wma_handle wma;
-	struct wma_txrx_node *iface = NULL;
 	QDF_STATUS status = QDF_STATUS_E_FAILURE;
 
 	wma = cds_get_context(QDF_MODULE_ID_WMA);
@@ -2431,7 +2430,6 @@ QDF_STATUS wma_vdev_stop_resp_handler(struct vdev_mlme_obj *vdev_mlme,
 		return status;
 	}
 
-	iface = &wma->interfaces[vdev_mlme->vdev->vdev_objmgr.vdev_id];
 
 	if (rsp->vdev_id >= wma->max_bssid) {
 		WMA_LOGE("%s: Invalid vdev_id %d from FW",
@@ -4965,7 +4963,6 @@ void wma_delete_bss(tp_wma_handle wma, uint8_t vdev_id)
 	QDF_STATUS status = QDF_STATUS_SUCCESS;
 	uint32_t tx_pending = 0;
 	cdp_config_param_type val;
-	bool roam_synch_in_progress = false;
 	struct wma_txrx_node *iface;
 	void *soc = cds_get_context(QDF_MODULE_ID_SOC);
 	struct qdf_mac_addr bssid;
@@ -5043,7 +5040,6 @@ void wma_delete_bss(tp_wma_handle wma, uint8_t vdev_id)
 		wma->ibss_started = 0;
 
 	if (wma_is_roam_synch_in_progress(wma, vdev_id)) {
-		roam_synch_in_progress = true;
 		WMA_LOGD("LFR3:%s: Setting vdev_up to FALSE for session %d",
 			__func__, vdev_id);
 
@@ -5131,13 +5127,11 @@ int32_t wma_find_vdev_by_type(tp_wma_handle wma, int32_t type)
 void wma_set_vdev_intrabss_fwd(tp_wma_handle wma_handle,
 				      tpDisableIntraBssFwd pdis_intra_fwd)
 {
-	struct wlan_objmgr_vdev *vdev;
 
 	WMA_LOGD("%s:intra_fwd:vdev(%d) intrabss_dis=%s",
 		 __func__, pdis_intra_fwd->sessionId,
 		 (pdis_intra_fwd->disableintrabssfwd ? "true" : "false"));
 
-	vdev = wma_handle->interfaces[pdis_intra_fwd->sessionId].vdev;
 	cdp_cfg_vdev_rx_set_intrabss_fwd(cds_get_context(QDF_MODULE_ID_SOC),
 					 pdis_intra_fwd->sessionId,
 					 pdis_intra_fwd->disableintrabssfwd);

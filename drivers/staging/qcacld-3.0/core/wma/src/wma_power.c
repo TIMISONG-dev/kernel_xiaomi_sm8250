@@ -102,7 +102,6 @@ QDF_STATUS wma_unified_set_sta_ps_param(wmi_unified_t wmi_handle,
 					    uint32_t value)
 {
 	tp_wma_handle wma;
-	struct wma_txrx_node *iface;
 	struct sta_ps_params sta_ps_param = {0};
 	QDF_STATUS status;
 
@@ -117,7 +116,6 @@ QDF_STATUS wma_unified_set_sta_ps_param(wmi_unified_t wmi_handle,
 
 	WMA_LOGD("Set Sta Ps param vdevId %d Param %d val %d",
 		 vdev_id, param, value);
-	iface = &wma->interfaces[vdev_id];
 
 	sta_ps_param.vdev_id = vdev_id;
 	sta_ps_param.param_id = param;
@@ -584,7 +582,6 @@ static QDF_STATUS wma_set_force_sleep(tp_wma_handle wma,
 	uint32_t tx_wake_threshold;
 	uint32_t pspoll_count;
 	uint32_t inactivity_time;
-	uint32_t psmode;
 
 	WMA_LOGD("Set Force Sleep vdevId %d val %d", vdev_id, enable);
 
@@ -606,7 +603,6 @@ static QDF_STATUS wma_set_force_sleep(tp_wma_handle wma,
 		else
 			pspoll_count = WMA_DEFAULT_MAX_PSPOLL_BEFORE_WAKE;
 
-		psmode = WMI_STA_PS_MODE_ENABLED;
 	} else {
 		/* Ps Poll Wake Policy */
 		if (ucfg_pmo_get_max_ps_poll(mac->psoc)) {
@@ -620,7 +616,6 @@ static QDF_STATUS wma_set_force_sleep(tp_wma_handle wma,
 			pspoll_count = WMI_STA_PS_PSPOLL_COUNT_NO_MAX;
 			tx_wake_threshold = WMI_STA_PS_TX_WAKE_THRESHOLD_ALWAYS;
 		}
-		psmode = WMI_STA_PS_MODE_ENABLED;
 	}
 
 	/*
