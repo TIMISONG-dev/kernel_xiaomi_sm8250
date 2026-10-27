@@ -16,6 +16,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "init_driver.h"
 #include "soniclib.h"
 #include "ch_common.h"
 #include "chirp_bsp.h"
