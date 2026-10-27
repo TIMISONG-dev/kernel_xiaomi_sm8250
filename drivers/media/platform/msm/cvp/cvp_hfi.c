@@ -960,7 +960,7 @@ static void __write_register(struct iris_hfi_device *device,
 		u32 reg, u32 value)
 {
 	u32 hwiosymaddr = reg;
-	u8 *base_addr;
+	u8 __iomem *base_addr;
 
 	if (!device) {
 		dprintk(CVP_ERR, "Invalid params: %pK\n", device);
@@ -991,7 +991,7 @@ static void __write_register(struct iris_hfi_device *device,
 static int __read_register(struct iris_hfi_device *device, u32 reg)
 {
 	int rc = 0;
-	u8 *base_addr;
+	u8 __iomem *base_addr;
 
 	if (!device) {
 		dprintk(CVP_ERR, "Invalid params: %pK\n", device);
@@ -2720,7 +2720,7 @@ err_send_pkt:
 }
 
 static int __check_core_registered(struct iris_hfi_device *device,
-		phys_addr_t fw_addr, u8 *reg_addr, u32 reg_size,
+		phys_addr_t fw_addr, phys_addr_t reg_addr, u32 reg_size,
 		phys_addr_t irq)
 {
 	struct cvp_hal_data *cvp_hal_data;
@@ -2739,15 +2739,15 @@ static int __check_core_registered(struct iris_hfi_device *device,
 				FIRMWARE_SIZE, fw_addr) ||
 		CONTAINS(fw_addr, FIRMWARE_SIZE,
 				cvp_hal_data->firmware_base) ||
-		CONTAINS(cvp_hal_data->register_base,
-				reg_size, reg_addr) ||
+		CONTAINS(cvp_hal_data->register_phys,
+				cvp_hal_data->register_size, reg_addr) ||
 		CONTAINS(reg_addr, reg_size,
-				cvp_hal_data->register_base) ||
-		OVERLAPS(cvp_hal_data->register_base,
-				reg_size, reg_addr, reg_size) ||
+				cvp_hal_data->register_phys) ||
+		OVERLAPS(cvp_hal_data->register_phys,
+				cvp_hal_data->register_size, reg_addr, reg_size) ||
 		OVERLAPS(reg_addr, reg_size,
-				cvp_hal_data->register_base,
-				reg_size) ||
+				cvp_hal_data->register_phys,
+				cvp_hal_data->register_size) ||
 		OVERLAPS(cvp_hal_data->firmware_base,
 				FIRMWARE_SIZE, fw_addr,
 				FIRMWARE_SIZE) ||
@@ -3408,7 +3408,7 @@ static int __init_regs_and_interrupts(struct iris_hfi_device *device,
 	int rc = 0;
 
 	rc = __check_core_registered(device, res->firmware_base,
-			(u8 *)(uintptr_t)res->register_base,
+			res->register_base,
 			res->register_size, res->irq);
 	if (!rc) {
 		dprintk(CVP_ERR, "Core present/Already added\n");
@@ -3425,6 +3425,7 @@ static int __init_regs_and_interrupts(struct iris_hfi_device *device,
 
 	hal->irq = res->irq;
 	hal->firmware_base = res->firmware_base;
+	hal->register_phys = res->register_base;
 	hal->register_base = devm_ioremap_nocache(&res->pdev->dev,
 			res->register_base, res->register_size);
 	hal->register_size = res->register_size;
