@@ -71,10 +71,10 @@ static const unsigned int a3xx_hlsq_registers[] = {
 /**
  * _rbbm_debug_bus_read - Helper function to read data from the RBBM
  * debug bus.
- * @device - GPU device to read/write registers
- * @block_id - Debug bus block to read from
- * @index - Index in the debug bus block to read
- * @ret - Value of the register read
+ * @device: GPU device to read/write registers
+ * @block_id: Debug bus block to read from
+ * @index: Index in the debug bus block to read
+ * @val: Value of the register read
  */
 static void _rbbm_debug_bus_read(struct kgsl_device *device,
 	unsigned int block_id, unsigned int index, unsigned int *val)
