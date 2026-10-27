@@ -196,7 +196,7 @@ static int cvp_create_pkt_cmd_sys_release_resource(
 	return rc;
 }
 
-inline int cvp_create_pkt_cmd_sys_session_init(
+static inline int cvp_create_pkt_cmd_sys_session_init(
 		struct cvp_hfi_cmd_sys_session_init_packet *pkt,
 		struct cvp_hal_session *session)
 {

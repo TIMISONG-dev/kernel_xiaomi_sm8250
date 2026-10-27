@@ -122,7 +122,7 @@ static int msm_cvp_session_get_iova_addr(
 {
 	struct msm_cvp_internal_buffer *cbuf;
 
-	if (!inst | !iova) {
+	if (!inst || !iova) {
 		dprintk(CVP_ERR, "%s: invalid params\n", __func__);
 		return -EINVAL;
 	}
@@ -726,7 +726,7 @@ static int msm_cvp_map_user_persist(struct msm_cvp_inst *inst,
 		 * garbage value.
 		 */
 		if (inst->session_type == MSM_CVP_USER) {
-			new_buf->dbuf = 0;
+			new_buf->dbuf = NULL;
 		} else if (inst->session_type == MSM_CVP_KERNEL) {
 			new_buf->fd = 0;
 		} else if (inst->session_type >= MSM_CVP_UNKNOWN) {
@@ -805,7 +805,7 @@ static int msm_cvp_map_buf(struct msm_cvp_inst *inst,
 			 * garbage value.
 			 */
 			if (inst->session_type == MSM_CVP_USER) {
-				new_buf->dbuf = 0;
+				new_buf->dbuf = NULL;
 			} else if (inst->session_type == MSM_CVP_KERNEL) {
 				new_buf->fd = 0;
 			} else if (inst->session_type >= MSM_CVP_UNKNOWN) {
