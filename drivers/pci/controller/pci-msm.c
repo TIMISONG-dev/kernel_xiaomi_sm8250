@@ -525,6 +525,7 @@ enum msm_pcie_debugfs_option {
 	MSM_PCIE_MAX_DEBUGFS_OPTION
 };
 
+#ifdef CONFIG_DEBUG_FS
 static const char * const
 	msm_pcie_debugfs_option_desc[MSM_PCIE_MAX_DEBUGFS_OPTION] = {
 	"OUTPUT PCIE INFO",
@@ -561,6 +562,7 @@ static const char * const
 	"SET MAXIMUM LINK SPEED TO GEN 2",
 	"SET MAXIMUM LINK SPEED TO GEN 3",
 };
+#endif
 
 /* gpio info structure */
 struct msm_pcie_gpio_info_t {
@@ -1223,7 +1225,7 @@ static u32 msm_pcie_reg_copy(struct msm_pcie_dev_t *pcie_dev,
 {
 	u32 ret = 0, val, i;
 
-	PCIE_DUMP(pcie_dev, "RC%d buf=0x%x size=%u, reg_len=%u\n",
+	PCIE_DUMP(pcie_dev, "RC%d buf=%p size=%u, reg_len=%u\n",
 		pcie_dev->rc_idx, buf, size, reg_len);
 
 	for (i = 0; (reg_list->name) && (i + reg_len <= size);
@@ -1257,7 +1259,7 @@ int msm_pcie_reg_dump(struct pci_dev *pci_dev, u8 *buff, u32 len)
 		return -ENODEV;
 	}
 
-	PCIE_DUMP(pcie_dev, "RC%d hang event dump buff=0x%x len=%u\n",
+	PCIE_DUMP(pcie_dev, "RC%d hang event dump buff=%p len=%u\n",
 		pcie_dev->rc_idx, buff, len);
 
 	offset = msm_pcie_reg_copy(pcie_dev, buff, len,
@@ -5773,7 +5775,7 @@ static int msm_pcie_check_l1ss_support(struct pci_dev *pdev, void *dev)
 {
 	struct msm_pcie_dev_t *pcie_dev = (struct msm_pcie_dev_t *)dev;
 	u32 val;
-	u32 l1ss_cap_id_offset, l1ss_cap_offset, l1ss_ctl1_offset;
+	u32 l1ss_cap_id_offset, l1ss_cap_offset;
 
 	if (!pcie_dev->l1ss_supported)
 		return -ENXIO;
@@ -5789,7 +5791,6 @@ static int msm_pcie_check_l1ss_support(struct pci_dev *pdev, void *dev)
 	}
 
 	l1ss_cap_offset = l1ss_cap_id_offset + PCI_L1SS_CAP;
-	l1ss_ctl1_offset = l1ss_cap_id_offset + PCI_L1SS_CTL1;
 
 	pci_read_config_dword(pdev, l1ss_cap_offset, &val);
 	pcie_dev->l1_1_pcipm_supported &= !!(val & (PCI_L1SS_CAP_PCIPM_L1_1));
@@ -6854,7 +6855,7 @@ out:
 }
 EXPORT_SYMBOL(msm_pcie_set_link_bandwidth);
 
-int msm_pci_probe(struct pci_dev *pci_dev,
+static int msm_pci_probe(struct pci_dev *pci_dev,
 		  const struct pci_device_id *device_id)
 {
 	int ret;
