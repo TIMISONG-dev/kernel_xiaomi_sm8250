@@ -347,7 +347,7 @@ struct ipahal_imm_cmd_dma_task_32b_addr {
 struct ipahal_imm_cmd_pyld {
 	u16 len;
 	u16 opcode;
-	u8 data[0];
+	u8 data[0] __aligned(8);
 };
 
 
