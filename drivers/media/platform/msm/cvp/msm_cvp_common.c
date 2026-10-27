@@ -197,7 +197,7 @@ struct msm_cvp_inst *cvp_get_inst_validate(struct msm_cvp_core *core,
 
 	s = cvp_get_inst(core, session_id);
 	if (!s) {
-		dprintk(CVP_ERR, "%s session doesn't exit\n",
+		dprintk(CVP_ERR, "%pS session doesn't exist\n",
 			__builtin_return_address(0));
 		return NULL;
 	}
@@ -284,7 +284,6 @@ static void handle_session_release_buf_done(enum hal_command_response cmd,
 	struct cvp_internal_buf *buf;
 	struct list_head *ptr, *next;
 	struct cvp_hal_buffer_info *buffer;
-	u32 buf_found = false;
 	u32 address;
 
 	if (!response) {
@@ -310,7 +309,6 @@ static void handle_session_release_buf_done(enum hal_command_response cmd,
 		if (address == buf->smem.device_addr) {
 			dprintk(CVP_DBG, "releasing persist: %#x\n",
 					buf->smem.device_addr);
-			buf_found = true;
 		}
 	}
 	mutex_unlock(&inst->persistbufs.lock);
@@ -343,7 +341,7 @@ static void handle_sys_release_res_done(
 			SYS_MSG_INDEX(HAL_SYS_RELEASE_RESOURCE_DONE)]);
 }
 
-void change_cvp_inst_state(struct msm_cvp_inst *inst, enum instance_state state)
+static void change_cvp_inst_state(struct msm_cvp_inst *inst, enum instance_state state)
 {
 	if (!inst) {
 		dprintk(CVP_ERR, "Invalid parameter %s\n", __func__);
@@ -474,7 +472,7 @@ err_same_state:
 	return rc;
 }
 
-void msm_cvp_notify_event(struct msm_cvp_inst *inst, int event_type)
+static void msm_cvp_notify_event(struct msm_cvp_inst *inst, int event_type)
 {
 }
 
@@ -572,7 +570,6 @@ static void handle_session_flush(enum hal_command_response cmd, void *data)
 static void handle_session_error(enum hal_command_response cmd, void *data)
 {
 	struct msm_cvp_cb_cmd_done *response = data;
-	struct cvp_hfi_device *hdev = NULL;
 	struct msm_cvp_inst *inst = NULL;
 	int event = CVP_SYS_ERROR_EVENT;
 
@@ -590,7 +587,6 @@ static void handle_session_error(enum hal_command_response cmd, void *data)
 		return;
 	}
 
-	hdev = inst->core->device;
 	dprintk(CVP_ERR, "Session error received for inst %pK session %x\n",
 		inst, hash32_ptr(inst->session));
 
@@ -686,7 +682,7 @@ static void handle_sys_error(enum hal_command_response cmd, void *data)
 	call_hfi_op(hdev, flush_debug_queue, hdev->hfi_device_data);
 	list_for_each_entry(inst, &core->instances, list) {
 		dprintk(CVP_WARN,
-			"%s: sys error inst %#x kref %x, cmd %x state %x\n",
+			"%s: sys error inst %pK kref %x, cmd %x state %x\n",
 				__func__, inst, kref_read(&inst->kref),
 				inst->cur_cmd_type, inst->state);
 		if (inst->state != MSM_CVP_CORE_INVALID) {
@@ -1114,7 +1110,6 @@ fail_cap_alloc:
 int msm_cvp_deinit_core(struct msm_cvp_inst *inst)
 {
 	struct msm_cvp_core *core;
-	struct cvp_hfi_device *hdev;
 
 	if (!inst || !inst->core || !inst->core->device) {
 		dprintk(CVP_ERR, "%s invalid parameters\n", __func__);
@@ -1122,7 +1117,6 @@ int msm_cvp_deinit_core(struct msm_cvp_inst *inst)
 	}
 
 	core = inst->core;
-	hdev = core->device;
 
 	mutex_lock(&core->lock);
 	if (core->state == CVP_CORE_UNINIT) {
@@ -1181,6 +1175,7 @@ static int msm_comm_session_init(int flipped_state,
 		dprintk(CVP_ERR, "%s invalid parameters\n", __func__);
 		return -EINVAL;
 	}
+
 	hdev = inst->core->device;
 
 	if (IS_ALREADY_IN_STATE(flipped_state, MSM_CVP_OPEN)) {
@@ -1222,8 +1217,8 @@ static int msm_comm_session_close(int flipped_state,
 						inst, inst->state);
 		goto exit;
 	}
-	hdev = inst->core->device;
 	dprintk(CVP_DBG, "%s: inst %pK\n", __func__, inst);
+	hdev = inst->core->device;
 	rc = call_hfi_op(hdev, session_end, (void *) inst->session);
 	if (rc) {
 		dprintk(CVP_ERR,
@@ -1414,7 +1409,7 @@ void msm_cvp_ssr_handler(struct work_struct *work)
 		dprintk(CVP_ERR, "Session abort triggered\n");
 		list_for_each_entry(inst, &core->instances, list) {
 			dprintk(CVP_WARN,
-				"Session to abort: inst %#x cmd %x ref %x\n",
+				"Session to abort: inst %pK cmd %x ref %x\n",
 				inst, inst->cur_cmd_type,
 				kref_read(&inst->kref));
 			break;
@@ -1585,7 +1580,6 @@ void msm_cvp_comm_print_inst_info(struct msm_cvp_inst *inst)
 {
 	struct msm_cvp_internal_buffer *cbuf;
 	struct cvp_internal_buf *buf;
-	bool is_secure = false;
 
 	if (!inst) {
 		dprintk(CVP_ERR, "%s - invalid param %pK\n",
@@ -1594,7 +1588,6 @@ void msm_cvp_comm_print_inst_info(struct msm_cvp_inst *inst)
 	}
 
 	dprintk(CVP_ERR, "active session cmd %d\n", inst->cur_cmd_type);
-	is_secure = inst->flags & CVP_SECURE;
 	dprintk(CVP_ERR,
 			"---Buffer details for inst: %pK of type: %d---\n",
 			inst, inst->session_type);
@@ -1652,7 +1645,6 @@ static int set_internal_buf_on_fw(struct msm_cvp_inst *inst,
 	}
 
 	hdev = inst->core->device;
-
 	buffer_info.buffer_size = handle->size;
 	buffer_info.buffer_type = 0;
 	buffer_info.num_buffers = 1;

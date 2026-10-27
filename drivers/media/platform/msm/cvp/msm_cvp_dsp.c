@@ -107,7 +107,7 @@ static void __reset_queue_hdr_defaults(struct cvp_hfi_queue_header *q_hdr)
 	q_hdr->qhdr_write_idx = 0x0;
 }
 
-void msm_cvp_cdsp_ssr_handler(struct work_struct *work)
+static void msm_cvp_cdsp_ssr_handler(struct work_struct *work)
 {
 	struct cvp_dsp_apps *me;
 	uint64_t msg_ptr;

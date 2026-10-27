@@ -3623,7 +3623,7 @@ failed_to_reset:
 
 static inline int __prepare_enable_clks(struct iris_hfi_device *device)
 {
-	struct clock_info *cl = NULL, *cl_fail = NULL;
+	struct clock_info *cl = NULL;
 	int rc = 0, c = 0;
 
 	if (!device) {
@@ -3655,7 +3655,6 @@ static inline int __prepare_enable_clks(struct iris_hfi_device *device)
 		rc = clk_prepare_enable(cl->clk);
 		if (rc) {
 			dprintk(CVP_ERR, "Failed to enable clocks\n");
-			cl_fail = cl;
 			goto fail_clk_enable;
 		}
 
@@ -4387,24 +4386,6 @@ fail_vote_buses:
 	return rc;
 }
 
-void power_off_common(struct iris_hfi_device *device)
-{
-	if (!device->power_enabled)
-		return;
-
-	if (!(device->intr_status & CVP_WRAPPER_INTR_STATUS_A2HWD_BMSK))
-		disable_irq_nosync(device->cvp_hal_data->irq);
-	device->intr_status = 0;
-
-	__disable_unprepare_clks(device);
-	if (__disable_regulators(device))
-		dprintk(CVP_WARN, "Failed to disable regulators\n");
-
-	if (__unvote_buses(device))
-		dprintk(CVP_WARN, "Failed to unvote for buses\n");
-	device->power_enabled = false;
-}
-
 static inline int __suspend(struct iris_hfi_device *device)
 {
 	int rc = 0;
@@ -4852,7 +4833,7 @@ static int __initialize_packetization(struct iris_hfi_device *device)
 	return rc;
 }
 
-void __init_cvp_ops(struct iris_hfi_device *device)
+static void __init_cvp_ops(struct iris_hfi_device *device)
 {
 	device->vpu_ops = &iris2_ops;
 }
