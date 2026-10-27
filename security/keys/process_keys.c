@@ -600,7 +600,7 @@ try_again:
 			if (ret < 0)
 				goto error;
 			goto reget_creds;
-		} else if (ctx.cred->session_keyring ==
+		} else if (rcu_access_pointer(ctx.cred->session_keyring) ==
 			   ctx.cred->user->session_keyring &&
 			   lflags & KEY_LOOKUP_CREATE) {
 			ret = join_session_keyring(NULL);
@@ -811,7 +811,7 @@ long join_session_keyring(const char *name)
 	} else if (IS_ERR(keyring)) {
 		ret = PTR_ERR(keyring);
 		goto error2;
-	} else if (keyring == new->session_keyring) {
+	} else if (keyring == rcu_access_pointer(new->session_keyring)) {
 		ret = 0;
 		goto error3;
 	}
