@@ -38,7 +38,7 @@ void set_chirp_gpios(struct ch101_client *client)
 static struct gpio_desc *os_get_pin_desc(ioport_pin_t pin)
 {
 	if (!_ch101_client)
-		return 0;
+		return NULL;
 	if (pin == CHIRP_RST)
 		return _ch101_client->gpios.gpiod_rst;
 	if (pin == CHIRP_RST_PS)
@@ -56,11 +56,11 @@ static struct gpio_desc *os_get_pin_desc(ioport_pin_t pin)
 	if (pin == CHIRP1_INT_2)
 		return _ch101_client->bus[1].gpiod_int[2];
 	if (pin >= CHIRP0_PROG_0 && pin <= CHIRP2_PROG_2)
-		return 0;
+		return NULL;
 
 	printf("%s: pin: %d undefined\n", __func__, (u32)pin);
 
-	return 0;
+	return NULL;
 }
 
 static u32 os_get_pin_prog(ioport_pin_t pin)
