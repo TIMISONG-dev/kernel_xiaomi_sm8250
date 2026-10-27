@@ -2413,8 +2413,10 @@ static int spcom_rpdev_cb(struct rpmsg_device *rpdev,
 		return -ENOMEM;
 
 	rx_item->rpmsg_rx_buf = kmemdup(data, len, GFP_ATOMIC);
-	if (!rx_item->rpmsg_rx_buf)
+	if (!rx_item->rpmsg_rx_buf) {
+		kfree(rx_item);
 		return -ENOMEM;
+	}
 
 	rx_item->rx_buf_size = len;
 	rx_item->ch = ch;
