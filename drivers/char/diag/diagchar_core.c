@@ -219,7 +219,7 @@ static void diag_drain_apps_data(struct diag_apps_data_t *data)
 	}
 }
 
-void diag_update_user_client_work_fn(struct work_struct *work)
+static void diag_update_user_client_work_fn(struct work_struct *work)
 {
 	diag_update_userspace_clients(HDLC_SUPPORT_TYPE);
 }
@@ -229,7 +229,7 @@ static void diag_update_md_client_work_fn(struct work_struct *work)
 	diag_update_md_clients(HDLC_SUPPORT_TYPE);
 }
 
-void diag_drain_work_fn(struct work_struct *work)
+static void diag_drain_work_fn(struct work_struct *work)
 {
 	uint8_t hdlc_disabled = 0;
 
@@ -247,11 +247,10 @@ void diag_drain_work_fn(struct work_struct *work)
 
 void check_drain_timer(void)
 {
-	int ret = 0;
 
 	if (!timer_in_progress) {
 		timer_in_progress = 1;
-		ret = mod_timer(&drain_timer, jiffies + msecs_to_jiffies(200));
+		mod_timer(&drain_timer, jiffies + msecs_to_jiffies(200));
 	}
 }
 
@@ -1327,7 +1326,7 @@ static void diag_md_session_exit(void)
 	}
 }
 
-int diag_md_session_create(int mode, int peripheral_mask, int proc)
+static int diag_md_session_create(int mode, int peripheral_mask, int proc)
 {
 	int i;
 	int err = 0;
@@ -3025,7 +3024,7 @@ static int diag_ioctl_cmd_reg_compat(unsigned long ioarg)
 	return diag_cmd_register_tbl(&reg_tbl);
 }
 
-long diagchar_compat_ioctl(struct file *filp,
+static long diagchar_compat_ioctl(struct file *filp,
 			   unsigned int iocmd, unsigned long ioarg)
 {
 	int result = -EINVAL;
@@ -3073,7 +3072,7 @@ long diagchar_compat_ioctl(struct file *filp,
 }
 #endif
 
-long diagchar_ioctl(struct file *filp,
+static long diagchar_ioctl(struct file *filp,
 			   unsigned int iocmd, unsigned long ioarg)
 {
 	int result = -EINVAL;

@@ -116,7 +116,6 @@ static int diag_add_hdlc_encoding(unsigned char *dest_buf, int *dest_len,
 	int total_processed = 0;
 	int bytes_remaining;
 	int err = 0;
-	uint8_t loop_count = 0;
 
 	if (!dest_buf || !dest_len || !buf)
 		return -EIO;
@@ -126,7 +125,6 @@ static int diag_add_hdlc_encoding(unsigned char *dest_buf, int *dest_len,
 	bytes_remaining = *dest_len;
 
 	while (total_processed < len) {
-		loop_count++;
 		header = (struct data_header *)temp_buf;
 		/* Perform initial error checking */
 		if (header->control_char != CONTROL_CHAR ||

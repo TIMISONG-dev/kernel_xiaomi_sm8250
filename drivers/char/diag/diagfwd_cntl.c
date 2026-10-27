@@ -166,14 +166,12 @@ static void process_pd_status(uint8_t *buf, uint32_t len,
 			      uint8_t peripheral)
 {
 	struct diag_ctrl_msg_pd_status *pd_msg = NULL;
-	uint32_t pd;
 	int status = DIAG_STATUS_CLOSED;
 
 	if (!buf || peripheral >= NUM_PERIPHERALS || len < sizeof(*pd_msg))
 		return;
 
 	pd_msg = (struct diag_ctrl_msg_pd_status *)buf;
-	pd = pd_msg->pd_id;
 	status = (pd_msg->status == 0) ? DIAG_STATUS_OPEN : DIAG_STATUS_CLOSED;
 	diag_notify_md_client(DIAG_LOCAL_PROC, peripheral, status);
 }
@@ -619,7 +617,6 @@ static void diag_build_time_mask_update(uint8_t *buf,
 {
 	int i;
 	int j;
-	int num_items = 0;
 	int err = 0;
 	int found = 0;
 	int new_size = 0;
@@ -638,7 +635,6 @@ static void diag_build_time_mask_update(uint8_t *buf,
 	}
 	mutex_lock(&driver->msg_mask_lock);
 	build_mask = (struct diag_msg_mask_t *)(driver->build_time_mask->ptr);
-	num_items = range->ssid_last - range->ssid_first + 1;
 
 	for (i = 0; i < driver->bt_msg_mask_tbl_count; i++, build_mask++) {
 		if (!build_mask->ptr) {
@@ -780,7 +776,7 @@ static void diag_add_fmask_to_diagid_table(uint8_t diag_id,
 	mutex_unlock(&driver->diag_id_mutex);
 }
 
-int diag_query_diag_id(char *process_name, uint8_t *diag_id)
+static int diag_query_diag_id(char *process_name, uint8_t *diag_id)
 {
 	struct list_head *start;
 	struct list_head *temp;
@@ -802,7 +798,7 @@ int diag_query_diag_id(char *process_name, uint8_t *diag_id)
 	return 0;
 }
 
-void process_diagid_v2_feature_mask(uint32_t diag_id,
+static void process_diagid_v2_feature_mask(uint32_t diag_id,
 		uint32_t pd_feature_mask)
 {
 	int i = 0;
