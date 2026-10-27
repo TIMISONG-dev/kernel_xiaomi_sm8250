@@ -860,32 +860,6 @@ static struct snd_pcm_ops audio_playback_ops = {
 	.pointer	= audio_pcm_pointer,
 };
 
-int audio_source_bind_config(struct usb_configuration *c,
-		struct audio_source_config *config)
-{
-	struct audio_dev *audio;
-	int err;
-
-	config->card = -1;
-	config->device = -1;
-
-	audio = &_audio_dev;
-
-	err = snd_card_setup(c, config);
-	if (err)
-		return err;
-
-	err = usb_add_function(c, &audio->func);
-	if (err)
-		goto add_fail;
-
-	return 0;
-
-add_fail:
-	snd_card_free(audio->card);
-	return err;
-}
-
 static int snd_card_setup(struct usb_configuration *c,
 		struct audio_source_config *config)
 {
