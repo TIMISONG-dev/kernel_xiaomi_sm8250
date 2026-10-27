@@ -223,6 +223,8 @@ EXPORT_SYMBOL_GPL(__init_srcu_struct);
  * Must invoke this on a given srcu_struct before passing that srcu_struct
  * to any other function.  Each srcu_struct represents a separate domain
  * of SRCU protection.
+ *
+ * Return: 0 on success, or -ENOMEM if the per-CPU data allocation fails.
  */
 int init_srcu_struct(struct srcu_struct *ssp)
 {
@@ -346,6 +348,9 @@ static bool srcu_readers_active_idx_check(struct srcu_struct *ssp, int idx)
  * Note that this is not an atomic primitive, and can therefore suffer
  * severe errors when invoked on an active srcu_struct.  That said, it
  * can be useful as an error check at cleanup time.
+ *
+ * Return: true if the sampled reader counts indicate active readers, false
+ * otherwise.
  */
 static bool srcu_readers_active(struct srcu_struct *ssp)
 {
@@ -1160,6 +1165,8 @@ EXPORT_SYMBOL_GPL(srcu_barrier);
  *
  * Report the number of batches, correlated with, but not necessarily
  * precisely the same as, the number of grace periods that have elapsed.
+ *
+ * Return: the current SRCU batch index.
  */
 unsigned long srcu_batches_completed(struct srcu_struct *ssp)
 {
