@@ -490,7 +490,7 @@ static void ipa3_usb_notify_do(enum ipa3_usb_transport_type ttype,
  * This call-back is called from ECM or RNDIS drivers.
  * Both drivers are data tethering drivers and not DPL
  */
-void ipa3_usb_device_ready_notify_cb(void)
+static void ipa3_usb_device_ready_notify_cb(void)
 {
 	IPA_USB_DBG_LOW("entry\n");
 	ipa3_usb_notify_do(IPA_USB_TRANSPORT_TETH,
@@ -906,7 +906,7 @@ bad_params:
 }
 EXPORT_SYMBOL(ipa_usb_init_teth_prot);
 
-void ipa3_usb_gsi_evt_err_cb(struct gsi_evt_err_notify *notify)
+static void ipa3_usb_gsi_evt_err_cb(struct gsi_evt_err_notify *notify)
 {
 	IPA_USB_DBG_LOW("entry\n");
 	if (!notify)
@@ -916,7 +916,7 @@ void ipa3_usb_gsi_evt_err_cb(struct gsi_evt_err_notify *notify)
 	IPA_USB_DBG_LOW("exit\n");
 }
 
-void ipa3_usb_gsi_chan_err_cb(struct gsi_chan_err_notify *notify)
+static void ipa3_usb_gsi_chan_err_cb(struct gsi_chan_err_notify *notify)
 {
 	IPA_USB_DBG_LOW("entry\n");
 	if (!notify)
