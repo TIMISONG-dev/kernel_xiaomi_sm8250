@@ -1737,10 +1737,10 @@ void bam_pipe_halt(void *base, u32 pipe, bool halt)
 }
 
 /* output the content of BAM-level registers */
-void print_bam_reg(void *virt_addr)
+void print_bam_reg(void __iomem *virt_addr)
 {
 	int i, n, index = 0;
-	u32 *bam = (u32 *) virt_addr;
+	void __iomem *bam = virt_addr;
 	u32 ctrl;
 	u32 ver;
 	u32 pipes;
@@ -1751,18 +1751,18 @@ void print_bam_reg(void *virt_addr)
 
 #ifdef CONFIG_SPS_SUPPORT_NDP_BAM
 	if (bam_type == SPS_BAM_NDP_4K) {
-		ctrl = bam[0x0 / 4];
-		ver = bam[0x1000 / 4];
-		pipes = bam[0x1008 / 4];
+		ctrl = readl_relaxed(bam + 0x0);
+		ver = readl_relaxed(bam + 0x1000);
+		pipes = readl_relaxed(bam + 0x1008);
 	} else {
-		ctrl = bam[0x0 / 4];
-		ver = bam[0x4 / 4];
-		pipes = bam[0x3c / 4];
+		ctrl = readl_relaxed(bam + 0x0);
+		ver = readl_relaxed(bam + 0x4);
+		pipes = readl_relaxed(bam + 0x3c);
 	}
 #else
-	ctrl = bam[0xf80 / 4];
-	ver = bam[0xf84 / 4];
-	pipes = bam[0xfbc / 4];
+	ctrl = readl_relaxed(bam + 0xf80);
+	ver = readl_relaxed(bam + 0xf84);
+	pipes = readl_relaxed(bam + 0xfbc);
 #endif
 
 	SPS_DUMP("%s",
@@ -1783,8 +1783,8 @@ void print_bam_reg(void *virt_addr)
 	for (i = 0xf80; i < 0x1000; i += 0x10)
 #endif
 		SPS_DUMP("bam addr 0x%x: 0x%x,0x%x,0x%x,0x%x.\n", i,
-			bam[i / 4], bam[(i / 4) + 1],
-			bam[(i / 4) + 2], bam[(i / 4) + 3]);
+			readl_relaxed(bam + i), readl_relaxed(bam + i + 4),
+			readl_relaxed(bam + i + 8), readl_relaxed(bam + i + 12));
 
 #ifdef CONFIG_SPS_SUPPORT_NDP_BAM
 	if (bam_type == SPS_BAM_NDP_4K) {
@@ -1799,18 +1799,18 @@ void print_bam_reg(void *virt_addr)
 	for (i = 0x1800, n = 0; n++ < 4; i += 0x80)
 #endif
 		SPS_DUMP("bam addr 0x%x: 0x%x,0x%x,0x%x,0x%x.\n", i,
-			bam[i / 4], bam[(i / 4) + 1],
-			bam[(i / 4) + 2], bam[(i / 4) + 3]);
+			readl_relaxed(bam + i), readl_relaxed(bam + i + 4),
+			readl_relaxed(bam + i + 8), readl_relaxed(bam + i + 12));
 
 	SPS_DUMP("%s",
 		"\nsps:<bam-begin> --- Content of BAM-level registers ---\n");
 }
 
 /* output the content of BAM pipe registers */
-void print_bam_pipe_reg(void *virt_addr, u32 pipe_index)
+void print_bam_pipe_reg(void __iomem *virt_addr, u32 pipe_index)
 {
 	int i;
-	u32 *bam = (u32 *) virt_addr;
+	void __iomem *bam = virt_addr;
 	u32 pipe = pipe_index;
 	u32 offset = 0;
 
@@ -1834,8 +1834,8 @@ void print_bam_pipe_reg(void *virt_addr, u32 pipe_index)
 	    i += 0x10)
 #endif
 		SPS_DUMP("bam addr 0x%x: 0x%x,0x%x,0x%x,0x%x.\n", i,
-			bam[i / 4], bam[(i / 4) + 1],
-			bam[(i / 4) + 2], bam[(i / 4) + 3]);
+			readl_relaxed(bam + i), readl_relaxed(bam + i + 4),
+			readl_relaxed(bam + i + 8), readl_relaxed(bam + i + 12));
 
 	SPS_DUMP("%s",
 		"-- Pipe Configuration and Internal State Registers --\n");
@@ -1852,8 +1852,8 @@ void print_bam_pipe_reg(void *virt_addr, u32 pipe_index)
 	    i += 0x10)
 #endif
 		SPS_DUMP("bam addr 0x%x: 0x%x,0x%x,0x%x,0x%x.\n", i,
-			bam[i / 4], bam[(i / 4) + 1],
-			bam[(i / 4) + 2], bam[(i / 4) + 3]);
+			readl_relaxed(bam + i), readl_relaxed(bam + i + 4),
+			readl_relaxed(bam + i + 8), readl_relaxed(bam + i + 12));
 
 	SPS_DUMP("\nsps:<pipe-end> --- Content of Pipe %d registers ---\n",
 			pipe);
