@@ -90,12 +90,10 @@ static void ipa3_handle_indication_req(struct qmi_handle *qmi_handle,
 	struct qmi_txn *txn,
 	const void *decoded_msg)
 {
-	struct ipa_indication_reg_req_msg_v01 *indication_req;
 	struct ipa_indication_reg_resp_msg_v01 resp;
 	struct ipa_master_driver_init_complt_ind_msg_v01 ind;
 	int rc;
 
-	indication_req = (struct ipa_indication_reg_req_msg_v01 *)decoded_msg;
 	IPAWANDBG("Received INDICATION Request\n");
 
 	/* cache the client sq */
@@ -269,13 +267,10 @@ static void ipa3_handle_modem_init_cmplt_req(struct qmi_handle *qmi_handle,
 	struct qmi_txn *txn,
 	const void *decoded_msg)
 {
-	struct ipa_init_modem_driver_cmplt_req_msg_v01 *cmplt_req;
 	struct ipa_init_modem_driver_cmplt_resp_msg_v01 resp;
 	int rc;
 
 	IPAWANDBG("Received QMI_IPA_INIT_MODEM_DRIVER_CMPLT_REQ_V01\n");
-	cmplt_req = (struct ipa_init_modem_driver_cmplt_req_msg_v01 *)
-		decoded_msg;
 
 	if (!ipa3_modem_init_cmplt) {
 		ipa3_modem_init_cmplt = true;

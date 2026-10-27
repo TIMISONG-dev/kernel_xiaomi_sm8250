@@ -1607,12 +1607,6 @@ static const struct ipa_ep_configuration ipa3_ep_mapping
 			IPA_DPS_HPS_SEQ_TYPE_2ND_PKT_PROCESS_PASS_NO_DEC_UCP,
 			QMB_MASTER_SELECT_DDR,
 			{0, 8, 8, 16, IPA_EE_AP } },
-	[IPA_4_0][IPA_CLIENT_TEST1_PROD]          = {
-			true, IPA_v4_0_GROUP_UL_DL,
-			true,
-			IPA_DPS_HPS_SEQ_TYPE_2ND_PKT_PROCESS_PASS_NO_DEC_UCP,
-			QMB_MASTER_SELECT_DDR,
-			{0, 8, 8, 16, IPA_EE_AP } },
 	[IPA_4_0_MHI][IPA_CLIENT_TEST2_PROD]          = {
 			true, IPA_v4_0_GROUP_UL_DL,
 			true,
@@ -3265,7 +3259,7 @@ static struct ipa3_mem_partition ipa_4_7_mem_part = {
  *
  * Return codes: 0 on success, negative on failure.
  */
-int ipa3_get_clients_from_rm_resource(
+static int ipa3_get_clients_from_rm_resource(
 	enum ipa_rm_resource_name resource,
 	struct ipa3_client_names *clients)
 {
@@ -3680,7 +3674,7 @@ static u8 ipa3_get_hw_type_index(void)
  *
  * Returns:	None
  */
-void _ipa_sram_settings_read_v3_0(void)
+static void _ipa_sram_settings_read_v3_0(void)
 {
 	struct ipahal_reg_shared_mem_size smem_sz;
 
@@ -4827,7 +4821,7 @@ int ipa3_cfg_ep_ctrl(u32 clnt_hdl, const struct ipa_ep_cfg_ctrl *ep_ctrl)
 	return 0;
 }
 
-const char *ipa3_get_mode_type_str(enum ipa_mode_type mode)
+static const char *ipa3_get_mode_type_str(enum ipa_mode_type mode)
 {
 	switch (mode) {
 	case (IPA_BASIC):
@@ -4920,7 +4914,7 @@ int ipa3_cfg_ep_mode(u32 clnt_hdl, const struct ipa_ep_cfg_mode *ep_mode)
 	return 0;
 }
 
-const char *ipa3_get_aggr_enable_str(enum ipa_aggr_en_type aggr_en)
+static const char *ipa3_get_aggr_enable_str(enum ipa_aggr_en_type aggr_en)
 {
 	switch (aggr_en) {
 	case (IPA_BYPASS_AGGR):
@@ -4934,7 +4928,7 @@ const char *ipa3_get_aggr_enable_str(enum ipa_aggr_en_type aggr_en)
 	return "undefined";
 }
 
-const char *ipa3_get_aggr_type_str(enum ipa_aggr_type aggr_type)
+static const char *ipa3_get_aggr_type_str(enum ipa_aggr_type aggr_type)
 {
 	switch (aggr_type) {
 	case (IPA_MBIM_16):
@@ -5386,7 +5380,7 @@ int ipa3_cfg_ep_deaggr(u32 clnt_hdl,
  *
  * Note:	Should not be called from atomic context
  */
-int ipa3_cfg_ep_metadata(u32 clnt_hdl, const struct ipa_ep_cfg_metadata *ep_md)
+static int ipa3_cfg_ep_metadata(u32 clnt_hdl, const struct ipa_ep_cfg_metadata *ep_md)
 {
 	u32 qmap_id = 0;
 	struct ipa_ep_cfg_metadata ep_md_reg_wrt;
@@ -6804,7 +6798,7 @@ bool ipa3_get_modem_cfg_emb_pipe_flt(void)
  *
  * Return value: enum ipa_transport_type
  */
-enum ipa_transport_type ipa3_get_transport_type(void)
+static enum ipa_transport_type ipa3_get_transport_type(void)
 {
 	return IPA_TRANSPORT_TYPE_GSI;
 }
@@ -6820,7 +6814,7 @@ u32 ipa3_get_num_pipes(void)
  *
  * Return value: 0 or negative in case of failure
  */
-int ipa3_disable_apps_wan_cons_deaggr(uint32_t agg_size, uint32_t agg_count)
+static int ipa3_disable_apps_wan_cons_deaggr(uint32_t agg_size, uint32_t agg_count)
 {
 	int res = -1;
 
@@ -7704,7 +7698,7 @@ static int __ipa3_stop_gsi_channel(u32 clnt_hdl)
 		res = ipa3_cfg_ep_holb(ipa3_get_ep_mapping(
 				IPA_CLIENT_MHI_PRIME_RMNET_CONS), &holb_cfg);
 		if (res) {
-			IPAERR("Enable HOLB failed ep:%lu\n",
+			IPAERR("Enable HOLB failed ep:%d\n",
 				ipa3_get_ep_mapping(
 					IPA_CLIENT_MHI_PRIME_RMNET_CONS));
 		}
