@@ -3,6 +3,7 @@
 /* Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved. */
 
 #include <linux/clk.h>
+#include <linux/clk/qcom.h>
 #include <linux/export.h>
 #include <linux/module.h>
 #include <linux/regmap.h>

@@ -92,14 +92,6 @@ static inline u32 gdsc_mb(struct gdsc *gds)
 	return reg;
 }
 
-void gdsc_allow_clear_retention(struct regulator *regulator)
-{
-	struct gdsc *sc = regulator_get_drvdata(regulator);
-
-	if (sc)
-		sc->allow_clear = true;
-}
-
 static int poll_gdsc_status(struct gdsc *sc, enum gdscr_status status)
 {
 	struct regmap *regmap;
