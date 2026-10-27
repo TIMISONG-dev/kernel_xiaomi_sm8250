@@ -672,10 +672,9 @@ int wlan_cfg80211_spectral_scan_get_cap(struct wiphy *wiphy,
 	struct spectral_caps *scaps;
 	struct sk_buff *skb;
 	struct spectral_cp_request sscan_req;
-	QDF_STATUS status;
 
 	sscan_req.req_id = SPECTRAL_GET_CAPABILITY_INFO;
-	status = ucfg_spectral_control(pdev, &sscan_req);
+	ucfg_spectral_control(pdev, &sscan_req);
 	scaps = &sscan_req.caps_req.sscan_caps;
 
 	skb = wlan_cfg80211_vendor_cmd_alloc_reply_skb(wiphy,
@@ -792,10 +791,9 @@ int wlan_cfg80211_spectral_scan_get_diag_stats(struct wiphy *wiphy,
 	struct spectral_diag_stats *spetcral_diag;
 	struct sk_buff *skb;
 	struct spectral_cp_request sscan_req;
-	QDF_STATUS status;
 
 	sscan_req.req_id = SPECTRAL_GET_DIAG_STATS;
-	status = ucfg_spectral_control(pdev, &sscan_req);
+	ucfg_spectral_control(pdev, &sscan_req);
 	spetcral_diag = &sscan_req.diag_req.sscan_diag;
 
 	skb = wlan_cfg80211_vendor_cmd_alloc_reply_skb(wiphy,
