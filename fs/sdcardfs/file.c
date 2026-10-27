@@ -375,7 +375,7 @@ out:
 /*
  * Sdcardfs read_iter, redirect modified iocb to lower read_iter
  */
-ssize_t sdcardfs_read_iter(struct kiocb *iocb, struct iov_iter *iter)
+static ssize_t sdcardfs_read_iter(struct kiocb *iocb, struct iov_iter *iter)
 {
 	int err;
 	struct file *file = iocb->ki_filp, *lower_file;
@@ -402,7 +402,7 @@ out:
 /*
  * Sdcardfs write_iter, redirect modified iocb to lower write_iter
  */
-ssize_t sdcardfs_write_iter(struct kiocb *iocb, struct iov_iter *iter)
+static ssize_t sdcardfs_write_iter(struct kiocb *iocb, struct iov_iter *iter)
 {
 	int err;
 	struct file *file = iocb->ki_filp, *lower_file;
