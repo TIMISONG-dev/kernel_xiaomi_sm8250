@@ -1311,7 +1311,7 @@ static void devm_pinctrl_release(struct device *dev, void *res)
 }
 
 /**
- * struct devm_pinctrl_get() - Resource managed pinctrl_get()
+ * devm_pinctrl_get() - Resource managed pinctrl_get()
  * @dev: the device to obtain the handle for
  *
  * If there is a need to explicitly destroy the returned struct pinctrl,
