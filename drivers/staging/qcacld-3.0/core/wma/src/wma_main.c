@@ -742,7 +742,6 @@ static int32_t wma_set_priv_cfg(tp_wma_handle wma_handle,
 		uint8_t mcc_channel = privcmd->param_value & 0x000000FF;
 		uint8_t mcc_channel_latency =
 			(privcmd->param_value & 0x0000FF00) >> 8;
-		int ret = -1;
 
 		WMA_LOGD("%s: Parsed input: Channel #1:%d, latency:%dms",
 			__func__, mcc_channel, mcc_channel_latency);
@@ -763,7 +762,6 @@ static int32_t wma_set_priv_cfg(tp_wma_handle wma_handle,
 			(privcmd->param_value & 0x0000FF00) >> 8;
 		uint8_t adapter_1_quota =
 			(privcmd->param_value & 0x00FF0000) >> 16;
-		int ret = -1;
 
 		WMA_LOGD("%s: Parsed input: Channel #1:%d, Channel #2:%d, quota 1:%dms",
 			  __func__, adapter_1_chan_number,
