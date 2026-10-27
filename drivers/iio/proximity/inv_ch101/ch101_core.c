@@ -495,6 +495,8 @@ static int ch101_push_to_buffer(void *input_data)
 		pbuf += sizeof(u64);
 		ret = iio_push_to_buffers_with_timestamp(indio_dev, buf,
 						starting_ts);
+		if (ret)
+			dev_err_ratelimited(dev, "Failed to push sample: %d\n", ret);
 
 		pr_info(TAG "push tobuffer=%d, size=%d\n", i,
 			(int)(pbuf-buf));
