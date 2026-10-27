@@ -440,6 +440,7 @@ struct device *ipa3_get_dma_dev(void)
 
 /**
  * ipa3_get_smmu_ctx()- Return smmu context for the given cb_type
+ * @cb_type: Context-bank type indexing the SMMU context array.
  *
  * Return value: pointer to smmu context address
  */
@@ -5025,6 +5026,7 @@ void ipa3_disable_clks(void)
 
 /**
  * ipa3_start_tag_process() - Send TAG packet and wait for it to come back
+ * @work: TAG process work item; unused by this worker.
  *
  * This function is called prior to clock gating when active client counter
  * is 1. TAG process ensures that there are no packets inside IPA HW that
@@ -5159,6 +5161,7 @@ void ipa3_active_clients_log_inc(struct ipa_active_client_logging_info *id,
 /**
  * ipa3_inc_client_enable_clks() - Increase active clients counter, and
  * enable ipa clocks if necessary
+ * @id: Active-client logging information for this reference count change.
  *
  * Return codes:
  * None
@@ -5213,6 +5216,7 @@ static int ipa3_active_clks_status(void)
  * ipa3_inc_client_enable_clks_no_block() - Only increment the number of active
  * clients if no asynchronous actions should be done. Asynchronous actions are
  * locking a mutex and waking up IPA HW.
+ * @id: Active-client logging information for this reference count change.
  *
  * Return codes: 0 for success
  *		-EPERM if an asynchronous action should have been done
@@ -5296,6 +5300,7 @@ bail:
 
 /**
  * ipa3_dec_client_disable_clks() - Decrease active clients counter
+ * @id: Active-client logging information for this reference count change.
  *
  * In case that there are no active clients this function also starts
  * TAG process. When TAG progress ends ipa clocks will be gated.
@@ -5327,6 +5332,7 @@ static void ipa_inc_clients_enable_clks_on_wq(struct work_struct *work)
  * ipa3_dec_client_disable_clks_no_block() - Decrease active clients counter
  * if possible without blocking. If this is the last client then the desrease
  * will happen from work queue context.
+ * @id: Active-client logging information for this reference count change.
  *
  * Return codes:
  * None
@@ -5879,7 +5885,7 @@ static int ipa3_alloc_gsi_channel(void)
  * IPA HW (via GSI).
  *
  * @resource_p:	contain platform specific values from DST file
- * @pdev:	The platform device structure representing the IPA driver
+ * @ipa_dev:	The platform device structure representing the IPA driver
  *
  * Function initialization process:
  * - Initialize endpoints bitmaps
@@ -6596,7 +6602,7 @@ static int ipa3_lan_poll(struct napi_struct *napi, int budget)
  * as structure allocations and initializations, register writes, etc.
  *
  * @resource_p:	contain platform specific values from DST file
- * @pdev:	The platform device structure representing the IPA driver
+ * @ipa_pdev:	The platform device structure representing the IPA driver
  *
  * Function initialization process:
  * Allocate memory for the driver context data struct
@@ -8584,6 +8590,8 @@ int ipa3_iommu_map(struct iommu_domain *domain,
 
 /**
  * ipa3_get_smmu_params()- Return the ipa3 smmu related params.
+ * @in: Client selector for the requested SMMU information.
+ * @out: Output SMMU enablement and context-bank parameters.
  */
 int ipa3_get_smmu_params(struct ipa_smmu_in_params *in,
 	struct ipa_smmu_out_params *out)

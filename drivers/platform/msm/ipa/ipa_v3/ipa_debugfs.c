@@ -209,6 +209,9 @@ static ssize_t ipa3_write_ep_reg(struct file *file, const char __user *buf,
 
 /**
  * _ipa_read_ep_reg_v3_0() - Reads and prints endpoint configuration registers
+ * @buf: Output buffer for formatted endpoint register values.
+ * @max_len: Capacity of the output buffer in bytes.
+ * @pipe: Endpoint index whose configuration registers are read.
  *
  * Returns the number of characters printed
  */
@@ -242,6 +245,9 @@ int _ipa_read_ep_reg_v3_0(char *buf, int max_len, int pipe)
 
 /**
  * _ipa_read_ep_reg_v4_0() - Reads and prints endpoint configuration registers
+ * @buf: Output buffer for formatted endpoint register values.
+ * @max_len: Capacity of the output buffer in bytes.
+ * @pipe: Endpoint index whose configuration registers are read.
  *
  * Returns the number of characters printed
  * Removed IPA_ENDP_INIT_ROUTE_n from v3

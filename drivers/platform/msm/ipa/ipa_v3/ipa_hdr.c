@@ -126,6 +126,7 @@ static int ipa3_hdr_proc_ctx_to_hw_format(struct ipa_mem_buffer *mem,
  * @mem:		[out] buffer to put the processing context table
  * @aligned_mem:	[out] actual processing context table (with alignment).
  *			Processing context table needs to be 8 Bytes aligned.
+ * @hdr_sys_addr: DMA address of the header table when headers reside in system memory.
  *
  * Returns:	0 on success, negative on failure
  */

@@ -761,6 +761,10 @@ bail:
 /**
  * ipa3_handle_rx_core() - The core functionality of packet reception. This
  * function is read from multiple code paths.
+ * @sys: Receive system context whose GSI channel is polled.
+ * @process_all: Continue polling beyond one completion while the requested poll state holds.
+ * @in_poll_state: Poll while the current polling state is set; otherwise poll while it is
+ *   clear.
  *
  * All the packets on the Rx data path are received on the IPA_A5_LAN_WAN_IN
  * endpoint. The function runs as long as there are packets in the pipe.
@@ -805,6 +809,8 @@ static int ipa3_handle_rx_core(struct ipa3_sys_context *sys, bool process_all,
  *                                  coalescing pipe.
  * In RSC/RSB enabled cases using common event ring, so both the pipe
  * polling state should be in sync.
+ * @client: WAN or coalescing consumer whose paired pipe state is updated.
+ * @state: Polling state to store for the paired receive pipe.
  */
 static void __ipa3_update_curr_poll_state(enum ipa_client_type client, int state)
 {
@@ -822,6 +828,7 @@ static void __ipa3_update_curr_poll_state(enum ipa_client_type client, int state
 
 /**
  * ipa3_rx_switch_to_intr_mode() - Operate the Rx data path in interrupt mode
+ * @sys: Receive system context containing the endpoint and RX resources.
  */
 static int ipa3_rx_switch_to_intr_mode(struct ipa3_sys_context *sys)
 {
@@ -851,7 +858,7 @@ static int ipa3_rx_switch_to_intr_mode(struct ipa3_sys_context *sys)
 /**
  * ipa3_handle_rx() - handle packet reception. This function is executed in the
  * context of a work queue.
- * @work: work struct needed by the work queue
+ * @sys: Receive system context whose channel is polled
  *
  * ipa3_handle_rx_core() is run in polling mode. After all packets has been
  * received, the driver switches back to interrupt mode.
@@ -1538,8 +1545,8 @@ static int ipa3_teardown_coal_def_pipe(u32 clnt_hdl)
  * ipa3_tx_comp_usr_notify_release() - Callback function which will call the
  * user supplied callback function to release the skb, or release it on
  * its own if no callback function was supplied.
- * @user1
- * @user2
+ * @user1: Transmitted skb to release or pass to the client callback.
+ * @user2: Destination endpoint index identifying the client callback.
  *
  * This notified callback is for the destination client.
  */
@@ -1563,7 +1570,7 @@ static void ipa3_tx_comp_usr_notify_release(void *user1, int user2)
  * ipa3_tx_dp() - Data-path tx handler
  * @dst:	[in] which IPA destination to route tx packets to
  * @skb:	[in] the packet to send
- * @metadata:	[in] TX packet meta-data
+ * @meta:	[in] TX packet meta-data
  *
  * Data-path tx handler, this is used for both SW data-path which by-passes most
  * IPA HW blocks AND the regular HW data-path for WLAN AMPDU traffic only. If
@@ -2325,6 +2332,7 @@ fail_kmem_cache_alloc:
 
 /**
  * ipa3_replenish_rx_cache() - Replenish the Rx packets cache.
+ * @sys: Receive system context containing the endpoint and RX resources.
  *
  * The function allocates buffers in the rx_pkt_wrapper_cache cache until there
  * are IPA_RX_POOL_CEIL buffers in the cache.
@@ -2626,7 +2634,7 @@ static void ipa3_replenish_rx_work_func(struct work_struct *work)
  * free_rx_pkt() - function to free the skb and rx_pkt_wrapper
  *
  * @chan_user_data: ipa_sys_context used for skb size and skb_free func
- * @xfer_uder_data: rx_pkt wrapper to be freed
+ * @xfer_user_data: rx_pkt wrapper to be freed
  *
  */
 static void free_rx_pkt(void *chan_user_data, void *xfer_user_data)
@@ -2647,7 +2655,7 @@ static void free_rx_pkt(void *chan_user_data, void *xfer_user_data)
  * free_rx_page() - function to free the page and rx_pkt_wrapper
  *
  * @chan_user_data: ipa_sys_context used for skb size and skb_free func
- * @xfer_uder_data: rx_pkt wrapper to be freed
+ * @xfer_user_data: rx_pkt wrapper to be freed
  *
  */
 static void free_rx_page(void *chan_user_data, void *xfer_user_data)
@@ -2672,6 +2680,7 @@ static void free_rx_page(void *chan_user_data, void *xfer_user_data)
 
 /**
  * ipa3_cleanup_rx() - release RX queue resources
+ * @sys: Receive system context containing the endpoint and RX resources.
  *
  */
 static void ipa3_cleanup_rx(struct ipa3_sys_context *sys)
@@ -3382,6 +3391,8 @@ static void ipa3_recycle_rx_page_wrapper(struct ipa3_rx_pkt_wrapper *rx_pkt)
 
 /**
  * handle_skb_completion()- Handle event completion EOB or EOT and prep the skb
+ * @notify: GSI completion containing the RX wrapper, channel context and event.
+ * @update_truesize: Update skb truesize and save the received length in its control buffer.
  *
  * if eob: Set skb values, put rx_pkt at the end of the list and return NULL
  *
@@ -3474,6 +3485,8 @@ static struct sk_buff *handle_skb_completion(struct gsi_chan_xfer_notify
 /**
  * handle_page_completion()- Handle event completion EOB or EOT
  * and prep the skb
+ * @notify: GSI completion containing the RX wrapper, channel context and event.
+ * @update_truesize: Requested skb truesize update; currently unsupported for page completions.
  *
  * if eob: Set skb values, put rx_pkt at the end of the list and return NULL
  *
@@ -4107,7 +4120,7 @@ static void ipa3_tx_client_rx_pkt_status(void *user1, int user2)
 /**
  * ipa3_tx_dp_mul() - Data-path tx handler for multiple packets
  * @src: [in] - Client that is sending data
- * @ipa_tx_data_desc:	[in] data descriptors from wlan
+ * @data_desc:	[in] data descriptors from wlan
  *
  * this is used for to transfer data descriptors that received
  * from WLAN1_PROD pipe to IPA HW
@@ -5011,6 +5024,8 @@ static int ipa_poll_gsi_n_pkt(struct ipa3_sys_context *sys,
 /**
  * ipa3_lan_rx_poll() - Poll the LAN rx packets from IPA HW.
  * This function is executed in the softirq context
+ * @clnt_hdl: IPA endpoint handle whose receive channel is polled.
+ * @weight: Polling budget used to derive the aggregated-frame limit.
  *
  * if input budget is zero, the driver switches back to
  * interrupt mode.
@@ -5083,6 +5098,8 @@ start_poll:
 /**
  * ipa3_rx_poll() - Poll the WAN rx packets from IPA HW. This
  * function is exectued in the softirq context
+ * @clnt_hdl: IPA endpoint handle whose receive channel is polled.
+ * @weight: Polling budget used to derive the aggregated-frame limit.
  *
  * if input budget is zero, the driver switches back to
  * interrupt mode.
@@ -5284,6 +5301,7 @@ int ipa_gsi_ch20_wa(void)
 
 /**
  * ipa_adjust_ra_buff_base_sz()
+ * @aggr_byte_limit: Aggregation byte limit before adding MTU and generic RX buffer overhead.
  *
  * Return value: the largest power of two which is smaller
  * than the input value

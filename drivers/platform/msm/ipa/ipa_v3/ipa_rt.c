@@ -429,6 +429,7 @@ allocate_fail:
  *  bodies at the sram is enough for the commit
  * @ipt: the ip address family type
  * @rlt: the rule type (hashable or non-hashable)
+ * @bdy: Table body buffer whose size is compared with the local SRAM allocation.
  *
  * Return: true if enough space available or false in other cases
  */
@@ -457,7 +458,7 @@ static bool ipa_rt_valid_lcl_tbl_size(enum ipa_ip_type ipt,
 /**
  * __ipa_commit_rt_v3() - commit rt tables to the hw
  * commit the headers and the bodies if are local with internal cache flushing
- * @ipt: the ip address family type
+ * @ip: the ip address family type
  *
  * Return: 0 on success, negative on failure
  */
@@ -2231,6 +2232,7 @@ error:
 /**
  * ipa3_mdfy_rt_rule() - Modify the specified routing rules in SW and optionally
  * commit to IPA HW
+ * @hdls: Rule modifications and commit flag, with per-rule status returned in place.
  *
  * Returns:	0 on success, negative on failure
  *
@@ -2277,6 +2279,7 @@ bail:
 /**
  * ipa3_mdfy_rt_rule_v2() - Modify the specified routing rules
  * in SW and optionally commit to IPA HW
+ * @hdls: Rule modifications and commit flag, with per-rule status returned in place.
  *
  * Returns:	0 on success, negative on failure
  *

@@ -37,6 +37,7 @@
  * @dev_num: kernel device number
  * @dev: kernel device struct pointer
  * @cdev: kernel character device struct
+ * @modem_pm_hdl: Handle of the modem tethering PM client.
  */
 struct ipa3_teth_bridge_ctx {
 	struct class *class;
@@ -131,6 +132,7 @@ int ipa3_teth_bridge_get_pm_hdl(void)
 
 /**
  * ipa3_teth_bridge_disconnect() - Disconnect tethering bridge module
+ * @client: Tethering client argument; unused by this implementation.
  */
 int ipa3_teth_bridge_disconnect(enum ipa_client_type client)
 {

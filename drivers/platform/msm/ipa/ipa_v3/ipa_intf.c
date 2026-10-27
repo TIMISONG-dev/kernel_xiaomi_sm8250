@@ -774,7 +774,7 @@ ssize_t ipa3_read(struct file *filp, char __user *buf, size_t count,
 /**
  * ipa3_pull_msg() - pull the specified message from client
  * @meta: [in] message meta-data
- * @buf:  [out] buffer to read into
+ * @buff:  [out] buffer to read into
  * @count: [in] size of above buffer
  *
  * Populate the supplied buffer with the pull message which is fetched

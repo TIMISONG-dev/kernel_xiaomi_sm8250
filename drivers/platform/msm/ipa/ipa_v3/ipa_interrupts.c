@@ -536,7 +536,6 @@ int ipa3_interrupts_init(u32 ipa_irq, u32 ee, struct device *ipa_dev)
 /**
  * ipa3_interrupts_destroy() - Destroy the IPA interrupts framework
  * @ipa_irq:	The interrupt number to allocate
- * @ee:		Execution environment
  * @ipa_dev:	The basic device structure representing the IPA driver
  *
  * - Disable apps processor wakeup by IPA interrupts
@@ -555,7 +554,7 @@ void ipa3_interrupts_destroy(u32 ipa_irq, struct device *ipa_dev)
 
 /**
  * ipa3_suspend_active_aggr_wa() - Emulate suspend IRQ
- * @clnt_hndl:		suspended client handle, IRQ is emulated for this pipe
+ * @clnt_hdl:		suspended client handle, IRQ is emulated for this pipe
  *
  *  Emulate suspend IRQ to unsuspend client which was suspended with an open
  *  aggregation frame in order to bypass HW bug of IRQ not generated when
