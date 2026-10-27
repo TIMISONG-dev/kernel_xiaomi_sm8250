@@ -133,7 +133,7 @@ static ssize_t fan_store(struct device *dev, struct device_attribute *attr,
 	if (kstrtol(buf, 0, &val))
 		return -EINVAL;
 	val1 = val >> 8;
-	pr_debug("%s, count:%d  val:%lx, val1:%lx, buf:%s\n",
+	pr_debug("%s, count:%zu  val:%lx, val1:%lx, buf:%s\n",
 				 __func__, count, val, val1, buf);
 	if (val1 == 0x50) {
 		val1 = val & 0xFF;
@@ -296,7 +296,7 @@ static int max31760_probe(struct i2c_client *client,
 
 	ret = sysfs_create_group(&pdata->dev->kobj, &max31760_fs_attr_group);
 	if (ret)
-		pr_err("%s unable to register max31760 sysfs nodes\n");
+		pr_err("%s unable to register max31760 sysfs nodes\n", __func__);
 
 	/* 00 - 0x01 -- 33Hz */
 	/* 01 - 0x09 -- 150Hz */
