@@ -409,6 +409,9 @@ void hdd_event_eapol_log(struct sk_buff *skb, enum qdf_proto_dir dir)
 
 	WLAN_HOST_DIAG_EVENT_DEF(wlan_diag_event, struct host_event_wlan_eapol);
 
+	if (skb_headlen(skb) < EAPOL_KEY_INFO_OFFSET + sizeof(eapol_key_info))
+		return;
+
 	if ((dir == QDF_TX &&
 		(QDF_NBUF_CB_PACKET_TYPE_EAPOL !=
 		 QDF_NBUF_CB_GET_PACKET_TYPE(skb))))
@@ -416,8 +419,8 @@ void hdd_event_eapol_log(struct sk_buff *skb, enum qdf_proto_dir dir)
 	else if (!qdf_nbuf_is_ipv4_eapol_pkt(skb))
 		return;
 
-	eapol_key_info = (uint16_t)(*(uint16_t *)
-				(skb->data + EAPOL_KEY_INFO_OFFSET));
+	qdf_mem_copy(&eapol_key_info, skb->data + EAPOL_KEY_INFO_OFFSET,
+		     sizeof(eapol_key_info));
 
 	wlan_diag_event.event_sub_type =
 		(dir == QDF_TX ?
