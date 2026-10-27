@@ -1537,11 +1537,15 @@ void diag_dci_channel_open_work(struct work_struct *work)
 	diag_update_userspace_clients(DCI_LOG_MASKS_TYPE);
 	/* Send updated log mask to peripherals */
 	ret = dci_ops_tbl[DCI_LOCAL_PROC].send_log_mask(DCI_LOCAL_PROC);
+	if (ret != DIAG_DCI_NO_ERROR)
+		pr_err_ratelimited("diag: failed sending DCI mask: %d\n", ret);
 
 	/* Send updated event mask to userspace clients */
 	diag_update_userspace_clients(DCI_EVENT_MASKS_TYPE);
 	/* Send updated event mask to peripheral */
 	ret = dci_ops_tbl[DCI_LOCAL_PROC].send_event_mask(DCI_LOCAL_PROC);
+	if (ret != DIAG_DCI_NO_ERROR)
+		pr_err_ratelimited("diag: failed sending DCI mask: %d\n", ret);
 }
 
 void diag_dci_notify_client(int peripheral_mask, int data, int proc)

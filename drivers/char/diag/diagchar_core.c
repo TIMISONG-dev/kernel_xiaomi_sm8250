@@ -450,10 +450,16 @@ void diag_clear_masks(int pid)
 
 	ret = diag_process_apps_masks(cmd_disable_log_mask,
 			sizeof(cmd_disable_log_mask), pid);
+	if (ret < 0)
+		pr_err_ratelimited("diag: failed clearing mask: %d\n", ret);
 	ret = diag_process_apps_masks(cmd_disable_msg_mask,
 			sizeof(cmd_disable_msg_mask), pid);
+	if (ret < 0)
+		pr_err_ratelimited("diag: failed clearing mask: %d\n", ret);
 	ret = diag_process_apps_masks(cmd_disable_event_mask,
 			sizeof(cmd_disable_event_mask), pid);
+	if (ret < 0)
+		pr_err_ratelimited("diag: failed clearing mask: %d\n", ret);
 	DIAG_LOG(DIAG_DEBUG_PERIPHERALS,
 	"diag:%s: masks cleared successfully\n", __func__);
 }
