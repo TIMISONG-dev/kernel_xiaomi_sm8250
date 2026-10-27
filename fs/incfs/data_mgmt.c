@@ -1455,7 +1455,6 @@ int incfs_process_new_hash_block(struct data_file *df,
 				 struct incfs_fill_block *block, u8 *data)
 {
 	struct backing_file_context *bfc = NULL;
-	struct mount_info *mi = NULL;
 	struct mtree *hash_tree = NULL;
 	struct incfs_df_signature *sig = NULL;
 	loff_t hash_area_base = 0;
@@ -1469,7 +1468,6 @@ int incfs_process_new_hash_block(struct data_file *df,
 		return -EINVAL;
 
 	bfc = df->df_backing_file_context;
-	mi = df->df_mount_info;
 
 	if (!df)
 		return -ENOENT;
