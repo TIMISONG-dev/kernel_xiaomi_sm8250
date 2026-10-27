@@ -31,24 +31,25 @@
 
 /**
  * enum ipa3_cpu_2_hw_commands - Values that represent the commands from the CPU
- * IPA_CPU_2_HW_CMD_NO_OP : No operation is required.
- * IPA_CPU_2_HW_CMD_UPDATE_FLAGS : Update SW flags which defines the behavior
+ * @IPA_CPU_2_HW_CMD_NO_OP: No operation is required.
+ * @IPA_CPU_2_HW_CMD_UPDATE_FLAGS: Update SW flags which defines the behavior
  *                                 of HW.
- * IPA_CPU_2_HW_CMD_DEBUG_RUN_TEST : Launch predefined test over HW.
- * IPA_CPU_2_HW_CMD_DEBUG_GET_INFO : Read HW internal debug information.
- * IPA_CPU_2_HW_CMD_ERR_FATAL : CPU instructs HW to perform error fatal
+ * @IPA_CPU_2_HW_CMD_DEBUG_RUN_TEST: Launch predefined test over HW.
+ * @IPA_CPU_2_HW_CMD_DEBUG_GET_INFO: Read HW internal debug information.
+ * @IPA_CPU_2_HW_CMD_ERR_FATAL: CPU instructs HW to perform error fatal
  *                              handling.
- * IPA_CPU_2_HW_CMD_CLK_GATE : CPU instructs HW to goto Clock Gated state.
- * IPA_CPU_2_HW_CMD_CLK_UNGATE : CPU instructs HW to goto Clock Ungated state.
- * IPA_CPU_2_HW_CMD_MEMCPY : CPU instructs HW to do memcopy using QMB.
- * IPA_CPU_2_HW_CMD_RESET_PIPE : Command to reset a pipe - SW WA for a HW bug.
- * IPA_CPU_2_HW_CMD_GSI_CH_EMPTY : Command to check for GSI channel emptiness.
- * IPA_CPU_2_HW_CMD_REMOTE_IPA_INFO: Command to store remote IPA Info
- * IPA_CPU_2_HW_CMD_SETUP_EVENT_RING:  Command to setup the event ring
- * IPA_CPU_2_HW_CMD_ENABLE_FLOW_CTL_MONITOR: Command to enable pipe monitoring.
- * IPA_CPU_2_HW_CMD_UPDATE_FLOW_CTL_MONITOR: Command to update pipes to monitor.
- * IPA_CPU_2_HW_CMD_DISABLE_FLOW_CTL_MONITOR: Command to disable pipe
-					monitoring, no parameter required.
+ * @IPA_CPU_2_HW_CMD_CLK_GATE: CPU instructs HW to goto Clock Gated state.
+ * @IPA_CPU_2_HW_CMD_CLK_UNGATE: CPU instructs HW to goto Clock Ungated state.
+ * @IPA_CPU_2_HW_CMD_MEMCPY: CPU instructs HW to do memcopy using QMB.
+ * @IPA_CPU_2_HW_CMD_RESET_PIPE: Command to reset a pipe - SW WA for a HW bug.
+ * @IPA_CPU_2_HW_CMD_GSI_CH_EMPTY: Command to check for GSI channel emptiness.
+ * @IPA_CPU_2_HW_CMD_REMOTE_IPA_INFO: Command to store remote IPA Info
+ * @IPA_CPU_2_HW_CMD_SETUP_EVENT_RING:  Command to setup the event ring
+ * @IPA_CPU_2_HW_CMD_ENABLE_FLOW_CTL_MONITOR: Command to enable pipe monitoring.
+ * @IPA_CPU_2_HW_CMD_UPDATE_FLOW_CTL_MONITOR: Command to update pipes to monitor.
+ * @IPA_CPU_2_HW_CMD_DISABLE_FLOW_CTL_MONITOR: Command to disable pipe
+ * monitoring, no parameter required.
+ * @IPA_CPU_2_HW_CMD_REG_WRITE: Write a value to an RG10 register
  */
 enum ipa3_cpu_2_hw_commands {
 	IPA_CPU_2_HW_CMD_NO_OP                     =
@@ -112,6 +113,10 @@ enum ipa3_hw_2_cpu_responses {
  * for IPA_CPU_2_HW_CMD_MEMCPY command.
  *
  * The parameters are passed as immediate params in the shared memory
+ * @destination_addr: Destination address for the firmware memory copy
+ * @source_addr: Source address for the firmware memory copy
+ * @dest_buffer_size: Destination buffer size in bytes
+ * @source_buffer_size: Source buffer size in bytes
  */
 struct IpaHwMemCopyData_t  {
 	u32 destination_addr;
@@ -135,11 +140,13 @@ struct IpaHwRegWriteCmdData_t {
 /**
  * union IpaHwCpuCmdCompletedResponseData_t - Structure holding the parameters
  * for IPA_HW_2_CPU_RESPONSE_CMD_COMPLETED response.
- * @originalCmdOp : The original command opcode
- * @status : 0 for success indication, otherwise failure
- * @responseData : 16b responseData
+ * @params.originalCmdOp: The original command opcode
+ * @params.status: 0 for success indication, otherwise failure
+ * @params.responseData: 16b responseData
  *
  * Parameters are sent as 32b immediate parameters.
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwCpuCmdCompletedResponseData_t {
 	struct IpaHwCpuCmdCompletedResponseParams_t {
@@ -153,8 +160,10 @@ union IpaHwCpuCmdCompletedResponseData_t {
 /**
  * union IpaHwUpdateFlagsCmdData_t - Structure holding the parameters for
  * IPA_CPU_2_HW_CMD_UPDATE_FLAGS command
- * @newFlags: SW flags defined the behavior of HW.
+ * @params.newFlags: SW flags defined the behavior of HW.
  *	This field is expected to be used as bitmask for enum ipa3_hw_flags
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwUpdateFlagsCmdData_t {
 	struct IpaHwUpdateFlagsCmdParams_t {
@@ -167,9 +176,11 @@ union IpaHwUpdateFlagsCmdData_t {
  * union IpaHwChkChEmptyCmdData_t -  Structure holding the parameters for
  *  IPA_CPU_2_HW_CMD_GSI_CH_EMPTY command. Parameters are sent as 32b
  *  immediate parameters.
- * @ee_n : EE owner of the channel
- * @vir_ch_id : GSI virtual channel ID of the channel to checked of emptiness
- * @reserved_02_04 : Reserved
+ * @params.ee_n: EE owner of the channel
+ * @params.vir_ch_id: GSI virtual channel ID of the channel to checked of emptiness
+ * @params.reserved_02_04: Reserved
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwChkChEmptyCmdData_t {
 	struct IpaHwChkChEmptyCmdParams_t {
@@ -188,9 +199,11 @@ struct IpaSetupEventRingCmdParams_t {
 
 
 /**
- * Structure holding the parameters for
+ * union IpaSetupEventRingCmdData_t - Structure holding the parameters for
  * IPA_CPU_2_HW_CMD_SETUP_EVENT_RING command. Parameters are
  * sent as 32b immediate parameters.
+ * @event: Event ring address and size parameters
+ * @raw32b: Raw command storage used by firmware
  */
 union IpaSetupEventRingCmdData_t {
 	struct IpaSetupEventRingCmdParams_t event;
@@ -199,7 +212,8 @@ union IpaSetupEventRingCmdData_t {
 
 
 /**
- * Structure holding the parameters for IPA_CPU_2_HW_CMD_REMOTE_IPA_INFO
+ * struct IpaHwDbAddrInfo_t - Structure holding the parameters for
+ * IPA_CPU_2_HW_CMD_REMOTE_IPA_INFO
  * command.
  * @remoteIPAAddr: 5G IPA address : uC proxies Q6 doorbell to this address
  * @mboxN: mbox on which Q6 will interrupt uC
@@ -211,10 +225,13 @@ struct IpaHwDbAddrInfo_t {
 
 
 /**
- * Structure holding the parameters for IPA_CPU_2_HW_CMD_ENABLE_PIPE_MONITOR
+ * union IpaEnablePipeMonitorCmdData_t - Structure holding the parameters
+ * for IPA_CPU_2_HW_CMD_ENABLE_PIPE_MONITOR
  * command.
- * @ipaProdGsiChid       IPA prod GSI chid to monitor
- * @redMarkerThreshold   red marker threshold in elements for the GSI channel
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
+ * @params.ipaProdGsiChid: Producer GSI channel to monitor
+ * @params.redMarkerThreshold: Red-marker threshold in channel elements
  */
 union IpaEnablePipeMonitorCmdData_t {
 	struct IpaEnablePipeMonitorCmdParams_t {
@@ -225,14 +242,12 @@ union IpaEnablePipeMonitorCmdData_t {
 } __packed;
 
 /**
- * Structure holding the parameters for IPA_CPU_2_HW_CMD_UPDATE_PIPE_MONITOR
+ * struct IpaUpdateFlowCtlMonitorData_t - Structure holding the parameters
+ * for IPA_CPU_2_HW_CMD_UPDATE_PIPE_MONITOR
  * command.
  *
- * @bitmask      The parameter of bitmask to add/delete channels/pipes from
- *                global monitoring pipemask
- *                IPA pipe# bitmask or GSI chid bitmask
- * add_delete   1: add pipes to monitor
- *              0: delete pipes to monitor
+ * @bitmask: IPA pipe or GSI channel bitmask to update
+ * @add_delete: One to add selected channels, zero to remove them
  */
 struct IpaUpdateFlowCtlMonitorData_t {
 	u32 bitmask;
@@ -965,6 +980,11 @@ remap_fail:
 
 /**
  * ipa3_uc_send_cmd() - Send a command to the uC
+ * @cmd: Low 32 bits of the immediate command parameter; high bits are zero
+ * @opcode: Firmware command opcode
+ * @expected_status: Firmware completion status required for success
+ * @polling_mode: True to poll the response instead of waiting for an interrupt
+ * @timeout_jiffies: Completion wait timeout in jiffies when polling is disabled
  *
  * Note1: This function sends command with 32bit parameter and do not
  *	use the higher 32bit of the command parameter (set to zero).
@@ -993,6 +1013,8 @@ int ipa3_uc_send_cmd(u32 cmd, u32 opcode, u32 expected_status,
  *                              handlers for a specific feature.Please note
  *                              that currently only one handler can be
  *                              registered per feature.
+ * @feature: Firmware feature whose handlers are registered
+ * @hdlrs: Handler table copied into the feature registration
  *
  * Return value: None
  */
