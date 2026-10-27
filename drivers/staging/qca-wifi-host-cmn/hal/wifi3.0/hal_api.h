@@ -296,7 +296,8 @@ void hal_write_address_32_mb(struct hal_soc *hal_soc,
 	if (!hal_soc->use_register_windowing)
 		return qdf_iowrite32(addr, value);
 
-	offset = addr - hal_soc->dev_base_addr;
+	offset = (uint8_t __iomem *)addr -
+		 (uint8_t __iomem *)hal_soc->dev_base_addr;
 	if (hal_soc->static_window_map) {
 		new_addr = hal_get_window_address(hal_soc, addr);
 		return qdf_iowrite32(new_addr, value);
@@ -418,7 +419,8 @@ void hal_write_address_32_mb(struct hal_soc *hal_soc,
 	if (!hal_soc->use_register_windowing)
 		return qdf_iowrite32(addr, value);
 
-	offset = addr - hal_soc->dev_base_addr;
+	offset = (uint8_t __iomem *)addr -
+		 (uint8_t __iomem *)hal_soc->dev_base_addr;
 
 	if (qdf_unlikely(wr_confirm))
 		hal_write32_mb_confirm(hal_soc, offset, value);
@@ -777,7 +779,8 @@ uint32_t hal_read_address_32_mb(struct hal_soc *soc,
 	if (!soc->use_register_windowing)
 		return qdf_ioread32(addr);
 
-	offset = addr - soc->dev_base_addr;
+	offset = (uint8_t __iomem *)addr -
+		 (uint8_t __iomem *)soc->dev_base_addr;
 	if (soc->static_window_map) {
 		new_addr = hal_get_window_address(soc, addr);
 		return qdf_ioread32(new_addr);
@@ -913,7 +916,7 @@ enum hal_srng_dir hal_srng_get_dir(void *hal_soc, int ring_type);
 /* HAL memory information */
 struct hal_mem_info {
 	/* dev base virutal addr */
-	void *dev_base_addr;
+	qdf_iomem_t dev_base_addr;
 	/* dev base physical addr */
 	void *dev_base_paddr;
 	/* Remote virtual pointer memory for HW/FW updates */
@@ -957,7 +960,7 @@ struct hal_srng_params {
 	/* Size of ring entry */
 	uint32_t entry_size;
 	/* hw register base address */
-	void *hwreg_base[MAX_SRNG_REG_GROUPS];
+	qdf_iomem_t hwreg_base[MAX_SRNG_REG_GROUPS];
 	/* prefetch timer config - in micro seconds */
 	uint32_t prefetch_timer;
 };
