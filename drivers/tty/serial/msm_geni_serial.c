@@ -389,7 +389,7 @@ static bool msm_serial_try_disable_interrupts(struct uart_port *uport)
  * in a non-atomic context. This API decides wheather to poll for
  * interrupt or depend on the isr based on in_atomic() call.
  */
-bool geni_wait_for_cmd_done(struct uart_port *uport, bool is_irq_masked)
+static bool geni_wait_for_cmd_done(struct uart_port *uport, bool is_irq_masked)
 {
 	struct msm_geni_serial_port *msm_port = GET_DEV_PORT(uport);
 	unsigned long timeout = POLL_ITERATIONS;
@@ -1784,10 +1784,7 @@ static int msm_geni_serial_handle_rx(struct uart_port *uport, bool drop_rx)
 	unsigned int rx_fifo_wc = 0;
 	unsigned int rx_last_byte_valid = 0;
 	unsigned int rx_last = 0;
-	struct tty_port *tport;
 	struct msm_geni_serial_port *port = GET_DEV_PORT(uport);
-
-	tport = &uport->state->port;
 	rx_fifo_status = geni_read_reg_nolog(uport->membase,
 				SE_GENI_RX_FIFO_STATUS);
 	rx_fifo_wc = rx_fifo_status & RX_FIFO_WC_MSK;
@@ -2782,7 +2779,7 @@ static void msm_geni_serial_set_termios(struct uart_port *uport,
 	clk_freq_diff =  (desired_rate - (clk_rate / clk_div));
 	if (clk_freq_diff)
 		IPC_LOG_MSG(port->ipc_log_misc,
-			"src_clk freq_diff:%d baud:%d clk_rate:%d clk_div:%d\n",
+			"src_clk freq_diff:%d baud:%d clk_rate:%lu clk_div:%d\n",
 			clk_freq_diff, baud, clk_rate, clk_div);
 
 	uport->uartclk = clk_rate;
