@@ -26,6 +26,7 @@
 #include <linux/moduleparam.h>
 #include <linux/sched.h>
 #include <linux/cpu_pm.h>
+#include <linux/rcupdate.h>
 #include <linux/cpuhotplug.h>
 #include <linux/regulator/machine.h>
 #include <linux/sched/clock.h>
@@ -1350,7 +1351,8 @@ unlock_and_return:
 	return state_id;
 }
 
-static bool psci_enter_sleep(struct lpm_cpu *cpu, int idx, bool from_idle)
+static bool psci_enter_sleep(struct lpm_cpu *cpu, int idx, bool from_idle,
+			     bool rcu_idle)
 {
 	int affinity_level = 0, state_id = 0, power_state = 0;
 	bool success = false;
@@ -1362,7 +1364,11 @@ static bool psci_enter_sleep(struct lpm_cpu *cpu, int idx, bool from_idle)
 		if (cpu->bias)
 			biastimer_start(cpu->bias);
 		stop_critical_timings();
+		if (rcu_idle)
+			rcu_idle_enter();
 		cpu_do_idle();
+		if (rcu_idle)
+			rcu_idle_exit();
 		start_critical_timings();
 		return true;
 	}
@@ -1381,7 +1387,11 @@ static bool psci_enter_sleep(struct lpm_cpu *cpu, int idx, bool from_idle)
 			0xdeaffeed, 0xdeaffeed, from_idle);
 	stop_critical_timings();
 
+	if (rcu_idle)
+		rcu_idle_enter();
 	success = !arm_cpuidle_suspend(state_id);
+	if (rcu_idle)
+		rcu_idle_exit();
 
 	start_critical_timings();
 	update_debug_pc_event(CPU_EXIT, state_id,
@@ -1470,7 +1480,7 @@ static int lpm_cpuidle_enter(struct cpuidle_device *dev,
 	if (need_resched())
 		goto exit;
 
-	success = psci_enter_sleep(cpu, idx, true);
+	success = psci_enter_sleep(cpu, idx, true, true);
 
 exit:
 	end_time = ktime_to_ns(ktime_get());
@@ -1512,7 +1522,7 @@ static void lpm_cpuidle_s2idle(struct cpuidle_device *dev,
 	cpu_prepare(cpu, idx, true);
 	cluster_prepare(cpu->parent, cpumask, idx, false, 0);
 
-	success = psci_enter_sleep(cpu, idx, false);
+	success = psci_enter_sleep(cpu, idx, false, true);
 
 	cluster_unprepare(cpu->parent, cpumask, idx, false, 0, success);
 	cpu_unprepare(cpu, idx, true);
@@ -1598,7 +1608,7 @@ static int cluster_cpuidle_register(struct lpm_cluster *cl)
 			snprintf(st->name, CPUIDLE_NAME_LEN, "C%u\n", i);
 			strlcpy(st->desc, cpu_level->name, CPUIDLE_DESC_LEN);
 
-			st->flags = 0;
+			st->flags = CPUIDLE_FLAG_RCU_IDLE;
 			st->exit_latency = cpu_level->pwr.exit_latency;
 			st->target_residency = 0;
 			st->enter = lpm_cpuidle_enter;
@@ -1751,7 +1761,7 @@ static int lpm_suspend_enter(suspend_state_t state)
 	cpu_prepare(lpm_cpu, idx, false);
 	cluster_prepare(cluster, cpumask, idx, false, 0);
 
-	success = psci_enter_sleep(lpm_cpu, idx, false);
+	success = psci_enter_sleep(lpm_cpu, idx, false, false);
 
 	cluster_unprepare(cluster, cpumask, idx, false, 0, success);
 	cpu_unprepare(lpm_cpu, idx, false);
