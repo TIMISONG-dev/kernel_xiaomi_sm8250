@@ -90,6 +90,9 @@ static struct bpf_map *array_map_alloc(union bpf_attr *attr)
 	u64 array_size, mask64;
 	struct bpf_array *array;
 
+	BUILD_BUG_ON(offsetof(struct bpf_array, value) %
+		     __alignof__(struct bpf_map));
+
 	elem_size = round_up(attr->value_size, 8);
 
 	max_entries = attr->max_entries;
