@@ -45,36 +45,6 @@
 #define CLD80211_ATTR_MAX 5
 
 static const uint32_t
-cap_resp_sub_attr_len[CLD80211_SUB_ATTR_CAPS_MAX + 1] = {
-	[CLD80211_SUB_ATTR_CAPS_OEM_TARGET_SIGNATURE] =
-				OEM_TARGET_SIGNATURE_LEN,
-	[CLD80211_SUB_ATTR_CAPS_OEM_TARGET_TYPE] = sizeof(uint32_t),
-	[CLD80211_SUB_ATTR_CAPS_OEM_FW_VERSION] = sizeof(uint32_t),
-	[CLD80211_SUB_ATTR_CAPS_DRIVER_VERSION_MAJOR] = sizeof(uint8_t),
-	[CLD80211_SUB_ATTR_CAPS_DRIVER_VERSION_MINOR] = sizeof(uint8_t),
-	[CLD80211_SUB_ATTR_CAPS_DRIVER_VERSION_PATCH] = sizeof(uint8_t),
-	[CLD80211_SUB_ATTR_CAPS_DRIVER_VERSION_BUILD] = sizeof(uint8_t),
-	[CLD80211_SUB_ATTR_CAPS_ALLOWED_DWELL_TIME_MIN] = sizeof(uint16_t),
-	[CLD80211_SUB_ATTR_CAPS_ALLOWED_DWELL_TIME_MAX] = sizeof(uint16_t),
-	[CLD80211_SUB_ATTR_CAPS_CURRENT_DWELL_TIME_MIN] = sizeof(uint16_t),
-	[CLD80211_SUB_ATTR_CAPS_CURRENT_DWELL_TIME_MAX] = sizeof(uint16_t),
-	[CLD80211_SUB_ATTR_CAPS_SUPPORTED_BANDS] = sizeof(uint16_t),
-	[CLD80211_SUB_ATTR_CAPS_USER_DEFINED_CAPS] =
-				sizeof(struct wifi_pos_user_defined_caps),
-};
-
-static const uint32_t
-peer_status_sub_attr_len[CLD80211_SUB_ATTR_PEER_MAX + 1] = {
-	[CLD80211_SUB_ATTR_PEER_MAC_ADDR] = ETH_ALEN,
-	[CLD80211_SUB_ATTR_PEER_STATUS] = sizeof(uint8_t),
-	[CLD80211_SUB_ATTR_PEER_VDEV_ID] = sizeof(uint8_t),
-	[CLD80211_SUB_ATTR_PEER_CAPABILITY] = sizeof(uint32_t),
-	[CLD80211_SUB_ATTR_PEER_RESERVED] = sizeof(uint32_t),
-	[CLD80211_SUB_ATTR_PEER_CHAN_INFO] =
-				sizeof(struct wifi_pos_ch_info_rsp),
-};
-
-static const uint32_t
 ch_resp_sub_attr_len[CLD80211_SUB_ATTR_CH_MAX + 1] = {
 	[CLD80211_SUB_ATTR_CHANNEL_NUM_CHAN] = sizeof(uint32_t),
 	[CLD80211_SUB_ATTR_CH_LIST] = sizeof(uint32_t),
