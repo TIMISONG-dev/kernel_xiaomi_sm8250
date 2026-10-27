@@ -387,7 +387,7 @@ static void usb_gsi_debugfs_exit(void)
  * Callback for when when network interface is up
  * and userspace is ready to answer DHCP requests,  or remote wakeup
  */
-int ipa_usb_notify_cb(enum ipa_usb_notify_event event,
+static int ipa_usb_notify_cb(enum ipa_usb_notify_event event,
 	void *driver_data)
 {
 	struct f_gsi *gsi = driver_data;
@@ -1828,7 +1828,7 @@ static void gsi_rndis_ipa_reset_trigger(struct gsi_data_port *d_port)
 	spin_unlock_irqrestore(&d_port->lock, flags);
 }
 
-void gsi_rndis_flow_ctrl_enable(bool enable, struct rndis_params *param)
+static void gsi_rndis_flow_ctrl_enable(bool enable, struct rndis_params *param)
 {
 	struct f_gsi *gsi = param->v;
 	struct gsi_data_port *d_port;
