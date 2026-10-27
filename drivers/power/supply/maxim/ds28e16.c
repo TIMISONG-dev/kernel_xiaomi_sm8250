@@ -1698,29 +1698,6 @@ static int ds28e16_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static long ds28e16_dev_ioctl(struct file *file, unsigned int cmd,
-						unsigned long arg)
-{
-	ds_log("%d, cmd: 0x%x\n", __LINE__, cmd);
-	return 0;
-}
-static int ds28e16_dev_open(struct inode *inode, struct file *file)
-{
-	return 0;
-}
-
-static int ds28e16_dev_release(struct inode *inode, struct file *file)
-{
-	return 0;
-}
-
-static const struct file_operations ds28e16_dev_fops = {
-	.owner		= THIS_MODULE,
-	.open		= ds28e16_dev_open,
-	.unlocked_ioctl = ds28e16_dev_ioctl,
-	.release	= ds28e16_dev_release,
-};
-
 static const struct of_device_id ds28e16_dt_match[] = {
 	{.compatible = "maxim,ds28e16"},
 	{},
