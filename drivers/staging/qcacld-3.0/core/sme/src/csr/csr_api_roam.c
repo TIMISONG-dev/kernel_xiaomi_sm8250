@@ -2422,7 +2422,7 @@ bool csr_roam_is_ese_assoc(struct mac_context *mac_ctx, uint32_t session_id)
 
 /**
  * csr_roam_is_ese_ini_feature_enabled() - is ese feature enabled
- * @mac_ctx: Global MAC context
+ * @mac: Global MAC context
  *
  * Return: true if ese feature is enabled; false otherwise
  */
@@ -2523,7 +2523,6 @@ static void csr_send_ese_adjacent_ap_rep_ind(struct mac_context *mac,
  * csr_get_tsm_stats() - get tsm stats
  * @mac: Global MAC context
  * @callback: TSM stats callback
- * @staId: Station id
  * @bssId: bssid
  * @pContext: pointer to context
  * @tid: traffic id
@@ -2925,7 +2924,7 @@ void csr_start_bss_copy_he_cap(struct start_bss_req *req,
  * csr_set_11k_offload_config_param() - Update 11k neighbor report config
  *
  * @csr_config: pointer to csr_config in MAC context
- * @pParam: pointer to config params from HDD
+ * @param: pointer to config params from HDD
  *
  * Return: none
  */
@@ -3130,7 +3129,7 @@ QDF_STATUS csr_change_default_config_param(struct mac_context *mac,
  * csr_get_11k_offload_config_param() - Get 11k neighbor report config
  *
  * @csr_config: pointer to csr_config in MAC context
- * @pParam: pointer to config params from HDD
+ * @param: pointer to config params from HDD
  *
  * Return: none
  */
@@ -7799,7 +7798,7 @@ static void csr_update_tx_pwr_to_fw(struct mac_context *mac_ctx,
 /**
  * csr_roam_process_join_res() - Process the Join results
  * @mac_ctx:          Global MAC Context
- * @result:           Result after the command was processed
+ * @res:           Result after the command was processed
  * @cmd:              Command to be processed
  * @context:          Additional data in context of the cmd
  *
@@ -10433,7 +10432,7 @@ static void csr_roam_roaming_state_stop_bss_rsp_processor(struct mac_context *ma
 #ifdef WLAN_FEATURE_HOST_ROAM
 /**
  * csr_dequeue_command() - removes a command from active cmd list
- * @mac:          mac global context
+ * @mac_ctx:          mac global context
  *
  * Return: void
  */
@@ -10478,10 +10477,9 @@ csr_dequeue_command(struct mac_context *mac_ctx)
 
 /**
  * csr_post_roam_failure() - post roam failure back to csr and issues a disassoc
- * @mac:               mac global context
+ * @mac_ctx:               mac global context
  * @session_id:         session id
  * @roam_info:          roam info struct
- * @scan_filter:        scan filter to free
  * @cur_roam_profile:   current csr roam profile
  *
  * Return: void
@@ -10525,7 +10523,7 @@ csr_post_roam_failure(struct mac_context *mac_ctx,
 /**
  * csr_check_profile_in_scan_cache() - finds if roam profile is present in scan
  * cache or not
- * @mac:                  mac global context
+ * @mac_ctx:                  mac global context
  * @neighbor_roam_info:    roam info struct
  * @hBSSList:              scan result
  *
@@ -13864,7 +13862,7 @@ end:
 
 /**
  * csr_compute_mode_and_band() - computes dot11mode
- * @mac: mac global context
+ * @mac_ctx: mac global context
  * @dot11_mode: out param, do11 mode calculated
  * @band: out param, band caclculated
  * @opr_ch_freq: operating channel freq in MHz
@@ -14027,7 +14025,7 @@ csr_compute_mode_and_band(struct mac_context *mac_ctx,
  * @mac_ctx:       mac global context
  * @profile:       bss profile
  * @bss_op_ch_freq:operating channel freq in MHz
- * @band:          out param, band caclculated
+ * @p_band:          out param, band caclculated
  *
  * This function finds dot11 mode based on current mode, operating channel and
  * fw supported modes. The only tricky part is that if phyMode is set to 11abg,
@@ -14457,7 +14455,7 @@ static bool csr_roam_is_same_profile_keys(struct mac_context *mac,
 
 /**
  * csr_populate_basic_rates() - populates OFDM or CCK rates
- * @rates:         rate struct to populate
+ * @rate_set:         rate struct to populate
  * @is_ofdm_rates:          true: ofdm rates, false: cck rates
  * @is_basic_rates:        indicates if rates are to be masked with
  *                 CSR_DOT11_BASIC_RATE_MASK
@@ -15409,7 +15407,7 @@ static QDF_STATUS csr_roam_start_wds(struct mac_context *mac, uint32_t sessionId
  * in Join req.
  * @mac_ctx: pointer to global mac structure
  * @chan_list: Pointer to channel list buffer to populate
- * @num_chan: Pointer to number of channels value to update
+ * @num_chnl: Pointer to number of channels value to update
  * @supp_chan_ie: Boolean to check if we need to populate as IE
  *
  * This function is called to update valid 5Ghz channels
@@ -15464,7 +15462,7 @@ static void csr_add_supported_5Ghz_channels(struct mac_context *mac_ctx,
  * csr_set_ldpc_exception() - to set allow any LDPC exception permitted
  * @mac_ctx: Pointer to mac context
  * @session: Pointer to SME/CSR session
- * @channel: Given channel number where connection will go
+ * @ch_freq: Given channel frequency in MHz where connection will go
  * @usr_cfg_rx_ldpc: User provided RX LDPC setting
  *
  * This API will check if hardware allows LDPC to be enabled for provided
@@ -15503,7 +15501,7 @@ static QDF_STATUS csr_set_ldpc_exception(struct mac_context *mac_ctx,
 #ifdef WLAN_FEATURE_11W
 /**
  * csr_is_mfpc_capable() - is MFPC capable
- * @ies: AP information element
+ * @rsn: AP information element
  *
  * Return: true if MFPC capable, false otherwise
  */
@@ -17373,7 +17371,7 @@ QDF_STATUS csr_reassoc(struct mac_context *mac, uint32_t sessionId,
 /**
  * csr_store_oce_cfg_flags_in_vdev() - fill OCE flags from ini
  * @mac: mac_context.
- * @vdev: Pointer to pdev obj
+ * @pdev: Pointer to pdev obj
  * @vdev_id: vdev_id
  *
  * This API will store the oce flags in vdev mlme priv object
@@ -18078,7 +18076,7 @@ csr_fill_sae_single_pmk_info(struct mac_context *mac_ctx,
 /**
  * csr_update_roam_scan_offload_request() - updates req msg with roam offload
  * parameters
- * @mac:          mac global context
+ * @mac_ctx:          mac global context
  * @req_buf:      out param, roam offload scan request packet
  * @session:      roam session
  *
@@ -21377,9 +21375,9 @@ csr_find_session_by_type(struct mac_context *mac_ctx, enum QDF_OPMODE type)
  * csr_is_conn_allow_2g_band() - This function will check if station's conn
  * is allowed in 2.4Ghz band.
  * @mac_ctx: pointer to mac context.
- * @chnl: station's channel.
+ * @ch_freq: station's channel frequency in MHz.
  *
- * This function will check if station's connection is allowed in 5Ghz band
+ * This function will check if station's connection is allowed in 2.4Ghz band
  * after comparing it with SAP's operating channel. If SAP's operating
  * channel and Station's channel is different than this function will return
  * false else true.
@@ -21416,7 +21414,7 @@ static bool csr_is_conn_allow_2g_band(struct mac_context *mac_ctx,
  * csr_is_conn_allow_5g_band() - This function will check if station's conn
  * is allowed in 5Ghz band.
  * @mac_ctx: pointer to mac context.
- * @chnl: station's channel.
+ * @ch_freq: station's channel frequency in MHz.
  *
  * This function will check if station's connection is allowed in 5Ghz band
  * after comparing it with P2PGO's operating channel. If P2PGO's operating
