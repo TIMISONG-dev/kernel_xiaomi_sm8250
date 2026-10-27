@@ -154,11 +154,12 @@ void check_and_create_debugfs(void);
 void create_ctx_debugfs(struct ipc_log_context *ctxt,
 			const char *mod_name);
 #else
-void check_and_create_debugfs(void)
+static inline void check_and_create_debugfs(void)
 {
 }
 
-void create_ctx_debugfs(struct ipc_log_context *ctxt, const char *mod_name)
+static inline void create_ctx_debugfs(struct ipc_log_context *ctxt,
+				      const char *mod_name)
 {
 }
 #endif
