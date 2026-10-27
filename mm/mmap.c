@@ -2267,7 +2267,6 @@ static int acct_stack_growth(struct vm_area_struct *vma,
 			     unsigned long size, unsigned long grow)
 {
 	struct mm_struct *mm = vma->vm_mm;
-	unsigned long new_start;
 
 	/* address space limit tests */
 	if (!may_expand_vm(mm, vma->vm_flags, grow))
@@ -2289,9 +2288,9 @@ static int acct_stack_growth(struct vm_area_struct *vma,
 	}
 
 	/* Check to ensure the stack will not grow into a hugetlb-only region */
-	new_start = (vma->vm_flags & VM_GROWSUP) ? vma->vm_start :
-			vma->vm_end - size;
-	if (is_hugepage_only_range(vma->vm_mm, new_start, size))
+	if (is_hugepage_only_range(vma->vm_mm,
+		(vma->vm_flags & VM_GROWSUP) ? vma->vm_start :
+		vma->vm_end - size, size))
 		return -EFAULT;
 
 	/*
