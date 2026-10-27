@@ -108,7 +108,7 @@ static struct msm_cvp_platform_data default_data = {
 	.common_data_length =  ARRAY_SIZE(default_common_data),
 	.sku_version = 0,
 	.vpu_ver = VPU_VERSION_5,
-	.ubwc_config = 0x0,
+	.ubwc_config = NULL,
 };
 
 static struct msm_cvp_platform_data sm8250_data = {
