@@ -332,8 +332,8 @@ int sdmx_open_session(int *session_handle)
 	/* Get and print the app version */
 	version_ret = sdmx_get_version(*session_handle, &version);
 	if (version_ret == SDMX_SUCCESS)
-		pr_info("%s: TZ SDMX version is %x.%x\n", version >> 8,
-			__func__, version & 0xFF);
+		pr_info("%s: TZ SDMX version is %x.%x\n", __func__,
+			version >> 8, version & 0xFF);
 	else
 		pr_err("%s: Error reading TZ SDMX version\n", __func__);
 

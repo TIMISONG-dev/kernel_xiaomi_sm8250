@@ -162,7 +162,7 @@ static ssize_t debug_level_write(struct file *filp, const char __user *buf,
 
 	/* filter partial writes and invalid commands */
 	if (*ppos != 0 || count >= sizeof(kbuf) || count == 0) {
-		d_vpr_e("returning error - pos %d, count %d\n", *ppos, count);
+		d_vpr_e("returning error - pos %lld, count %lu\n", *ppos, count);
 		rc = -EINVAL;
 	}
 
@@ -602,8 +602,11 @@ int msm_vidc_check_ratelimit(void)
 }
 
 /**
- * get_sid() must be called under "&core->lock"
- * to avoid race condition at occupying empty slot.
+ * get_sid() - Allocate a session identifier
+ * @sid: destination for the allocated identifier
+ * @session_type: session type used for logging
+ *
+ * Must be called under "&core->lock" to avoid racing for an empty slot.
  */
 int get_sid(u32 *sid, u32 session_type)
 {

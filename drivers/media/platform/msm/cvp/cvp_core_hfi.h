@@ -188,9 +188,16 @@ struct cvp_iface_q_info {
 	(((d) && (d)->vpu_ops && (d)->vpu_ops->op) ? \
 	((d)->vpu_ops->op(args)):0)
 
+/* Optional callbacks with no return value use statement dispatch. */
+#define call_iris_void_op(d, op, args...) do { \
+	if ((d) && (d)->vpu_ops && (d)->vpu_ops->op) \
+		(d)->vpu_ops->op(args); \
+} while (0)
+
 struct cvp_hal_data {
 	u32 irq;
 	phys_addr_t firmware_base;
+	phys_addr_t register_phys;
 	u8 __iomem *register_base;
 	u8 __iomem *gcc_reg_base;
 	u32 register_size;

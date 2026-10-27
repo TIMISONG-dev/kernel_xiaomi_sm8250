@@ -848,7 +848,7 @@ remove_cb:
 	return rc;
 }
 
-int msm_cvp_smmu_fault_handler(struct iommu_domain *domain,
+static int msm_cvp_smmu_fault_handler(struct iommu_domain *domain,
 		struct device *dev, unsigned long iova, int flags, void *token)
 {
 	struct msm_cvp_core *core = token;

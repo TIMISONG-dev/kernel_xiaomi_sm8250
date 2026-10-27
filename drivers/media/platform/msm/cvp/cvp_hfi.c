@@ -258,12 +258,12 @@ enum tzbsp_subsys_state {
 	TZ_SUBSYS_STATE_RESTORE_THRESHOLD = 2,
 };
 
-const struct msm_cvp_gov_data CVP_DEFAULT_BUS_VOTE = {
+static const struct msm_cvp_gov_data CVP_DEFAULT_BUS_VOTE = {
 	.data = NULL,
 	.data_count = 0,
 };
 
-const int cvp_max_packets = 32;
+static const int cvp_max_packets = 32;
 
 static void iris_hfi_pm_handler(struct work_struct *work);
 static DECLARE_DELAYED_WORK(iris_hfi_pm_work, iris_hfi_pm_handler);
@@ -312,8 +312,11 @@ static struct iris_hfi_vpu_ops iris2_ops = {
 };
 
 /**
- * Utility function to enforce some of our assumptions.  Spam calls to this
- * in hotspots in code to double check some of the assumptions that we hold.
+ * __strict_check() - Require the HFI device lock for hardware access
+ * @device: HFI device whose lock must be held by the caller
+ *
+ * Report a fatal hardware error when the caller accesses the device without
+ * holding its serialization lock.
  */
 static inline void __strict_check(struct iris_hfi_device *device)
 {
@@ -957,7 +960,7 @@ static void __write_register(struct iris_hfi_device *device,
 		u32 reg, u32 value)
 {
 	u32 hwiosymaddr = reg;
-	u8 *base_addr;
+	u8 __iomem *base_addr;
 
 	if (!device) {
 		dprintk(CVP_ERR, "Invalid params: %pK\n", device);
@@ -988,7 +991,7 @@ static void __write_register(struct iris_hfi_device *device,
 static int __read_register(struct iris_hfi_device *device, u32 reg)
 {
 	int rc = 0;
-	u8 *base_addr;
+	u8 __iomem *base_addr;
 
 	if (!device) {
 		dprintk(CVP_ERR, "Invalid params: %pK\n", device);
@@ -1940,7 +1943,7 @@ static void __setup_ucregion_memory_map(struct iris_hfi_device *device)
 	if (device->qdss.align_device_addr)
 		__write_register(device, CVP_MMAP_ADDR,
 				(u32)device->qdss.align_device_addr);
-	call_iris_op(device, setup_dsp_uc_memmap, device);
+	call_iris_void_op(device, setup_dsp_uc_memmap, device);
 }
 
 static int __interface_queues_init(struct iris_hfi_device *dev)
@@ -2124,6 +2127,8 @@ static int __sys_set_idle_indicator(struct iris_hfi_device *device,
 		(struct cvp_hfi_cmd_sys_set_property_packet *) &packet;
 
 	rc = call_hfi_pkt_op(device, sys_set_idle_indicator, pkt, enable);
+	if (rc)
+		return rc;
 	if (__iface_cmdq_write(device, pkt))
 		return -ENOTEMPTY;
 	return 0;
@@ -2715,7 +2720,7 @@ err_send_pkt:
 }
 
 static int __check_core_registered(struct iris_hfi_device *device,
-		phys_addr_t fw_addr, u8 *reg_addr, u32 reg_size,
+		phys_addr_t fw_addr, phys_addr_t reg_addr, u32 reg_size,
 		phys_addr_t irq)
 {
 	struct cvp_hal_data *cvp_hal_data;
@@ -2734,15 +2739,15 @@ static int __check_core_registered(struct iris_hfi_device *device,
 				FIRMWARE_SIZE, fw_addr) ||
 		CONTAINS(fw_addr, FIRMWARE_SIZE,
 				cvp_hal_data->firmware_base) ||
-		CONTAINS(cvp_hal_data->register_base,
-				reg_size, reg_addr) ||
+		CONTAINS(cvp_hal_data->register_phys,
+				cvp_hal_data->register_size, reg_addr) ||
 		CONTAINS(reg_addr, reg_size,
-				cvp_hal_data->register_base) ||
-		OVERLAPS(cvp_hal_data->register_base,
-				reg_size, reg_addr, reg_size) ||
+				cvp_hal_data->register_phys) ||
+		OVERLAPS(cvp_hal_data->register_phys,
+				cvp_hal_data->register_size, reg_addr, reg_size) ||
 		OVERLAPS(reg_addr, reg_size,
-				cvp_hal_data->register_base,
-				reg_size) ||
+				cvp_hal_data->register_phys,
+				cvp_hal_data->register_size) ||
 		OVERLAPS(cvp_hal_data->firmware_base,
 				FIRMWARE_SIZE, fw_addr,
 				FIRMWARE_SIZE) ||
@@ -3403,7 +3408,7 @@ static int __init_regs_and_interrupts(struct iris_hfi_device *device,
 	int rc = 0;
 
 	rc = __check_core_registered(device, res->firmware_base,
-			(u8 *)(uintptr_t)res->register_base,
+			res->register_base,
 			res->register_size, res->irq);
 	if (!rc) {
 		dprintk(CVP_ERR, "Core present/Already added\n");
@@ -3420,6 +3425,7 @@ static int __init_regs_and_interrupts(struct iris_hfi_device *device,
 
 	hal->irq = res->irq;
 	hal->firmware_base = res->firmware_base;
+	hal->register_phys = res->register_base;
 	hal->register_base = devm_ioremap_nocache(&res->pdev->dev,
 			res->register_base, res->register_size);
 	hal->register_size = res->register_size;
@@ -3621,7 +3627,7 @@ failed_to_reset:
 
 static inline int __prepare_enable_clks(struct iris_hfi_device *device)
 {
-	struct clock_info *cl = NULL, *cl_fail = NULL;
+	struct clock_info *cl = NULL;
 	int rc = 0, c = 0;
 
 	if (!device) {
@@ -3653,7 +3659,6 @@ static inline int __prepare_enable_clks(struct iris_hfi_device *device)
 		rc = clk_prepare_enable(cl->clk);
 		if (rc) {
 			dprintk(CVP_ERR, "Failed to enable clocks\n");
-			cl_fail = cl;
 			goto fail_clk_enable;
 		}
 
@@ -4360,7 +4365,7 @@ static int __iris_power_on(struct iris_hfi_device *device)
 	__set_registers(device);
 
 	dprintk(CVP_DBG, "Done with register set\n");
-	call_iris_op(device, interrupt_init, device);
+	call_iris_void_op(device, interrupt_init, device);
 	dprintk(CVP_DBG, "Done with interrupt enabling\n");
 	device->intr_status = 0;
 	enable_irq(device->cvp_hal_data->irq);
@@ -4383,24 +4388,6 @@ fail_enable_gdsc:
 fail_vote_buses:
 	device->power_enabled = false;
 	return rc;
-}
-
-void power_off_common(struct iris_hfi_device *device)
-{
-	if (!device->power_enabled)
-		return;
-
-	if (!(device->intr_status & CVP_WRAPPER_INTR_STATUS_A2HWD_BMSK))
-		disable_irq_nosync(device->cvp_hal_data->irq);
-	device->intr_status = 0;
-
-	__disable_unprepare_clks(device);
-	if (__disable_regulators(device))
-		dprintk(CVP_WARN, "Failed to disable regulators\n");
-
-	if (__unvote_buses(device))
-		dprintk(CVP_WARN, "Failed to unvote for buses\n");
-	device->power_enabled = false;
 }
 
 static inline int __suspend(struct iris_hfi_device *device)
@@ -4429,7 +4416,7 @@ static inline int __suspend(struct iris_hfi_device *device)
 
 	__disable_subcaches(device);
 
-	call_iris_op(device, power_off, device);
+	call_iris_void_op(device, power_off, device);
 	dprintk(CVP_PROF, "Iris power off\n");
 	return rc;
 
@@ -4607,7 +4594,7 @@ exit:
 err_reset_core:
 	__tzbsp_set_cvp_state(TZ_SUBSYS_STATE_SUSPEND);
 err_set_cvp_state:
-	call_iris_op(device, power_off, device);
+	call_iris_void_op(device, power_off, device);
 err_iris_power_on:
 	dprintk(CVP_ERR, "Failed to resume from power collapse\n");
 	return rc;
@@ -4666,7 +4653,7 @@ fail_protect_mem:
 		subsystem_put(device->resources.fw.cookie);
 	device->resources.fw.cookie = NULL;
 fail_load_fw:
-	call_iris_op(device, power_off, device);
+	call_iris_void_op(device, power_off, device);
 fail_iris_power_on:
 fail_init_pkt:
 	__deinit_resources(device);
@@ -4686,7 +4673,7 @@ static void __unload_fw(struct iris_hfi_device *device)
 
 	subsystem_put(device->resources.fw.cookie);
 	__interface_queues_release(device);
-	call_iris_op(device, power_off, device);
+	call_iris_void_op(device, power_off, device);
 	device->resources.fw.cookie = NULL;
 	__deinit_resources(device);
 
@@ -4822,7 +4809,7 @@ static int iris_hfi_noc_error_info(void *dev)
 	mutex_lock(&device->lock);
 	dprintk(CVP_ERR, "%s: non error information\n", __func__);
 
-	call_iris_op(device, noc_error_info, device);
+	call_iris_void_op(device, noc_error_info, device);
 
 	mutex_unlock(&device->lock);
 
@@ -4850,7 +4837,7 @@ static int __initialize_packetization(struct iris_hfi_device *device)
 	return rc;
 }
 
-void __init_cvp_ops(struct iris_hfi_device *device)
+static void __init_cvp_ops(struct iris_hfi_device *device)
 {
 	device->vpu_ops = &iris2_ops;
 }

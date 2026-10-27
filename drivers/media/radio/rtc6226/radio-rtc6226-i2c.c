@@ -527,7 +527,7 @@ int rtc6226_fops_open(struct file *file)
 	struct rtc6226_device *radio = video_drvdata(file);
 	int retval;
 
-	FMDBG("%s enter user num = %d\n", __func__, radio->users);
+	FMDBG("%s enter user num = %d\n", __func__, atomic_read(&radio->users));
 	if (atomic_inc_return(&radio->users) != 1) {
 		FMDERR("Device already in use. Try again later\n");
 		atomic_dec(&radio->users);
@@ -685,7 +685,6 @@ static int rtc6226_i2c_probe(struct i2c_client *client,
 {
 	struct rtc6226_device *radio;
 	struct v4l2_device *v4l2_dev;
-	struct v4l2_ctrl_handler *hdl;
 	struct regulator *vddvreg = NULL;
 	struct regulator *viovreg = NULL;
 	int retval = 0;
@@ -740,7 +739,6 @@ static int rtc6226_i2c_probe(struct i2c_client *client,
 	}
 
 	FMDBG("v4l2_device_register successfully\n");
-	hdl = &radio->ctrl_handler;
 
 	/* initialize the device count */
 	atomic_set(&radio->users, 0);

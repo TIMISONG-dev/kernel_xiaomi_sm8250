@@ -26,7 +26,7 @@
 static int try_get_ctrl_for_instance(struct msm_vidc_inst *inst,
 	struct v4l2_ctrl *ctrl);
 
-static int get_poll_flags(void *instance)
+static __poll_t get_poll_flags(void *instance)
 {
 	struct msm_vidc_inst *inst = instance;
 	struct vb2_queue *outq = &inst->bufq[INPUT_PORT].vb2_bufq;
@@ -34,10 +34,10 @@ static int get_poll_flags(void *instance)
 	struct vb2_buffer *out_vb = NULL;
 	struct vb2_buffer *cap_vb = NULL;
 	unsigned long flags = 0;
-	int rc = 0;
+	__poll_t rc = 0;
 
 	if (v4l2_event_pending(&inst->event_handler))
-		rc |= POLLPRI;
+		rc |= EPOLLPRI;
 
 	spin_lock_irqsave(&capq->done_lock, flags);
 	if (!list_empty(&capq->done_list))
@@ -45,7 +45,7 @@ static int get_poll_flags(void *instance)
 								done_entry);
 	if (cap_vb && (cap_vb->state == VB2_BUF_STATE_DONE
 				|| cap_vb->state == VB2_BUF_STATE_ERROR))
-		rc |= POLLIN | POLLRDNORM;
+		rc |= EPOLLIN | EPOLLRDNORM;
 	spin_unlock_irqrestore(&capq->done_lock, flags);
 
 	spin_lock_irqsave(&outq->done_lock, flags);
@@ -54,21 +54,21 @@ static int get_poll_flags(void *instance)
 								done_entry);
 	if (out_vb && (out_vb->state == VB2_BUF_STATE_DONE
 				|| out_vb->state == VB2_BUF_STATE_ERROR))
-		rc |= POLLOUT | POLLWRNORM;
+		rc |= EPOLLOUT | EPOLLWRNORM;
 	spin_unlock_irqrestore(&outq->done_lock, flags);
 
 	return rc;
 }
 
-int msm_vidc_poll(void *instance, struct file *filp,
-		struct poll_table_struct *wait)
+__poll_t msm_vidc_poll(void *instance, struct file *filp,
+		       struct poll_table_struct *wait)
 {
 	struct msm_vidc_inst *inst = instance;
 	struct vb2_queue *outq = NULL;
 	struct vb2_queue *capq = NULL;
 
 	if (!inst)
-		return -EINVAL;
+		return EPOLLERR;
 
 	outq = &inst->bufq[INPUT_PORT].vb2_bufq;
 	capq = &inst->bufq[OUTPUT_PORT].vb2_bufq;
@@ -193,7 +193,7 @@ int msm_vidc_query_menu(void *instance, struct v4l2_querymenu *qmenu)
 		rc = -EINVAL;
 
 	s_vpr_h(inst->sid,
-		"%s: ctrl: %s: min %d, max %d, menu_skip_mask %#x, qmenu: id %d, index %d, %s\n",
+		"%s: ctrl: %s: min %lld, max %lld, menu_skip_mask %#llx, qmenu: id %d, index %d, %s\n",
 		__func__, ctrl->name, ctrl->minimum, ctrl->maximum,
 		ctrl->menu_skip_mask, qmenu->id, qmenu->index,
 		rc ? "not supported" : "supported");
@@ -929,7 +929,6 @@ static int msm_vidc_start_streaming(struct vb2_queue *q, unsigned int count)
 {
 	struct msm_vidc_inst *inst;
 	int rc = 0;
-	struct hfi_device *hdev;
 
 	if (!q || !q->drv_priv) {
 		d_vpr_e("Invalid input, q = %pK\n", q);
@@ -940,7 +939,6 @@ static int msm_vidc_start_streaming(struct vb2_queue *q, unsigned int count)
 		d_vpr_e("%s: invalid parameters\n", __func__);
 		return -EINVAL;
 	}
-	hdev = inst->core->device;
 	s_vpr_h(inst->sid, "Streamon called on: %d capability for inst: %pK\n",
 		q->type, inst);
 	switch (q->type) {
