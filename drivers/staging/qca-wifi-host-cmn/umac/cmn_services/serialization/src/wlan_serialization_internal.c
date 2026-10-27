@@ -425,8 +425,6 @@ wlan_serialization_dequeue_cmd(struct wlan_serialization_command *cmd,
 {
 	enum wlan_serialization_cmd_status status =
 		WLAN_SER_CMD_NOT_FOUND;
-	enum wlan_serialization_status ser_status =
-		WLAN_SER_CMD_DENIED_UNSPECIFIED;
 
 	QDF_STATUS qdf_status;
 	struct wlan_objmgr_pdev *pdev;
@@ -523,7 +521,7 @@ wlan_serialization_dequeue_cmd(struct wlan_serialization_command *cmd,
 	}
 
 	if (active_cmd) {
-		ser_status = wlan_serialization_move_pending_to_active(
+		wlan_serialization_move_pending_to_active(
 			cmd_bkup.cmd_type, ser_pdev_obj,
 			cmd_bkup.vdev,
 			blocking_cmd_removed);

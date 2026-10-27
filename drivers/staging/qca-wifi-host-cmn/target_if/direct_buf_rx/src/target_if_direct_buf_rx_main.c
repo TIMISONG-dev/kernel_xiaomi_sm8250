@@ -1792,7 +1792,6 @@ static int target_if_direct_buf_rx_rsp_event_handler(ol_scn_t scn,
 	struct direct_buf_rx_data dbr_data = {0};
 	struct wlan_objmgr_psoc *psoc;
 	struct wlan_objmgr_pdev *pdev;
-	struct direct_buf_rx_buf_info *dbr_buf_pool;
 	struct direct_buf_rx_pdev_obj *dbr_pdev_obj;
 	struct direct_buf_rx_module_param *mod_param;
 	struct wmi_unified *wmi_handle;
@@ -1852,7 +1851,6 @@ static int target_if_direct_buf_rx_rsp_event_handler(ol_scn_t scn,
 		return QDF_STATUS_E_FAILURE;
 	}
 
-	dbr_buf_pool = mod_param->dbr_buf_pool;
 	dbr_rsp.dbr_entries = qdf_mem_malloc(dbr_rsp.num_buf_release_entry *
 					sizeof(struct direct_buf_rx_entry));
 	if (!dbr_rsp.dbr_entries) {
