@@ -12,12 +12,16 @@
 #define _MMC_CORE_CORE_H
 
 #include <linux/delay.h>
+#include <linux/mmc/host.h>
 #include <linux/sched.h>
 
 struct mmc_host;
 struct mmc_card;
 struct mmc_request;
 struct mmc_queue;
+
+int mmc_clk_update_freq_deferred(struct mmc_host *host,
+		unsigned long freq, enum mmc_load state);
 
 #define MMC_CMD_RETRIES        3
 
