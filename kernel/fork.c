@@ -981,15 +981,15 @@ static __always_inline void mm_clear_owner(struct mm_struct *mm,
 					   struct task_struct *p)
 {
 #ifdef CONFIG_MEMCG
-	if (mm->owner == p)
-		WRITE_ONCE(mm->owner, NULL);
+	if (rcu_access_pointer(mm->owner) == p)
+		RCU_INIT_POINTER(mm->owner, NULL);
 #endif
 }
 
 static void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
 {
 #ifdef CONFIG_MEMCG
-	mm->owner = p;
+	RCU_INIT_POINTER(mm->owner, p);
 #endif
 }
 
