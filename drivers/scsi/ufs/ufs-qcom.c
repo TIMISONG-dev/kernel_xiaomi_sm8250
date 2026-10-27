@@ -438,7 +438,15 @@ static int ufs_qcom_hce_enable_notify(struct ufs_hba *hba,
 }
 
 /**
- * Returns zero for success and non-zero in case of a failure
+ * __ufs_qcom_cfg_timers - configure controller timing for the selected link
+ * @hba: host controller
+ * @gear: link gear
+ * @hs: nonzero for high-speed mode
+ * @rate: high-speed rate series
+ * @update_link_startup_timer: update the link-startup timeout
+ * @is_pre_scale_up: configure timers before increasing the clock rate
+ *
+ * Return: zero on success or a negative error code.
  */
 static int __ufs_qcom_cfg_timers(struct ufs_hba *hba, u32 gear,
 			       u32 hs, u32 rate, bool update_link_startup_timer,
@@ -1100,7 +1108,6 @@ static void ufs_qcom_get_speed_mode(struct ufs_pa_layer_attr *p, char *result)
 {
 	int gear = max_t(u32, p->gear_rx, p->gear_tx);
 	int lanes = max_t(u32, p->lane_rx, p->lane_tx);
-	int pwr;
 
 	/* default to PWM Gear 1, Lane 1 if power mode is not initialized */
 	if (!gear)
@@ -1110,15 +1117,12 @@ static void ufs_qcom_get_speed_mode(struct ufs_pa_layer_attr *p, char *result)
 		lanes = 1;
 
 	if (!p->pwr_rx && !p->pwr_tx) {
-		pwr = SLOWAUTO_MODE;
 		snprintf(result, BUS_VECTOR_NAME_LEN, "MIN");
 	} else if (p->pwr_rx == FAST_MODE || p->pwr_rx == FASTAUTO_MODE ||
 		 p->pwr_tx == FAST_MODE || p->pwr_tx == FASTAUTO_MODE) {
-		pwr = FAST_MODE;
 		snprintf(result, BUS_VECTOR_NAME_LEN, "%s_R%s_G%d_L%d", "HS",
 			 p->hs_rate == PA_HS_MODE_B ? "B" : "A", gear, lanes);
 	} else {
-		pwr = SLOW_MODE;
 		snprintf(result, BUS_VECTOR_NAME_LEN, "%s_G%d_L%d",
 			 "PWM", gear, lanes);
 	}
@@ -1708,11 +1712,14 @@ static void ufs_qcom_pm_qos_req_end(struct ufs_hba *hba, struct request *req,
 	if (!hba || !req)
 		return;
 
-	if (should_lock)
-		spin_lock_irqsave(hba->host->host_lock, flags);
+	if (!should_lock) {
+		__ufs_qcom_pm_qos_req_end(ufshcd_get_variant(hba), req->cpu);
+		return;
+	}
+
+	spin_lock_irqsave(hba->host->host_lock, flags);
 	__ufs_qcom_pm_qos_req_end(ufshcd_get_variant(hba), req->cpu);
-	if (should_lock)
-		spin_unlock_irqrestore(hba->host->host_lock, flags);
+	spin_unlock_irqrestore(hba->host->host_lock, flags);
 }
 
 static void ufs_qcom_pm_qos_vote_work(struct work_struct *work)
@@ -2791,8 +2798,8 @@ static u32 ufs_qcom_get_user_cap_mode(struct ufs_hba *hba)
 	return UFS_WB_BUFF_PRESERVE_USER_SPACE;
 }
 
-/**
- * struct ufs_hba_qcom_vops - UFS QCOM specific variant operations
+/*
+ * UFS QCOM specific variant operations
  *
  * The variant operations configure the necessary controller and PHY
  * handshake during initialization.
@@ -2832,7 +2839,12 @@ static struct ufs_hba_variant ufs_hba_qcom_variant = {
 };
 
 /**
- * QCOM specific sysfs group and nodes
+ * err_state_show - report whether the host has recorded an error
+ * @dev: host controller device
+ * @attr: error-state attribute
+ * @buf: sysfs output buffer
+ *
+ * Return: number of bytes written to @buf.
  */
 static ssize_t err_state_show(struct device *dev,
 			struct device_attribute *attr, char *buf)

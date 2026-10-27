@@ -94,13 +94,13 @@ struct bow_context {
 	bool forward_trims;
 };
 
-sector_t range_top(struct bow_range *br)
+static sector_t range_top(struct bow_range *br)
 {
 	return container_of(rb_next(&br->node), struct bow_range, node)
 		->sector;
 }
 
-u64 range_size(struct bow_range *br)
+static u64 range_size(struct bow_range *br)
 {
 	return (range_top(br) - br->sector) * SECTOR_SIZE;
 }
@@ -145,7 +145,7 @@ static struct bow_range *find_first_overlapping_range(struct rb_root *ranges,
 	return br;
 }
 
-void add_before(struct rb_root *ranges, struct bow_range *new_br,
+static void add_before(struct rb_root *ranges, struct bow_range *new_br,
 		struct bow_range *existing)
 {
 	struct rb_node *parent = &(existing->node);
@@ -1094,7 +1094,7 @@ static int remove_trim(struct bow_context *bc, struct bio *bio)
 	return DM_MAPIO_REMAPPED;
 }
 
-int remap_unless_illegal_trim(struct bow_context *bc, struct bio *bio)
+static int remap_unless_illegal_trim(struct bow_context *bc, struct bio *bio)
 {
 	if (!bc->forward_trims && bio_op(bio) == REQ_OP_DISCARD) {
 		bio->bi_status = BLK_STS_NOTSUPP;
@@ -1253,7 +1253,7 @@ static void dm_bow_status(struct dm_target *ti, status_type_t type,
 	}
 }
 
-int dm_bow_prepare_ioctl(struct dm_target *ti, struct block_device **bdev)
+static int dm_bow_prepare_ioctl(struct dm_target *ti, struct block_device **bdev)
 {
 	struct bow_context *bc = ti->private;
 	struct dm_dev *dev = bc->dev;
@@ -1284,7 +1284,7 @@ static struct target_type bow_target = {
 	.io_hints = dm_bow_io_hints,
 };
 
-int __init dm_bow_init(void)
+static int __init dm_bow_init(void)
 {
 	int r = dm_register_target(&bow_target);
 
@@ -1293,7 +1293,7 @@ int __init dm_bow_init(void)
 	return r;
 }
 
-void dm_bow_exit(void)
+static void dm_bow_exit(void)
 {
 	dm_unregister_target(&bow_target);
 }

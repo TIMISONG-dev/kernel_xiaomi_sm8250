@@ -292,6 +292,17 @@ static void ufshcd_hex_dump(struct ufs_hba *hba, const char * const str,
 		       16, 4, buf, len, false);
 }
 
+static void ufshcd_dump_host_regs(struct ufs_hba *hba, const char *prefix)
+{
+	__le32 regs[UFSHCI_REG_SPACE_SIZE / sizeof(u32)];
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(regs); i++)
+		regs[i] = cpu_to_le32(ufshcd_readl(hba, i * sizeof(u32)));
+
+	ufshcd_hex_dump(hba, prefix, regs, sizeof(regs));
+}
+
 enum {
 	UFSHCD_MAX_CHANNEL	= 0,
 	UFSHCD_MAX_ID		= 1,
@@ -881,8 +892,7 @@ static inline void __ufshcd_print_host_regs(struct ufs_hba *hba, bool no_sleep)
 	if (!(hba->ufshcd_dbg_print & UFSHCD_DBG_PRINT_HOST_REGS_EN))
 		return;
 
-	ufshcd_hex_dump(hba, "host regs", hba->mmio_base,
-			UFSHCI_REG_SPACE_SIZE);
+	ufshcd_dump_host_regs(hba, "host regs");
 	dev_err(hba->dev, "hba->ufs_version = 0x%x, hba->capabilities = 0x%x\n",
 		hba->ufs_version, hba->capabilities);
 	dev_err(hba->dev,
@@ -2861,15 +2871,11 @@ static ssize_t ufshcd_hibern8_on_idle_delay_store(struct device *dev,
 {
 	struct ufs_hba *hba = dev_get_drvdata(dev);
 	unsigned long flags, value;
-	bool change = true;
 
 	if (kstrtoul(buf, 0, &value))
 		return -EINVAL;
 
 	spin_lock_irqsave(hba->host->host_lock, flags);
-	if (hba->hibern8_on_idle.delay_ms == value)
-		change = false;
-
 	if (value >= hba->clk_gating.delay_ms_pwr_save ||
 	    value >= hba->clk_gating.delay_ms_perf) {
 		dev_err(hba->dev, "hibern8_on_idle_delay (%lu) can not be >= to clkgate_delay_ms_pwr_save (%lu) and clkgate_delay_ms_perf (%lu)\n",
@@ -3609,6 +3615,7 @@ static inline void ufshcd_get_write_lock(struct ufs_hba *hba)
  * ufshcd_get_read_lock - synchronize between shutdown, scaling &
  * arrival of requests
  * @hba: ufs host
+ * @lun: logical unit receiving the request
  *
  * Returns 1 if acquired, < 0 on contention
  *
@@ -7694,8 +7701,7 @@ static irqreturn_t ufshcd_intr(int irq, void *__hba)
 	if (retval == IRQ_NONE) {
 		dev_err(hba->dev, "%s: Unhandled interrupt 0x%08x\n",
 					__func__, intr_status);
-		ufshcd_hex_dump(hba, "host regs: ", hba->mmio_base,
-					UFSHCI_REG_SPACE_SIZE);
+		ufshcd_dump_host_regs(hba, "host regs: ");
 	}
 
 	spin_unlock(hba->host->host_lock);

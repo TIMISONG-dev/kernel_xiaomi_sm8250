@@ -1301,7 +1301,6 @@ int cqhci_init(struct cqhci_host *cq_host, struct mmc_host *mmc,
 	      bool dma64)
 {
 	int err;
-	u32 cqcap = 0;
 
 	cq_host->dma64 = dma64;
 	cq_host->mmc = mmc;
@@ -1316,7 +1315,7 @@ int cqhci_init(struct cqhci_host *cq_host, struct mmc_host *mmc,
 	if (mmc->caps2 & MMC_CAP2_CQE_DCMD)
 		mmc->cqe_qdepth -= 1;
 
-	cqcap = cqhci_readl(cq_host, CQHCI_CAP);
+	cqhci_readl(cq_host, CQHCI_CAP);
 
 	cq_host->slot = devm_kcalloc(mmc_dev(mmc), cq_host->num_slots,
 				     sizeof(*cq_host->slot), GFP_KERNEL);
