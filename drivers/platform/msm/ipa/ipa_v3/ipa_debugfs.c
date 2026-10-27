@@ -3,12 +3,13 @@
  * Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
  */
 
+#include "ipa_i.h"
+
 #ifdef CONFIG_DEBUG_FS
 
 #include <linux/debugfs.h>
 #include <linux/kernel.h>
 #include <linux/stringify.h>
-#include "ipa_i.h"
 #include "../ipa_rm_i.h"
 #include "ipahal/ipahal_nat.h"
 #include "ipa_odl.h"

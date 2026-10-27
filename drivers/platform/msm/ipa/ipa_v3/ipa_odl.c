@@ -222,7 +222,7 @@ static void delete_first_node(void)
 	}
 }
 
-int ipa3_send_adpl_msg(unsigned long skb_data)
+static int ipa3_send_adpl_msg(unsigned long skb_data)
 {
 	struct ipa3_push_msg_odl *msg;
 	struct sk_buff *skb = (struct sk_buff *)skb_data;
@@ -276,7 +276,7 @@ static void odl_ipa_packet_receive_notify(void *priv,
 		IPAERR("Invalid evt %d received in wan_ipa_receive\n", evt);
 }
 
-int ipa_setup_odl_pipe(void)
+static int ipa_setup_odl_pipe(void)
 {
 	struct ipa_sys_connect_params *ipa_odl_ep_cfg;
 	int ret;
