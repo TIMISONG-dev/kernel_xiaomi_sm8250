@@ -1438,8 +1438,9 @@ static void acc_free(struct usb_function *f)
 	put_acc_dev(dev);
 }
 
-int acc_ctrlrequest_configfs(struct usb_function *f,
-			const struct usb_ctrlrequest *ctrl) {
+static int acc_ctrlrequest_configfs(struct usb_function *f,
+			const struct usb_ctrlrequest *ctrl)
+{
 	if (f->config != NULL && f->config->cdev != NULL)
 		return acc_ctrlrequest(f->config->cdev, ctrl);
 	else

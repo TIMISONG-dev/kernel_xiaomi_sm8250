@@ -18,6 +18,15 @@
 #ifndef __LINUX_USB_F_ACCESSORY_H
 #define __LINUX_USB_F_ACCESSORY_H
 
+struct usb_composite_dev;
+struct usb_ctrlrequest;
+
+int acc_ctrlrequest(struct usb_composite_dev *cdev,
+		    const struct usb_ctrlrequest *ctrl);
+int acc_ctrlrequest_composite(struct usb_composite_dev *cdev,
+			      const struct usb_ctrlrequest *ctrl);
+void acc_disconnect(void);
+
 #include <uapi/linux/usb/f_accessory.h>
 
 #endif /* __LINUX_USB_F_ACCESSORY_H */
