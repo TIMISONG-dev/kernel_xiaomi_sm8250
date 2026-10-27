@@ -244,7 +244,9 @@ void dio_warn_stale_pagecache(struct file *filp)
 
 /**
  * dio_complete() - called when all DIO BIO I/O has been completed
- * @offset: the byte offset in the file of the completed operation
+ * @dio: direct I/O operation whose BIOs have completed
+ * @ret: submission result or error to combine with the completed I/O
+ * @flags: DIO_COMPLETE_ASYNC and DIO_COMPLETE_INVALIDATE completion options
  *
  * This drops i_dio_count, lets interested parties know that a DIO operation
  * has completed, and calculates the resulting return code for the operation.
