@@ -57,7 +57,7 @@ drop_nopreempt_cpus(struct cpumask *lowest_mask)
 
 	while (cpu < nr_cpu_ids) {
 		/* unlocked access */
-		struct task_struct *task = READ_ONCE(cpu_rq(cpu)->curr);
+		struct task_struct *task = rcu_dereference_sched(cpu_rq(cpu)->curr);
 
 		if (task_may_not_preempt(task, cpu))
 			cpumask_clear_cpu(cpu, lowest_mask);

@@ -469,7 +469,7 @@ static void task_group_path(struct task_group *tg, char *path, int plen)
 static void
 print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
 {
-	if (rq->curr == p)
+	if (task_current(rq, p))
 		SEQ_printf(m, ">R");
 	else
 		SEQ_printf(m, " %c", task_state_to_char(p));
@@ -680,7 +680,10 @@ do {									\
 	P(nr_load_updates);
 	P(nr_uninterruptible);
 	PN(next_balance);
-	SEQ_printf(m, "  .%-30s: %ld\n", "curr->pid", (long)(task_pid_nr(rq->curr)));
+	rcu_read_lock();
+	SEQ_printf(m, "  .%-30s: %ld\n", "curr->pid",
+		   (long)task_pid_nr(rcu_dereference(rq->curr)));
+	rcu_read_unlock();
 	PN(clock);
 	PN(clock_task);
 	P(cpu_load[0]);
