@@ -1231,7 +1231,7 @@ lim_send_assoc_rsp_mgmt_frame(
 	uint8_t *frame;
 	tpSirMacMgmtHdr mac_hdr;
 	QDF_STATUS sir_status;
-	uint8_t lle_mode = 0, addts;
+	uint8_t lle_mode = 0;
 	tHalBitVal qos_mode, wme_mode;
 	uint32_t payload, bytes = 0, status;
 	void *packet;
@@ -1267,7 +1267,6 @@ lim_send_assoc_rsp_mgmt_frame(
 	 * An Add TS IE is added only if the AP supports it and
 	 * the requesting STA sent a traffic spec.
 	 */
-	addts = (qos_mode && sta && sta->qos.addtsPresent) ? 1 : 0;
 
 	frm.Status.status = status_code;
 

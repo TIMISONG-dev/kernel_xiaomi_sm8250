@@ -74,7 +74,6 @@ QDF_STATUS sys_bbt_process_message_core(struct mac_context *mac_ctx,
 					struct scheduler_msg *msg,
 					uint32_t type, uint32_t subtype)
 {
-	uint32_t framecount;
 	QDF_STATUS ret;
 	void *bd_ptr;
 	tMgmtFrmDropReason dropreason;
@@ -88,7 +87,6 @@ QDF_STATUS sys_bbt_process_message_core(struct mac_context *mac_ctx,
 		goto fail;
 
 	mac_ctx->sys.gSysFrameCount[type][subtype]++;
-	framecount = mac_ctx->sys.gSysFrameCount[type][subtype];
 
 	if (type == SIR_MAC_MGMT_FRAME) {
 		tpSirMacMgmtHdr mac_hdr;
