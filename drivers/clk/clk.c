@@ -663,7 +663,8 @@ static int clk_find_vdd_level(struct clk_core *clk, unsigned long rate)
  */
 static int clk_update_vdd(struct clk_vdd_class *vdd_class)
 {
-	int level, rc = 0, i, ignore;
+	int level, rc = 0, i;
+	int restore_ret;
 	struct regulator **r = vdd_class->regulator;
 	int *uv = vdd_class->vdd_uv;
 	int n_reg = vdd_class->num_regulators;
@@ -714,8 +715,11 @@ set_voltage_fail:
 		regulator_set_voltage(r[i], uv[cur_base + i], INT_MAX);
 		if (cur_lvl == 0 || cur_lvl == vdd_class->num_levels)
 			regulator_disable(r[i]);
-		else if (level == 0)
-			ignore = regulator_enable(r[i]);
+		else if (level == 0) {
+			restore_ret = regulator_enable(r[i]);
+			if (restore_ret)
+				pr_err("Failed to restore regulator: %d\n", restore_ret);
+		}
 	}
 
 	return rc;
