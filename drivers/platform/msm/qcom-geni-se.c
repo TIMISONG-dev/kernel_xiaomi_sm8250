@@ -1552,7 +1552,6 @@ void geni_se_dump_dbg_regs(struct se_geni_rsc *rsc, void __iomem *base,
 {
 	u32 m_cmd0 = 0;
 	u32 m_irq_status = 0;
-	u32 s_cmd0 = 0;
 	u32 s_irq_status = 0;
 	u32 geni_status = 0;
 	u32 geni_ios = 0;
@@ -1586,7 +1585,7 @@ void geni_se_dump_dbg_regs(struct se_geni_rsc *rsc, void __iomem *base,
 	}
 	m_cmd0 = geni_read_reg(base, SE_GENI_M_CMD0);
 	m_irq_status = geni_read_reg(base, SE_GENI_M_IRQ_STATUS);
-	s_cmd0 = geni_read_reg(base, SE_GENI_S_CMD0);
+	geni_read_reg(base, SE_GENI_S_CMD0);
 	s_irq_status = geni_read_reg(base, SE_GENI_S_IRQ_STATUS);
 	geni_status = geni_read_reg(base, SE_GENI_STATUS);
 	geni_ios = geni_read_reg(base, SE_GENI_IOS);
@@ -1631,7 +1630,6 @@ static const struct of_device_id geni_se_dt_match[] = {
 static struct msm_bus_scale_pdata *ab_ib_register(struct platform_device *pdev,
 				struct geni_se_device *host)
 {
-	int rc = 0;
 	struct device *dev = &pdev->dev;
 	int i = 0, j, len;
 	bool mem_err = false;
@@ -1643,13 +1641,11 @@ static struct msm_bus_scale_pdata *ab_ib_register(struct platform_device *pdev,
 			"qcom,msm-bus,vectors-bus-ids", &len);
 	if (vec_arr == NULL) {
 		pr_err("Error: Vector array not found\n");
-		rc = 1;
 		goto out;
 	}
 
 	if (len != host->num_paths * sizeof(uint32_t) * 2) {
 		pr_err("Error: Length-error on getting vectors\n");
-		rc = 1;
 		goto out;
 	}
 
