@@ -258,12 +258,12 @@ enum tzbsp_subsys_state {
 	TZ_SUBSYS_STATE_RESTORE_THRESHOLD = 2,
 };
 
-const struct msm_cvp_gov_data CVP_DEFAULT_BUS_VOTE = {
+static const struct msm_cvp_gov_data CVP_DEFAULT_BUS_VOTE = {
 	.data = NULL,
 	.data_count = 0,
 };
 
-const int cvp_max_packets = 32;
+static const int cvp_max_packets = 32;
 
 static void iris_hfi_pm_handler(struct work_struct *work);
 static DECLARE_DELAYED_WORK(iris_hfi_pm_work, iris_hfi_pm_handler);
@@ -312,8 +312,11 @@ static struct iris_hfi_vpu_ops iris2_ops = {
 };
 
 /**
- * Utility function to enforce some of our assumptions.  Spam calls to this
- * in hotspots in code to double check some of the assumptions that we hold.
+ * __strict_check() - Require the HFI device lock for hardware access
+ * @device: HFI device whose lock must be held by the caller
+ *
+ * Report a fatal hardware error when the caller accesses the device without
+ * holding its serialization lock.
  */
 static inline void __strict_check(struct iris_hfi_device *device)
 {
@@ -1940,7 +1943,7 @@ static void __setup_ucregion_memory_map(struct iris_hfi_device *device)
 	if (device->qdss.align_device_addr)
 		__write_register(device, CVP_MMAP_ADDR,
 				(u32)device->qdss.align_device_addr);
-	call_iris_op(device, setup_dsp_uc_memmap, device);
+	call_iris_void_op(device, setup_dsp_uc_memmap, device);
 }
 
 static int __interface_queues_init(struct iris_hfi_device *dev)
@@ -4361,7 +4364,7 @@ static int __iris_power_on(struct iris_hfi_device *device)
 	__set_registers(device);
 
 	dprintk(CVP_DBG, "Done with register set\n");
-	call_iris_op(device, interrupt_init, device);
+	call_iris_void_op(device, interrupt_init, device);
 	dprintk(CVP_DBG, "Done with interrupt enabling\n");
 	device->intr_status = 0;
 	enable_irq(device->cvp_hal_data->irq);
@@ -4412,7 +4415,7 @@ static inline int __suspend(struct iris_hfi_device *device)
 
 	__disable_subcaches(device);
 
-	call_iris_op(device, power_off, device);
+	call_iris_void_op(device, power_off, device);
 	dprintk(CVP_PROF, "Iris power off\n");
 	return rc;
 
@@ -4590,7 +4593,7 @@ exit:
 err_reset_core:
 	__tzbsp_set_cvp_state(TZ_SUBSYS_STATE_SUSPEND);
 err_set_cvp_state:
-	call_iris_op(device, power_off, device);
+	call_iris_void_op(device, power_off, device);
 err_iris_power_on:
 	dprintk(CVP_ERR, "Failed to resume from power collapse\n");
 	return rc;
@@ -4649,7 +4652,7 @@ fail_protect_mem:
 		subsystem_put(device->resources.fw.cookie);
 	device->resources.fw.cookie = NULL;
 fail_load_fw:
-	call_iris_op(device, power_off, device);
+	call_iris_void_op(device, power_off, device);
 fail_iris_power_on:
 fail_init_pkt:
 	__deinit_resources(device);
@@ -4669,7 +4672,7 @@ static void __unload_fw(struct iris_hfi_device *device)
 
 	subsystem_put(device->resources.fw.cookie);
 	__interface_queues_release(device);
-	call_iris_op(device, power_off, device);
+	call_iris_void_op(device, power_off, device);
 	device->resources.fw.cookie = NULL;
 	__deinit_resources(device);
 
@@ -4805,7 +4808,7 @@ static int iris_hfi_noc_error_info(void *dev)
 	mutex_lock(&device->lock);
 	dprintk(CVP_ERR, "%s: non error information\n", __func__);
 
-	call_iris_op(device, noc_error_info, device);
+	call_iris_void_op(device, noc_error_info, device);
 
 	mutex_unlock(&device->lock);
 
