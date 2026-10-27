@@ -374,7 +374,7 @@ read_massdata_err:
 	return ret;
 }
 
-int read_mass_data_u16(u8 addr, int byte_num, int *buf)
+static int read_mass_data_u16(u8 addr, int byte_num, int *buf)
 {
 	int ret = 0;
 	int i = 0;
@@ -2225,7 +2225,8 @@ static ssize_t tp_selftest_read(struct file *file, char __user *buf, size_t coun
 	return cnt;
 }
 
-ssize_t tp_selftest_write(struct file *file, const char __user *buf, size_t count, loff_t *pos)
+static ssize_t tp_selftest_write(struct file *file, const char __user *buf,
+				 size_t count, loff_t *pos)
 {
 	char tmp[6];
 	int ret;
@@ -2281,7 +2282,7 @@ out:
 	return ret;
 }
 
-int tp_selftest_release(struct inode *inode, struct file *file)
+static int tp_selftest_release(struct inode *inode, struct file *file)
 {
 	return 0;
 }
