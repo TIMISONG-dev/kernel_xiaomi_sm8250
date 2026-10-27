@@ -905,6 +905,7 @@ extern const DECLARE_BITMAP(cpu_all_bits, NR_CPUS);
 /* Wrappers for arch boot code to manipulate normally-constant masks */
 void init_cpu_present(const struct cpumask *src);
 void init_cpu_possible(const struct cpumask *src);
+void init_cpu_isolated(const struct cpumask *src);
 void init_cpu_online(const struct cpumask *src);
 
 static inline void reset_cpu_possible_mask(void)
