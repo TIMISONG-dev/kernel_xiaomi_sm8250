@@ -630,6 +630,10 @@ static int geni_i2c_gsi_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
 
 			/* Issue RX */
 			rx_cookie = dmaengine_submit(gi2c->rx_desc);
+			if (dma_submit_error(rx_cookie)) {
+				gi2c->err = rx_cookie;
+				goto geni_i2c_err_prep_sg;
+			}
 			dma_async_issue_pending(gi2c->rx_c);
 		} else {
 			GENI_SE_DBG(gi2c->ipcl, false, gi2c->dev,
@@ -694,6 +698,10 @@ static int geni_i2c_gsi_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
 
 		/* Issue TX */
 		tx_cookie = dmaengine_submit(gi2c->tx_desc);
+		if (dma_submit_error(tx_cookie)) {
+			gi2c->err = tx_cookie;
+			goto geni_i2c_err_prep_sg;
+		}
 		dma_async_issue_pending(gi2c->tx_c);
 
 		timeout = wait_for_completion_timeout(&gi2c->xfer,
@@ -710,6 +718,8 @@ static int geni_i2c_gsi_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
 geni_i2c_err_prep_sg:
 		if (gi2c->err) {
 			dmaengine_terminate_all(gi2c->tx_c);
+			if (msgs[i].flags & I2C_M_RD)
+				dmaengine_terminate_all(gi2c->rx_c);
 			gi2c->cfg_sent = 0;
 		}
 		if (gi2c->is_shared)
