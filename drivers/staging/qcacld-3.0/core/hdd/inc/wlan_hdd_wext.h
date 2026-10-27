@@ -200,7 +200,7 @@ int iw_set_three_ints_getnone(struct net_device *dev,
 int hdd_priv_get_data(struct iw_point *p_priv_data,
 		     union iwreq_data *wrqu);
 
-void *mem_alloc_copy_from_user_helper(const void *wrqu_data, size_t len);
+void *mem_alloc_copy_from_user_helper(const void __user *wrqu_data, size_t len);
 
 int hdd_get_ldpc(struct hdd_adapter *adapter, int *value);
 

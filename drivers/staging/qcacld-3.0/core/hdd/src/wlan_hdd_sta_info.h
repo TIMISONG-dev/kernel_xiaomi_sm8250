@@ -382,7 +382,7 @@ hdd_get_next_sta_info_no_lock(struct hdd_sta_info_obj *sta_info_container,
 	hdd_get_front_sta_info_no_lock(&sta_info_container, &sta_info), \
 	(sta_info) ? hdd_take_sta_info_ref(&sta_info_container, \
 					   sta_info, false, sta_info_dbgid) : \
-					(false), \
+					(void)0, \
 	qdf_spin_unlock_bh(&sta_info_container.sta_obj_lock)
 
 /**
@@ -399,7 +399,7 @@ hdd_get_next_sta_info_no_lock(struct hdd_sta_info_obj *sta_info_container,
 				      &sta_info), \
 	(sta_info) ? hdd_take_sta_info_ref(&sta_info_container, \
 					   sta_info, false, sta_info_dbgid) : \
-					(false), \
+					(void)0, \
 	qdf_spin_unlock_bh(&sta_info_container.sta_obj_lock)
 
 /**
@@ -447,13 +447,13 @@ hdd_get_next_sta_info_no_lock(struct hdd_sta_info_obj *sta_info_container,
 	hdd_get_front_sta_info_no_lock(&sta_info_container, &sta_info), \
 	(sta_info) ? hdd_take_sta_info_ref(&sta_info_container, \
 					   sta_info, false, sta_info_dbgid) : \
-					(false), \
+					(void)0, \
 	hdd_get_next_sta_info_no_lock(&sta_info_container, sta_info, \
 				      &next_sta_info), \
 	(next_sta_info) ? hdd_take_sta_info_ref(&sta_info_container, \
 						next_sta_info, false, \
 						sta_info_dbgid) : \
-						(false), \
+						(void)0, \
 	qdf_spin_unlock_bh(&sta_info_container.sta_obj_lock)
 
 /**
@@ -473,7 +473,7 @@ hdd_get_next_sta_info_no_lock(struct hdd_sta_info_obj *sta_info_container,
 	(next_sta_info) ? hdd_take_sta_info_ref(&sta_info_container, \
 					     next_sta_info, false, \
 					     sta_info_dbgid) : \
-					(false), \
+					(void)0, \
 	qdf_spin_unlock_bh(&sta_info_container.sta_obj_lock)
 
 /**
