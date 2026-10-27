@@ -1143,7 +1143,6 @@ int wma_csa_offload_handler(void *handle, uint8_t *event, uint32_t len)
 	wmi_csa_event_fixed_param *csa_event;
 	uint8_t bssid[QDF_MAC_ADDR_SIZE];
 	uint8_t vdev_id = 0;
-	uint8_t cur_chan = 0;
 	struct ieee80211_channelswitch_ie *csa_ie;
 	struct csa_offload_params *csa_offload_event;
 	struct ieee80211_extendedchannelswitch_ie *xcsa_ie;
@@ -1244,7 +1243,7 @@ int wma_csa_offload_handler(void *handle, uint8_t *event, uint32_t len)
 		 csa_offload_event->new_ch_freq_seg2,
 		 csa_offload_event->new_op_class);
 
-	cur_chan = cds_freq_to_chan(intr[vdev_id].mhz);
+	cds_freq_to_chan(intr[vdev_id].mhz);
 	/*
 	 * basic sanity check: requested channel should not be 0
 	 * and equal to home channel
@@ -2416,7 +2415,6 @@ static int wma_wake_event_packet(
 	uint32_t length)
 {
 	WOW_EVENT_INFO_fixed_param *wake_info;
-	struct wma_txrx_node *vdev;
 	uint8_t *packet;
 	uint32_t packet_len;
 
@@ -2466,7 +2464,6 @@ static int wma_wake_event_packet(
 		qdf_trace_hex_dump(QDF_MODULE_ID_WMA, QDF_TRACE_LEVEL_DEBUG,
 				   packet, packet_len);
 
-		vdev = &wma->interfaces[wake_info->vdev_id];
 		wma_wow_parse_data_pkt(wma, wake_info->vdev_id,
 				       packet, packet_len);
 		break;
@@ -2795,7 +2792,6 @@ int wma_d0_wow_disable_ack_event(void *handle, uint8_t *event, uint32_t len)
 {
 	tp_wma_handle wma = (tp_wma_handle)handle;
 	WMI_D0_WOW_DISABLE_ACK_EVENTID_param_tlvs *param_buf;
-	wmi_d0_wow_disable_ack_event_fixed_param *resp_data;
 
 	param_buf = (WMI_D0_WOW_DISABLE_ACK_EVENTID_param_tlvs *)event;
 	if (!param_buf) {
@@ -2803,7 +2799,6 @@ int wma_d0_wow_disable_ack_event(void *handle, uint8_t *event, uint32_t len)
 		return -EINVAL;
 	}
 
-	resp_data = param_buf->fixed_param;
 
 	ucfg_pmo_psoc_wakeup_host_event_received(wma->psoc);
 
@@ -3977,7 +3972,6 @@ QDF_STATUS wma_process_cfg_action_frm_tb_ppdu(tp_wma_handle wma,
 QDF_STATUS wma_process_set_ie_info(tp_wma_handle wma,
 				   struct vdev_ie_info *ie_info)
 {
-	struct wma_txrx_node *interface;
 	struct vdev_ie_info_param cmd = {0};
 
 	if (!ie_info || !wma) {
@@ -3996,7 +3990,6 @@ QDF_STATUS wma_process_set_ie_info(tp_wma_handle wma,
 		return QDF_STATUS_E_INVAL;
 	}
 
-	interface = &wma->interfaces[ie_info->vdev_id];
 	cmd.vdev_id = ie_info->vdev_id;
 	cmd.ie_id = ie_info->ie_id;
 	cmd.length = ie_info->length;

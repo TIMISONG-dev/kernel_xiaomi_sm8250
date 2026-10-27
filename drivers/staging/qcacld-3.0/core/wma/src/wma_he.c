@@ -125,9 +125,7 @@ static void wma_convert_he_ppet(uint8_t *he_ppet,
 	int bits, req_byte;
 	struct ppet_hdr *hdr;
 	uint8_t ru_count, mask;
-	struct ppe_threshold *ppet_1;
 
-	ppet_1 = NULL;
 	if (!ppet) {
 		WMA_LOGE(FL("PPET is NULL"));
 		qdf_mem_zero(he_ppet, HE_MAX_PPET_SIZE);
@@ -1028,7 +1026,6 @@ static void wma_parse_he_ppet(int8_t *rcvd_ppet,
 	struct ppet_hdr *hdr;
 	uint8_t num_ppet, mask, mask1, mask2;
 	uint32_t ppet1, ppet2, ppet;
-	uint8_t bits, pad, pad_bits, req_byte;
 	uint8_t byte_idx, start, i, j, parsed;
 	uint32_t *ppet_r = peer_ppet->ppet16_ppet8_ru3_ru0;
 	uint8_t nss, ru;
@@ -1047,11 +1044,6 @@ static void wma_parse_he_ppet(int8_t *rcvd_ppet,
 	WMA_LOGD(FL("Rcvd nss=%d ru_idx_mask: %0x ru_count=%d"),
 		 nss, hdr->ru_idx_mask, ru);
 
-	/* each nss-ru pair have 2 PPET (PPET8/PPET16) */
-	bits = HE_PPET_NSS_RU_LEN + (nss + ru) * (HE_PPET_SIZE * 2);
-	pad = bits % HE_BYTE_SIZE;
-	pad_bits = HE_BYTE_SIZE - pad;
-	req_byte = (bits + pad_bits) / HE_BYTE_SIZE;
 
 	/*
 	 * PPE Threshold Field Format
