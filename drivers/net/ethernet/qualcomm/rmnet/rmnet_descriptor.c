@@ -144,18 +144,12 @@ static u8 rmnet_frag_do_flow_control(struct rmnet_map_header *qmap,
 				     struct rmnet_port *port,
 				     int enable)
 {
-	struct rmnet_map_control_command *cmd;
 	struct rmnet_endpoint *ep;
 	struct net_device *vnd;
-	u16 ip_family;
-	u16 fc_seq;
-	u32 qos_id;
 	u8 mux_id;
 	int r;
 
 	mux_id = qmap->mux_id;
-	cmd = (struct rmnet_map_control_command *)
-	      ((char *)qmap + sizeof(*qmap));
 
 	if (mux_id >= RMNET_MAX_LOGICAL_EP)
 		return RX_HANDLER_CONSUMED;
@@ -165,10 +159,6 @@ static u8 rmnet_frag_do_flow_control(struct rmnet_map_header *qmap,
 		return RX_HANDLER_CONSUMED;
 
 	vnd = ep->egress_dev;
-
-	ip_family = cmd->flow_control.ip_family;
-	fc_seq = ntohs(cmd->flow_control.flow_control_seq_num);
-	qos_id = ntohl(cmd->flow_control.qos_id);
 
 	/* Ignore the ip family and pass the sequence number for both v4 and v6
 	 * sequence. User space does not support creating dedicated flows for

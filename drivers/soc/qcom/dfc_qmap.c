@@ -143,9 +143,6 @@ static void dfc_qmap_send_cmd(struct sk_buff *skb)
 static void dfc_qmap_send_inband_ack(struct dfc_qmi_data *dfc,
 				     struct sk_buff *skb)
 {
-	struct qmap_cmd_hdr *cmd;
-
-	cmd = (struct qmap_cmd_hdr *)skb->data;
 
 	skb->protocol = htons(ETH_P_MAP);
 	skb->dev = rmnet_get_real_dev(dfc->rmnet_port);
