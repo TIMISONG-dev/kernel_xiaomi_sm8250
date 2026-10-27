@@ -893,7 +893,9 @@ QDF_STATUS sap_channel_sel(struct sap_context *sap_context)
 	uint32_t *freq_list = NULL;
 	uint8_t num_of_channels = 0;
 	mac_handle_t mac_handle;
+#ifdef FEATURE_WLAN_STA_AP_MODE_DFS_DISABLE
 	uint32_t con_ch_freq;
+#endif
 	uint8_t vdev_id;
 	uint32_t scan_id;
 
@@ -922,7 +924,10 @@ QDF_STATUS sap_channel_sel(struct sap_context *sap_context)
 	     policy_mgr_mode_specific_connection_count(mac_ctx->psoc,
 						       PM_P2P_GO_MODE,
 						       NULL)))) {
-		con_ch_freq = sme_get_beaconing_concurrent_operation_channel(
+#ifdef FEATURE_WLAN_STA_AP_MODE_DFS_DISABLE
+		con_ch_freq =
+#endif
+			sme_get_beaconing_concurrent_operation_channel(
 					mac_handle, sap_context->sessionId);
 #ifdef FEATURE_WLAN_STA_AP_MODE_DFS_DISABLE
 		if (con_ch_freq)

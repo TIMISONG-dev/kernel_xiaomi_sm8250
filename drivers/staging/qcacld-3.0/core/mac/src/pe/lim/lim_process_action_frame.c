@@ -329,14 +329,13 @@ lim_process_ext_channel_switch_action_frame(struct mac_context *mac_ctx,
 		uint8_t *rx_packet_info, struct pe_session *session_entry)
 {
 
-	tpSirMacMgmtHdr         hdr;
 	uint8_t                 *body;
 	tDot11fext_channel_switch_action_frame *ext_channel_switch_frame;
 	uint32_t                frame_len;
 	uint32_t                status;
 	uint32_t                target_freq;
 
-	hdr = WMA_GET_RX_MAC_HEADER(rx_packet_info);
+	WMA_GET_RX_MAC_HEADER(rx_packet_info);
 	body = WMA_GET_RX_MPDU_DATA(rx_packet_info);
 	frame_len = WMA_GET_RX_PAYLOAD_LEN(rx_packet_info);
 
@@ -691,7 +690,6 @@ static void __lim_process_add_ts_rsp(struct mac_context *mac_ctx,
 	uint8_t ac;
 	tpDphHashNode sta_ds_ptr = NULL;
 	uint8_t rsp_reqd = 1;
-	uint32_t cfg_len;
 	tSirMacAddr peer_macaddr;
 
 	mac_hdr = WMA_GET_RX_MAC_HEADER(rx_pkt_info);
@@ -875,7 +873,6 @@ static void __lim_process_add_ts_rsp(struct mac_context *mac_ctx,
 				&addts.tspec.tsinfo, NULL, &tspec_info->idx);
 
 			/* Send DELTS action frame to AP */
-			cfg_len = sizeof(tSirMacAddr);
 			lim_send_delts_req_action_frame(mac_ctx, peer_macaddr,
 					rsp_reqd, &addts.tspec.tsinfo,
 					&addts.tspec, session);
@@ -1331,12 +1328,11 @@ static QDF_STATUS
 __lim_process_link_measurement_req(struct mac_context *mac, uint8_t *pRxPacketInfo,
 				   struct pe_session *pe_session)
 {
-	tpSirMacMgmtHdr pHdr;
 	tDot11fLinkMeasurementRequest frm;
 	uint32_t frameLen, nStatus;
 	uint8_t *pBody;
 
-	pHdr = WMA_GET_RX_MAC_HEADER(pRxPacketInfo);
+	WMA_GET_RX_MAC_HEADER(pRxPacketInfo);
 	pBody = WMA_GET_RX_MPDU_DATA(pRxPacketInfo);
 	frameLen = WMA_GET_RX_PAYLOAD_LEN(pRxPacketInfo);
 
@@ -1370,12 +1366,11 @@ static void
 __lim_process_neighbor_report(struct mac_context *mac, uint8_t *pRxPacketInfo,
 			      struct pe_session *pe_session)
 {
-	tpSirMacMgmtHdr pHdr;
 	tDot11fNeighborReportResponse *pFrm;
 	uint32_t frameLen, nStatus;
 	uint8_t *pBody;
 
-	pHdr = WMA_GET_RX_MAC_HEADER(pRxPacketInfo);
+	WMA_GET_RX_MAC_HEADER(pRxPacketInfo);
 	pBody = WMA_GET_RX_MPDU_DATA(pRxPacketInfo);
 	frameLen = WMA_GET_RX_PAYLOAD_LEN(pRxPacketInfo);
 
