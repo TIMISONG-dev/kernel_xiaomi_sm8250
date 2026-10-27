@@ -811,7 +811,6 @@ static int dvb_dvr_open(struct inode *inode, struct file *file)
 	struct dmxdev *dmxdev = dvbdev->priv;
 	struct dmx_frontend *front;
 	void *mem = NULL;
-	bool need_ringbuffer = false;
 
 	pr_debug("function : %s(%X)\n", __func__, (file->f_flags & O_ACCMODE));
 
@@ -835,13 +834,10 @@ static int dvb_dvr_open(struct inode *inode, struct file *file)
 	 *	- For duplex device nodes, opened with O_RDWR.
 	 */
 
-	if ((file->f_flags & O_ACCMODE) == O_RDONLY)
-		need_ringbuffer = true;
-	else if ((file->f_flags & O_ACCMODE) == O_RDWR) {
+	if ((file->f_flags & O_ACCMODE) == O_RDWR) {
 		if (!(dmxdev->capabilities & DMXDEV_CAP_DUPLEX)) {
 #ifdef CONFIG_DVB_MMAP
 			dmxdev->may_do_mmap = 1;
-			need_ringbuffer = true;
 #else
 			mutex_unlock(&dmxdev->mutex);
 			return -EOPNOTSUPP;
@@ -4685,7 +4681,7 @@ static unsigned int dvb_demux_poll(struct file *file, poll_table *wait)
 	unsigned int mask = 0;
 
 	if (!dmxdevfilter) {
-		pr_err("%s: dmxdevfilter is NULL\n");
+		pr_err("%s: dmxdevfilter is NULL\n", __func__);
 		return -EINVAL;
 	}
 	if (dvb_vb2_is_streaming(&dmxdevfilter->vb2_ctx))
