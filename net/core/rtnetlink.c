@@ -1173,7 +1173,7 @@ static int rtnl_phys_switch_id_fill(struct sk_buff *skb, struct net_device *dev)
 static noinline_for_stack int rtnl_fill_stats(struct sk_buff *skb,
 					      struct net_device *dev)
 {
-	struct rtnl_link_stats64 *sp;
+	struct rtnl_link_stats64 stats;
 	struct nlattr *attr;
 
 	attr = nla_reserve_64bit(skb, IFLA_STATS64,
@@ -1181,15 +1181,15 @@ static noinline_for_stack int rtnl_fill_stats(struct sk_buff *skb,
 	if (!attr)
 		return -EMSGSIZE;
 
-	sp = nla_data(attr);
-	dev_get_stats(dev, sp);
+	dev_get_stats(dev, &stats);
+	memcpy(nla_data(attr), &stats, sizeof(stats));
 
 	attr = nla_reserve(skb, IFLA_STATS,
 			   sizeof(struct rtnl_link_stats));
 	if (!attr)
 		return -EMSGSIZE;
 
-	copy_rtnl_link_stats(nla_data(attr), sp);
+	copy_rtnl_link_stats(nla_data(attr), &stats);
 
 	return 0;
 }
@@ -4439,7 +4439,7 @@ static int rtnl_fill_statsinfo(struct sk_buff *skb, struct net_device *dev,
 	ifsm->filter_mask = filter_mask;
 
 	if (stats_attr_valid(filter_mask, IFLA_STATS_LINK_64, *idxattr)) {
-		struct rtnl_link_stats64 *sp;
+		struct rtnl_link_stats64 stats;
 
 		attr = nla_reserve_64bit(skb, IFLA_STATS_LINK_64,
 					 sizeof(struct rtnl_link_stats64),
@@ -4447,8 +4447,8 @@ static int rtnl_fill_statsinfo(struct sk_buff *skb, struct net_device *dev,
 		if (!attr)
 			goto nla_put_failure;
 
-		sp = nla_data(attr);
-		dev_get_stats(dev, sp);
+		dev_get_stats(dev, &stats);
+		memcpy(nla_data(attr), &stats, sizeof(stats));
 	}
 
 	if (stats_attr_valid(filter_mask, IFLA_STATS_LINK_XSTATS, *idxattr)) {
