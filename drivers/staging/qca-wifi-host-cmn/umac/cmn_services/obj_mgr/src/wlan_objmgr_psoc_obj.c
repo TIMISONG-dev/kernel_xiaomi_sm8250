@@ -247,7 +247,6 @@ static QDF_STATUS wlan_objmgr_psoc_obj_destroy(struct wlan_objmgr_psoc *psoc)
 
 QDF_STATUS wlan_objmgr_psoc_obj_delete(struct wlan_objmgr_psoc *psoc)
 {
-	uint8_t print_idx;
 
 	if (!psoc) {
 		obj_mgr_err("psoc is NULL");
@@ -256,7 +255,6 @@ QDF_STATUS wlan_objmgr_psoc_obj_delete(struct wlan_objmgr_psoc *psoc)
 
 	obj_mgr_info("Logically deleting psoc %d", psoc->soc_objmgr.psoc_id);
 
-	print_idx = qdf_get_pidx();
 	wlan_objmgr_print_ref_ids(psoc->soc_objmgr.ref_id_dbg,
 				  QDF_TRACE_LEVEL_DEBUG);
 	/*
@@ -2952,12 +2950,10 @@ qdf_export_symbol(wlan_objmgr_psoc_check_for_peer_leaks);
 
 void wlan_objmgr_psoc_check_for_leaks(struct wlan_objmgr_psoc *psoc)
 {
-	struct wlan_objmgr_psoc_objmgr *_psoc;
 	uint32_t peer_leaks = 0;
 	uint32_t vdev_leaks = 0;
 	uint32_t pdev_leaks = 0;
 
-	_psoc = &psoc->soc_objmgr;
 
 	peer_leaks = wlan_objmgr_psoc_check_for_peer_leaks(psoc);
 	vdev_leaks = wlan_objmgr_psoc_check_for_vdev_leaks(psoc);
@@ -2967,7 +2963,7 @@ void wlan_objmgr_psoc_check_for_leaks(struct wlan_objmgr_psoc *psoc)
 		QDF_DEBUG_PANIC("%u objmgr peer leaks %u objmgr vdev leaks"
 				"%u objmgr pdev leaks detected for psoc %u!",
 				peer_leaks, vdev_leaks, pdev_leaks,
-				_psoc->psoc_id);
+				psoc->soc_objmgr.psoc_id);
 	}
 }
 
