@@ -25,6 +25,8 @@
 #ifndef CSR_LINK_LIST_H__
 #define CSR_LINK_LIST_H__
 
+#include <linux/stddef.h>
+
 #include "qdf_lock.h"
 #include "qdf_mc_timer.h"
 #include "cds_api.h"
@@ -55,11 +57,10 @@ typedef struct tagDblLinkList {
  * To get the address of an object of (type) base on the (address)
  * of one of its (field)
  */
-#define GET_BASE_ADDR(address, type, field) ((type *)( \
-			(uint8_t *)(address) - \
-			(uint8_t *)(&((type *)0)->field)))
+#define GET_BASE_ADDR(address, type, field) \
+	((type *)((uint8_t *)(address) - offsetof(type, field)))
 /* To get the offset of (field) inside structure (type) */
-#define GET_FIELD_OFFSET(type, field)  ((uintptr_t)(&(((type *)0)->field)))
+#define GET_FIELD_OFFSET(type, field) ((uintptr_t)offsetof(type, field))
 #define GET_ROUND_UP(_Field, _Boundary) \
 	(((_Field) + ((_Boundary) - 1))  & ~((_Boundary) - 1))
 #define BITS_ON(_Field, _Bitmask)  ((_Field) |=  (_Bitmask))
