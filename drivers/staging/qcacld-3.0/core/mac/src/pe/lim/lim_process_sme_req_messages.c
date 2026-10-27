@@ -3211,7 +3211,7 @@ __lim_process_sme_delts_req(struct mac_context *mac, uint32_t *msg_buf)
 
 	/* send an sme response back */
 end:
-	lim_send_sme_delts_rsp(mac, pDeltsReq, QDF_STATUS_SUCCESS, pe_session,
+	lim_send_sme_delts_rsp(mac, pDeltsReq, status, pe_session,
 			       smesessionId);
 }
 
