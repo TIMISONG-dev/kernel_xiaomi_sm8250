@@ -144,8 +144,8 @@ void __put_cred(struct cred *cred)
 	cred->magic = CRED_MAGIC_DEAD;
 	cred->put_addr = __builtin_return_address(0);
 #endif
-	BUG_ON(cred == current->cred);
-	BUG_ON(cred == current->real_cred);
+	BUG_ON(cred == rcu_access_pointer(current->cred));
+	BUG_ON(cred == rcu_access_pointer(current->real_cred));
 
 	if (cred->non_rcu)
 		put_cred_rcu(&cred->rcu);
@@ -433,7 +433,7 @@ int commit_creds(struct cred *new)
 	       atomic_read(&new->usage),
 	       read_cred_subscribers(new));
 
-	BUG_ON(task->cred != old);
+	BUG_ON(rcu_access_pointer(task->cred) != old);
 #ifdef CONFIG_DEBUG_CREDENTIALS
 	BUG_ON(read_cred_subscribers(old) < 2);
 	validate_creds(old);
