@@ -1155,19 +1155,15 @@ static void exit_tasks_rcu_finish_trace(struct task_struct *t)
 }
 
 /**
- * call_rcu_tasks_trace() - Queue a callback trace task-based grace period
+ * call_rcu_tasks_trace() - Queue a callback after a Tasks Trace RCU grace period
  * @rhp: structure to be used for queueing the RCU updates.
  * @func: actual callback function to be invoked after the grace period
  *
- * The callback function will be invoked some time after a full grace
- * period elapses, in other words after all currently executing RCU
- * read-side critical sections have completed. call_rcu_tasks_trace()
- * assumes that the read-side critical sections end at context switch,
- * cond_resched_rcu_qs(), or transition to usermode execution.  As such,
- * there are no read-side primitives analogous to rcu_read_lock() and
- * rcu_read_unlock() because this primitive is intended to determine
- * that all tasks have passed through a safe state, not so much for
- * data-strcuture synchronization.
+ * The callback function will be invoked after a Tasks Trace RCU grace
+ * period, after all pre-existing Tasks Trace RCU read-side critical
+ * sections have completed. These sections are delimited by calls to
+ * rcu_read_lock_trace() and rcu_read_unlock_trace(). A context switch,
+ * cond_resched_rcu_qs(), or transition to user mode does not end a section.
  *
  * See the description of call_rcu() for more detailed information on
  * memory ordering guarantees.
