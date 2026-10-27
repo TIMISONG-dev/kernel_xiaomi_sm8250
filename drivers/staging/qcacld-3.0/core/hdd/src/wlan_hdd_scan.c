@@ -487,7 +487,6 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 	struct net_device *dev = request->wdev->netdev;
 	struct hdd_adapter *adapter = WLAN_HDD_GET_PRIV_PTR(dev);
 	struct hdd_context *hdd_ctx = WLAN_HDD_GET_CTX(adapter);
-	struct hdd_config *cfg_param = NULL;
 	int status;
 	struct hdd_scan_info *scan_info = NULL;
 	struct hdd_adapter *con_sap_adapter;
@@ -559,7 +558,6 @@ static int __wlan_hdd_cfg80211_scan(struct wiphy *wiphy,
 		return -EINVAL;
 	}
 
-	cfg_param = hdd_ctx->config;
 	scan_info = &adapter->scan_info;
 
 	/* Block All Scan during DFS operation and send null scan result */

@@ -764,10 +764,9 @@ static int hdd_hostapd_set_mac_address(struct net_device *net_dev, void *addr)
 static void hdd_clear_sta(struct hdd_adapter *adapter,
 			  struct hdd_station_info *sta_info)
 {
-	struct hdd_ap_ctx *ap_ctx;
 	struct csr_del_sta_params del_sta_params;
 
-	ap_ctx = WLAN_HDD_GET_AP_CTX_PTR(adapter);
+	WLAN_HDD_GET_AP_CTX_PTR(adapter);
 
 	if (qdf_is_macaddr_broadcast(&sta_info->sta_mac))
 		return;
@@ -1800,7 +1799,6 @@ QDF_STATUS hdd_hostapd_sap_event_cb(struct sap_event *sap_event,
 	uint8_t *we_custom_event_generic = NULL;
 	int we_event = 0;
 	int i = 0;
-	uint8_t sta_id;
 	QDF_STATUS qdf_status;
 	bool bAuthRequired = true;
 	char *unknownSTAEvent = NULL;
@@ -1866,7 +1864,6 @@ QDF_STATUS hdd_hostapd_sap_event_cb(struct sap_event *sap_event,
 	dfs_info.channel = wlan_reg_freq_to_chan(
 			hdd_ctx->pdev, ap_ctx->operating_chan_freq);
 	sme_get_country_code(mac_handle, dfs_info.country_code, &cc_len);
-	sta_id = sap_event->sapevt.sapStartBssCompleteEvent.staId;
 	sap_config = &adapter->session.ap.sap_config;
 
 	switch (event_id) {
@@ -2303,7 +2300,6 @@ QDF_STATUS hdd_hostapd_sap_event_cb(struct sap_event *sap_event,
 					QDF_MAC_ADDR_REF(wrqu.addr.sa_data));
 		}
 
-		sta_id = event->staId;
 		if (QDF_IS_STATUS_SUCCESS(qdf_status))
 			hdd_fill_station_info(adapter, event);
 
@@ -3807,7 +3803,6 @@ int wlan_hdd_set_channel(struct wiphy *wiphy,
 				enum nl80211_channel_type channel_type)
 {
 	struct hdd_adapter *adapter = NULL;
-	uint32_t num_ch = 0;
 	int channel = 0;
 	int channel_seg2 = 0;
 	struct hdd_context *hdd_ctx;
@@ -3864,7 +3859,6 @@ int wlan_hdd_set_channel(struct wiphy *wiphy,
 			hdd_err("Invalid center_freq2");
 	}
 
-	num_ch = CFG_VALID_CHANNEL_LIST_LEN;
 
 	if (QDF_STATUS_SUCCESS !=  wlan_hdd_validate_operation_channel(
 	    adapter, wlan_reg_chan_to_freq(hdd_ctx->pdev, channel))) {
@@ -3886,7 +3880,7 @@ int wlan_hdd_set_channel(struct wiphy *wiphy,
 		}
 
 		roam_profile = hdd_roam_profile(adapter);
-		num_ch = roam_profile->ChannelInfo.numOfChannels = 1;
+		roam_profile->ChannelInfo.numOfChannels = 1;
 		sta_ctx->conn_info.chan_freq = chandef->chan->center_freq;
 		roam_profile->ChannelInfo.freq_list =
 			&sta_ctx->conn_info.chan_freq;
@@ -4554,14 +4548,10 @@ QDF_STATUS wlan_hdd_config_acs(struct hdd_context *hdd_ctx,
 			       struct hdd_adapter *adapter)
 {
 	struct sap_config *sap_config;
-	struct hdd_config *ini_config;
-	mac_handle_t mac_handle;
 	uint8_t is_overlap_enable = 0;
 	QDF_STATUS status;
 
-	mac_handle = hdd_ctx->mac_handle;
 	sap_config = &adapter->session.ap.sap_config;
-	ini_config = hdd_ctx->config;
 
 	status = ucfg_policy_mgr_get_enable_overlap_chnl(hdd_ctx->psoc,
 							 &is_overlap_enable);
@@ -4602,12 +4592,12 @@ QDF_STATUS wlan_hdd_config_acs(struct hdd_context *hdd_ctx,
 					sap_config->acs_cfg.end_ch_freq;
 
 			wlansap_extend_to_acs_range(
-					mac_handle, &cur_sap_st_ch_freq,
+					hdd_ctx->mac_handle, &cur_sap_st_ch_freq,
 					&cur_sap_end_ch_freq,
 					&bandStartChannel, &bandEndChannel);
 
 			wlansap_extend_to_acs_range(
-					mac_handle, &con_sap_st_ch_freq,
+					hdd_ctx->mac_handle, &con_sap_st_ch_freq,
 					&con_sap_end_ch_freq,
 					&bandStartChannel, &bandEndChannel);
 
@@ -4879,7 +4869,7 @@ int wlan_hdd_restore_channels(struct hdd_context *hdd_ctx)
 {
 	struct hdd_cache_channels *cache_chann;
 	struct wiphy *wiphy;
-	int freq, status, rf_channel;
+	int freq, status;
 	int i;
 	struct ieee80211_channel *wiphy_channel = NULL;
 
@@ -4916,7 +4906,6 @@ int wlan_hdd_restore_channels(struct hdd_context *hdd_ctx)
 		wiphy_channel = wlan_hdd_get_wiphy_channel(wiphy, freq);
 		if (!wiphy_channel)
 			continue;
-		rf_channel = wiphy_channel->hw_value;
 		/*
 		 * Restore the orginal states of the channels
 		 * only if we have cached non zero values
@@ -5149,7 +5138,6 @@ int wlan_hdd_cfg80211_start_bss(struct hdd_adapter *adapter,
 	const uint8_t *ie = NULL;
 	eCsrEncryptionType rsn_encrypt_type;
 	eCsrEncryptionType mc_rsn_encrypt_type;
-	uint16_t capab_info;
 	int status = QDF_STATUS_SUCCESS, ret;
 	int qdf_status = QDF_STATUS_SUCCESS;
 	sap_event_cb sap_event_callback;
@@ -5369,7 +5357,6 @@ int wlan_hdd_cfg80211_start_bss(struct hdd_adapter *adapter,
 
 	tgt_dfs_set_tx_leakage_threshold(hdd_ctx->pdev);
 
-	capab_info = mgmt_frame->u.beacon.capab_info;
 
 	config->privacy = (mgmt_frame->u.beacon.capab_info &
 			    WLAN_CAPABILITY_PRIVACY) ? true : false;

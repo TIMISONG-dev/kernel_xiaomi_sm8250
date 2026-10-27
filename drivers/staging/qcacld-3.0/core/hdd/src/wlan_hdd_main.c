@@ -2214,7 +2214,6 @@ int hdd_update_tgt_cfg(hdd_handle_t hdd_handle, struct wma_tgt_cfg *cfg)
 	uint8_t antenna_mode;
 	uint8_t sub_20_chan_width;
 	QDF_STATUS status;
-	mac_handle_t mac_handle;
 	bool bval = false;
 	uint8_t value = 0;
 	uint32_t fine_time_meas_cap = 0;
@@ -2452,7 +2451,6 @@ int hdd_update_tgt_cfg(hdd_handle_t hdd_handle, struct wma_tgt_cfg *cfg)
 		}
 	}
 
-	mac_handle = hdd_ctx->mac_handle;
 
 	hdd_debug("txBFCsnValue %d", value);
 
@@ -2950,7 +2948,6 @@ void hdd_update_hw_sw_info(struct hdd_context *hdd_ctx)
 	size_t target_hw_name_len;
 	const char *target_hw_name;
 	uint8_t *buf;
-	uint32_t buf_len;
 
 	hif_sc = cds_get_context(QDF_MODULE_ID_HIF);
 	if (!hif_sc) {
@@ -2973,7 +2970,7 @@ void hdd_update_hw_sw_info(struct hdd_context *hdd_ctx)
 
 	buf = qdf_mem_malloc(WE_MAX_STR_LEN);
 	if (buf) {
-		buf_len = hdd_wlan_get_version(hdd_ctx, WE_MAX_STR_LEN, buf);
+		hdd_wlan_get_version(hdd_ctx, WE_MAX_STR_LEN, buf);
 		hdd_nofl_debug("%s", buf);
 		qdf_mem_free(buf);
 	}
@@ -9918,7 +9915,6 @@ static void __hdd_bus_bw_work_handler(struct hdd_context *hdd_ctx)
 	uint64_t tx_packets = 0, rx_packets = 0, tx_bytes = 0;
 	uint64_t fwd_tx_packets = 0, fwd_rx_packets = 0;
 	uint64_t fwd_tx_packets_diff = 0, fwd_rx_packets_diff = 0;
-	uint64_t total_tx = 0, total_rx = 0;
 	A_STATUS ret;
 	bool connected = false;
 	uint32_t ipa_tx_packets = 0, ipa_rx_packets = 0;
@@ -10001,8 +9997,6 @@ static void __hdd_bus_bw_work_handler(struct hdd_context *hdd_ctx)
 		hdd_set_vdev_bundle_require_flag(adapter->vdev_id, hdd_ctx,
 						 tx_bytes);
 
-		total_rx += adapter->stats.rx_packets;
-		total_tx += adapter->stats.tx_packets;
 
 		qdf_spin_lock_bh(&hdd_ctx->bus_bw_lock);
 		adapter->prev_tx_packets = adapter->stats.tx_packets;
@@ -10310,11 +10304,10 @@ void wlan_hdd_clear_tx_rx_histogram(struct hdd_context *hdd_ctx)
 static void
 hdd_display_netif_queue_history_compact(struct hdd_context *hdd_ctx)
 {
-	int adapter_num = 0;
 	int i;
 	int bytes_written;
 	u32 tbytes;
-	qdf_time_t total, pause, unpause, curr_time, delta;
+	qdf_time_t total, pause, curr_time, delta;
 	char temp_str[20 * WLAN_REASON_TYPE_MAX];
 	char *comb_log_str;
 	uint32_t comb_log_str_size;
@@ -10337,9 +10330,7 @@ hdd_display_netif_queue_history_compact(struct hdd_context *hdd_ctx)
 
 		if (adapter->pause_map) {
 			pause = adapter->total_pause_time + delta;
-			unpause = adapter->total_unpause_time;
 		} else {
-			unpause = adapter->total_unpause_time + delta;
 			pause = adapter->total_pause_time;
 		}
 
@@ -10373,7 +10364,6 @@ hdd_display_netif_queue_history_compact(struct hdd_context *hdd_ctx)
 			qdf_system_ticks_to_msecs(total),
 			temp_str);
 
-		adapter_num++;
 		/* dev_put has to be done here */
 		hdd_adapter_dev_put_debug(adapter, dbgid);
 	}
@@ -13213,7 +13203,6 @@ static int hdd_features_init(struct hdd_context *hdd_ctx)
 	QDF_STATUS status;
 	int ret;
 	mac_handle_t mac_handle;
-	struct hdd_config *cfg;
 	bool b_cts2self, is_imps_enabled;
 
 	hdd_enter();
@@ -13228,7 +13217,6 @@ static int hdd_features_init(struct hdd_context *hdd_ctx)
 	if (ret)
 		hdd_warn("Error initializing mws-coex");
 
-	cfg = hdd_ctx->config;
 	/* FW capabilities received, Set the Dot11 mode */
 	mac_handle = hdd_ctx->mac_handle;
 	sme_setdef_dot11mode(mac_handle);
@@ -14861,7 +14849,6 @@ void wlan_hdd_disable_roaming(struct hdd_adapter *cur_adapter,
 			      uint32_t mlme_operation_requestor)
 {
 	struct hdd_context *hdd_ctx = WLAN_HDD_GET_CTX(cur_adapter);
-	struct csr_roam_profile *roam_profile;
 	struct hdd_adapter *adapter = NULL, *next_adapter = NULL;
 	struct hdd_station_ctx *sta_ctx;
 	wlan_net_dev_ref_dbgid dbgid = NET_DEV_HOLD_DISABLE_ROAMING;
@@ -14871,7 +14858,6 @@ void wlan_hdd_disable_roaming(struct hdd_adapter *cur_adapter,
 
 	hdd_for_each_adapter_dev_held_safe(hdd_ctx, adapter, next_adapter,
 					   dbgid) {
-		roam_profile = hdd_roam_profile(adapter);
 		sta_ctx = WLAN_HDD_GET_STATION_CTX_PTR(adapter);
 
 		if (cur_adapter->vdev_id != adapter->vdev_id &&
@@ -14891,7 +14877,6 @@ void wlan_hdd_enable_roaming(struct hdd_adapter *cur_adapter,
 			     uint32_t mlme_operation_requestor)
 {
 	struct hdd_context *hdd_ctx = WLAN_HDD_GET_CTX(cur_adapter);
-	struct csr_roam_profile *roam_profile;
 	struct hdd_adapter *adapter = NULL, *next_adapter = NULL;
 	struct hdd_station_ctx *sta_ctx;
 	wlan_net_dev_ref_dbgid dbgid = NET_DEV_HOLD_ENABLE_ROAMING;
@@ -14901,7 +14886,6 @@ void wlan_hdd_enable_roaming(struct hdd_adapter *cur_adapter,
 
 	hdd_for_each_adapter_dev_held_safe(hdd_ctx, adapter, next_adapter,
 					   dbgid) {
-		roam_profile = hdd_roam_profile(adapter);
 		sta_ctx = WLAN_HDD_GET_STATION_CTX_PTR(adapter);
 
 		if (cur_adapter->vdev_id != adapter->vdev_id &&
@@ -16280,9 +16264,7 @@ static void hdd_stop_present_mode(struct hdd_context *hdd_ctx,
 static void hdd_cleanup_present_mode(struct hdd_context *hdd_ctx,
 				    enum QDF_GLOBAL_MODE curr_mode)
 {
-	int driver_status;
 
-	driver_status = hdd_ctx->driver_status;
 
 	switch (curr_mode) {
 	case QDF_GLOBAL_MISSION_MODE:
