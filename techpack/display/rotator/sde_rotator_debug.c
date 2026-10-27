@@ -620,6 +620,7 @@ static void sde_rot_evtlog_debug_work(struct work_struct *work)
 		sde_rot_dbg_evtlog.work_rot_dbgbus);
 }
 
+#ifdef CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG
 /*
  * sde_rot_evtlog_tout_handler - log dump timeout handler
  * @queue: boolean indicate putting log dump into queue
@@ -717,6 +718,8 @@ void sde_rot_evtlog(const char *name, int line, int flag, ...)
 
 	spin_unlock_irqrestore(&sde_rot_xlock, flags);
 }
+
+#endif /* CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG */
 
 /*
  * sde_rotator_stat_show - Show statistics on read to this debugfs file
