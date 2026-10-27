@@ -393,14 +393,14 @@ kill_orphaned_pgrp(struct task_struct *tsk, struct task_struct *parent)
  */
 void mm_update_next_owner(struct mm_struct *mm)
 {
-	struct task_struct *c, *g, *p = current;
+	struct task_struct *c, *g, *parent, *p = current;
 
 retry:
 	/*
 	 * If the exiting or execing task is not the owner, it's
 	 * someone else's problem.
 	 */
-	if (mm->owner != p)
+	if (rcu_access_pointer(mm->owner) != p)
 		return;
 	/*
 	 * The current owner is exiting/execing and there are no other
@@ -408,7 +408,7 @@ retry:
 	 * freed task structure.
 	 */
 	if (atomic_read(&mm->mm_users) <= 1) {
-		mm->owner = NULL;
+		RCU_INIT_POINTER(mm->owner, NULL);
 		return;
 	}
 
@@ -424,7 +424,9 @@ retry:
 	/*
 	 * Search in the siblings
 	 */
-	list_for_each_entry(c, &p->real_parent->children, sibling) {
+	parent = rcu_dereference_protected(p->real_parent,
+					 lockdep_tasklist_lock_is_held());
+	list_for_each_entry(c, &parent->children, sibling) {
 		if (c->mm == mm)
 			goto assign_new_owner;
 	}
@@ -450,7 +452,7 @@ retry:
 	 * most likely racing with swapoff (try_to_unuse()) or /proc or
 	 * ptrace or page migration (get_task_mm()).  Mark owner as NULL.
 	 */
-	mm->owner = NULL;
+	RCU_INIT_POINTER(mm->owner, NULL);
 	return;
 
 assign_new_owner:
@@ -471,7 +473,7 @@ assign_new_owner:
 		put_task_struct(c);
 		goto retry;
 	}
-	mm->owner = c;
+	rcu_assign_pointer(mm->owner, c);
 	task_unlock(c);
 	put_task_struct(c);
 }
@@ -673,7 +675,7 @@ static void forget_original_parent(struct task_struct *father,
 	list_for_each_entry(p, &father->children, sibling) {
 		for_each_thread(p, t) {
 			t->real_parent = reaper;
-			BUG_ON((!t->ptrace) != (t->parent == father));
+			BUG_ON((!t->ptrace) != (rcu_access_pointer(t->parent) == father));
 			if (likely(!t->ptrace))
 				t->parent = t->real_parent;
 			if (t->pdeath_signal)
@@ -1491,7 +1493,7 @@ static int child_wait_callback(wait_queue_entry_t *wait, unsigned mode,
 	if (!eligible_pid(wo, p))
 		return 0;
 
-	if ((wo->wo_flags & __WNOTHREAD) && wait->private != p->parent)
+	if ((wo->wo_flags & __WNOTHREAD) && wait->private != rcu_access_pointer(p->parent))
 		return 0;
 
 	return default_wake_function(wait, mode, sync, key);
