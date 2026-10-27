@@ -2,6 +2,8 @@
 /* Copyright (c) 2011-2020, The Linux Foundation. All rights reserved.
  */
 
+#include "diag_debugfs.h"
+
 #ifdef CONFIG_DEBUG_FS
 
 #include <linux/slab.h>
@@ -26,7 +28,6 @@
 #include "diagfwd_peripheral.h"
 #include "diagfwd_socket.h"
 #include "diagfwd_rpmsg.h"
-#include "diag_debugfs.h"
 #include "diag_ipc_logging.h"
 
 #define DEBUG_BUF_SIZE	4096

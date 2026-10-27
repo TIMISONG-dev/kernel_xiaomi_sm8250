@@ -18,6 +18,7 @@
 #include <linux/ratelimit.h>
 #include <linux/reboot.h>
 #include <asm/current.h>
+#include <asm/unaligned.h>
 #include <soc/qcom/restart.h>
 #include <linux/sched/signal.h>
 #include <linux/vmalloc.h>
@@ -39,12 +40,12 @@ static struct timer_list dci_drain_timer;
 static int dci_timer_in_progress;
 static struct work_struct dci_data_drain_work;
 
-struct diag_dci_partial_pkt_t partial_pkt;
+static struct diag_dci_partial_pkt_t partial_pkt;
 
 unsigned int dci_max_reg = 100;
 unsigned int dci_max_clients = 10;
-struct mutex dci_log_mask_mutex;
-struct mutex dci_event_mask_mutex;
+static struct mutex dci_log_mask_mutex;
+static struct mutex dci_event_mask_mutex;
 
 /*
  * DCI_HANDSHAKE_RETRY_TIME: Time to wait (in microseconds) before checking the
@@ -55,9 +56,6 @@ struct mutex dci_event_mask_mutex;
  */
 #define DCI_HANDSHAKE_RETRY_TIME	500000
 #define DCI_HANDSHAKE_WAIT_TIME		200
-
-spinlock_t ws_lock;
-unsigned long ws_lock_flags;
 
 struct dci_ops_tbl_t dci_ops_tbl[NUM_DCI_PROC] = {
 	{
@@ -85,7 +83,7 @@ struct dci_ops_tbl_t dci_ops_tbl[NUM_DCI_PROC] = {
 #endif
 };
 
-struct dci_channel_status_t dci_channel_status[NUM_DCI_PROC] = {
+static struct dci_channel_status_t dci_channel_status[NUM_DCI_PROC] = {
 	{
 		.id = 0,
 		.open = 0,
@@ -401,7 +399,7 @@ void diag_dci_wakeup_clients(void)
 	mutex_unlock(&driver->dci_mutex);
 }
 
-void dci_data_drain_work_fn(struct work_struct *work)
+static void dci_data_drain_work_fn(struct work_struct *work)
 {
 	int i;
 	struct list_head *start, *temp;
@@ -622,7 +620,6 @@ void diag_dci_process_peripheral_data(struct diagfwd_info *p_info, void *buf,
 	int read_bytes = 0, err = 0;
 	uint16_t dci_pkt_len;
 	struct diag_dci_pkt_header_t *header = NULL;
-	uint8_t recv_pkt_cmd_code;
 
 	if (!buf || !p_info)
 		return;
@@ -640,7 +637,6 @@ void diag_dci_process_peripheral_data(struct diagfwd_info *p_info, void *buf,
 				DCI_LOCAL_PROC);
 	while (read_bytes < recd_bytes) {
 		header = (struct diag_dci_pkt_header_t *)buf;
-		recv_pkt_cmd_code = header->pkt_code;
 		dci_pkt_len = header->len;
 
 		/*
@@ -971,7 +967,7 @@ void extract_dci_ctrl_pkt(unsigned char *buf, int len, int token)
 	/* Skip the Control packet command code */
 	temp += sizeof(uint8_t);
 	len -= sizeof(uint8_t);
-	ctrl_pkt_id = *(uint32_t *)temp;
+	ctrl_pkt_id = get_unaligned((uint32_t *)temp);
 	switch (ctrl_pkt_id) {
 	case DIAG_CTRL_MSG_DCI_CONNECTION_STATUS:
 		dci_process_ctrl_status(temp, len, token);
@@ -1413,7 +1409,7 @@ static void copy_dci_log(unsigned char *buf, int len,
 void extract_dci_log(unsigned char *buf, int len, int data_source, int token,
 			void *ext_hdr)
 {
-	uint16_t log_code, read_bytes = 0;
+	uint16_t log_code;
 	struct list_head *start, *temp;
 	struct diag_dci_client_tbl *entry = NULL;
 
@@ -1432,7 +1428,6 @@ void extract_dci_log(unsigned char *buf, int len, int data_source, int token,
 	}
 
 	log_code = *(uint16_t *)(buf + 6);
-	read_bytes += sizeof(uint16_t) + 6;
 
 	/* parse through log mask table of each client and check mask */
 	mutex_lock(&driver->dci_mutex);
@@ -1537,11 +1532,15 @@ void diag_dci_channel_open_work(struct work_struct *work)
 	diag_update_userspace_clients(DCI_LOG_MASKS_TYPE);
 	/* Send updated log mask to peripherals */
 	ret = dci_ops_tbl[DCI_LOCAL_PROC].send_log_mask(DCI_LOCAL_PROC);
+	if (ret != DIAG_DCI_NO_ERROR)
+		pr_err_ratelimited("diag: failed sending DCI mask: %d\n", ret);
 
 	/* Send updated event mask to userspace clients */
 	diag_update_userspace_clients(DCI_EVENT_MASKS_TYPE);
 	/* Send updated event mask to peripheral */
 	ret = dci_ops_tbl[DCI_LOCAL_PROC].send_event_mask(DCI_LOCAL_PROC);
+	if (ret != DIAG_DCI_NO_ERROR)
+		pr_err_ratelimited("diag: failed sending DCI mask: %d\n", ret);
 }
 
 void diag_dci_notify_client(int peripheral_mask, int data, int proc)
@@ -2888,7 +2887,6 @@ int diag_dci_init(void)
 	mutex_init(&driver->dci_mutex);
 	mutex_init(&dci_log_mask_mutex);
 	mutex_init(&dci_event_mask_mutex);
-	spin_lock_init(&ws_lock);
 	spin_lock_init(&driver->dci_mempool_lock);
 
 	ret = diag_dci_init_ops_tbl();
@@ -2951,7 +2949,6 @@ void diag_dci_exit(void)
 int diag_dci_clear_log_mask(int client_id)
 {
 	int err = DIAG_DCI_NO_ERROR, token = DCI_LOCAL_PROC;
-	uint8_t *update_ptr;
 	struct diag_dci_client_tbl *entry = NULL;
 
 	entry = diag_dci_get_client_entry(client_id);
@@ -2960,7 +2957,6 @@ int diag_dci_clear_log_mask(int client_id)
 		return DIAG_DCI_TABLE_ERR;
 	}
 	token = entry->client_info.token;
-	update_ptr = dci_ops_tbl[token].log_mask_composite;
 
 	create_dci_log_mask_tbl(entry->dci_log_mask, DCI_LOG_MASK_CLEAN);
 	diag_dci_invalidate_cumulative_log_mask(token);
@@ -2979,7 +2975,6 @@ int diag_dci_clear_log_mask(int client_id)
 int diag_dci_clear_event_mask(int client_id)
 {
 	int err = DIAG_DCI_NO_ERROR, token = DCI_LOCAL_PROC;
-	uint8_t *update_ptr;
 	struct diag_dci_client_tbl *entry = NULL;
 
 	entry = diag_dci_get_client_entry(client_id);
@@ -2988,7 +2983,6 @@ int diag_dci_clear_event_mask(int client_id)
 		return DIAG_DCI_TABLE_ERR;
 	}
 	token = entry->client_info.token;
-	update_ptr = dci_ops_tbl[token].event_mask_composite;
 
 	create_dci_event_mask_tbl(entry->dci_event_mask);
 	diag_dci_invalidate_cumulative_event_mask(token);

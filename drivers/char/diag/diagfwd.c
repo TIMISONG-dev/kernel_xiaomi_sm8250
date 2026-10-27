@@ -492,7 +492,7 @@ void diag_update_userspace_clients(unsigned int type)
 	wake_up_interruptible(&driver->wait_q);
 	mutex_unlock(&driver->diagchar_mutex);
 }
-void diag_update_md_clients_proc(unsigned int proc, unsigned int type)
+static void diag_update_md_clients_proc(unsigned int proc, unsigned int type)
 {
 	int i, j;
 
@@ -706,7 +706,7 @@ int diag_process_stm_cmd(unsigned char *buf, unsigned char *dest_buf)
 	return STM_RSP_NUM_BYTES;
 }
 
-int diag_process_time_sync_query_cmd(unsigned char *src_buf, int src_len,
+static int diag_process_time_sync_query_cmd(unsigned char *src_buf, int src_len,
 				      unsigned char *dest_buf, int dest_len)
 {
 	int write_len = 0;
@@ -731,7 +731,7 @@ int diag_process_time_sync_query_cmd(unsigned char *src_buf, int src_len,
 	return write_len;
 }
 
-int diag_process_diag_id_query_cmd(unsigned char *src_buf, int src_len,
+static int diag_process_diag_id_query_cmd(unsigned char *src_buf, int src_len,
 				      unsigned char *dest_buf, int dest_len)
 {
 	int write_len = 0;
@@ -781,7 +781,7 @@ int diag_process_diag_id_query_cmd(unsigned char *src_buf, int src_len,
 	memcpy(dest_buf, &rsp, rsp_len);
 	return  write_len;
 }
-int diag_process_time_sync_switch_cmd(unsigned char *src_buf, int src_len,
+static int diag_process_time_sync_switch_cmd(unsigned char *src_buf, int src_len,
 				      unsigned char *dest_buf, int dest_len)
 {
 	uint8_t peripheral, status = 0;
@@ -1008,7 +1008,7 @@ static int diag_cmd_disable_hdlc(unsigned char *src_buf, int src_len,
 	return write_len;
 }
 
-int diag_cmd_feature_query(unsigned char *src_buf, int src_len,
+static int diag_cmd_feature_query(unsigned char *src_buf, int src_len,
 				      unsigned char *dest_buf, int dest_len)
 {
 	int write_len = 0;

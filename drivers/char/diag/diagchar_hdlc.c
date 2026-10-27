@@ -32,7 +32,6 @@ void diag_hdlc_encode(struct diag_send_desc_type *src_desc,
 	uint16_t crc;
 	unsigned char src_byte = 0;
 	enum diag_send_state_enum_type state;
-	unsigned int used = 0;
 
 	if (!src_desc || !enc)
 		return;
@@ -70,9 +69,7 @@ void diag_hdlc_encode(struct diag_send_desc_type *src_desc,
 				if (dest != dest_last) {
 					crc = CRC_16_L_STEP(crc, src_byte);
 					*dest++ = ESC_CHAR;
-					used++;
 					*dest++ = src_byte ^ ESC_MASK;
-					used++;
 				} else {
 					src--;
 					break;
@@ -80,7 +77,6 @@ void diag_hdlc_encode(struct diag_send_desc_type *src_desc,
 			} else {
 				crc = CRC_16_L_STEP(crc, src_byte);
 				*dest++ = src_byte;
-				used++;
 			}
 		}
 
@@ -105,9 +101,7 @@ void diag_hdlc_encode(struct diag_send_desc_type *src_desc,
 
 					if (dest != dest_last) {
 						*dest++ = ESC_CHAR;
-						used++;
 						*dest++ = src_byte ^ ESC_MASK;
-						used++;
 						crc >>= 8;
 					} else
 						break;
@@ -115,7 +109,6 @@ void diag_hdlc_encode(struct diag_send_desc_type *src_desc,
 
 					crc >>= 8;
 					*dest++ = src_byte;
-					used++;
 				}
 				state++;
 			}
@@ -123,7 +116,6 @@ void diag_hdlc_encode(struct diag_send_desc_type *src_desc,
 			if (state == DIAG_STATE_TERM) {
 				if (dest_last >= dest) {
 					*dest++ = CONTROL_CHAR;
-					used++;
 					state++;	/* Complete */
 				}
 			}
