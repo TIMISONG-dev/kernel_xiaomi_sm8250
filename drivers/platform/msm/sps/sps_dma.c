@@ -15,7 +15,7 @@
 #include "sps_core.h"		/* sps_h2bam() */
 
 /**
- * registers
+ * DOC: registers
  */
 
 #define DMA_ENBL			(0x00000000)
@@ -29,7 +29,7 @@
 #endif
 
 /**
- * masks
+ * DOC: masks
  */
 
 /* DMA_CHNL_confign */
@@ -47,13 +47,10 @@
 #define TESTBUS_SELECT                  0x3
 
 /**
- *
- * Write register with debug info.
- *
- * @base - bam base virtual address.
- * @offset - register offset.
- * @val - value to write.
- *
+ * dma_write_reg() - Write register with debug info.
+ * @base: bam base virtual address.
+ * @offset: register offset.
+ * @val: value to write.
  */
 static inline void dma_write_reg(void *base, u32 offset, u32 val)
 {
@@ -62,13 +59,11 @@ static inline void dma_write_reg(void *base, u32 offset, u32 val)
 }
 
 /**
- * Write register masked field with debug info.
- *
- * @base - bam base virtual address.
- * @offset - register offset.
- * @mask - register bitmask.
- * @val - value to write.
- *
+ * dma_write_reg_field() - Write register masked field with debug info.
+ * @base: bam base virtual address.
+ * @offset: register offset.
+ * @mask: register bitmask.
+ * @val: value to write.
  */
 static inline void dma_write_reg_field(void *base, u32 offset,
 				       const u32 mask, u32 val)
@@ -165,14 +160,12 @@ static int num_bams;
 static unsigned long bam_handles[MAX_BAM_DMA_BAMS];
 
 /**
- * Find BAM-DMA device
+ * sps_dma_find_device() - Find BAM-DMA device
+ * @h: BAM handle (currently ignored; only one BAM-DMA device is supported).
  *
- * This function finds the BAM-DMA device associated with the BAM handle.
+ * This implementation returns the single BAM-DMA device state.
  *
- * @h - BAM handle
- *
- * @return - pointer to BAM-DMA device, or NULL on error
- *
+ * Return: Pointer to the single BAM-DMA device state.
  */
 static struct bamdma_device *sps_dma_find_device(unsigned long h)
 {
@@ -180,14 +173,12 @@ static struct bamdma_device *sps_dma_find_device(unsigned long h)
 }
 
 /**
- * BAM DMA device enable
+ * sps_dma_device_enable() - BAM DMA device enable
+ * @dev: pointer to BAM DMA device context
  *
  * This function enables a BAM DMA device and the associated BAM.
  *
- * @dev - pointer to BAM DMA device context
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_dma_device_enable(struct bamdma_device *dev)
 {
@@ -214,14 +205,12 @@ static int sps_dma_device_enable(struct bamdma_device *dev)
 }
 
 /**
- * BAM DMA device enable
+ * sps_dma_device_disable() - Disable a BAM DMA device
+ * @dev: pointer to BAM DMA device context
  *
- * This function initializes a BAM DMA device.
+ * This function disables the BAM-DMA device and its associated BAM.
  *
- * @dev - pointer to BAM DMA device context
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_dma_device_disable(struct bamdma_device *dev)
 {
@@ -261,8 +250,8 @@ static int sps_dma_device_disable(struct bamdma_device *dev)
 }
 
 /**
- * Initialize BAM DMA device
- *
+ * sps_dma_device_init() - Initialize BAM DMA device
+ * @h: BAM handle
  */
 int sps_dma_device_init(unsigned long h)
 {
@@ -358,8 +347,8 @@ exit_err:
 }
 
 /**
- * De-initialize BAM DMA device
- *
+ * sps_dma_device_de_init() - De-initialize BAM DMA device
+ * @h: BAM handle
  */
 int sps_dma_device_de_init(unsigned long h)
 {
@@ -410,8 +399,8 @@ exit_err:
 }
 
 /**
- * Initialize BAM DMA module
- *
+ * sps_dma_init() - Initialize BAM DMA module
+ * @bam_props: pointer to BAM DMA devices BSP configuration properties
  */
 int sps_dma_init(const struct sps_bam_props *bam_props)
 {
@@ -477,8 +466,7 @@ int sps_dma_init(const struct sps_bam_props *bam_props)
 }
 
 /**
- * De-initialize BAM DMA module
- *
+ * sps_dma_de_init() - De-initialize BAM DMA module
  */
 void sps_dma_de_init(void)
 {
@@ -495,8 +483,10 @@ void sps_dma_de_init(void)
 }
 
 /**
- * Allocate a BAM DMA channel
- *
+ * sps_alloc_dma_chan() - Allocate a BAM DMA channel
+ * @alloc: Pointer to struct for BAM DMA channel allocation properties.
+ * @chan_info: Output channel handle and allocated producer/consumer pipe
+ *   indices.
  */
 int sps_alloc_dma_chan(const struct sps_alloc_dma_chan *alloc,
 		       struct sps_dma_chan *chan_info)
@@ -593,8 +583,8 @@ exit_err:
 EXPORT_SYMBOL(sps_alloc_dma_chan);
 
 /**
- * Free a BAM DMA channel
- *
+ * sps_free_dma_chan() - Free a BAM DMA channel
+ * @chan: Pointer to information for channel to free
  */
 int sps_free_dma_chan(struct sps_dma_chan *chan)
 {
@@ -654,16 +644,14 @@ exit_err:
 EXPORT_SYMBOL(sps_free_dma_chan);
 
 /**
- * Activate a BAM DMA pipe
+ * sps_dma_check_pipes() - Check the enable states of a DMA pipe pair
+ * @dev: pointer to BAM-DMA device descriptor
+ * @pipe_index: pipe index
  *
- * This function activates a BAM DMA pipe.
+ * This function checks the consumer and producer pipes in the channel pair.
  *
- * @dev - pointer to BAM-DMA device descriptor
- *
- * @pipe_index - pipe index
- *
- * @return 0 on success, negative value on error
- *
+ * Return: DMA_PIPES_BOTH_DISABLED, DMA_PIPES_BOTH_ENABLED or
+ * DMA_PIPES_STATE_DIFF according to the pipe enable states.
  */
 static u32 sps_dma_check_pipes(struct bamdma_device *dev, u32 pipe_index)
 {
@@ -689,8 +677,10 @@ static u32 sps_dma_check_pipes(struct bamdma_device *dev, u32 pipe_index)
 }
 
 /**
- * Allocate a BAM DMA pipe
- *
+ * sps_dma_pipe_alloc() - Allocate a BAM DMA pipe
+ * @bam_arg: BAM device descriptor for the DMA pipe.
+ * @pipe_index: pipe index
+ * @dir: pipe direction
  */
 int sps_dma_pipe_alloc(void *bam_arg, u32 pipe_index, enum sps_mode dir)
 {
@@ -751,8 +741,9 @@ exit_err:
 }
 
 /**
- * Enable a BAM DMA pipe
- *
+ * sps_dma_pipe_enable() - Enable a BAM DMA pipe
+ * @bam_arg: BAM device descriptor for the DMA pipe.
+ * @pipe_index: pipe index
  */
 int sps_dma_pipe_enable(void *bam_arg, u32 pipe_index)
 {
@@ -816,18 +807,14 @@ exit_err:
 }
 
 /**
- * Deactivate a BAM DMA pipe
+ * sps_dma_deactivate_pipe_atomic() - Deactivate a BAM DMA pipe
+ * @dev: pointer to BAM-DMA device descriptor
+ * @bam: pointer to BAM device descriptor
+ * @pipe_index: pipe index
  *
  * This function deactivates a BAM DMA pipe.
  *
- * @dev - pointer to BAM-DMA device descriptor
- *
- * @bam - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_dma_deactivate_pipe_atomic(struct bamdma_device *dev,
 					  struct sps_bam *bam,
@@ -866,8 +853,9 @@ static int sps_dma_deactivate_pipe_atomic(struct bamdma_device *dev,
 }
 
 /**
- * Free a BAM DMA pipe
- *
+ * sps_dma_pipe_free() - Free a BAM DMA pipe
+ * @bam_arg: BAM device descriptor for the DMA pipe.
+ * @pipe_index: pipe index
  */
 int sps_dma_pipe_free(void *bam_arg, u32 pipe_index)
 {
@@ -893,11 +881,11 @@ exit_err:
 }
 
 /**
- * Get the BAM handle for BAM-DMA.
+ * sps_dma_get_bam_handle() - Get the BAM handle for BAM-DMA.
  *
  * The BAM handle should be use as source/destination in the sps_connect().
  *
- * @return bam handle on success, zero on error
+ * Return: bam handle on success, zero on error
  */
 unsigned long sps_dma_get_bam_handle(void)
 {
@@ -906,8 +894,8 @@ unsigned long sps_dma_get_bam_handle(void)
 EXPORT_SYMBOL(sps_dma_get_bam_handle);
 
 /**
- * Free the BAM handle for BAM-DMA.
- *
+ * sps_dma_free_bam_handle() - Retain the BAM-DMA handle (no operation)
+ * @h: BAM handle (currently unused).
  */
 void sps_dma_free_bam_handle(unsigned long h)
 {

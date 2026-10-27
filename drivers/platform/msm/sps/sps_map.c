@@ -3,7 +3,7 @@
  * Copyright (c) 2011-2013, 2015, 2017-2018, The Linux Foundation. All rights reserved.
  */
 /**
- * Connection mapping table management for SPS device driver.
+ * DOC: Connection mapping table management for SPS device driver.
  */
 
 #include <linux/types.h>	/* u32 */
@@ -22,8 +22,9 @@ struct sps_map_state {
 static struct sps_map_state sps_maps;
 
 /**
- * Initialize connection mapping module
- *
+ * sps_map_init() - Initialize connection mapping module
+ * @map_props: pointer to connection mapping BSP configuration properties
+ * @options: driver options bitflags (see SPS_OPT_*)
  */
 int sps_map_init(const struct sps_map *map_props, u32 options)
 {
@@ -48,8 +49,7 @@ int sps_map_init(const struct sps_map *map_props, u32 options)
 }
 
 /**
- * De-initialize connection mapping module
- *
+ * sps_map_de_init() - De-initialize connection mapping module
  */
 void sps_map_de_init(void)
 {
@@ -57,8 +57,8 @@ void sps_map_de_init(void)
 }
 
 /**
- * Find matching connection mapping
- *
+ * sps_map_find() - Find matching connection mapping
+ * @connect: pointer to client connection parameters
  */
 int sps_map_find(struct sps_connect *connect)
 {

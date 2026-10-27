@@ -28,7 +28,7 @@
 #define SPS_DRV_NAME "msm_sps"	/* must match the platform_device name */
 
 /**
- *  SPS driver state
+ * DOC: SPS driver state
  */
 struct sps_drv *sps;
 
@@ -886,12 +886,11 @@ int sps_get_bam_debug_info(unsigned long dev, u32 option, u32 para,
 EXPORT_SYMBOL(sps_get_bam_debug_info);
 
 /**
- * Initialize SPS device
+ * sps_device_init() - Initialize SPS device
  *
  * This function initializes the SPS device.
  *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_device_init(void)
 {
@@ -992,12 +991,9 @@ exit_err:
 }
 
 /**
- * De-initialize SPS device
+ * sps_device_de_init() - De-initialize SPS device
  *
  * This function de-initializes the SPS device.
- *
- * @return 0 on success, negative value on error
- *
  */
 static void sps_device_de_init(void)
 {
@@ -1019,14 +1015,12 @@ static void sps_device_de_init(void)
 }
 
 /**
- * Initialize client state context
+ * sps_client_init() - Initialize client state context
+ * @client: Pointer to client state context
  *
  * This function initializes a client state context struct.
  *
- * @client - Pointer to client state context
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_client_init(struct sps_pipe *client)
 {
@@ -1049,14 +1043,12 @@ static int sps_client_init(struct sps_pipe *client)
 }
 
 /**
- * De-initialize client state context
+ * sps_client_de_init() - De-initialize client state context
+ * @client: Pointer to client state context
  *
  * This function de-initializes a client state context struct.
  *
- * @client - Pointer to client state context
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_client_de_init(struct sps_pipe *client)
 {
@@ -1076,15 +1068,13 @@ static int sps_client_de_init(struct sps_pipe *client)
 }
 
 /**
- * Find the BAM device from the physical address
+ * phy2bam() - Find the BAM device from the physical address
+ * @phys_addr: physical address of the BAM
  *
  * This function finds a BAM device in the BAM registration list that
  * matches the specified physical address.
  *
- * @phys_addr - physical address of the BAM
- *
- * @return - pointer to the BAM device struct, or NULL on error
- *
+ * Return: pointer to the BAM device struct, or NULL on error
  */
 static struct sps_bam *phy2bam(phys_addr_t phys_addr)
 {
@@ -1101,17 +1091,14 @@ static struct sps_bam *phy2bam(phys_addr_t phys_addr)
 }
 
 /**
- * Find the handle of a BAM device based on the physical address
+ * sps_phy2h() - Find the handle of a BAM device based on the physical address
+ * @phys_addr: physical address of the BAM
+ * @handle: Output handle of the BAM matching the physical address.
  *
  * This function finds a BAM device in the BAM registration list that
  * matches the specified physical address, and returns its handle.
  *
- * @phys_addr - physical address of the BAM
- *
- * @h - device handle of the BAM
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_phy2h(phys_addr_t phys_addr, unsigned long *handle)
 {
@@ -1144,18 +1131,13 @@ int sps_phy2h(phys_addr_t phys_addr, unsigned long *handle)
 EXPORT_SYMBOL(sps_phy2h);
 
 /**
- * Setup desc/data FIFO for bam-to-bam connection
+ * sps_setup_bam2bam_fifo() - Setup desc/data FIFO for bam-to-bam connection
+ * @mem_buffer: Pointer to struct for allocated memory properties.
+ * @addr: address of FIFO
+ * @size: FIFO size
+ * @use_offset: use address offset instead of absolute address
  *
- * @mem_buffer - Pointer to struct for allocated memory properties.
- *
- * @addr - address of FIFO
- *
- * @size - FIFO size
- *
- * @use_offset - use address offset instead of absolute address
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_setup_bam2bam_fifo(struct sps_mem_buffer *mem_buffer,
 		  u32 addr, u32 size, int use_offset)
@@ -1205,15 +1187,13 @@ int sps_setup_bam2bam_fifo(struct sps_mem_buffer *mem_buffer,
 EXPORT_SYMBOL(sps_setup_bam2bam_fifo);
 
 /**
- * Find the BAM device from the handle
+ * sps_h2bam() - Find the BAM device from the handle
+ * @h: device handle of the BAM
  *
  * This function finds a BAM device in the BAM registration list that
  * matches the specified device handle.
  *
- * @h - device handle of the BAM
- *
- * @return - pointer to the BAM device struct, or NULL on error
- *
+ * Return: pointer to the BAM device struct, or NULL on error
  */
 struct sps_bam *sps_h2bam(unsigned long h)
 {
@@ -1235,14 +1215,12 @@ struct sps_bam *sps_h2bam(unsigned long h)
 }
 
 /**
- * Lock BAM device
+ * sps_bam_lock() - Lock BAM device
+ * @pipe: pointer to client pipe state
  *
  * This function obtains the BAM spinlock on the client's connection.
  *
- * @pipe - pointer to client pipe state
- *
- * @return pointer to BAM device struct, or NULL on error
- *
+ * Return: pointer to BAM device struct, or NULL on error
  */
 static struct sps_bam *sps_bam_lock(struct sps_pipe *pipe)
 {
@@ -1275,12 +1253,10 @@ static struct sps_bam *sps_bam_lock(struct sps_pipe *pipe)
 }
 
 /**
- * Unlock BAM device
+ * sps_bam_unlock() - Unlock BAM device
+ * @bam: pointer to BAM device struct
  *
  * This function releases the BAM spinlock on the client's connection.
- *
- * @bam - pointer to BAM device struct
- *
  */
 static inline void sps_bam_unlock(struct sps_bam *bam)
 {
@@ -1288,8 +1264,9 @@ static inline void sps_bam_unlock(struct sps_bam *bam)
 }
 
 /**
- * Connect an SPS connection end point
- *
+ * sps_connect() - Connect an SPS connection end point
+ * @h: client context for SPS connection end point
+ * @connect: Pointer to connection parameters
  */
 int sps_connect(struct sps_pipe *h, struct sps_connect *connect)
 {
@@ -1372,7 +1349,8 @@ exit_err:
 EXPORT_SYMBOL(sps_connect);
 
 /**
- * Disconnect an SPS connection end point
+ * sps_disconnect() - Disconnect an SPS connection end point
+ * @h: client context for SPS connection end point
  *
  * This function disconnects an SPS connection end point.
  * The SPS hardware associated with that end point will be disabled.
@@ -1384,10 +1362,7 @@ EXPORT_SYMBOL(sps_connect);
  * The client must call sps_connect() for the handle before calling
  * this function.
  *
- * @h - client context for SPS connection end point
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_disconnect(struct sps_pipe *h)
 {
@@ -1445,8 +1420,9 @@ exit_err:
 EXPORT_SYMBOL(sps_disconnect);
 
 /**
- * Register an event object for an SPS connection end point
- *
+ * sps_register_event() - Register an event object for an SPS connection end point
+ * @h: client context for SPS connection end point
+ * @reg: Pointer to event registration parameters
  */
 int sps_register_event(struct sps_pipe *h, struct sps_register_event *reg)
 {
@@ -1488,8 +1464,8 @@ int sps_register_event(struct sps_pipe *h, struct sps_register_event *reg)
 EXPORT_SYMBOL(sps_register_event);
 
 /**
- * Enable an SPS connection end point
- *
+ * sps_flow_on() - Enable an SPS connection end point
+ * @h: client context for SPS connection end point
  */
 int sps_flow_on(struct sps_pipe *h)
 {
@@ -1517,8 +1493,9 @@ int sps_flow_on(struct sps_pipe *h)
 EXPORT_SYMBOL(sps_flow_on);
 
 /**
- * Disable an SPS connection end point
- *
+ * sps_flow_off() - Disable an SPS connection end point
+ * @h: client context for SPS connection end point
+ * @mode: Desired mode for disabling pipe data flow
  */
 int sps_flow_off(struct sps_pipe *h, enum sps_flow_off mode)
 {
@@ -1546,12 +1523,10 @@ int sps_flow_off(struct sps_pipe *h, enum sps_flow_off mode)
 EXPORT_SYMBOL(sps_flow_off);
 
 /**
- * Check if the flags on a descriptor/iovec are valid
+ * sps_check_iovec_flags() - Check if the flags on a descriptor/iovec are valid
+ * @flags: flags on a descriptor/iovec
  *
- * @flags - flags on a descriptor/iovec
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_check_iovec_flags(u32 flags)
 {
@@ -1597,8 +1572,9 @@ static int sps_check_iovec_flags(u32 flags)
 }
 
 /**
- * Perform a DMA transfer on an SPS connection end point
- *
+ * sps_transfer() - Perform a DMA transfer on an SPS connection end point
+ * @h: client context for SPS connection end point
+ * @transfer: Pointer to transfer parameter struct
  */
 int sps_transfer(struct sps_pipe *h, struct sps_transfer *transfer)
 {
@@ -1658,8 +1634,12 @@ int sps_transfer(struct sps_pipe *h, struct sps_transfer *transfer)
 EXPORT_SYMBOL(sps_transfer);
 
 /**
- * Perform a single DMA transfer on an SPS connection end point
- *
+ * sps_transfer_one() - Perform a single DMA transfer on an SPS connection end point
+ * @h: client context for SPS connection end point
+ * @addr: Physical address of buffer to transfer.
+ * @size: Size in bytes of buffer to transfer
+ * @user: User pointer that will be returned to user as part of event payload
+ * @flags: SPS_IOVEC_FLAG_* descriptor and submission flags.
  */
 int sps_transfer_one(struct sps_pipe *h, phys_addr_t addr, u32 size,
 		     void *user, u32 flags)
@@ -1693,8 +1673,9 @@ int sps_transfer_one(struct sps_pipe *h, phys_addr_t addr, u32 size,
 EXPORT_SYMBOL(sps_transfer_one);
 
 /**
- * Read event queue for an SPS connection end point
- *
+ * sps_get_event() - Read event queue for an SPS connection end point
+ * @h: client context for SPS connection end point
+ * @notify: Output event notification removed from the endpoint event queue.
  */
 int sps_get_event(struct sps_pipe *h, struct sps_event_notify *notify)
 {
@@ -1724,8 +1705,9 @@ int sps_get_event(struct sps_pipe *h, struct sps_event_notify *notify)
 EXPORT_SYMBOL(sps_get_event);
 
 /**
- * Determine whether an SPS connection end point FIFO is empty
- *
+ * sps_is_pipe_empty() - Determine whether an SPS connection end point FIFO is empty
+ * @h: client context for SPS connection end point
+ * @empty: pointer to client's empty status word (boolean)
  */
 int sps_is_pipe_empty(struct sps_pipe *h, u32 *empty)
 {
@@ -1755,8 +1737,9 @@ int sps_is_pipe_empty(struct sps_pipe *h, u32 *empty)
 EXPORT_SYMBOL(sps_is_pipe_empty);
 
 /**
- * Get number of free transfer entries for an SPS connection end point
- *
+ * sps_get_free_count() - Get number of free transfer entries for an SPS connection end point
+ * @h: client context for SPS connection end point
+ * @count: pointer to count status
  */
 int sps_get_free_count(struct sps_pipe *h, u32 *count)
 {
@@ -1786,8 +1769,8 @@ int sps_get_free_count(struct sps_pipe *h, u32 *count)
 EXPORT_SYMBOL(sps_get_free_count);
 
 /**
- * Reset an SPS BAM device
- *
+ * sps_device_reset() - Reset an SPS BAM device
+ * @dev: device handle for the BAM
  */
 int sps_device_reset(unsigned long dev)
 {
@@ -1834,8 +1817,10 @@ exit_err:
 EXPORT_SYMBOL(sps_device_reset);
 
 /**
- * Get the configuration parameters for an SPS connection end point
- *
+ * sps_get_config() - Get the configuration parameters for an SPS connection end point
+ * @h: client context for SPS connection end point
+ * @config: Pointer to buffer for the end point's configuration parameters. Must
+ *   not be NULL.
  */
 int sps_get_config(struct sps_pipe *h, struct sps_connect *config)
 {
@@ -1865,8 +1850,9 @@ int sps_get_config(struct sps_pipe *h, struct sps_connect *config)
 EXPORT_SYMBOL(sps_get_config);
 
 /**
- * Set the configuration parameters for an SPS connection end point
- *
+ * sps_set_config() - Set the configuration parameters for an SPS connection end point
+ * @h: client context for SPS connection end point
+ * @config: Pointer to the end point's new configuration parameters.
  */
 int sps_set_config(struct sps_pipe *h, struct sps_connect *config)
 {
@@ -1902,8 +1888,12 @@ int sps_set_config(struct sps_pipe *h, struct sps_connect *config)
 EXPORT_SYMBOL(sps_set_config);
 
 /**
- * Set ownership of an SPS connection end point
- *
+ * sps_set_owner() - Set ownership of an SPS connection end point
+ * @h: client context for SPS connection end point
+ * @owner: New ownership of the connection end point
+ * @connect: Pointer to buffer for satellite processor connect data. Can be NULL
+ *   to avoid retrieving the connect data. Will be ignored if the end point
+ *   ownership is set to local.
  */
 int sps_set_owner(struct sps_pipe *h, enum sps_owner owner,
 		  struct sps_satellite *connect)
@@ -1958,8 +1948,10 @@ exit_err:
 EXPORT_SYMBOL(sps_set_owner);
 
 /**
- * Allocate memory from the SPS Pipe-Memory.
- *
+ * sps_alloc_mem() - Allocate memory from the SPS Pipe-Memory.
+ * @h: client context for SPS connection end point
+ * @mem: memory type - N/A.
+ * @mem_buffer: Pointer to struct for allocated memory properties.
  */
 int sps_alloc_mem(struct sps_pipe *h, enum sps_mem mem,
 		  struct sps_mem_buffer *mem_buffer)
@@ -2000,8 +1992,9 @@ int sps_alloc_mem(struct sps_pipe *h, enum sps_mem mem,
 EXPORT_SYMBOL(sps_alloc_mem);
 
 /**
- * Free memory from the SPS Pipe-Memory.
- *
+ * sps_free_mem() - Free memory from the SPS Pipe-Memory.
+ * @h: client context for SPS connection end point
+ * @mem_buffer: Pointer to struct for allocated memory properties.
  */
 int sps_free_mem(struct sps_pipe *h, struct sps_mem_buffer *mem_buffer)
 {
@@ -2025,9 +2018,11 @@ int sps_free_mem(struct sps_pipe *h, struct sps_mem_buffer *mem_buffer)
 EXPORT_SYMBOL(sps_free_mem);
 
 /**
- * Get the number of unused descriptors in the descriptor FIFO
- * of a pipe
+ * sps_get_unused_desc_num() - Get the number of unused descriptors in the descriptor FIFO
+ * @h: client context for SPS connection end point
+ * @desc_num: number of unused descriptors
  *
+ * of a pipe
  */
 int sps_get_unused_desc_num(struct sps_pipe *h, u32 *desc_num)
 {
@@ -2060,8 +2055,8 @@ int sps_get_unused_desc_num(struct sps_pipe *h, u32 *desc_num)
 EXPORT_SYMBOL(sps_get_unused_desc_num);
 
 /**
- * Vote for or relinquish BAM DMA clock
- *
+ * sps_ctrl_bam_dma_clk() - Vote for or relinquish BAM DMA clock
+ * @clk_on: to turn on or turn off the clock
  */
 int sps_ctrl_bam_dma_clk(bool clk_on)
 {
@@ -2090,8 +2085,9 @@ int sps_ctrl_bam_dma_clk(bool clk_on)
 EXPORT_SYMBOL(sps_ctrl_bam_dma_clk);
 
 /**
- * Register a BAM device
- *
+ * sps_register_bam_device() - Register a BAM device
+ * @bam_props: Pointer to struct for BAM device properties.
+ * @dev_handle: Device handle will be written to this location (output).
  */
 int sps_register_bam_device(const struct sps_bam_props *bam_props,
 				unsigned long *dev_handle)
@@ -2283,8 +2279,8 @@ exit_err:
 EXPORT_SYMBOL(sps_register_bam_device);
 
 /**
- * Deregister a BAM device
- *
+ * sps_deregister_bam_device() - Deregister a BAM device
+ * @dev_handle: BAM device handle.
  */
 int sps_deregister_bam_device(unsigned long dev_handle)
 {
@@ -2347,8 +2343,10 @@ int sps_deregister_bam_device(unsigned long dev_handle)
 EXPORT_SYMBOL(sps_deregister_bam_device);
 
 /**
- * Get processed I/O vector (completed transfers)
- *
+ * sps_get_iovec() - Get processed I/O vector (completed transfers)
+ * @h: client context for SPS connection end point
+ * @iovec: Pointer to I/O vector struct (output). This struct will be zeroed if
+ *   there are no more processed I/O vectors.
  */
 int sps_get_iovec(struct sps_pipe *h, struct sps_iovec *iovec)
 {
@@ -2382,8 +2380,12 @@ int sps_get_iovec(struct sps_pipe *h, struct sps_iovec *iovec)
 EXPORT_SYMBOL(sps_get_iovec);
 
 /**
- * Perform timer control
- *
+ * sps_timer_ctrl() - Perform timer control
+ * @h: client context for SPS connection end point
+ * @timer_ctrl: Pointer to timer control specification
+ * @timer_result: Pointer to buffer for timer operation result. This argument
+ *   can be NULL if no result is expected for the operation. If non-NULL, the
+ *   current timer value will always provided.
  */
 int sps_timer_ctrl(struct sps_pipe *h,
 			struct sps_timer_ctrl *timer_ctrl,
@@ -2616,8 +2618,7 @@ int sps_pipe_inject_zlt(unsigned long dev, u32 pipe_index)
 EXPORT_SYMBOL(sps_pipe_inject_zlt);
 
 /**
- * Allocate client state context
- *
+ * sps_alloc_endpoint() - Allocate client state context
  */
 struct sps_pipe *sps_alloc_endpoint(void)
 {
@@ -2639,8 +2640,8 @@ struct sps_pipe *sps_alloc_endpoint(void)
 EXPORT_SYMBOL(sps_alloc_endpoint);
 
 /**
- * Free client state context
- *
+ * sps_free_endpoint() - Free client state context
+ * @ctx: Allocated client endpoint context to release.
  */
 int sps_free_endpoint(struct sps_pipe *ctx)
 {
@@ -2663,7 +2664,8 @@ int sps_free_endpoint(struct sps_pipe *ctx)
 EXPORT_SYMBOL(sps_free_endpoint);
 
 /**
- * Platform Driver.
+ * get_platform_data() - Platform Driver.
+ * @pdev: Platform device supplying the SPS board configuration.
  */
 static int get_platform_data(struct platform_device *pdev)
 {
@@ -2726,7 +2728,8 @@ static int get_platform_data(struct platform_device *pdev)
 }
 
 /**
- * Read data from device tree
+ * get_device_tree_data() - Read data from device tree
+ * @pdev: Platform device whose device-tree node supplies SPS resources.
  */
 static int get_device_tree_data(struct platform_device *pdev)
 {
@@ -3008,7 +3011,7 @@ static struct platform_driver msm_sps_driver = {
 };
 
 /**
- * Module Init.
+ * sps_init() - Module Init.
  */
 static int __init sps_init(void)
 {
@@ -3052,7 +3055,7 @@ static int __init sps_init(void)
 }
 
 /**
- * Module Exit.
+ * sps_exit() - Module Exit.
  */
 static void __exit sps_exit(void)
 {

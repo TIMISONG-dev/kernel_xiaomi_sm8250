@@ -33,61 +33,50 @@
 
 
 /**
- * Find the BAM device from the handle
+ * sps_h2bam() - Find the BAM device from the handle
+ * @h: device handle of the BAM
  *
  * This function finds a BAM device in the BAM registration list that
  * matches the specified device handle.
  *
- * @h - device handle of the BAM
- *
- * @return - pointer to the BAM device struct, or NULL on error
- *
+ * Return: pointer to the BAM device struct, or NULL on error
  */
 struct sps_bam *sps_h2bam(unsigned long h);
 
 /**
- * Initialize resource manager module
+ * sps_rm_init() - Initialize resource manager module
+ * @rm: Resource manager state to initialize.
+ * @options: Driver initialization options (currently unused).
  *
  * This function initializes the resource manager module.
  *
- * @rm - pointer to resource manager struct
- *
- * @options - driver options bitflags (see SPS_OPT_*)
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_rm_init(struct sps_rm *rm, u32 options);
 
 /**
- * De-initialize resource manager module
+ * sps_rm_de_init() - De-initialize resource manager module
  *
  * This function de-initializes the resource manager module.
- *
  */
 void sps_rm_de_init(void);
 
 /**
- * Initialize client state context
+ * sps_rm_config_init() - Initialize client state context
+ * @connect: Connection parameters to reset to SPSRM_CLEAR defaults.
  *
  * This function initializes a client state context struct.
- *
- * @connect - pointer to client connection state struct
- *
  */
 void sps_rm_config_init(struct sps_connect *connect);
 
 /**
- * Process connection state change
+ * sps_rm_state_change() - Process connection state change
+ * @pipe: pointer to pipe context
+ * @state: new state for connection
  *
  * This function processes a connection state change.
  *
- * @pipe - pointer to pipe context
- *
- * @state - new state for connection
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_rm_state_change(struct sps_pipe *pipe, u32 state);
 

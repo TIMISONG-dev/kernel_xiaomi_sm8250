@@ -15,8 +15,7 @@
 #include "sps_bam.h"
 
 /**
- *  Valid BAM Hardware version.
- *
+ * DOC: Valid BAM Hardware version.
  */
 #define BAM_MIN_VERSION 2
 #define BAM_MAX_VERSION 0x2f
@@ -27,9 +26,8 @@
 #define BAM_MAX_EES 8
 
 /**
- *  BAM Hardware registers bitmask.
+ * DOC: BAM Hardware registers bitmask.
  *  format: <register>_<field>
- *
  */
 /* CTRL */
 #define BAM_MESS_ONLY_CANCEL_WB               0x100000
@@ -274,9 +272,8 @@
 #define BAM_MAX_EES 4
 
 /**
- *  BAM Hardware registers bitmask.
+ * DOC: BAM Hardware registers bitmask.
  *  format: <register>_<field>
- *
  */
 /* CTRL */
 #define IBC_DISABLE                            0x10000
@@ -734,13 +731,13 @@ static inline u32 bam_get_register_offset(void *base, enum bam_regs reg,
 
 
 /**
+ * bam_read_reg() - Read register with debug info.
+ * @base: Address of the BAM device descriptor base member.
+ * @reg: BAM register selector.
+ * @param: Pipe or execution-environment index used to calculate the register
+ *   offset.
  *
- * Read register with debug info.
- *
- * @base - bam base virtual address.
- * @offset - register offset.
- *
- * @return u32
+ * Return: u32
  */
 static inline u32 bam_read_reg(void *base, enum bam_regs reg, u32 param)
 {
@@ -765,13 +762,14 @@ static inline u32 bam_read_reg(void *base, enum bam_regs reg, u32 param)
 }
 
 /**
- * Read register masked field with debug info.
+ * bam_read_reg_field() - Read register masked field with debug info.
+ * @base: Address of the BAM device descriptor base member.
+ * @reg: BAM register selector.
+ * @param: Pipe or execution-environment index used to calculate the register
+ *   offset.
+ * @mask: register bitmask.
  *
- * @base - bam base virtual address.
- * @offset - register offset.
- * @mask - register bitmask.
- *
- * @return u32
+ * Return: u32
  */
 static inline u32 bam_read_reg_field(void *base, enum bam_regs reg, u32 param,
 								const u32 mask)
@@ -800,13 +798,12 @@ static inline u32 bam_read_reg_field(void *base, enum bam_regs reg, u32 param,
 }
 
 /**
- *
- * Write register with debug info.
- *
- * @base - bam base virtual address.
- * @offset - register offset.
- * @val - value to write.
- *
+ * bam_write_reg() - Write register with debug info.
+ * @base: Address of the BAM device descriptor base member.
+ * @reg: BAM register selector.
+ * @param: Pipe or execution-environment index used to calculate the register
+ *   offset.
+ * @val: value to write.
  */
 static inline void bam_write_reg(void *base, enum bam_regs reg,
 						u32 param, u32 val)
@@ -831,13 +828,13 @@ static inline void bam_write_reg(void *base, enum bam_regs reg,
 }
 
 /**
- * Write register masked field with debug info.
- *
- * @base - bam base virtual address.
- * @offset - register offset.
- * @mask - register bitmask.
- * @val - value to write.
- *
+ * bam_write_reg_field() - Write register masked field with debug info.
+ * @base: Address of the BAM device descriptor base member.
+ * @reg: BAM register selector.
+ * @param: Pipe or execution-environment index used to calculate the register
+ *   offset.
+ * @mask: register bitmask.
+ * @val: value to write.
  */
 static inline void bam_write_reg_field(void *base, enum bam_regs reg,
 					u32 param, const u32 mask, u32 val)
@@ -867,8 +864,14 @@ static inline void bam_write_reg_field(void *base, enum bam_regs reg,
 }
 
 /**
- * Initialize a BAM device
- *
+ * bam_init() - Initialize a BAM device
+ * @base: Address of the BAM device descriptor base member.
+ * @ee: BAM execution environment index
+ * @summing_threshold: summing threshold (global for all pipes)
+ * @irq_mask: error interrupts mask
+ * @version: return BAM hardware version
+ * @num_pipes: return number of pipes
+ * @options: BAM configuration options
  */
 int bam_init(void *base, u32 ee,
 		u16 summing_threshold,
@@ -955,15 +958,11 @@ int bam_init(void *base, u32 ee,
 }
 
 /**
- * Set BAM global execution environment
- *
- * @base - BAM virtual base address
- *
- * @ee - BAM execution environment index
- *
- * @vmid - virtual master identifier
- *
- * @reset - enable/disable BAM global software reset
+ * bam_set_ee() - Set BAM global execution environment
+ * @base: Address of the BAM device descriptor base member.
+ * @ee: BAM execution environment index
+ * @vmid: virtual master identifier
+ * @reset: enable/disable BAM global software reset
  */
 static void bam_set_ee(void *base, u32 ee, u32 vmid,
 			enum bam_nonsecure_reset reset)
@@ -974,15 +973,11 @@ static void bam_set_ee(void *base, u32 ee, u32 vmid,
 }
 
 /**
- * Set the pipe execution environment
- *
- * @base - BAM virtual base address
- *
- * @pipe - pipe index
- *
- * @ee - BAM execution environment index
- *
- * @vmid - virtual master identifier
+ * bam_pipe_set_ee() - Set the pipe execution environment
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
+ * @ee: BAM execution environment index
+ * @vmid: virtual master identifier
  */
 static void bam_pipe_set_ee(void *base, u32 pipe, u32 ee, u32 vmid)
 {
@@ -991,7 +986,11 @@ static void bam_pipe_set_ee(void *base, u32 pipe, u32 ee, u32 vmid)
 }
 
 /**
- * Initialize BAM device security execution environment
+ * bam_security_init() - Initialize BAM device security execution environment
+ * @base: Address of the BAM device descriptor base member.
+ * @ee: BAM execution environment index
+ * @vmid: virtual master identifier
+ * @pipe_mask: bit mask of pipes to assign to EE
  */
 int bam_security_init(void *base, u32 ee, u32 vmid, u32 pipe_mask)
 {
@@ -1062,9 +1061,13 @@ static inline u32 bam_get_pipe_attr(void *base, u32 ee, bool global)
 #endif
 
 /**
- * Verify that a BAM device is enabled and gathers the hardware
- * configuration.
+ * bam_check() - Verify that a BAM device is enabled and gathers the hardware
+ * @base: Address of the BAM device descriptor base member.
+ * @version: return BAM hardware version
+ * @ee: BAM execution environment index
+ * @num_pipes: return number of pipes
  *
+ * configuration.
  */
 int bam_check(void *base, u32 *version, u32 ee, u32 *num_pipes)
 {
@@ -1112,8 +1115,9 @@ int bam_check(void *base, u32 *version, u32 ee, u32 *num_pipes)
 }
 
 /**
- * Disable a BAM device
- *
+ * bam_exit() - Disable a BAM device
+ * @base: Address of the BAM device descriptor base member.
+ * @ee: BAM execution environment index
  */
 void bam_exit(void *base, u32 ee)
 {
@@ -1136,7 +1140,10 @@ void bam_exit(void *base, u32 ee)
 }
 
 /**
- * Output BAM register content
+ * bam_output_register_content() - Output BAM register content
+ * @base: Address of the BAM device descriptor base member.
+ * @ee: BAM execution environment index
+ *
  * including the TEST_BUS register content under
  * different TEST_BUS_SEL values.
  */
@@ -1177,7 +1184,11 @@ void bam_output_register_content(void *base, u32 ee)
 }
 
 /**
- * Get BAM IRQ source and clear global IRQ status
+ * bam_check_irq_source() - Get BAM IRQ source and clear global IRQ status
+ * @base: Address of the BAM device descriptor base member.
+ * @ee: BAM execution environment index
+ * @mask: active pipes mask.
+ * @cb_case: Output callback reason for a BAM global error or wake event.
  */
 u32 bam_check_irq_source(void *base, u32 ee, u32 mask,
 				enum sps_callback_case *cb_case)
@@ -1320,7 +1331,11 @@ bool bam_pipe_check_pipe_empty(void *base, u32 pipe)
 }
 
 /**
- * Initialize a BAM pipe
+ * bam_pipe_init() - Initialize a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
+ * @param: bam pipe parameters.
+ * @ee: BAM execution environment index
  */
 int bam_pipe_init(void *base, u32 pipe,	struct bam_pipe_parameters *param,
 					u32 ee)
@@ -1410,8 +1425,10 @@ int bam_pipe_init(void *base, u32 pipe,	struct bam_pipe_parameters *param,
 }
 
 /**
- * Reset the BAM pipe
- *
+ * bam_pipe_exit() - Reset the BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
+ * @ee: BAM execution environment index
  */
 void bam_pipe_exit(void *base, u32 pipe, u32 ee)
 {
@@ -1435,8 +1452,9 @@ void bam_pipe_exit(void *base, u32 pipe, u32 ee)
 }
 
 /**
- * Enable a BAM pipe
- *
+ * bam_pipe_enable() - Enable a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
  */
 void bam_pipe_enable(void *base, u32 pipe)
 {
@@ -1458,8 +1476,9 @@ void bam_pipe_enable(void *base, u32 pipe)
 }
 
 /**
- * Diasble a BAM pipe
- *
+ * bam_pipe_disable() - Diasble a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
  */
 void bam_pipe_disable(void *base, u32 pipe)
 {
@@ -1477,8 +1496,9 @@ void bam_pipe_disable(void *base, u32 pipe)
 }
 
 /**
- * Check if a BAM pipe is enabled.
- *
+ * bam_pipe_is_enabled() - Check if a BAM pipe is enabled.
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
  */
 int bam_pipe_is_enabled(void *base, u32 pipe)
 {
@@ -1486,8 +1506,13 @@ int bam_pipe_is_enabled(void *base, u32 pipe)
 }
 
 /**
- * Configure interrupt for a BAM pipe
- *
+ * bam_pipe_set_irq() - Configure interrupt for a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
+ * @irq_en: enable or disable interrupt
+ * @src_mask: interrupt source mask, set regardless of whether interrupt is
+ *   disabled
+ * @ee: BAM execution environment index
  */
 void bam_pipe_set_irq(void *base, u32 pipe, enum bam_enable irq_en,
 		      u32 src_mask, u32 ee)
@@ -1531,8 +1556,11 @@ void bam_pipe_set_irq(void *base, u32 pipe, enum bam_enable irq_en,
 }
 
 /**
- * Configure a BAM pipe for satellite MTI use
- *
+ * bam_pipe_satellite_mti() - Configure a BAM pipe for satellite MTI use
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
+ * @irq_gen_addr: physical address written to generate MTI
+ * @ee: BAM execution environment index
  */
 void bam_pipe_satellite_mti(void *base, u32 pipe, u32 irq_gen_addr, u32 ee)
 {
@@ -1545,8 +1573,13 @@ void bam_pipe_satellite_mti(void *base, u32 pipe, u32 irq_gen_addr, u32 ee)
 }
 
 /**
- * Configure MTI for a BAM pipe
- *
+ * bam_pipe_set_mti() - Configure MTI for a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
+ * @irq_en: enable or disable interrupt
+ * @src_mask: interrupt source mask, set regardless of whether interrupt is
+ *   disabled
+ * @irq_gen_addr: physical address written to generate MTI
  */
 void bam_pipe_set_mti(void *base, u32 pipe, enum bam_enable irq_en,
 		      u32 src_mask, u32 irq_gen_addr)
@@ -1570,8 +1603,9 @@ void bam_pipe_set_mti(void *base, u32 pipe, enum bam_enable irq_en,
 }
 
 /**
- * Get and Clear BAM pipe IRQ status
- *
+ * bam_pipe_get_and_clear_irq_status() - Get and Clear BAM pipe IRQ status
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
  */
 u32 bam_pipe_get_and_clear_irq_status(void *base, u32 pipe)
 {
@@ -1584,8 +1618,10 @@ u32 bam_pipe_get_and_clear_irq_status(void *base, u32 pipe)
 }
 
 /**
- * Set write offset for a BAM pipe
- *
+ * bam_pipe_set_desc_write_offset() - Set write offset for a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
+ * @next_write: descriptor FIFO write offset
  */
 void bam_pipe_set_desc_write_offset(void *base, u32 pipe, u32 next_write)
 {
@@ -1599,8 +1635,9 @@ void bam_pipe_set_desc_write_offset(void *base, u32 pipe, u32 next_write)
 }
 
 /**
- * Get write offset for a BAM pipe
- *
+ * bam_pipe_get_desc_write_offset() - Get write offset for a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
  */
 u32 bam_pipe_get_desc_write_offset(void *base, u32 pipe)
 {
@@ -1609,8 +1646,9 @@ u32 bam_pipe_get_desc_write_offset(void *base, u32 pipe)
 }
 
 /**
- * Get read offset for a BAM pipe
- *
+ * bam_pipe_get_desc_read_offset() - Get read offset for a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
  */
 u32 bam_pipe_get_desc_read_offset(void *base, u32 pipe)
 {
@@ -1618,8 +1656,11 @@ u32 bam_pipe_get_desc_read_offset(void *base, u32 pipe)
 }
 
 /**
- * Configure inactivity timer count for a BAM pipe
- *
+ * bam_pipe_timer_config() - Configure inactivity timer count for a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
+ * @mode: timer operating mode
+ * @timeout_count: timeout count
  */
 void bam_pipe_timer_config(void *base, u32 pipe, enum bam_pipe_timer_mode mode,
 			 u32 timeout_count)
@@ -1646,8 +1687,9 @@ void bam_pipe_timer_config(void *base, u32 pipe, enum bam_pipe_timer_mode mode,
 }
 
 /**
- * Reset inactivity timer for a BAM pipe
- *
+ * bam_pipe_timer_reset() - Reset inactivity timer for a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
  */
 void bam_pipe_timer_reset(void *base, u32 pipe)
 {
@@ -1674,8 +1716,9 @@ void bam_pipe_timer_reset(void *base, u32 pipe)
 }
 
 /**
- * Get inactivity timer count for a BAM pipe
- *
+ * bam_pipe_timer_get_count() - Get inactivity timer count for a BAM pipe
+ * @base: Address of the BAM device descriptor base member.
+ * @pipe: pipe index
  */
 u32 bam_pipe_timer_get_count(void *base, u32 pipe)
 {
