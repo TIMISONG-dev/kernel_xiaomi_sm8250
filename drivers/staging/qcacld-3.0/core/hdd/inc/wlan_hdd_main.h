@@ -2444,10 +2444,10 @@ void hdd_adapter_dev_put_debug(struct hdd_adapter *adapter,
 						    next_adapter, dbgid) \
 	qdf_spin_lock_bh(&hdd_ctx->hdd_adapter_lock), \
 	hdd_get_front_adapter_no_lock(hdd_ctx, &adapter), \
-	(adapter) ? hdd_adapter_dev_hold_debug(adapter, dbgid) : (false), \
+	(adapter) ? hdd_adapter_dev_hold_debug(adapter, dbgid) : (void)0, \
 	hdd_get_next_adapter_no_lock(hdd_ctx, adapter, &next_adapter), \
 	(next_adapter) ? hdd_adapter_dev_hold_debug(next_adapter, dbgid) : \
-			 (false), \
+			 (void)0, \
 	qdf_spin_unlock_bh(&hdd_ctx->hdd_adapter_lock)
 
 /**
@@ -2464,7 +2464,7 @@ void hdd_adapter_dev_put_debug(struct hdd_adapter *adapter,
 	adapter = next_adapter, \
 	hdd_get_next_adapter_no_lock(hdd_ctx, adapter, &next_adapter), \
 	(next_adapter) ? hdd_adapter_dev_hold_debug(next_adapter, dbgid) : \
-			 (false), \
+			 (void)0, \
 	qdf_spin_unlock_bh(&hdd_ctx->hdd_adapter_lock)
 
 /**

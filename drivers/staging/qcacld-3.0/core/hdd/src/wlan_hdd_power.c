@@ -1363,9 +1363,9 @@ void hdd_svc_fw_shutdown_ind(struct device *dev)
 
 	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
 
-	hdd_ctx ? wlan_hdd_send_svc_nlink_msg(hdd_ctx->radio_index,
-					      WLAN_SVC_FW_SHUTDOWN_IND,
-					      NULL, 0) : 0;
+	if (hdd_ctx)
+		wlan_hdd_send_svc_nlink_msg(hdd_ctx->radio_index,
+					    WLAN_SVC_FW_SHUTDOWN_IND, NULL, 0);
 }
 
 /**
