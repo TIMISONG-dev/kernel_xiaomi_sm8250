@@ -5,6 +5,7 @@
  *
  */
 
+#include <soc/qcom/rmnet_qmi.h>
 #include <linux/netdevice.h>
 #include <linux/ip.h>
 #include <linux/ipv6.h>
@@ -483,7 +484,7 @@ int rmnet_map_checksum_downlink_packet(struct sk_buff *skb, u16 len)
 }
 EXPORT_SYMBOL(rmnet_map_checksum_downlink_packet);
 
-void rmnet_map_v3_checksum_uplink_packet(struct sk_buff *skb,
+static void rmnet_map_v3_checksum_uplink_packet(struct sk_buff *skb,
 					 struct net_device *orig_dev)
 {
 	struct rmnet_priv *priv = netdev_priv(orig_dev);
@@ -528,7 +529,7 @@ sw_csum:
 	priv->stats.csum_sw++;
 }
 
-void rmnet_map_v4_checksum_uplink_packet(struct sk_buff *skb,
+static void rmnet_map_v4_checksum_uplink_packet(struct sk_buff *skb,
 					 struct net_device *orig_dev)
 {
 	struct rmnet_priv *priv = netdev_priv(orig_dev);
@@ -585,7 +586,7 @@ static void rmnet_map_v5_check_priority(struct sk_buff *skb,
 	}
 }
 
-void rmnet_map_v5_checksum_uplink_packet(struct sk_buff *skb,
+static void rmnet_map_v5_checksum_uplink_packet(struct sk_buff *skb,
 					 struct rmnet_port *port,
 					 struct net_device *orig_dev)
 {
@@ -1344,7 +1345,7 @@ static void rmnet_map_flush_tx_packet_work(struct work_struct *work)
 		dev_queue_xmit(skb);
 }
 
-enum hrtimer_restart rmnet_map_flush_tx_packet_queue(struct hrtimer *t)
+static enum hrtimer_restart rmnet_map_flush_tx_packet_queue(struct hrtimer *t)
 {
 	struct rmnet_port *port;
 

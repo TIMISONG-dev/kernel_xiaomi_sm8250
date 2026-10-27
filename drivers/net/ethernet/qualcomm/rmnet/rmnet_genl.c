@@ -83,7 +83,6 @@ void rmnet_update_pid_and_check_boost(pid_t pid, unsigned int len,
 	struct rmnet_pid_node_s *node_p;
 	unsigned long ht_flags;
 	u8 is_match_found = 0;
-	u64 tx_bytes = 0;
 
 	*boost_enable = 0;
 	*boost_period = 0;
@@ -99,7 +98,6 @@ void rmnet_update_pid_and_check_boost(pid_t pid, unsigned int len,
 			/* PID Match found */
 			is_match_found = 1;
 			node_p->tx_bytes += len;
-			tx_bytes = node_p->tx_bytes;
 
 			if (node_p->sched_boost_enable) {
 				rm_err("boost triggered for pid %d",
@@ -134,7 +132,7 @@ void rmnet_update_pid_and_check_boost(pid_t pid, unsigned int len,
 	spin_unlock_irqrestore(&rmnet_pid_ht_splock, ht_flags);
 }
 
-void rmnet_boost_for_pid(pid_t pid, int boost_enable,
+static void rmnet_boost_for_pid(pid_t pid, int boost_enable,
 			 u64 boost_period)
 {
 	struct hlist_node *tmp;
@@ -240,7 +238,7 @@ static void rmnet_create_pid_bps_resp(struct rmnet_core_pid_bps_resp
 	pid_bps_resp_ptr->list_len = i;
 }
 
-int rmnet_core_genl_send_resp(struct genl_info *info,
+static int rmnet_core_genl_send_resp(struct genl_info *info,
 			      struct rmnet_core_pid_bps_resp *pid_bps_resp)
 {
 	struct sk_buff *skb;
@@ -336,7 +334,6 @@ int rmnet_core_genl_pid_boost_req_hdlr(struct sk_buff *skb_2,
 {
 	struct nlattr *na;
 	struct rmnet_core_pid_boost_req pid_boost_req;
-	int is_req_valid = 0;
 	u16 boost_pid_cnt = RMNET_CORE_GENL_MAX_PIDS;
 	u16 i = 0;
 
@@ -350,7 +347,6 @@ int rmnet_core_genl_pid_boost_req_hdlr(struct sk_buff *skb_2,
 	na = info->attrs[RMNET_CORE_GENL_ATTR_PID_BOOST];
 	if (na) {
 		if (nla_memcpy(&pid_boost_req, na, sizeof(pid_boost_req)) > 0) {
-			is_req_valid = 1;
 		} else {
 			rm_err("CORE_GNL: nla_memcpy failed %d\n",
 			       RMNET_CORE_GENL_ATTR_PID_BOOST);
