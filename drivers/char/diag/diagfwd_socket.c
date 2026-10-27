@@ -1103,6 +1103,8 @@ static int diag_new_server(struct qmi_handle *qmi, struct qmi_service *svc)
 	DIAG_LOG(DIAG_DEBUG_PERIPHERALS, "%s rcvd new server\n", info->name);
 	ret = diagfwd_register(TRANSPORT_SOCKET, info->peripheral, info->type,
 			       (void *)info, &socket_ops, &info->fwd_ctxt);
+	if (ret)
+		return ret;
 	info->remote_addr.sq_family = AF_QIPCRTR;
 	info->remote_addr.sq_node = svc->node;
 	info->remote_addr.sq_port = svc->port;
