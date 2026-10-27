@@ -57,7 +57,7 @@ static inline void cfs_se_util_change(struct sched_avg *avg)
  */
 static inline void update_rq_clock_pelt(struct rq *rq, s64 delta)
 {
-	if (unlikely(is_idle_task(rq->curr))) {
+	if (unlikely(is_idle_task(rq_curr_locked(rq)))) {
 		/* The rq is idle, we can sync to clock_task */
 		rq->clock_pelt  = rq_clock_task(rq);
 		return;
