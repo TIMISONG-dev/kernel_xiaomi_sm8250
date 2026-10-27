@@ -9,7 +9,7 @@
 static int _get_pkt_hdr_from_user(struct cvp_kmd_arg __user *up,
 		struct cvp_hal_session_cmd_pkt *pkt_hdr)
 {
-	struct cvp_kmd_hfi_packet *u;
+	struct cvp_kmd_hfi_packet __user *u;
 
 	u = &up->data.hfi_pkt;
 
@@ -40,7 +40,7 @@ set_default_pkt_hdr:
 static int _get_fence_pkt_hdr_from_user(struct cvp_kmd_arg __user *up,
 		struct cvp_hal_session_cmd_pkt *pkt_hdr)
 {
-	struct cvp_kmd_hfi_fence_packet *u;
+	struct cvp_kmd_hfi_fence_packet __user *u;
 
 	u = &up->data.hfi_fence_pkt;
 
@@ -61,7 +61,8 @@ static int _copy_pkt_from_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_arg __user *up,
 		unsigned int size)
 {
-	struct cvp_kmd_hfi_packet *k, *u;
+	struct cvp_kmd_hfi_packet *k;
+	struct cvp_kmd_hfi_packet __user *u;
 	int i;
 
 	k = &kp->data.hfi_pkt;
@@ -78,7 +79,8 @@ static int _copy_fence_pkt_from_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_arg __user *up,
 		unsigned int size)
 {
-	struct cvp_kmd_hfi_fence_packet *k, *u;
+	struct cvp_kmd_hfi_fence_packet *k;
+	struct cvp_kmd_hfi_fence_packet __user *u;
 	int i;
 
 	k = &kp->data.hfi_fence_pkt;
@@ -97,7 +99,8 @@ static int _copy_fence_pkt_from_user(struct cvp_kmd_arg *kp,
 static int _copy_sysprop_from_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_arg __user *up)
 {
-	struct cvp_kmd_sys_properties *k, *u;
+	struct cvp_kmd_sys_properties *k;
+	struct cvp_kmd_sys_properties __user *u;
 
 	k = &kp->data.sys_properties;
 	u = &up->data.sys_properties;
@@ -118,7 +121,8 @@ static int _copy_pkt_to_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_arg __user *up,
 		unsigned int size)
 {
-	struct cvp_kmd_hfi_packet *k, *u;
+	struct cvp_kmd_hfi_packet *k;
+	struct cvp_kmd_hfi_packet __user *u;
 	int i;
 
 	k = &kp->data.hfi_pkt;
@@ -134,7 +138,8 @@ static int _copy_fence_pkt_to_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_arg __user *up,
 		unsigned int size)
 {
-	struct cvp_kmd_hfi_fence_packet *k, *u;
+	struct cvp_kmd_hfi_fence_packet *k;
+	struct cvp_kmd_hfi_fence_packet __user *u;
 	int i;
 
 	k = &kp->data.hfi_fence_pkt;
@@ -153,7 +158,8 @@ static int _copy_fence_pkt_to_user(struct cvp_kmd_arg *kp,
 static int _copy_sysprop_to_user(struct cvp_kmd_arg *kp,
 		struct cvp_kmd_arg __user *up)
 {
-	struct cvp_kmd_sys_properties *k, *u;
+	struct cvp_kmd_sys_properties *k;
+	struct cvp_kmd_sys_properties __user *u;
 
 	k = &kp->data.sys_properties;
 	u = &up->data.sys_properties;
@@ -198,7 +204,7 @@ static void _set_deprecate_bitmask(struct cvp_kmd_arg *kp,
 
 static void print_hfi_short(struct cvp_kmd_arg __user *up)
 {
-	struct cvp_kmd_hfi_packet *pkt;
+	struct cvp_kmd_hfi_packet __user *pkt;
 	unsigned int words[5];
 
 	pkt = &up->data.hfi_pkt;
@@ -215,7 +221,7 @@ static void print_hfi_short(struct cvp_kmd_arg __user *up)
 
 static int _copy_session_ctrl_to_user(
 	struct cvp_kmd_session_control *k,
-	struct cvp_kmd_session_control *u)
+	struct cvp_kmd_session_control __user *u)
 {
 	int i;
 
@@ -229,7 +235,7 @@ static int _copy_session_ctrl_to_user(
 
 static int _get_session_ctrl_from_user(
 	struct cvp_kmd_session_control *k,
-	struct cvp_kmd_session_control *u)
+	struct cvp_kmd_session_control __user *u)
 {
 	int i;
 
@@ -243,12 +249,11 @@ static int _get_session_ctrl_from_user(
 }
 
 static int convert_from_user(struct cvp_kmd_arg *kp,
-		unsigned long arg,
+		struct cvp_kmd_arg __user *up,
 		struct msm_cvp_inst *inst)
 {
 	int rc = 0;
 	int i;
-	struct cvp_kmd_arg __user *up = (struct cvp_kmd_arg *)arg;
 	struct cvp_hal_session_cmd_pkt pkt_hdr;
 	int pkt_idx;
 
@@ -271,7 +276,8 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 	switch (kp->type) {
 	case CVP_KMD_GET_SESSION_INFO:
 	{
-		struct cvp_kmd_session_info *k, *u;
+		struct cvp_kmd_session_info *k;
+		struct cvp_kmd_session_info __user *u;
 
 		k = &kp->data.session;
 		u = &up->data.session;
@@ -284,7 +290,8 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 	}
 	case CVP_KMD_REQUEST_POWER:
 	{
-		struct cvp_kmd_request_power *k, *u;
+		struct cvp_kmd_request_power *k;
+		struct cvp_kmd_request_power __user *u;
 
 		k = &kp->data.req_power;
 		u = &up->data.req_power;
@@ -300,7 +307,8 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 	}
 	case CVP_KMD_REGISTER_BUFFER:
 	{
-		struct cvp_kmd_buffer *k, *u;
+		struct cvp_kmd_buffer *k;
+		struct cvp_kmd_buffer __user *u;
 
 		k = &kp->data.regbuf;
 		u = &up->data.regbuf;
@@ -319,7 +327,8 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 	}
 	case CVP_KMD_UNREGISTER_BUFFER:
 	{
-		struct cvp_kmd_buffer *k, *u;
+		struct cvp_kmd_buffer *k;
+		struct cvp_kmd_buffer __user *u;
 
 		k = &kp->data.unregbuf;
 		u = &up->data.unregbuf;
@@ -338,7 +347,8 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 	}
 	case CVP_KMD_HFI_SEND_CMD:
 	{
-		struct cvp_kmd_send_cmd *k, *u;
+		struct cvp_kmd_send_cmd *k;
+		struct cvp_kmd_send_cmd __user *u;
 
 		k = &kp->data.send_cmd;
 		u = &up->data.send_cmd;
@@ -399,7 +409,8 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 		break;
 	case CVP_KMD_SESSION_CONTROL:
 	{
-		struct cvp_kmd_session_control *k, *u;
+		struct cvp_kmd_session_control *k;
+		struct cvp_kmd_session_control __user *u;
 
 		k = &kp->data.session_ctrl;
 		u = &up->data.session_ctrl;
@@ -435,11 +446,11 @@ static int convert_from_user(struct cvp_kmd_arg *kp,
 	return rc;
 }
 
-static int convert_to_user(struct cvp_kmd_arg *kp, unsigned long arg)
+static int convert_to_user(struct cvp_kmd_arg *kp,
+		struct cvp_kmd_arg __user *up)
 {
 	int rc = 0;
 	int i, size = get_msg_size() >> 2;
-	struct cvp_kmd_arg __user *up = (struct cvp_kmd_arg *)arg;
 	struct cvp_hal_session_cmd_pkt pkt_hdr;
 
 	if (!kp || !up) {
@@ -453,7 +464,8 @@ static int convert_to_user(struct cvp_kmd_arg *kp, unsigned long arg)
 	switch (kp->type) {
 	case CVP_KMD_RECEIVE_MSG_PKT:
 	{
-		struct cvp_kmd_hfi_packet *k, *u;
+		struct cvp_kmd_hfi_packet *k;
+		struct cvp_kmd_hfi_packet __user *u;
 
 		k = &kp->data.hfi_pkt;
 		u = &up->data.hfi_pkt;
@@ -464,7 +476,8 @@ static int convert_to_user(struct cvp_kmd_arg *kp, unsigned long arg)
 	}
 	case CVP_KMD_GET_SESSION_INFO:
 	{
-		struct cvp_kmd_session_info *k, *u;
+		struct cvp_kmd_session_info *k;
+		struct cvp_kmd_session_info __user *u;
 
 		k = &kp->data.session;
 		u = &up->data.session;
@@ -477,7 +490,8 @@ static int convert_to_user(struct cvp_kmd_arg *kp, unsigned long arg)
 	}
 	case CVP_KMD_REQUEST_POWER:
 	{
-		struct cvp_kmd_request_power *k, *u;
+		struct cvp_kmd_request_power *k;
+		struct cvp_kmd_request_power __user *u;
 
 		k = &kp->data.req_power;
 		u = &up->data.req_power;
@@ -493,7 +507,8 @@ static int convert_to_user(struct cvp_kmd_arg *kp, unsigned long arg)
 	}
 	case CVP_KMD_REGISTER_BUFFER:
 	{
-		struct cvp_kmd_buffer *k, *u;
+		struct cvp_kmd_buffer *k;
+		struct cvp_kmd_buffer __user *u;
 
 		k = &kp->data.regbuf;
 		u = &up->data.regbuf;
@@ -512,7 +527,8 @@ static int convert_to_user(struct cvp_kmd_arg *kp, unsigned long arg)
 	}
 	case CVP_KMD_UNREGISTER_BUFFER:
 	{
-		struct cvp_kmd_buffer *k, *u;
+		struct cvp_kmd_buffer *k;
+		struct cvp_kmd_buffer __user *u;
 
 		k = &kp->data.unregbuf;
 		u = &up->data.unregbuf;
@@ -531,7 +547,8 @@ static int convert_to_user(struct cvp_kmd_arg *kp, unsigned long arg)
 	}
 	case CVP_KMD_HFI_SEND_CMD:
 	{
-		struct cvp_kmd_send_cmd *k, *u;
+		struct cvp_kmd_send_cmd *k;
+		struct cvp_kmd_send_cmd __user *u;
 
 		dprintk(CVP_DBG, "%s: CVP_KMD_HFI_SEND_CMD\n",
 					__func__);
@@ -579,7 +596,8 @@ static int convert_to_user(struct cvp_kmd_arg *kp, unsigned long arg)
 	}
 	case CVP_KMD_SESSION_CONTROL:
 	{
-		struct cvp_kmd_session_control *k, *u;
+		struct cvp_kmd_session_control *k;
+		struct cvp_kmd_session_control __user *u;
 
 		k = &kp->data.session_ctrl;
 		u = &up->data.session_ctrl;
@@ -609,7 +627,7 @@ static int convert_to_user(struct cvp_kmd_arg *kp, unsigned long arg)
 }
 
 static long cvp_ioctl(struct msm_cvp_inst *inst,
-	unsigned int cmd, unsigned long arg)
+	unsigned int cmd, void __user *arg)
 {
 	int rc;
 	struct cvp_kmd_arg *karg;
@@ -660,7 +678,7 @@ long cvp_unblocked_ioctl(struct file *filp,
 	}
 
 	inst = filp->private_data;
-	return cvp_ioctl(inst, cmd, arg);
+	return cvp_ioctl(inst, cmd, (void __user *)arg);
 }
 
 long cvp_compat_ioctl(struct file *filp,
@@ -674,5 +692,5 @@ long cvp_compat_ioctl(struct file *filp,
 	}
 
 	inst = filp->private_data;
-	return cvp_ioctl(inst, cmd, (unsigned long)compat_ptr(arg));
+	return cvp_ioctl(inst, cmd, compat_ptr(arg));
 }
