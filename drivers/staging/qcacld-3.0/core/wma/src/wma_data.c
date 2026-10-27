@@ -558,14 +558,13 @@ static QDF_STATUS wma_fill_ht_mcast_rate(uint32_t shortgi,
 					 uint8_t nss, uint8_t *rate,
 					 int32_t *streaming_rate)
 {
-	int32_t ret = 0;
 
 	*streaming_rate = 0;
 	if (chwidth == 0)
-		ret = wma_fill_ht20_mcast_rate(shortgi, mbpsx10_rate,
+		wma_fill_ht20_mcast_rate(shortgi, mbpsx10_rate,
 					       nss, rate, streaming_rate);
 	else if (chwidth == 1)
-		ret = wma_fill_ht40_mcast_rate(shortgi, mbpsx10_rate,
+		wma_fill_ht40_mcast_rate(shortgi, mbpsx10_rate,
 					       nss, rate, streaming_rate);
 	else
 		WMA_LOGE("%s: Error, Invalid chwidth enum %d", __func__,
@@ -592,17 +591,16 @@ static QDF_STATUS wma_fill_vht_mcast_rate(uint32_t shortgi,
 					  uint8_t *rate,
 					  int32_t *streaming_rate)
 {
-	int32_t ret = 0;
 
 	*streaming_rate = 0;
 	if (chwidth == 0)
-		ret = wma_fill_vht20_mcast_rate(shortgi, mbpsx10_rate, nss,
+		wma_fill_vht20_mcast_rate(shortgi, mbpsx10_rate, nss,
 						rate, streaming_rate);
 	else if (chwidth == 1)
-		ret = wma_fill_vht40_mcast_rate(shortgi, mbpsx10_rate, nss,
+		wma_fill_vht40_mcast_rate(shortgi, mbpsx10_rate, nss,
 						rate, streaming_rate);
 	else if (chwidth == 2)
-		ret = wma_fill_vht80_mcast_rate(shortgi, mbpsx10_rate, nss,
+		wma_fill_vht80_mcast_rate(shortgi, mbpsx10_rate, nss,
 						rate, streaming_rate);
 	else
 		WMA_LOGE("%s: chwidth enum %d not supported",
