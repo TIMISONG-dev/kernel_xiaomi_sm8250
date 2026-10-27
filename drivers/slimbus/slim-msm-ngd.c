@@ -274,7 +274,7 @@ static int dsp_domr_notify_cb(struct notifier_block *n, unsigned long code,
 		break;
 	case SUBSYS_AFTER_POWERUP:
 	case SERVREG_NOTIF_SERVICE_STATE_UP_V01:
-		SLIM_INFO(dev, "SLIM DSP SSR notify cb:0x%x\n", code);
+		SLIM_INFO(dev, "SLIM DSP SSR notify cb:0x%lx\n", code);
 		/* Hold wake lock until notify slaves thread is done */
 		pm_stay_awake(dev->dev);
 		atomic_set(&dev->init_in_progress, 1);
@@ -1084,7 +1084,7 @@ static int ngd_xferandwait_ack(struct slim_controller *ctrl,
 
 static int ngd_allocbw(struct slim_device *sb, int *subfrmc, int *clkgear)
 {
-	int ret = 0, num_chan = 0;
+	int ret = 0;
 	struct slim_pending_ch *pch;
 	struct slim_msg_txn txn;
 	struct slim_controller *ctrl = sb->ctrl;
@@ -1156,7 +1156,6 @@ static int ngd_allocbw(struct slim_device *sb, int *subfrmc, int *clkgear)
 				return -ENXIO;
 			}
 		}
-		num_chan++;
 		wbuf[txn.len++] = slc->chan;
 		SLIM_INFO(dev, "slim activate chan:%d, laddr: 0x%x\n",
 				slc->chan, sb->laddr);
