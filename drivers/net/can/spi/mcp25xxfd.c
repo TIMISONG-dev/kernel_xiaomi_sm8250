@@ -2457,7 +2457,7 @@ static int mcp25xxfd_can_ist_handle_rxif(struct spi_device *spi)
 	else
 		ret = mcp25xxfd_read_fifos(spi);
 
-	return 0;
+	return ret;
 }
 
 static void mcp25xxfd_mark_tx_processed(struct spi_device *spi,
@@ -2493,12 +2493,16 @@ static int mcp25xxfd_can_ist_handle_tefif_handle_single(struct spi_device *spi)
 				   */
 				  sizeof(*tef) - 1,
 				  priv->spi_speed_hz);
+	if (ret)
+		return ret;
 	/* increment the counter to read next */
 	ret = mcp25xxfd_cmd_write_mask(spi,
 				       CAN_TEFCON,
 				       CAN_TEFCON_UINC,
 				       CAN_TEFCON_UINC,
 				       priv->spi_speed_hz);
+	if (ret)
+		return ret;
 
 	/* transform the data to system byte order */
 	mcp25xxfd_obj_ts_from_le(&tef->header);
@@ -3927,10 +3931,12 @@ static const struct net_device_ops mcp25xxfd_netdev_ops = {
 	.ndo_change_mtu = can_change_mtu,
 };
 
+static const enum mcp25xxfd_model mcp2517fd_model = CAN_MCP2517FD;
+
 static const struct of_device_id mcp25xxfd_of_match[] = {
 	{
 		.compatible	= "microchip,mcp2517fd",
-		.data		= (void *)CAN_MCP2517FD,
+		.data		= &mcp2517fd_model,
 	},
 	{ }
 };
@@ -4156,7 +4162,7 @@ static void mcp25xxfd_debugfs_remove(struct mcp25xxfd_priv *priv)
 #endif
 
 #ifdef CONFIG_OF_DYNAMIC
-int mcp25xxfd_of_parse(struct mcp25xxfd_priv *priv)
+static int mcp25xxfd_of_parse(struct mcp25xxfd_priv *priv)
 {
 	struct spi_device *spi = priv->spi;
 	const struct device_node *np = spi->dev.of_node;
@@ -4191,7 +4197,7 @@ int mcp25xxfd_of_parse(struct mcp25xxfd_priv *priv)
 	return 0;
 }
 #else
-int mcp25xxfd_of_parse(struct mcp25xxfd_priv *priv)
+static int mcp25xxfd_of_parse(struct mcp25xxfd_priv *priv)
 {
 	return 0;
 }
@@ -4255,7 +4261,7 @@ static int mcp25xxfd_can_probe(struct spi_device *spi)
 		CAN_CTRLMODE_ONE_SHOT;
 
 	if (of_id)
-		priv->model = (enum mcp25xxfd_model)of_id->data;
+		priv->model = *(const enum mcp25xxfd_model *)of_id->data;
 	else
 		priv->model = spi_get_device_id(spi)->driver_data;
 
@@ -4487,6 +4493,7 @@ static SIMPLE_DEV_PM_OPS(mcp25xxfd_can_pm_ops, mcp25xxfd_can_suspend,
 	mcp25xxfd_can_resume);
 
 static struct spi_driver mcp25xxfd_can_driver = {
+	.id_table = mcp25xxfd_id_table,
 	.driver = {
 		.name = DEVICE_NAME,
 		.of_match_table = mcp25xxfd_of_match,
