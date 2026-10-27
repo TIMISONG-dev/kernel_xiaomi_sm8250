@@ -4493,6 +4493,7 @@ static SIMPLE_DEV_PM_OPS(mcp25xxfd_can_pm_ops, mcp25xxfd_can_suspend,
 	mcp25xxfd_can_resume);
 
 static struct spi_driver mcp25xxfd_can_driver = {
+	.id_table = mcp25xxfd_id_table,
 	.driver = {
 		.name = DEVICE_NAME,
 		.of_match_table = mcp25xxfd_of_match,
