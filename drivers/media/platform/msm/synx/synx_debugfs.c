@@ -23,7 +23,7 @@ const char delim[] = ",";
 int columns = NAME_COLUMN |
 BOUND_COLUMN | ERROR_CODES;
 
-void populate_bound_rows(
+static void populate_bound_rows(
 	struct synx_table_row *row,
 	char *cur,
 	char *end)

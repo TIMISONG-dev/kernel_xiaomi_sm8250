@@ -260,7 +260,7 @@ int synx_deinit_object(struct synx_table_row *row)
 	return 0;
 }
 
-u32 synx_add_reference(struct dma_fence *fence)
+static u32 synx_add_reference(struct dma_fence *fence)
 {
 	u32 count = 0;
 	u32 i = 0;
@@ -284,7 +284,7 @@ u32 synx_add_reference(struct dma_fence *fence)
 	return count;
 }
 
-void synx_release_reference(struct dma_fence *fence)
+static void synx_release_reference(struct dma_fence *fence)
 {
 	struct dma_fence_array *array = NULL;
 	u32 i = 0;
@@ -301,7 +301,7 @@ void synx_release_reference(struct dma_fence *fence)
 	}
 }
 
-u32 synx_fence_add(struct dma_fence *fence,
+static u32 synx_fence_add(struct dma_fence *fence,
 	struct dma_fence **fences,
 	u32 idx)
 {
@@ -323,7 +323,7 @@ u32 synx_fence_add(struct dma_fence *fence,
 	return 1;
 }
 
-u32 synx_remove_duplicates(struct dma_fence **arr, u32 num)
+static u32 synx_remove_duplicates(struct dma_fence **arr, u32 num)
 {
 	int i, j;
 	u32 wr_idx = 1;
@@ -454,7 +454,7 @@ bool is_merged_synx(struct synx_table_row *row)
 	return false;
 }
 
-u32 __fence_state(struct dma_fence *fence, bool locked)
+static u32 __fence_state(struct dma_fence *fence, bool locked)
 {
 	s32 status;
 	u32 state = SYNX_STATE_INVALID;
@@ -484,7 +484,7 @@ u32 __fence_state(struct dma_fence *fence, bool locked)
 	return state;
 }
 
-u32 __fence_group_state(struct dma_fence *fence, bool locked)
+static u32 __fence_group_state(struct dma_fence *fence, bool locked)
 {
 	u32 i = 0;
 	u32 state = SYNX_STATE_INVALID;
@@ -826,7 +826,7 @@ struct bind_operations *synx_get_bind_ops(u32 type)
 	return &client_ops->ops;
 }
 
-void generate_timestamp(char *timestamp, size_t size)
+static void generate_timestamp(char *timestamp, size_t size)
 {
 	struct timeval tv;
 	struct tm tm;
