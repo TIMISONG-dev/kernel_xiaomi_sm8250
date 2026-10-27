@@ -743,8 +743,7 @@ asmlinkage void __exception do_sysinstr(unsigned int esr, struct pt_regs *regs)
 	do_undefinstr(regs);
 }
 
-static const char *esr_class_str[] = {
-	[0 ... ESR_ELx_EC_MAX]		= "UNRECOGNIZED EC",
+static const char *esr_class_str[ESR_ELx_EC_MAX + 1] = {
 	[ESR_ELx_EC_UNKNOWN]		= "Unknown/Uncategorized",
 	[ESR_ELx_EC_WFx]		= "WFI/WFE",
 	[ESR_ELx_EC_CP15_32]		= "CP15 MCR/MRC",
@@ -786,7 +785,9 @@ static const char *esr_class_str[] = {
 
 const char *esr_get_class_string(u32 esr)
 {
-	return esr_class_str[ESR_ELx_EC(esr)];
+	const char *str = esr_class_str[ESR_ELx_EC(esr)];
+
+	return str ? str : "UNRECOGNIZED EC";
 }
 
 /*
