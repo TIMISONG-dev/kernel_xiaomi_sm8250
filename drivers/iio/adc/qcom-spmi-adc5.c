@@ -1236,7 +1236,7 @@ static const struct pmic_rev_data pmic_data[] = {
 	{PM7250B_SUBTYPE,	0},
 };
 
-bool skip_usb_in_wa(struct pmic_revid_data *pmic_rev_id)
+static bool skip_usb_in_wa(struct pmic_revid_data *pmic_rev_id)
 {
 	int i = 0;
 	uint32_t tablesize = ARRAY_SIZE(pmic_data);

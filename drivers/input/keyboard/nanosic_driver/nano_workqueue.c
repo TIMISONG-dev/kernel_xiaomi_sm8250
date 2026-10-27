@@ -116,7 +116,6 @@ EXPORT_SYMBOL_GPL(Nanosic_workQueue_schedule_external);
  ** */
 void Nanosic_workQueue_schedule(struct nano_worker_client *worker_client)
 {
-	bool delay_work_running = false;
 
 	if (IS_ERR_OR_NULL(worker_client)) {
 		dbgprint(ERROR_LEVEL, "worker_client is NULL\n");
@@ -131,7 +130,7 @@ void Nanosic_workQueue_schedule(struct nano_worker_client *worker_client)
 		atomic_inc(
 			&worker_client
 				 ->schedule_delay_count); /*延时10ms后再调度*/
-		delay_work_running = schedule_delayed_work(
+		schedule_delayed_work(
 			&worker_client->worker_delay, msecs_to_jiffies(22));
 	}
 }
