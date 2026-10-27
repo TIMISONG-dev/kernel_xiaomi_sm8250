@@ -325,10 +325,18 @@ static const struct attribute_group mhi_sysfs_group = {
 
 void mhi_create_sysfs(struct mhi_controller *mhi_cntrl)
 {
-	sysfs_create_group(&mhi_cntrl->mhi_dev->dev.kobj, &mhi_sysfs_group);
-	if (mhi_cntrl->mhi_tsync)
-		sysfs_create_group(&mhi_cntrl->mhi_dev->dev.kobj,
+	int ret;
+
+	ret = sysfs_create_group(&mhi_cntrl->mhi_dev->dev.kobj, &mhi_sysfs_group);
+	if (ret)
+		dev_err(&mhi_cntrl->mhi_dev->dev, "Failed to create sysfs group: %d\n", ret);
+	if (mhi_cntrl->mhi_tsync) {
+		ret = sysfs_create_group(&mhi_cntrl->mhi_dev->dev.kobj,
 				   &mhi_tsync_group);
+		if (ret)
+			dev_err(&mhi_cntrl->mhi_dev->dev,
+				"Failed to create timesync group: %d\n", ret);
+	}
 }
 
 void mhi_destroy_sysfs(struct mhi_controller *mhi_cntrl)
