@@ -413,9 +413,9 @@ QDF_STATUS wmi_unified_sifs_trigger_send(wmi_unified_t wmi_handle,
 
 /**
  *  wmi_unified_stats_request_send() - WMI request stats function
- *  @param wmi_handle      : handle to WMI.
- *  @param macaddr        : MAC address
- *  @param param    : pointer to hold stats request parameter
+ *  @wmi_handle: handle to WMI.
+ *  @macaddr: MAC address
+ *  @param: pointer to hold stats request parameter
  *
  *  Return: QDF_STATUS_SUCCESS on success and QDF_STATUS_E_FAILURE for failure
  */
@@ -1402,7 +1402,7 @@ QDF_STATUS wmi_unified_remove_beacon_filter_cmd_send(
 /**
  * wmi_unified_get_pn_send_cmd() - send command to get PN for peer
  * @wmi_hdl: wmi handle
- * @wmi_peer_tx_pn_request_cmd_fixed_param: pn request params
+ * @pn_params: pn request params
  *
  * Return: QDF_STATUS_SUCCESS on success and QDF_STATUS_E_FAILURE for failure
  */
@@ -1418,9 +1418,9 @@ QDF_STATUS wmi_unified_get_pn_send_cmd(wmi_unified_t wmi_hdl,
 
 /**
  *  wmi_unified_mgmt_cmd_send() - WMI mgmt cmd function
- *  @param wmi_handle      : handle to WMI.
- *  @param macaddr        : MAC address
- *  @param param    : pointer to hold mgmt parameter
+ *  @wmi_hdl: handle to WMI.
+ *  @macaddr: MAC address
+ *  @param: pointer to hold mgmt parameter
  *
  *  @return QDF_STATUS_SUCCESS on success and QDF_STATUS_E_FAILURE for failure
  */
@@ -1853,9 +1853,9 @@ wmi_extract_fips_event_data(wmi_unified_t wmi_handle, void *evt_buf,
 
 /**
  * wmi_unified_extract_pn() - extract pn event data
- * @wmi_handle: wmi handle
- * @param evt_buf: pointer to event buffer
- * @param param: pointer to get pn event param
+ * @wmi_hdl: wmi handle
+ * @evt_buf: pointer to event buffer
+ * @param: pointer to get pn event param
  *
  * Return: QDF_STATUS_SUCCESS on success and QDF_STATUS_E_FAILURE for failure
  */

@@ -24,7 +24,7 @@
 #ifdef FEATURE_WLAN_D0WOW
 /**
  *  send_d0wow_enable_cmd_tlv() - WMI d0 wow enable function
- *  @param wmi_handle: handle to WMI.
+ *  @wmi_handle: handle to WMI.
  *  @mac_id: radio context
  *
  *  Return: 0  on success  and  error code on failure.
@@ -62,7 +62,7 @@ static QDF_STATUS send_d0wow_enable_cmd_tlv(wmi_unified_t wmi_handle,
 
 /**
  *  send_d0wow_disable_cmd_tlv() - WMI d0 wow disable function
- *  @param wmi_handle: handle to WMI.
+ *  @wmi_handle: handle to WMI.
  *  @mac_id: radio context
  *
  *  Return: 0  on success  and  error code on failure.
@@ -333,8 +333,8 @@ static void fill_arp_offload_params_tlv(wmi_unified_t wmi_handle,
 #ifdef WLAN_NS_OFFLOAD
 /**
  * fill_ns_offload_params_tlv() - Fill NS offload data
- * @wmi|_handle: wmi handle
- * @offload_req: offload request
+ * @wmi_handle: wmi handle
+ * @ns_req: offload request
  * @buf_ptr: buffer pointer
  *
  * To fill NS offload data to firmware
@@ -397,8 +397,8 @@ static void fill_ns_offload_params_tlv(wmi_unified_t wmi_handle,
 
 /**
  * fill_nsoffload_ext_tlv() - Fill NS offload ext data
- * @wmi: wmi handle
- * @offload_req: offload request
+ * @wmi_handle: wmi handle
+ * @ns_req: offload request
  * @buf_ptr: buffer pointer
  *
  * To fill extended NS offload extended data to firmware
@@ -477,10 +477,10 @@ static void fill_nsoffload_ext_tlv(wmi_unified_t wmi_handle,
 
 /**
  * send_enable_arp_ns_offload_cmd_tlv() - enable ARP NS offload
- * @wma: wmi handle
+ * @wmi_handle: wmi handle
  * @arp_offload_req: arp offload request
  * @ns_offload_req: ns offload request
- * @arp_only: flag
+ * @vdev_id: Virtual device identifier copied into the ARP/NS offload command
  *
  * To configure ARP NS off load data to firmware
  * when target goes to wow mode.
@@ -565,7 +565,7 @@ static QDF_STATUS send_enable_arp_ns_offload_cmd_tlv(wmi_unified_t wmi_handle,
  * send_add_clear_mcbc_filter_cmd_tlv() - set mcast filter command to fw
  * @wmi_handle: wmi handle
  * @vdev_id: vdev id
- * @multicastAddr: mcast address
+ * @multicast_addr: mcast address
  * @clearList: clear list flag
  *
  * Return: QDF_STATUS_SUCCESS for success or error code
@@ -618,7 +618,7 @@ static QDF_STATUS send_add_clear_mcbc_filter_cmd_tlv(wmi_unified_t wmi_handle,
  *						   command to fw
  * @wmi_handle: wmi handle
  * @vdev_id: vdev id
- * @mcast_filter_params: mcast filter params
+ * @filter_param: mcast filter params
  *
  * Return: QDF_STATUS_SUCCESS for success or error code
  */
@@ -767,6 +767,8 @@ fill_fils_tlv_params(WMI_GTK_OFFLOAD_CMD_fixed_param *cmd,
  * @wmi_handle: wmi handle
  * @vdev_id: vdev id
  * @params: GTK offload parameters
+ * @enable_offload: Whether to copy the GTK keys and replay counter into the command
+ * @gtk_offload_opcode: Opcode copied to the GTK offload command flags
  *
  * Return: CDF status
  */
@@ -837,7 +839,8 @@ out:
 /**
  * send_process_gtk_offload_getinfo_cmd_tlv() - send GTK offload cmd to fw
  * @wmi_handle: wmi handle
- * @params: GTK offload params
+ * @vdev_id: Virtual device identifier copied into the GTK status request
+ * @offload_req_opcode: Opcode copied to the GTK status request flags
  *
  * Return: CDF status
  */
@@ -937,9 +940,9 @@ QDF_STATUS send_enable_enhance_multicast_offload_tlv(
 /**
  * extract_gtk_rsp_event_tlv() - extract gtk rsp params from event
  * @wmi_handle: wmi handle
- * @param evt_buf: pointer to event buffer
- * @param hdr: Pointer to hold header
- * @param bufp: Pointer to hold pointer to rx param buffer
+ * @evt_buf: pointer to event buffer
+ * @gtk_rsp_param: Output GTK status, refresh count and replay counter extracted from the event
+ * @len: Event length checked against the fixed GTK status parameter size
  *
  * Return: QDF_STATUS_SUCCESS for success or error code
  */
@@ -984,6 +987,8 @@ static QDF_STATUS extract_gtk_rsp_event_tlv(wmi_unified_t wmi_handle,
  * send_wow_sta_ra_filter_cmd_tlv() - set RA filter pattern in fw
  * @wmi_handle: wmi handle
  * @vdev_id: vdev id
+ * @default_pattern: Pattern identifier copied to the IPv6 RA filter command
+ * @rate_limit_interval: RA rate limit value written to the command TLV
  *
  * Return: CDF status
  */
@@ -1138,7 +1143,7 @@ static QDF_STATUS send_action_frame_patterns_cmd_tlv(wmi_unified_t wmi_handle,
 /**
  * send_lphb_config_hbenable_cmd_tlv() - enable command of LPHB configuration
  * @wmi_handle: wmi handle
- * @lphb_conf_req: configuration info
+ * @params: configuration info
  *
  * Return: CDF status
  */
@@ -1238,7 +1243,7 @@ static QDF_STATUS send_lphb_config_tcp_params_cmd_tlv(wmi_unified_t wmi_handle,
 /**
  * send_lphb_config_tcp_pkt_filter_cmd_tlv() - configure tcp packet filter cmd
  * @wmi_handle: wmi handle
- * @lphb_conf_req: lphb config request
+ * @g_hb_tcp_filter_fp: lphb config request
  *
  * Return: CDF status
  */
