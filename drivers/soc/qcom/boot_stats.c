@@ -3,6 +3,7 @@
  * Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
  */
 
+#include <soc/qcom/boot_stats.h>
 #include <linux/kernel.h>
 #include <linux/err.h>
 #include <linux/io.h>
