@@ -308,6 +308,9 @@ static struct ch_group_t *init_group(void)
 		}
 	}
 
+	if (chirp_error)
+		pr_err("Chirp device initialization failed: %u\n", chirp_error);
+
 	return grp_ptr;
 }
 
