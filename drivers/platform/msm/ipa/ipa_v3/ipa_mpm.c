@@ -1557,7 +1557,7 @@ static int ipa_mpm_vote_unvote_pcie_clk(enum ipa_mpm_clk_vote_type vote,
 			ipa_mpm_ctx->md[probe_id].mhi_dev,
 				MHI_VOTE_BUS | MHI_VOTE_DEVICE);
 		if (result) {
-			IPA_MPM_ERR("mhi_sync_get failed for probe_id %d\n",
+			IPA_MPM_ERR("mhi_sync_get failed with err %d for probe_id %d\n",
 				result, probe_id);
 			*is_acted = false;
 			return result;
@@ -1700,34 +1700,35 @@ static enum mhip_status_type ipa_mpm_start_stop_mhip_chan(
 	struct ipa3_ep_context *ep;
 	bool is_start;
 	enum ipa_client_type ul_chan, dl_chan;
-	u32 source_pipe_bitmask = 0;
 	enum gsi_status gsi_res = GSI_STATUS_SUCCESS;
 	int result;
 
 	IPA_MPM_FUNC_ENTRY();
 
-	if (mhip_chan > IPA_MPM_MHIP_CHAN_BOTH) {
+	if (mhip_chan != IPA_MPM_MHIP_CHAN_UL &&
+	    mhip_chan != IPA_MPM_MHIP_CHAN_DL) {
 		IPA_MPM_ERR("MHI not initialized yet\n");
 		return MHIP_STATUS_FAIL;
 	}
 
-	if (probe_id >= IPA_MPM_MHIP_CH_ID_MAX) {
+	if (probe_id < IPA_MPM_MHIP_CH_ID_0 ||
+	    probe_id >= IPA_MPM_MHIP_CH_ID_MAX) {
 		IPA_MPM_ERR("MHI not initialized yet\n");
 		return MHIP_STATUS_FAIL;
 	}
+
+	if (start_stop != MPM_MHIP_START && start_stop != MPM_MHIP_STOP)
+		return MHIP_STATUS_FAIL;
 
 	get_ipa3_client(probe_id, &ul_chan, &dl_chan);
 
 	if (mhip_chan == IPA_MPM_MHIP_CHAN_UL) {
 		ipa_ep_idx = ipa3_get_ep_mapping(ul_chan);
-	} else if (mhip_chan == IPA_MPM_MHIP_CHAN_DL) {
-		ipa_ep_idx = ipa3_get_ep_mapping(dl_chan);
-	} else if (mhip_chan == IPA_MPM_MHIP_CHAN_BOTH) {
-		ipa_ep_idx = ipa3_get_ep_mapping(ul_chan);
+	} else {
 		ipa_ep_idx = ipa3_get_ep_mapping(dl_chan);
 	}
 
-	if (ipa_ep_idx == IPA_EP_NOT_ALLOCATED) {
+	if (ipa_ep_idx < 0 || ipa_ep_idx >= ipa3_ctx->ipa_num_pipes) {
 		IPA_MPM_ERR("fail to get EP# for idx %d\n", ipa_ep_idx);
 		return MHIP_STATUS_EP_NOT_FOUND;
 	}
@@ -1816,8 +1817,7 @@ static enum mhip_status_type ipa_mpm_start_stop_mhip_chan(
 		}
 
 		if (mhip_chan == IPA_MPM_MHIP_CHAN_UL) {
-			source_pipe_bitmask = 1 <<
-				ipa3_get_ep_mapping(ep->client);
+			ipa3_get_ep_mapping(ep->client);
 			/* First Stop UL GSI channel before unvote PCIe clock */
 			result = ipa3_stop_gsi_channel(ipa_ep_idx);
 
@@ -1887,7 +1887,8 @@ int ipa_mpm_notify_wan_state(struct wan_ioctl_notify_wan_state *state)
 		ret = ipa_mpm_vote_unvote_pcie_clk(CLK_ON, probe_id,
 			false, &is_acted);
 		if (ret) {
-			IPA_MPM_ERR("Err %d cloking on PCIe clk %d\n", ret);
+			IPA_MPM_ERR("Err %d clocking on PCIe for probe_id %d\n",
+				ret, probe_id);
 			return ret;
 		}
 
@@ -2150,12 +2151,12 @@ static void ipa_mpm_read_channel(enum ipa_client_type chan)
 
 	ep = &ipa3_ctx->ep[ipa_ep_idx];
 
-	IPA_MPM_DBG("Reading channel for chan %d, ep = %d, gsi_chan_hdl = %d\n",
+	IPA_MPM_DBG("Reading channel for chan %d, ep = %pK, gsi_chan_hdl = %lu\n",
 		chan, ep, ep->gsi_chan_hdl);
 
 	res = ipa3_get_gsi_chan_info(&chan_info, ep->gsi_chan_hdl);
 	if (res)
-		IPA_MPM_ERR("Reading of channel failed for ep %d\n", ep);
+		IPA_MPM_ERR("Reading of channel failed for ep %pK\n", ep);
 }
 
 /* ipa_mpm_mhi_probe_cb is received for each MHI'/MHI channel
@@ -2274,7 +2275,7 @@ static int ipa_mpm_mhi_probe_cb(struct mhi_device *mhi_dev,
 				ipa_mpm_ctx->uc_fc_db);
 			ch->chan_props.ch_ctx.reserved2 =
 				ipa_mpm_ctx->uc_fc_db_iova;
-			IPA_MPM_DBG("configure reserved2 %lx\n",
+			IPA_MPM_DBG("configure reserved2 %llx\n",
 				ch->chan_props.ch_ctx.reserved2);
 		}
 
@@ -2918,11 +2919,9 @@ int ipa_mpm_mhip_xdci_pipe_enable(enum ipa_usb_teth_prot xdci_teth_prot)
 		return -EINVAL;
 	}
 
-	if (mhip_client != IPA_MPM_MHIP_USB_DPL)
-		/* Start UL MHIP channel for offloading teth connection */
-		status = ipa_mpm_start_stop_mhip_chan(IPA_MPM_MHIP_CHAN_UL,
-							probe_id,
-							MPM_MHIP_START);
+	/* DPL returned above; start the USB RMNET uplink channel. */
+	status = ipa_mpm_start_stop_mhip_chan(IPA_MPM_MHIP_CHAN_UL,
+					probe_id, MPM_MHIP_START);
 	switch (status) {
 	case MHIP_STATUS_SUCCESS:
 	case MHIP_STATUS_NO_OP:
@@ -3153,7 +3152,7 @@ static int ipa_mpm_populate_smmu_info(struct platform_device *pdev)
 	cb->va_end = cb->va_start + cb->va_size;
 
 	if (cb->va_end >= ap_cb->va_start) {
-		IPA_MPM_ERR("MPM iommu and AP overlap addr 0x%lx\n",
+		IPA_MPM_ERR("MPM iommu and AP overlap addr 0x%x\n",
 				cb->va_start);
 		ipa_assert();
 		return -EFAULT;
@@ -3333,7 +3332,7 @@ int ipa_mpm_panic_handler(char *buf, int size)
 
 	for (i = 0; i < IPA_MPM_MHIP_CH_ID_MAX; i++) {
 		cnt += scnprintf(buf + cnt, size - cnt,
-			"client id: %d ipa vote cnt: %d pcie vote cnt\n", i,
+			"client id: %d ipa vote cnt: %d pcie vote cnt: %d\n", i,
 			atomic_read(&ipa_mpm_ctx->md[i].clk_cnt.ipa_clk_cnt),
 			atomic_read(&ipa_mpm_ctx->md[i].clk_cnt.pcie_clk_cnt));
 	}

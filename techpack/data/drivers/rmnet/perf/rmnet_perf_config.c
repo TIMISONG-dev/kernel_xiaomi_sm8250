@@ -26,12 +26,12 @@
 
 MODULE_LICENSE("GPL v2");
 
-unsigned int temp_debug __read_mostly = 1;
+static unsigned int temp_debug __read_mostly = 1;
 module_param(temp_debug, uint, 0644);
 MODULE_PARM_DESC(temp_debug, "temp_debug");
 
 /* global to rmnet_perf. Used to hold meta_data */
-struct rmnet_perf *perf;
+static struct rmnet_perf *perf;
 
 struct rmnet_perf *rmnet_perf_config_get_perf(void)
 {
@@ -373,8 +373,8 @@ static bool rmnet_perf_config_hook_registered(void)
 	void (*frag_entry)(struct rmnet_frag_descriptor *frag_desc,
 			   struct rmnet_port *port);
 
-	deag_entry = rcu_dereference(rmnet_perf_deag_entry);
-	frag_entry = rcu_dereference(rmnet_perf_desc_entry);
+	deag_entry = rcu_access_pointer(rmnet_perf_deag_entry);
+	frag_entry = rcu_access_pointer(rmnet_perf_desc_entry);
 
 	return deag_entry || frag_entry;
 }

@@ -36,7 +36,7 @@ MODULE_LICENSE("GPL v2");
 #define FORCE_CLEAN 1
 
 /* Local Definitions and Declarations */
-unsigned int rmnet_shs_cpu_prio_dur __read_mostly = 3;
+static unsigned int rmnet_shs_cpu_prio_dur __read_mostly = 3;
 module_param(rmnet_shs_cpu_prio_dur, uint, 0644);
 MODULE_PARM_DESC(rmnet_shs_cpu_prio_dur, "Priority ignore duration (wq intervals)");
 
@@ -44,17 +44,17 @@ MODULE_PARM_DESC(rmnet_shs_cpu_prio_dur, "Priority ignore duration (wq intervals
 
 #define RMNET_SHS_SEGS_PER_SKB_DEFAULT (2)
 
-unsigned int rmnet_shs_wq_interval_ms __read_mostly = RMNET_SHS_WQ_INTERVAL_MS;
+static unsigned int rmnet_shs_wq_interval_ms __read_mostly = RMNET_SHS_WQ_INTERVAL_MS;
 module_param(rmnet_shs_wq_interval_ms, uint, 0644);
 MODULE_PARM_DESC(rmnet_shs_wq_interval_ms, "Interval between wq runs (ms)");
 
-unsigned long rmnet_shs_max_flow_inactivity_sec __read_mostly =
+static unsigned long rmnet_shs_max_flow_inactivity_sec __read_mostly =
 						RMNET_SHS_MAX_SKB_INACTIVE_TSEC;
 module_param(rmnet_shs_max_flow_inactivity_sec, ulong, 0644);
 MODULE_PARM_DESC(rmnet_shs_max_flow_inactivity_sec,
 		 "Max flow inactive time before clean up");
 
-unsigned int rmnet_shs_wq_tuning __read_mostly = 80;
+static unsigned int rmnet_shs_wq_tuning __read_mostly = 80;
 module_param(rmnet_shs_wq_tuning, uint, 0644);
 MODULE_PARM_DESC(rmnet_shs_wq_tuning, "moving average weightage");
 
@@ -68,7 +68,7 @@ unsigned long long rmnet_shs_cpu_rx_max_pps_thresh[MAX_CPUS]__read_mostly = {
 			 RMNET_SHS_UDP_PPS_PERF_CPU_UTHRESH,
 			 RMNET_SHS_UDP_PPS_PERF_CPU_UTHRESH
 			};
-module_param_array(rmnet_shs_cpu_rx_max_pps_thresh, ullong, 0, 0644);
+module_param_array(rmnet_shs_cpu_rx_max_pps_thresh, ullong, NULL, 0644);
 MODULE_PARM_DESC(rmnet_shs_cpu_rx_max_pps_thresh, "Max pkts core can handle");
 
 unsigned long long rmnet_shs_cpu_rx_min_pps_thresh[MAX_CPUS]__read_mostly = {
@@ -81,93 +81,93 @@ unsigned long long rmnet_shs_cpu_rx_min_pps_thresh[MAX_CPUS]__read_mostly = {
 			 RMNET_SHS_UDP_PPS_PERF_CPU_LTHRESH,
 			 RMNET_SHS_UDP_PPS_PERF_CPU_LTHRESH
 			};
-module_param_array(rmnet_shs_cpu_rx_min_pps_thresh, ullong, 0, 0644);
+module_param_array(rmnet_shs_cpu_rx_min_pps_thresh, ullong, NULL, 0644);
 MODULE_PARM_DESC(rmnet_shs_cpu_rx_min_pps_thresh, "Min pkts core can handle");
 
-unsigned int rmnet_shs_cpu_rx_flows[MAX_CPUS];
-module_param_array(rmnet_shs_cpu_rx_flows, uint, 0, 0444);
+static unsigned int rmnet_shs_cpu_rx_flows[MAX_CPUS];
+module_param_array(rmnet_shs_cpu_rx_flows, uint, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_cpu_rx_flows, "Num flows processed per core");
 
-unsigned int rmnet_shs_cpu_rx_filter_flows[MAX_CPUS];
-module_param_array(rmnet_shs_cpu_rx_filter_flows, uint, 0, 0444);
+static unsigned int rmnet_shs_cpu_rx_filter_flows[MAX_CPUS];
+module_param_array(rmnet_shs_cpu_rx_filter_flows, uint, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_cpu_rx_filter_flows, "Num filtered flows per core");
 
-unsigned long long rmnet_shs_cpu_rx_bytes[MAX_CPUS];
-module_param_array(rmnet_shs_cpu_rx_bytes, ullong, 0, 0444);
+static unsigned long long rmnet_shs_cpu_rx_bytes[MAX_CPUS];
+module_param_array(rmnet_shs_cpu_rx_bytes, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_cpu_rx_bytes, "SHS stamp bytes per CPU");
 
-unsigned long long rmnet_shs_cpu_rx_pkts[MAX_CPUS];
-module_param_array(rmnet_shs_cpu_rx_pkts, ullong, 0, 0444);
+static unsigned long long rmnet_shs_cpu_rx_pkts[MAX_CPUS];
+module_param_array(rmnet_shs_cpu_rx_pkts, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_cpu_rx_pkts, "SHS stamp total pkts per CPU");
 
-unsigned long long rmnet_shs_cpu_rx_bps[MAX_CPUS];
-module_param_array(rmnet_shs_cpu_rx_bps, ullong, 0, 0444);
+static unsigned long long rmnet_shs_cpu_rx_bps[MAX_CPUS];
+module_param_array(rmnet_shs_cpu_rx_bps, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_cpu_rx_bps, "SHS stamp enq rate per CPU");
 
-unsigned long long rmnet_shs_cpu_rx_pps[MAX_CPUS];
-module_param_array(rmnet_shs_cpu_rx_pps, ullong, 0, 0444);
+static unsigned long long rmnet_shs_cpu_rx_pps[MAX_CPUS];
+module_param_array(rmnet_shs_cpu_rx_pps, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_cpu_rx_pps, "SHS stamp pkt enq rate per CPU");
 
-unsigned long long rmnet_shs_cpu_qhead_diff[MAX_CPUS];
-module_param_array(rmnet_shs_cpu_qhead_diff, ullong, 0, 0444);
+static unsigned long long rmnet_shs_cpu_qhead_diff[MAX_CPUS];
+module_param_array(rmnet_shs_cpu_qhead_diff, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_cpu_qhead_diff, "SHS nw stack queue processed diff");
 
-unsigned long long rmnet_shs_cpu_qhead_total[MAX_CPUS];
-module_param_array(rmnet_shs_cpu_qhead_total, ullong, 0, 0444);
+static unsigned long long rmnet_shs_cpu_qhead_total[MAX_CPUS];
+module_param_array(rmnet_shs_cpu_qhead_total, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_cpu_qhead_total, "SHS nw stack queue processed total");
 
-unsigned long rmnet_shs_flow_hash[MAX_SUPPORTED_FLOWS_DEBUG];
-module_param_array(rmnet_shs_flow_hash, ulong, 0, 0444);
+static unsigned long rmnet_shs_flow_hash[MAX_SUPPORTED_FLOWS_DEBUG];
+module_param_array(rmnet_shs_flow_hash, ulong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_hash, "SHS stamp hash flow");
 
-unsigned long rmnet_shs_flow_proto[MAX_SUPPORTED_FLOWS_DEBUG];
-module_param_array(rmnet_shs_flow_proto, ulong, 0, 0444);
+static unsigned long rmnet_shs_flow_proto[MAX_SUPPORTED_FLOWS_DEBUG];
+module_param_array(rmnet_shs_flow_proto, ulong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_proto, "SHS stamp hash transport protocol");
 
-unsigned long long rmnet_shs_flow_inactive_tsec[MAX_SUPPORTED_FLOWS_DEBUG];
-module_param_array(rmnet_shs_flow_inactive_tsec, ullong, 0, 0444);
+static unsigned long long rmnet_shs_flow_inactive_tsec[MAX_SUPPORTED_FLOWS_DEBUG];
+module_param_array(rmnet_shs_flow_inactive_tsec, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_inactive_tsec, "SHS stamp inactive flow time");
 
-int rmnet_shs_flow_cpu[MAX_SUPPORTED_FLOWS_DEBUG] = {
+static int rmnet_shs_flow_cpu[MAX_SUPPORTED_FLOWS_DEBUG] = {
 			-1, -1, -1, -1, -1, -1, -1, -1,
 			-1, -1, -1, -1, -1, -1, -1, -1};
 module_param_array(rmnet_shs_flow_cpu, int, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_cpu, "SHS stamp flow processing CPU");
 
-int rmnet_shs_flow_cpu_recommended[MAX_SUPPORTED_FLOWS_DEBUG] = {
+static int rmnet_shs_flow_cpu_recommended[MAX_SUPPORTED_FLOWS_DEBUG] = {
 			 -1, -1, -1, -1, -1, -1, -1, -1,
 			 -1, -1, -1, -1, -1, -1, -1, -1
 			 };
 module_param_array(rmnet_shs_flow_cpu_recommended, int, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_cpu_recommended, "SHS stamp flow proc CPU");
 
-unsigned long long rmnet_shs_flow_rx_bytes[MAX_SUPPORTED_FLOWS_DEBUG];
-module_param_array(rmnet_shs_flow_rx_bytes, ullong, 0, 0444);
+static unsigned long long rmnet_shs_flow_rx_bytes[MAX_SUPPORTED_FLOWS_DEBUG];
+module_param_array(rmnet_shs_flow_rx_bytes, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_rx_bytes, "SHS stamp bytes per flow");
 
-unsigned long long rmnet_shs_flow_rx_pkts[MAX_SUPPORTED_FLOWS_DEBUG];
-module_param_array(rmnet_shs_flow_rx_pkts, ullong, 0, 0444);
+static unsigned long long rmnet_shs_flow_rx_pkts[MAX_SUPPORTED_FLOWS_DEBUG];
+module_param_array(rmnet_shs_flow_rx_pkts, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_rx_pkts, "SHS stamp total pkts per flow");
 
-unsigned long long rmnet_shs_flow_rx_bps[MAX_SUPPORTED_FLOWS_DEBUG];
-module_param_array(rmnet_shs_flow_rx_bps, ullong, 0, 0444);
+static unsigned long long rmnet_shs_flow_rx_bps[MAX_SUPPORTED_FLOWS_DEBUG];
+module_param_array(rmnet_shs_flow_rx_bps, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_rx_bps, "SHS stamp enq rate per flow");
 
-unsigned long long rmnet_shs_flow_rx_pps[MAX_SUPPORTED_FLOWS_DEBUG];
-module_param_array(rmnet_shs_flow_rx_pps, ullong, 0, 0444);
+static unsigned long long rmnet_shs_flow_rx_pps[MAX_SUPPORTED_FLOWS_DEBUG];
+module_param_array(rmnet_shs_flow_rx_pps, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_rx_pps, "SHS stamp pkt enq rate per flow");
 
 /* Counters for suggestions made by wq */
-unsigned long long rmnet_shs_flow_silver_to_gold[MAX_SUPPORTED_FLOWS_DEBUG];
-module_param_array(rmnet_shs_flow_silver_to_gold, ullong, 0, 0444);
+static unsigned long long rmnet_shs_flow_silver_to_gold[MAX_SUPPORTED_FLOWS_DEBUG];
+module_param_array(rmnet_shs_flow_silver_to_gold, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_silver_to_gold, "SHS Suggest Silver to Gold");
 
-unsigned long long rmnet_shs_flow_gold_to_silver[MAX_SUPPORTED_FLOWS_DEBUG];
-module_param_array(rmnet_shs_flow_gold_to_silver, ullong, 0, 0444);
+static unsigned long long rmnet_shs_flow_gold_to_silver[MAX_SUPPORTED_FLOWS_DEBUG];
+module_param_array(rmnet_shs_flow_gold_to_silver, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_gold_to_silver, "SHS Suggest Gold to Silver");
 
-unsigned long long rmnet_shs_flow_gold_balance[MAX_SUPPORTED_FLOWS_DEBUG];
-module_param_array(rmnet_shs_flow_gold_balance, ullong, 0, 0444);
+static unsigned long long rmnet_shs_flow_gold_balance[MAX_SUPPORTED_FLOWS_DEBUG];
+module_param_array(rmnet_shs_flow_gold_balance, ullong, NULL, 0444);
 MODULE_PARM_DESC(rmnet_shs_flow_gold_balance, "SHS Suggest Gold Balance");
 
 static DEFINE_SPINLOCK(rmnet_shs_hstat_tbl_lock);
@@ -186,14 +186,14 @@ struct list_head rmnet_shs_wq_ep_tbl = LIST_HEAD_INIT(rmnet_shs_wq_ep_tbl);
 /* Helper functions to add and remove entries to the table
  * that maintains a list of all endpoints (vnd's) available on this device.
  */
-void rmnet_shs_wq_ep_tbl_add(struct rmnet_shs_wq_ep_s *ep)
+static void rmnet_shs_wq_ep_tbl_add(struct rmnet_shs_wq_ep_s *ep)
 {
 	trace_rmnet_shs_wq_low(RMNET_SHS_WQ_EP_TBL, RMNET_SHS_WQ_EP_TBL_ADD,
 				0xDEF, 0xDEF, 0xDEF, 0xDEF, ep, NULL);
 	list_add(&ep->ep_list_id, &rmnet_shs_wq_ep_tbl);
 }
 
-void rmnet_shs_wq_ep_tbl_remove(struct rmnet_shs_wq_ep_s *ep)
+static void rmnet_shs_wq_ep_tbl_remove(struct rmnet_shs_wq_ep_s *ep)
 {
 	trace_rmnet_shs_wq_low(RMNET_SHS_WQ_EP_TBL, RMNET_SHS_WQ_EP_TBL_DEL,
 				0xDEF, 0xDEF, 0xDEF, 0xDEF, ep, NULL);
@@ -203,7 +203,7 @@ void rmnet_shs_wq_ep_tbl_remove(struct rmnet_shs_wq_ep_s *ep)
 /* Helper functions to add and remove entries to the table
  * that maintains a list of all nodes that maintain statistics per flow
  */
-void rmnet_shs_wq_hstat_tbl_add(struct rmnet_shs_wq_hstat_s *hnode)
+static void rmnet_shs_wq_hstat_tbl_add(struct rmnet_shs_wq_hstat_s *hnode)
 {
 	unsigned long flags;
 
@@ -215,7 +215,7 @@ void rmnet_shs_wq_hstat_tbl_add(struct rmnet_shs_wq_hstat_s *hnode)
 	spin_unlock_irqrestore(&rmnet_shs_hstat_tbl_lock, flags);
 }
 
-void rmnet_shs_wq_hstat_tbl_remove(struct rmnet_shs_wq_hstat_s *hnode)
+static void rmnet_shs_wq_hstat_tbl_remove(struct rmnet_shs_wq_hstat_s *hnode)
 {
 	unsigned long flags;
 
@@ -233,7 +233,7 @@ void rmnet_shs_wq_hstat_tbl_remove(struct rmnet_shs_wq_hstat_s *hnode)
  * Below helper functions are used to maintain flow<=>cpu
  * association.*
  */
-void rmnet_shs_wq_cpu_list_remove(struct rmnet_shs_wq_hstat_s *hnode)
+static void rmnet_shs_wq_cpu_list_remove(struct rmnet_shs_wq_hstat_s *hnode)
 {
 	unsigned long flags;
 
@@ -246,7 +246,7 @@ void rmnet_shs_wq_cpu_list_remove(struct rmnet_shs_wq_hstat_s *hnode)
 
 }
 
-void rmnet_shs_wq_cpu_list_add(struct rmnet_shs_wq_hstat_s *hnode,
+static void rmnet_shs_wq_cpu_list_add(struct rmnet_shs_wq_hstat_s *hnode,
 			    struct list_head *head)
 {
 	unsigned long flags;
@@ -260,7 +260,7 @@ void rmnet_shs_wq_cpu_list_add(struct rmnet_shs_wq_hstat_s *hnode,
 	spin_unlock_irqrestore(&rmnet_shs_hstat_tbl_lock, flags);
 }
 
-void rmnet_shs_wq_cpu_list_move(struct rmnet_shs_wq_hstat_s *hnode,
+static void rmnet_shs_wq_cpu_list_move(struct rmnet_shs_wq_hstat_s *hnode,
 			     struct list_head *head)
 {
 	unsigned long flags;
@@ -276,7 +276,7 @@ void rmnet_shs_wq_cpu_list_move(struct rmnet_shs_wq_hstat_s *hnode,
 }
 
 /* Resets all the parameters used to maintain hash statistics */
-void rmnet_shs_wq_hstat_reset_node(struct rmnet_shs_wq_hstat_s *hnode)
+static void rmnet_shs_wq_hstat_reset_node(struct rmnet_shs_wq_hstat_s *hnode)
 {
 	hnode->c_epoch = 0;
 	hnode->l_epoch = 0;
@@ -312,7 +312,7 @@ void rmnet_shs_wq_hstat_reset_node(struct rmnet_shs_wq_hstat_s *hnode)
 }
 
 /* Preallocates a set of flow nodes that maintain flow level statistics*/
-void rmnet_shs_wq_hstat_alloc_nodes(u8 num_nodes_to_allocate, u8 is_store_perm)
+static void rmnet_shs_wq_hstat_alloc_nodes(u8 num_nodes_to_allocate, u8 is_store_perm)
 {
 	struct rmnet_shs_wq_hstat_s *hnode = NULL;
 
@@ -336,7 +336,7 @@ void rmnet_shs_wq_hstat_alloc_nodes(u8 num_nodes_to_allocate, u8 is_store_perm)
 /* If there is an already pre-allocated node available and not in use,
  * we will try to re-use them.
  */
-struct rmnet_shs_wq_hstat_s *rmnet_shs_wq_get_new_hstat_node(void)
+static struct rmnet_shs_wq_hstat_s *rmnet_shs_wq_get_new_hstat_node(void)
 {
 	struct rmnet_shs_wq_hstat_s *hnode = NULL;
 	struct rmnet_shs_wq_hstat_s *ret_node = NULL;
@@ -429,7 +429,6 @@ void rmnet_shs_wq_create_new_flow(struct rmnet_shs_skbn_s *node_p)
 				0xDEF, 0xDEF, 0xDEF, 0xDEF,
 				node_p, node_p->hstats);
 }
-
 
 /* Compute the average pps for a flow based on tuning param
  * Often when we decide to switch from a small cluster core,
@@ -524,7 +523,7 @@ static u64 rmnet_shs_wq_get_cpu_avg_pps(u16 cpu_num)
 }
 
 /* Refresh the RPS mask associated with this flow */
-void rmnet_shs_wq_update_hstat_rps_msk(struct rmnet_shs_wq_hstat_s *hstat_p)
+static void rmnet_shs_wq_update_hstat_rps_msk(struct rmnet_shs_wq_hstat_s *hstat_p)
 {
 	struct rmnet_shs_skbn_s *node_p = NULL;
 	struct rmnet_shs_wq_ep_s *ep = NULL;
@@ -546,11 +545,11 @@ void rmnet_shs_wq_update_hstat_rps_msk(struct rmnet_shs_wq_hstat_s *hstat_p)
 
 			/* Update ep tput stats while we're here */
 			if (hstat_p->skb_tport_proto == IPPROTO_TCP) {
-				rm_err("SHS_UDP: adding TCP bps %lu to ep_total %lu ep name %s",
+				rm_err("SHS_UDP: adding TCP bps %llu to ep_total %llu ep name %s",
 				       hstat_p->rx_bps, ep->tcp_rx_bps, node_p->dev->name);
 				ep->tcp_rx_bps += hstat_p->rx_bps;
 			} else if (hstat_p->skb_tport_proto == IPPROTO_UDP) {
-				rm_err("SHS_UDP: adding UDP rx_bps %lu to ep_total %lu ep name %s",
+				rm_err("SHS_UDP: adding UDP rx_bps %llu to ep_total %llu ep name %s",
 				       hstat_p->rx_bps, ep->udp_rx_bps, node_p->dev->name);
 				ep->udp_rx_bps += hstat_p->rx_bps;
 			}
@@ -565,7 +564,7 @@ void rmnet_shs_wq_update_hstat_rps_msk(struct rmnet_shs_wq_hstat_s *hstat_p)
 				0xDEF, hstat_p, node_p);
 }
 
-void rmnet_shs_wq_update_hash_stats_debug(struct rmnet_shs_wq_hstat_s *hstats_p,
+static void rmnet_shs_wq_update_hash_stats_debug(struct rmnet_shs_wq_hstat_s *hstats_p,
 					  struct rmnet_shs_skbn_s *node_p)
 {
 	int idx = rmnet_shs_flow_dbg_stats_idx_cnt;
@@ -607,7 +606,7 @@ void rmnet_shs_wq_update_hash_stats_debug(struct rmnet_shs_wq_hstat_s *hstats_p,
 /* Returns TRUE if this flow received a new packet
  *         FALSE otherwise
  */
-u8 rmnet_shs_wq_is_hash_rx_new_pkt(struct rmnet_shs_wq_hstat_s *hstats_p,
+static u8 rmnet_shs_wq_is_hash_rx_new_pkt(struct rmnet_shs_wq_hstat_s *hstats_p,
 				   struct rmnet_shs_skbn_s *node_p)
 {
 	if (!hstats_p || !node_p) {
@@ -621,7 +620,7 @@ u8 rmnet_shs_wq_is_hash_rx_new_pkt(struct rmnet_shs_wq_hstat_s *hstats_p,
 	return 1;
 }
 
-void rmnet_shs_wq_update_hash_tinactive(struct rmnet_shs_wq_hstat_s *hstats_p,
+static void rmnet_shs_wq_update_hash_tinactive(struct rmnet_shs_wq_hstat_s *hstats_p,
 					struct rmnet_shs_skbn_s *node_p)
 {
 	time_t tdiff;
@@ -640,7 +639,7 @@ void rmnet_shs_wq_update_hash_tinactive(struct rmnet_shs_wq_hstat_s *hstats_p,
 				hstats_p, NULL);
 }
 
-void rmnet_shs_wq_update_hash_stats(struct rmnet_shs_wq_hstat_s *hstats_p)
+static void rmnet_shs_wq_update_hash_stats(struct rmnet_shs_wq_hstat_s *hstats_p)
 {
 	time_t tdiff;
 	u64 skb_diff, bytes_diff;
@@ -861,7 +860,7 @@ static void rmnet_shs_wq_refresh_all_cpu_stats(void)
 				0xDEF, 0xDEF, 0xDEF, 0xDEF, NULL, NULL);
 }
 
-void rmnet_shs_wq_update_cpu_rx_tbl(struct rmnet_shs_wq_hstat_s *hstat_p)
+static void rmnet_shs_wq_update_cpu_rx_tbl(struct rmnet_shs_wq_hstat_s *hstat_p)
 {
 	struct rmnet_shs_wq_rx_flow_s *tbl_p = &rmnet_shs_rx_flow_tbl;
 	struct rmnet_shs_skbn_s *node_p;
@@ -925,7 +924,7 @@ void rmnet_shs_wq_update_cpu_rx_tbl(struct rmnet_shs_wq_hstat_s *hstat_p)
 
 }
 
-void rmnet_shs_wq_chng_suggested_cpu(u16 old_cpu, u16 new_cpu,
+static void rmnet_shs_wq_chng_suggested_cpu(u16 old_cpu, u16 new_cpu,
 					      struct rmnet_shs_wq_ep_s *ep)
 {
 	struct rmnet_shs_skbn_s *node_p;
@@ -1108,7 +1107,7 @@ int rmnet_shs_wq_get_least_utilized_core(u16 core_msk)
 	return ret_val;
 }
 
-u16 rmnet_shs_wq_find_cpu_to_move_flows(u16 current_cpu,
+static u16 rmnet_shs_wq_find_cpu_to_move_flows(u16 current_cpu,
 					struct rmnet_shs_wq_ep_s *ep)
 {
 	struct rmnet_shs_wq_rx_flow_s *rx_flow_tbl_p = &rmnet_shs_rx_flow_tbl;
@@ -1185,7 +1184,7 @@ u16 rmnet_shs_wq_find_cpu_to_move_flows(u16 current_cpu,
 	return cpu_to_move;
 }
 
-void rmnet_shs_wq_find_cpu_and_move_flows(u16 cur_cpu)
+static void rmnet_shs_wq_find_cpu_and_move_flows(u16 cur_cpu)
 {
 	struct rmnet_shs_wq_ep_s *ep = NULL;
 	u16 new_cpu;
@@ -1208,7 +1207,7 @@ void rmnet_shs_wq_find_cpu_and_move_flows(u16 cur_cpu)
  * otherwise return 0. Basically check rps mask and cpu is online
  * Also check that dest cpu is not isolated
  */
-int rmnet_shs_wq_check_cpu_move_for_ep(u16 current_cpu, u16 dest_cpu,
+static int rmnet_shs_wq_check_cpu_move_for_ep(u16 current_cpu, u16 dest_cpu,
 				       struct rmnet_shs_wq_ep_s *ep)
 {
 	u16 cpu_in_rps_mask = 0;
@@ -1226,10 +1225,11 @@ int rmnet_shs_wq_check_cpu_move_for_ep(u16 current_cpu, u16 dest_cpu,
 	cpu_in_rps_mask = (1 << dest_cpu) & ep->rps_config_msk;
 
 	rm_err("SHS_MASK:  cur cpu [%d] | dest_cpu [%d] | "
-	       "cpu isolation_mask = 0x%x | ep_rps_mask = 0x%x | "
+	       "cpu isolation_mask = %*pb | ep_rps_mask = 0x%x | "
 	       "cpu_online(dest) = %d cpu_in_rps_mask = %d | "
 	       "cpu isolated(dest) = %d",
-	       current_cpu, dest_cpu, __cpu_isolated_mask, ep->rps_config_msk,
+	       current_cpu, dest_cpu, cpumask_pr_args(&__cpu_isolated_mask),
+	       ep->rps_config_msk,
 	       cpu_online(dest_cpu), cpu_in_rps_mask, cpu_isolated(dest_cpu));
 
 	/* We cannot move to dest cpu if the cur cpu is the same,
@@ -1334,11 +1334,10 @@ int rmnet_shs_wq_set_flow_segmentation(u32 hash_to_set, u8 segs_per_skb)
 	return 0;
 }
 
-
 /* Comparison function to sort gold flow loads - based on flow avg_pps
  * return -1 if a is before b, 1 if a is after b, 0 if equal
  */
-int cmp_fn_flow_pps(void *priv, struct list_head *a, struct list_head *b)
+static int cmp_fn_flow_pps(void *priv, struct list_head *a, struct list_head *b)
 {
 	struct rmnet_shs_wq_gold_flow_s *flow_a;
 	struct rmnet_shs_wq_gold_flow_s *flow_b;
@@ -1360,7 +1359,7 @@ int cmp_fn_flow_pps(void *priv, struct list_head *a, struct list_head *b)
 /* Comparison function to sort cpu capacities - based on cpu avg_pps capacity
  * return -1 if a is before b, 1 if a is after b, 0 if equal
  */
-int cmp_fn_cpu_pps(void *priv, struct list_head *a, struct list_head *b)
+static int cmp_fn_cpu_pps(void *priv, struct list_head *a, struct list_head *b)
 {
 	struct rmnet_shs_wq_cpu_cap_s *cpu_a;
 	struct rmnet_shs_wq_cpu_cap_s *cpu_b;
@@ -1379,9 +1378,8 @@ int cmp_fn_cpu_pps(void *priv, struct list_head *a, struct list_head *b)
 	return 0;
 }
 
-
 /* Prints cpu stats and flows to dmesg for debugging */
-void rmnet_shs_wq_debug_print_flows(void)
+static void rmnet_shs_wq_debug_print_flows(void)
 {
 	struct rmnet_shs_wq_rx_flow_s *rx_flow_tbl_p = &rmnet_shs_rx_flow_tbl;
 	struct rmnet_shs_wq_cpu_rx_pkt_q_s *cpu_node;
@@ -1429,35 +1427,11 @@ void rmnet_shs_wq_debug_print_flows(void)
 	} /* loop per cpu */
 }
 
-/* Prints the sorted gold flow list to dmesg */
-void rmnet_shs_wq_debug_print_sorted_gold_flows(struct list_head *gold_flows)
-{
-	struct rmnet_shs_wq_gold_flow_s *gflow_node;
-
-	if (!RMNET_SHS_DEBUG)
-		return;
-
-	if (!gold_flows) {
-		rm_err("%s", "SHS_GDMA: Gold Flows List is NULL");
-		return;
-	}
-
-	rm_err("%s", "SHS_GDMA: List of sorted gold flows:");
-	list_for_each_entry(gflow_node, gold_flows, gflow_list) {
-		if (!gflow_node)
-			continue;
-
-		rm_err("SHS_GDMA: > flow 0x%x with pps %llu on cpu[%d]",
-		       gflow_node->hash, gflow_node->rx_pps,
-		       gflow_node->cpu_num);
-	}
-}
-
 /* Userspace evaluation. we send userspace the response to the sync message
  * after we update shared memory. shsusr will send a netlink message if
  * flows should be moved around.
  */
-void rmnet_shs_wq_eval_cpus_caps_and_flows(struct list_head *cpu_caps,
+static void rmnet_shs_wq_eval_cpus_caps_and_flows(struct list_head *cpu_caps,
 					   struct list_head *gold_flows,
 					   struct list_head *ss_flows)
 {
@@ -1481,7 +1455,7 @@ void rmnet_shs_wq_eval_cpus_caps_and_flows(struct list_head *cpu_caps,
 }
 
 /* Default wq evaluation logic, use this if rmnet_shs_userspace_connected is 0 */
-void rmnet_shs_wq_eval_suggested_cpu(void)
+static void rmnet_shs_wq_eval_suggested_cpu(void)
 
 {
 	struct rmnet_shs_wq_rx_flow_s *rx_flow_tbl_p = &rmnet_shs_rx_flow_tbl;
@@ -1550,11 +1524,10 @@ void rmnet_shs_wq_eval_suggested_cpu(void)
 
 }
 
-void rmnet_shs_wq_refresh_new_flow_list_per_ep(struct rmnet_shs_wq_ep_s *ep)
+static void rmnet_shs_wq_refresh_new_flow_list_per_ep(struct rmnet_shs_wq_ep_s *ep)
 {
 	int lo_core;
 	int hi_core;
-	u16 rps_msk;
 	u16 lo_msk;
 	u16 hi_msk;
 	u8 lo_core_idx = 0;
@@ -1565,7 +1538,6 @@ void rmnet_shs_wq_refresh_new_flow_list_per_ep(struct rmnet_shs_wq_ep_s *ep)
 		return;
 	}
 
-	rps_msk = ep->rps_config_msk;
 	lo_msk = ep->default_core_msk;
 	hi_msk = ep->pri_core_msk;
 	memset(ep->new_lo_core, -1, sizeof(*ep->new_lo_core) * MAX_CPUS);
@@ -1733,7 +1705,6 @@ int rmnet_shs_wq_get_perf_cpu_new_flow(struct net_device *dev)
 	return cpu_assigned;
 }
 
-
 static int rmnet_shs_wq_time_check(time_t time, int num_flows)
 {
 
@@ -1749,7 +1720,7 @@ static int rmnet_shs_wq_time_check(time_t time, int num_flows)
 	return ret;
 }
 
-void rmnet_shs_wq_cleanup_hash_tbl(u8 force_clean)
+static void rmnet_shs_wq_cleanup_hash_tbl(u8 force_clean)
 {
 	struct rmnet_shs_skbn_s *node_p = NULL;
 	time_t tns2s;
@@ -1806,7 +1777,7 @@ void rmnet_shs_wq_cleanup_hash_tbl(u8 force_clean)
 
 }
 
-void rmnet_shs_wq_update_ep_rps_msk(struct rmnet_shs_wq_ep_s *ep)
+static void rmnet_shs_wq_update_ep_rps_msk(struct rmnet_shs_wq_ep_s *ep)
 {
 	struct rps_map *map;
 	u8 len = 0;
@@ -1820,6 +1791,7 @@ void rmnet_shs_wq_update_ep_rps_msk(struct rmnet_shs_wq_ep_s *ep)
 	if (!ep->ep) {
 		pr_info(" rmnet_shs invalid state %p", ep->ep);
 		rmnet_shs_crit_err[RMNET_SHS_WQ_EP_ACCESS_ERR]++;
+		rcu_read_unlock();
 		return;
 	}
 	map = rcu_dereference(ep->ep->_rx->rps_map);
@@ -1891,7 +1863,7 @@ void rmnet_shs_wq_set_ep_active(struct net_device *dev)
 	spin_unlock_irqrestore(&rmnet_shs_ep_lock, flags);
 }
 
-void rmnet_shs_wq_refresh_ep_masks(void)
+static void rmnet_shs_wq_refresh_ep_masks(void)
 {
 	struct rmnet_shs_wq_ep_s *ep = NULL;
 
@@ -1941,7 +1913,7 @@ void rmnet_shs_update_cfg_mask(void)
 	}
 }
 
-noinline void rmnet_shs_wq_filter(void)
+static noinline void rmnet_shs_wq_filter(void)
 {
 	int cpu, cur_cpu;
 	int temp;
@@ -1976,7 +1948,7 @@ noinline void rmnet_shs_wq_filter(void)
 	}
 }
 
-void rmnet_shs_wq_update_stats(void)
+static void rmnet_shs_wq_update_stats(void)
 {
 	struct timespec time;
 	struct rmnet_shs_wq_hstat_s *hnode = NULL;
@@ -2030,7 +2002,7 @@ void rmnet_shs_wq_update_stats(void)
 	rmnet_shs_wq_filter();
 }
 
-void rmnet_shs_wq_process_wq(struct work_struct *work)
+static void rmnet_shs_wq_process_wq(struct work_struct *work)
 {
 	unsigned long flags;
 	unsigned long jiffies;
@@ -2057,7 +2029,7 @@ void rmnet_shs_wq_process_wq(struct work_struct *work)
 				0xDEF, 0xDEF, 0xDEF, 0xDEF, NULL, NULL);
 }
 
-void rmnet_shs_wq_clean_ep_tbl(void)
+static void rmnet_shs_wq_clean_ep_tbl(void)
 {
 	struct rmnet_shs_wq_ep_s *ep = NULL;
 	struct list_head *ptr = NULL, *next = NULL;
@@ -2102,7 +2074,7 @@ void rmnet_shs_wq_exit(void)
 				   0xDEF, 0xDEF, 0xDEF, 0xDEF, NULL, NULL);
 }
 
-void rmnet_shs_wq_init_cpu_rx_flow_tbl(void)
+static void rmnet_shs_wq_init_cpu_rx_flow_tbl(void)
 {
 	u8 cpu_num;
 	struct rmnet_shs_wq_cpu_rx_pkt_q_s *rx_flow_tbl_p;
@@ -2181,75 +2153,6 @@ void rmnet_shs_wq_init(struct net_device *dev)
 				0xDEF, 0xDEF, 0xDEF, 0xDEF, NULL, NULL);
 }
 
-int rmnet_shs_wq_get_num_cpu_flows(u16 cpu)
-{
-	int flows = -1;
-
-	if (cpu >= MAX_CPUS) {
-		rmnet_shs_crit_err[RMNET_SHS_INVALID_CPU_ERR]++;
-		return flows;
-	}
-	flows = rmnet_shs_rx_flow_tbl.cpu_list[cpu].flows;
-
-	trace_rmnet_shs_wq_low(RMNET_SHS_WQ_CPU_STATS,
-			       RMNET_SHS_WQ_CPU_STATS_GET_CPU_FLOW,
-				cpu, flows, 0xDEF, 0xDEF, NULL, NULL);
-
-	return flows;
-}
-
-int rmnet_shs_wq_get_max_flows_per_core(void)
-{
-	u16 cpu;
-	int max_flows = -1;
-	int cpu_flows;
-
-	for (cpu = 0; cpu < MAX_CPUS; cpu++) {
-		cpu_flows = rmnet_shs_wq_get_num_cpu_flows(cpu);
-		if (cpu_flows > max_flows)
-			max_flows = cpu_flows;
-
-	trace_rmnet_shs_wq_low(RMNET_SHS_WQ_CPU_STATS,
-			       RMNET_SHS_WQ_CPU_STATS_GET_MAX_CPU_FLOW,
-				cpu, cpu_flows, max_flows, 0xDEF, NULL, NULL);
-	}
-
-	return max_flows;
-}
-
-int rmnet_shs_wq_get_max_flows_per_cluster(u16 cpu)
-{
-	u32 big_cluster_mask = 1<<4;
-	u32 core_mask = 1;
-	u16 start_core = 0;
-	u16 end_core = 4;
-	int max_flows = -1;
-	int cpu_flows;
-
-	if (cpu > MAX_CPUS) {
-		rmnet_shs_crit_err[RMNET_SHS_INVALID_CPU_ERR]++;
-		return max_flows;
-	}
-
-	core_mask <<= cpu;
-	if (core_mask >= big_cluster_mask) {
-		start_core = 4;
-		end_core = MAX_CPUS;
-	}
-
-	for (start_core; start_core < end_core; start_core++) {
-		cpu_flows = rmnet_shs_wq_get_num_cpu_flows(start_core);
-		if (cpu_flows > max_flows)
-			max_flows = cpu_flows;
-	}
-
-	trace_rmnet_shs_wq_low(RMNET_SHS_WQ_CPU_STATS,
-			       RMNET_SHS_WQ_CPU_STATS_MAX_FLOW_IN_CLUSTER,
-			       start_core, end_core, cpu, max_flows,
-			       NULL, NULL);
-	return max_flows;
-}
-
 void rmnet_shs_wq_inc_cpu_flow(u16 cpu)
 {
 	if (cpu >= MAX_CPUS) {
@@ -2293,11 +2196,13 @@ u64 rmnet_shs_wq_get_max_allowed_pps(u16 cpu)
 }
 
 void rmnet_shs_wq_ep_lock_bh(void)
+	__acquires(&rmnet_shs_ep_lock)
 {
 	spin_lock_bh(&rmnet_shs_ep_lock);
 }
 
 void rmnet_shs_wq_ep_unlock_bh(void)
+	__releases(&rmnet_shs_ep_lock)
 {
 	spin_unlock_bh(&rmnet_shs_ep_lock);
 }

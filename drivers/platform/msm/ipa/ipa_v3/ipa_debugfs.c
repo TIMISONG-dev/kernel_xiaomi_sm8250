@@ -3,12 +3,13 @@
  * Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
  */
 
+#include "ipa_i.h"
+
 #ifdef CONFIG_DEBUG_FS
 
 #include <linux/debugfs.h>
 #include <linux/kernel.h>
 #include <linux/stringify.h>
-#include "ipa_i.h"
 #include "../ipa_rm_i.h"
 #include "ipahal/ipahal_nat.h"
 #include "ipa_odl.h"
@@ -781,6 +782,10 @@ static int ipa3_attrib_dump_eq(struct ipa_ipfltri_rule_eq *attrib)
 	return 0;
 }
 
+/* Each debugfs IP-family file carries a real, permanently live enum. */
+static enum ipa_ip_type ipa3_debugfs_ip4 = IPA_IP_v4;
+static enum ipa_ip_type ipa3_debugfs_ip6 = IPA_IP_v6;
+
 static int ipa3_open_dbg(struct inode *inode, struct file *file)
 {
 	file->private_data = inode->i_private;
@@ -794,7 +799,7 @@ static ssize_t ipa3_read_rt(struct file *file, char __user *ubuf, size_t count,
 	struct ipa3_rt_tbl *tbl;
 	struct ipa3_rt_entry *entry;
 	struct ipa3_rt_tbl_set *set;
-	enum ipa_ip_type ip = (enum ipa_ip_type)file->private_data;
+	enum ipa_ip_type ip = *(enum ipa_ip_type *)file->private_data;
 	u32 ofst;
 	u32 ofst_words;
 
@@ -891,7 +896,7 @@ static ssize_t ipa3_read_rt(struct file *file, char __user *ubuf, size_t count,
 static ssize_t ipa3_read_rt_hw(struct file *file, char __user *ubuf,
 	size_t count, loff_t *ppos)
 {
-	enum ipa_ip_type ip = (enum ipa_ip_type)file->private_data;
+	enum ipa_ip_type ip = *(enum ipa_ip_type *)file->private_data;
 	int tbls_num;
 	int rules_num;
 	int tbl;
@@ -1059,7 +1064,7 @@ static ssize_t ipa3_read_flt(struct file *file, char __user *ubuf, size_t count,
 	int j;
 	struct ipa3_flt_tbl *tbl;
 	struct ipa3_flt_entry *entry;
-	enum ipa_ip_type ip = (enum ipa_ip_type)file->private_data;
+	enum ipa_ip_type ip = *(enum ipa_ip_type *)file->private_data;
 	struct ipa3_rt_tbl *rt_tbl;
 	u32 rt_tbl_idx;
 	u32 bitmap;
@@ -1130,7 +1135,7 @@ static ssize_t ipa3_read_flt_hw(struct file *file, char __user *ubuf,
 	int rl;
 	int rules_num;
 	struct ipahal_flt_rule_entry *rules;
-	enum ipa_ip_type ip = (enum ipa_ip_type)file->private_data;
+	enum ipa_ip_type ip = *(enum ipa_ip_type *)file->private_data;
 	u32 rt_tbl_idx;
 	u32 bitmap;
 	int res = 0;
@@ -1251,8 +1256,8 @@ static ssize_t ipa3_read_stats(struct file *file, char __user *ubuf,
 		"flow_enable=%u\n"
 		"flow_disable=%u\n"
 		"rx_page_drop_cnt=%u\n"
-		"zero_len_frag_pkt_cnt=%u\n",
-		"lower_order=%u\n",
+		"zero_len_frag_pkt_cnt=%u\n"
+		"lower_order=%llu\n",
 		ipa3_ctx->stats.tx_sw_pkts,
 		ipa3_ctx->stats.tx_hw_pkts,
 		ipa3_ctx->stats.tx_non_linear,
@@ -2711,42 +2716,42 @@ static const struct ipa3_debugfs_file debugfs_files[] = {
 			.read = ipa3_read_proc_ctx,
 		}
 	}, {
-		"ip4_rt", IPA_READ_ONLY_MODE, (void *)IPA_IP_v4, {
+		"ip4_rt", IPA_READ_ONLY_MODE, &ipa3_debugfs_ip4, {
 			.read = ipa3_read_rt,
 			.open = ipa3_open_dbg,
 		}
 	}, {
-		"ip4_rt_hw", IPA_READ_ONLY_MODE, (void *)IPA_IP_v4, {
+		"ip4_rt_hw", IPA_READ_ONLY_MODE, &ipa3_debugfs_ip4, {
 			.read = ipa3_read_rt_hw,
 			.open = ipa3_open_dbg,
 		}
 	}, {
-		"ip6_rt", IPA_READ_ONLY_MODE, (void *)IPA_IP_v6, {
+		"ip6_rt", IPA_READ_ONLY_MODE, &ipa3_debugfs_ip6, {
 			.read = ipa3_read_rt,
 			.open = ipa3_open_dbg,
 		}
 	}, {
-		"ip6_rt_hw", IPA_READ_ONLY_MODE, (void *)IPA_IP_v6, {
+		"ip6_rt_hw", IPA_READ_ONLY_MODE, &ipa3_debugfs_ip6, {
 			.read = ipa3_read_rt_hw,
 			.open = ipa3_open_dbg,
 		}
 	}, {
-		"ip4_flt", IPA_READ_ONLY_MODE, (void *)IPA_IP_v4, {
+		"ip4_flt", IPA_READ_ONLY_MODE, &ipa3_debugfs_ip4, {
 			.read = ipa3_read_flt,
 			.open = ipa3_open_dbg,
 		}
 	}, {
-		"ip4_flt_hw", IPA_READ_ONLY_MODE, (void *)IPA_IP_v4, {
+		"ip4_flt_hw", IPA_READ_ONLY_MODE, &ipa3_debugfs_ip4, {
 			.read = ipa3_read_flt_hw,
 			.open = ipa3_open_dbg,
 		}
 	}, {
-		"ip6_flt", IPA_READ_ONLY_MODE, (void *)IPA_IP_v6, {
+		"ip6_flt", IPA_READ_ONLY_MODE, &ipa3_debugfs_ip6, {
 			.read = ipa3_read_flt,
 			.open = ipa3_open_dbg,
 		}
 	}, {
-		"ip6_flt_hw", IPA_READ_ONLY_MODE, (void *)IPA_IP_v6, {
+		"ip6_flt_hw", IPA_READ_ONLY_MODE, &ipa3_debugfs_ip6, {
 			.read = ipa3_read_flt_hw,
 			.open = ipa3_open_dbg,
 		}

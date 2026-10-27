@@ -428,7 +428,7 @@ struct iommu_domain *ipa3_get_wlan_smmu_domain(void)
 	return ipa3_get_smmu_domain_by_type(IPA_SMMU_CB_WLAN);
 }
 
-struct iommu_domain *ipa3_get_11ad_smmu_domain(void)
+static struct iommu_domain *ipa3_get_11ad_smmu_domain(void)
 {
 	return ipa3_get_smmu_domain_by_type(IPA_SMMU_CB_11AD);
 }
@@ -2939,7 +2939,7 @@ static long ipa3_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
  * -ENOMEM: failed to allocate memory
  * -EPERM: failed to add the tables
  */
-int ipa3_setup_dflt_rt_tables(void)
+static int ipa3_setup_dflt_rt_tables(void)
 {
 	struct ipa_ioc_add_rt_rule *rt_rule;
 	struct ipa_rt_rule_add *rt_rule_entry;
@@ -4716,7 +4716,7 @@ static long compat_ipa3_nat_ipv6ct_alloc_table(unsigned long arg,
 	return retval;
 }
 
-long compat_ipa3_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long compat_ipa3_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	long retval = 0;
 	struct ipa3_ioc_nat_alloc_mem32 nat_mem32;
@@ -5194,7 +5194,7 @@ void ipa3_inc_client_enable_clks(struct ipa_active_client_logging_info *id)
 	mutex_unlock(&ipa3_ctx->ipa3_active_clients.mutex);
 }
 
-void ipa3_handle_gsi_differ_irq(void)
+static void ipa3_handle_gsi_differ_irq(void)
 {
 	queue_work(ipa3_ctx->power_mgmt_wq,
 		&ipa_inc_clients_enable_clks_on_wq_work);
@@ -5204,7 +5204,7 @@ void ipa3_handle_gsi_differ_irq(void)
  * ipa3_active_clks_status() - update the current msm bus clock vote
  * status
  */
-int ipa3_active_clks_status(void)
+static int ipa3_active_clks_status(void)
 {
 	return atomic_read(&ipa3_ctx->ipa_clk_vote);
 }
@@ -5602,16 +5602,6 @@ int ipa3_restore_suspend_handler(void)
 	return result;
 }
 
-static int ipa3_apps_cons_release_resource(void)
-{
-	return 0;
-}
-
-static int ipa3_apps_cons_request_resource(void)
-{
-	return 0;
-}
-
 static void ipa3_transport_release_resource(struct work_struct *work)
 {
 	mutex_lock(&ipa3_ctx->transport_pm.transport_pm_mutex);
@@ -5628,31 +5618,6 @@ static void ipa3_transport_release_resource(struct work_struct *work)
 	}
 	atomic_set(&ipa3_ctx->transport_pm.eot_activity, 0);
 	mutex_unlock(&ipa3_ctx->transport_pm.transport_pm_mutex);
-}
-
-int ipa3_create_apps_resource(void)
-{
-	struct ipa_rm_create_params apps_cons_create_params;
-	struct ipa_rm_perf_profile profile;
-	int result = 0;
-
-	memset(&apps_cons_create_params, 0,
-				sizeof(apps_cons_create_params));
-	apps_cons_create_params.name = IPA_RM_RESOURCE_APPS_CONS;
-	apps_cons_create_params.request_resource =
-		ipa3_apps_cons_request_resource;
-	apps_cons_create_params.release_resource =
-		ipa3_apps_cons_release_resource;
-	result = ipa_rm_create_resource(&apps_cons_create_params);
-	if (result) {
-		IPAERR("ipa_rm_create_resource failed\n");
-		return result;
-	}
-
-	profile.max_supported_bandwidth_mbps = IPA_APPS_MAX_BW_IN_MBPS;
-	ipa_rm_set_perf_profile(IPA_RM_RESOURCE_APPS_CONS, &profile);
-
-	return result;
 }
 
 /**

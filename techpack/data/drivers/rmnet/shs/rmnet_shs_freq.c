@@ -29,11 +29,11 @@ struct cpu_freq {
 
 };
 
-unsigned int rmnet_shs_freq_enable __read_mostly = 1;
+static unsigned int rmnet_shs_freq_enable __read_mostly = 1;
 module_param(rmnet_shs_freq_enable, uint, 0644);
 MODULE_PARM_DESC(rmnet_shs_freq_enable, "Enable/disable freq boost feature");
 
-struct workqueue_struct *shs_boost_wq;
+static struct workqueue_struct *shs_boost_wq;
 static DEFINE_PER_CPU(struct cpu_freq, cpu_boosts);
 static struct work_struct boost_cpu;
 
@@ -76,7 +76,7 @@ static void update_cpu_policy(struct work_struct *work)
 	put_online_cpus();
 }
 
-void rmnet_shs_reset_freq(void)
+static void rmnet_shs_reset_freq(void)
 {
 	struct cpu_freq *boost;
 	int i;

@@ -380,7 +380,7 @@ static void ipa_uc_ntn_free_conn_smmu_info(struct ipa_ntn_setup_info *params)
 	ipa_smmu_free_sgt(&params->ring_base_sgt);
 }
 
-int ipa_uc_ntn_conn_pipes(struct ipa_ntn_conn_in_params *inp,
+static int ipa_uc_ntn_conn_pipes(struct ipa_ntn_conn_in_params *inp,
 			struct ipa_ntn_conn_out_params *outp,
 			struct ipa_uc_offload_ctx *ntn_ctx)
 {

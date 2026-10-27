@@ -2156,7 +2156,7 @@ fail:
  * This function is called by IPA MHI client driver on MHI reset to destroy all
  * IPA MHI channels.
  */
-int ipa_mhi_destroy_all_channels(void)
+static int ipa_mhi_destroy_all_channels(void)
 {
 	int res;
 

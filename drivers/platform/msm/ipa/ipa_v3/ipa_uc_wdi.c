@@ -2619,7 +2619,7 @@ uc_timeout:
 	return result;
 }
 
-int ipa3_suspend_gsi_wdi_pipe(u32 clnt_hdl)
+static int ipa3_suspend_gsi_wdi_pipe(u32 clnt_hdl)
 {
 	int ipa_ep_idx;
 	struct ipa3_ep_context *ep;
