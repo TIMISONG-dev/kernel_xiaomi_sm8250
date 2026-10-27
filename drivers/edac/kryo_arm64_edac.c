@@ -3,6 +3,7 @@
  * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
  */
 
+#include <asm/kryo-arm64-edac.h>
 #include <linux/kernel.h>
 #include <linux/edac.h>
 #include <linux/of_device.h>
