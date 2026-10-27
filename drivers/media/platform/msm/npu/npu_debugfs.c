@@ -117,36 +117,46 @@ static ssize_t npu_debug_reg_read(struct file *file,
 
 	if (!reg_ctx->buf) {
 		char dump_buf[64];
-		char *ptr;
-		int cnt, tot;
+		u32 regs[ROW_BYTES / sizeof(u32)];
+		u32 reg_count = debugfs->reg_cnt;
+		size_t offset = debugfs->reg_off;
+		size_t bytes, remaining, row_len, tot = 0;
+		unsigned int j;
 
+		if (!npu_dev->core_io.base || offset % sizeof(u32) ||
+		    offset >= npu_dev->core_io.size ||
+		    reg_count > (npu_dev->core_io.size - offset) / sizeof(u32))
+			return -EINVAL;
+		if (!reg_count)
+			return 0;
+
+		bytes = (size_t)reg_count * sizeof(u32);
 		reg_ctx->buf_len = sizeof(dump_buf) *
-			DIV_ROUND_UP(debugfs->reg_cnt, ROW_BYTES);
-		reg_ctx->buf = kzalloc(reg_ctx->buf_len, GFP_KERNEL);
-
+			DIV_ROUND_UP(bytes, ROW_BYTES);
+		reg_ctx->buf = kcalloc(DIV_ROUND_UP(bytes, ROW_BYTES),
+			sizeof(dump_buf), GFP_KERNEL);
 		if (!reg_ctx->buf)
 			return -ENOMEM;
 
-		ptr = npu_dev->core_io.base + debugfs->reg_off;
-		tot = 0;
-
-		if (npu_enable_core_power(npu_dev))
+		if (npu_enable_core_power(npu_dev)) {
+			kfree(reg_ctx->buf);
+			reg_ctx->buf = NULL;
+			reg_ctx->buf_len = 0;
 			return -EPERM;
+		}
 
-		for (cnt = debugfs->reg_cnt * 4; cnt > 0; cnt -= ROW_BYTES) {
-			hex_dump_to_buffer(ptr, min(cnt, ROW_BYTES),
-					   ROW_BYTES, GROUP_BYTES, dump_buf,
-					   sizeof(dump_buf), false);
+		for (remaining = bytes; remaining; remaining -= row_len) {
+			row_len = min_t(size_t, remaining, ROW_BYTES);
+			for (j = 0; j < row_len / sizeof(u32); j++)
+				regs[j] = readl_relaxed(npu_dev->core_io.base +
+					offset + j * sizeof(u32));
+			hex_dump_to_buffer(regs, row_len, ROW_BYTES,
+				GROUP_BYTES, dump_buf, sizeof(dump_buf), false);
 			len = scnprintf(reg_ctx->buf + tot,
-				reg_ctx->buf_len - tot, "0x%08x: %s\n",
-				((int) (unsigned long) ptr) -
-				((int) (unsigned long) npu_dev->core_io.base),
-				dump_buf);
-
-			ptr += ROW_BYTES;
+				reg_ctx->buf_len - tot, "0x%08zx: %s\n",
+				offset, dump_buf);
+			offset += row_len;
 			tot += len;
-			if (tot >= reg_ctx->buf_len)
-				break;
 		}
 		npu_disable_core_power(npu_dev);
 
