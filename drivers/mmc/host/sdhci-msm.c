@@ -263,7 +263,7 @@ struct sdhci_msm_offset sdhci_msm_offset_mci_present = {
 	.CORE_DDR_CONFIG = 0x1BC,
 };
 
-u8 sdhci_msm_readb_relaxed(struct sdhci_host *host, u32 offset)
+static u8 sdhci_msm_readb_relaxed(struct sdhci_host *host, u32 offset)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
@@ -277,7 +277,7 @@ u8 sdhci_msm_readb_relaxed(struct sdhci_host *host, u32 offset)
 	return readb_relaxed(base_addr + offset);
 }
 
-u32 sdhci_msm_readl_relaxed(struct sdhci_host *host, u32 offset)
+static u32 sdhci_msm_readl_relaxed(struct sdhci_host *host, u32 offset)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
@@ -291,7 +291,7 @@ u32 sdhci_msm_readl_relaxed(struct sdhci_host *host, u32 offset)
 	return readl_relaxed(base_addr + offset);
 }
 
-void sdhci_msm_writeb_relaxed(u8 val, struct sdhci_host *host, u32 offset)
+static void sdhci_msm_writeb_relaxed(u8 val, struct sdhci_host *host, u32 offset)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
@@ -305,7 +305,7 @@ void sdhci_msm_writeb_relaxed(u8 val, struct sdhci_host *host, u32 offset)
 	writeb_relaxed(val, base_addr + offset);
 }
 
-void sdhci_msm_writel_relaxed(u32 val, struct sdhci_host *host, u32 offset)
+static void sdhci_msm_writel_relaxed(u32 val, struct sdhci_host *host, u32 offset)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
@@ -1222,7 +1222,7 @@ static void sdhci_msm_set_mmc_drv_type(struct sdhci_host *host, u32 opcode,
  * This function needs to be used when getting mask and
  * match pattern either from cmdline or sysfs
  */
-void sdhci_msm_mm_dbg_configure(struct sdhci_host *host, u32 mask,
+static void sdhci_msm_mm_dbg_configure(struct sdhci_host *host, u32 mask,
 			u32 match, u32 bit_shift, u32 testbus)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
@@ -1338,7 +1338,7 @@ static ssize_t store_mask_and_match(struct device *dev,
 }
 
 /* Enter sdcc debug mode */
-void sdhci_msm_enter_dbg_mode(struct sdhci_host *host)
+static void sdhci_msm_enter_dbg_mode(struct sdhci_host *host)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
@@ -1381,7 +1381,7 @@ void sdhci_msm_enter_dbg_mode(struct sdhci_host *host)
 }
 
 /* Exit sdcc debug mode */
-void sdhci_msm_exit_dbg_mode(struct sdhci_host *host)
+static void sdhci_msm_exit_dbg_mode(struct sdhci_host *host)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
@@ -1405,7 +1405,7 @@ void sdhci_msm_exit_dbg_mode(struct sdhci_host *host)
 			SDCC_DEBUG_FEATURE_CFG_REG));
 }
 
-int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
+static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
 {
 	unsigned long flags;
 	int tuning_seq_cnt = 10;
@@ -2197,7 +2197,7 @@ skip_hsr:
 	return ret;
 }
 
-int sdhci_msm_parse_reset_data(struct device *dev,
+static int sdhci_msm_parse_reset_data(struct device *dev,
 			struct sdhci_msm_host *msm_host)
 {
 	int ret = 0;
@@ -2507,7 +2507,7 @@ static u32 sdhci_msm_cqe_irq(struct sdhci_host *host, u32 intmask)
 	return 0;
 }
 
-void sdhci_msm_cqe_enable(struct mmc_host *mmc)
+static void sdhci_msm_cqe_enable(struct mmc_host *mmc)
 {
 	struct sdhci_host *host = mmc_priv(mmc);
 
@@ -2519,7 +2519,7 @@ void sdhci_msm_cqe_enable(struct mmc_host *mmc)
 	sdhci_writeb(host, 0xF, SDHCI_TIMEOUT_CONTROL);
 }
 
-void sdhci_msm_cqe_disable(struct mmc_host *mmc, bool recovery)
+static void sdhci_msm_cqe_disable(struct mmc_host *mmc, bool recovery)
 {
 	struct sdhci_host *host = mmc_priv(mmc);
 	unsigned long flags;
@@ -2540,7 +2540,7 @@ void sdhci_msm_cqe_disable(struct mmc_host *mmc, bool recovery)
 	sdhci_cqe_disable(mmc, recovery);
 }
 
-void sdhci_msm_cqe_sdhci_dumpregs(struct mmc_host *mmc)
+static void sdhci_msm_cqe_sdhci_dumpregs(struct mmc_host *mmc)
 {
 	struct sdhci_host *host = mmc_priv(mmc);
 
@@ -3051,7 +3051,7 @@ static irqreturn_t sdhci_msm_sdiowakeup_irq(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-void sdhci_msm_dump_pwr_ctrl_regs(struct sdhci_host *host)
+static void sdhci_msm_dump_pwr_ctrl_regs(struct sdhci_host *host)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
@@ -4277,7 +4277,7 @@ static void sdhci_msm_cqe_dump_debug_ram(struct sdhci_host *host)
 #define DUMP_FSM readl_relaxed(host->ioaddr + SDCC_DEBUG_FSM_TRACE_RD_REG)
 #define MAX_FSM 16
 
-void sdhci_msm_dump_fsm_history(struct sdhci_host *host)
+static void sdhci_msm_dump_fsm_history(struct sdhci_host *host)
 {
 	u32 sel_fsm;
 
@@ -4317,7 +4317,7 @@ void sdhci_msm_dump_fsm_history(struct sdhci_host *host)
 
 }
 
-void sdhci_msm_dump_desc_history(struct sdhci_host *host)
+static void sdhci_msm_dump_desc_history(struct sdhci_host *host)
 {
 	pr_err("----------- DESC HISTORY DUMP -----------\n");
 	pr_err("Current Desc Addr: 0x%08x | Info: 0x%08x\n",
@@ -4331,7 +4331,7 @@ void sdhci_msm_dump_desc_history(struct sdhci_host *host)
 			readl_relaxed(host->ioaddr + SDCC_PROC_DESC1_INFO));
 }
 
-void sdhci_msm_dump_iib(struct sdhci_host *host)
+static void sdhci_msm_dump_iib(struct sdhci_host *host)
 {
 	u32 iter;
 
@@ -4341,7 +4341,7 @@ void sdhci_msm_dump_iib(struct sdhci_host *host)
 			SDCC_DEBUG_IIB_REG + (iter * 4)));
 }
 
-void sdhci_msm_dump_vendor_regs(struct sdhci_host *host)
+static void sdhci_msm_dump_vendor_regs(struct sdhci_host *host)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_msm_host *msm_host = pltfm_host->priv;
@@ -4461,7 +4461,7 @@ static void sdhci_msm_clear_set_dumpregs(struct sdhci_host *host, bool set)
 	}
 }
 
-void sdhci_msm_reset_workaround(struct sdhci_host *host, u32 enable)
+static void sdhci_msm_reset_workaround(struct sdhci_host *host, u32 enable)
 {
 	u32 vendor_func2;
 	unsigned long timeout;
