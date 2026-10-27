@@ -1397,9 +1397,9 @@ wma_fill_rx_stats(struct sir_wifi_ll_ext_stats *ll_stats,
 
 /**
  * wma_ll_stats_evt_handler() - handler for MAC layer counters.
- * @handle - wma handle
- * @event - FW event
- * @len - length of FW event
+ * @handle: wma handle
+ * @event: FW event
+ * @len: length of FW event
  *
  * return: 0 success.
  */

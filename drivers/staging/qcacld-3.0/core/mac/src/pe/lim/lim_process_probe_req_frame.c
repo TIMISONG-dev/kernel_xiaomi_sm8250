@@ -49,8 +49,8 @@ lim_send_sme_probe_req_ind(struct mac_context *mac,
 
 /**
  * lim_remove_timeout_pbc_sessions() - remove pbc probe req entries.
- * @mac - Pointer to Global MAC structure
- * @pbc - The beginning entry in WPS PBC probe request link list
+ * @mac: Pointer to Global MAC structure
+ * @pbc: The beginning entry in WPS PBC probe request link list
  *
  * This function is called to remove the WPS PBC probe request entries from
  * specific entry to end.
@@ -91,10 +91,10 @@ static void lim_remove_timeout_pbc_sessions(struct mac_context *mac,
  *
  ***NOTE:
  *
- * @param  mac   Pointer to Global MAC structure
- * @param  addr   A pointer to probe request source MAC address
- * @param  uuid_e A pointer to UUIDE element of WPS IE
- * @param  pe_session   A pointer to station PE session
+ * @mac: Pointer to Global MAC structure
+ * @addr: A pointer to probe request source MAC address
+ * @uuid_e: A pointer to UUIDE element of WPS IE
+ * @pe_session: A pointer to station PE session
  *
  * @return None
  */
@@ -180,8 +180,8 @@ static void lim_update_pbc_session_entry(struct mac_context *mac,
  *
  ***NOTE:
  *
- * @param  mac   Pointer to Global MAC structure
- * @param  pe_session   A pointer to station PE session
+ * @mac: Pointer to Global MAC structure
+ * @pe_session: A pointer to station PE session
  *
  * @return None
  */
@@ -423,9 +423,9 @@ multipleSSIDcheck:
  * This function processes received Probe Request frame and Pass
  * Probe Request Frame to HDD.
  *
- * @param  mac              Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @param  *pBd              A pointer to Buffer descriptor + associated PDUs
- * @param  pe_session     A pointer to PE session
+ * @pe_session: A pointer to PE session
  *
  * @return None
  */
@@ -515,11 +515,11 @@ lim_process_probe_req_frame_multiple_bss(struct mac_context *mac_ctx,
  * This function is used for sending  eWNI_SME_WPS_PBC_PROBE_REQ_IND
  * to host.
  *
- * @param peerMacAddr       Indicates the peer MAC addr that the probe request
+ * @peerMacAddr: Indicates the peer MAC addr that the probe request
  *                          is generated.
- * @param pProbeReqIE       pointer to RAW probe request IE
- * @param ProbeReqIELen     The length of probe request IE.
- * @param pe_session     A pointer to PE session
+ * @pProbeReqIE: pointer to RAW probe request IE
+ * @ProbeReqIELen: The length of probe request IE.
+ * @pe_session: A pointer to PE session
  *
  * @return None
  */

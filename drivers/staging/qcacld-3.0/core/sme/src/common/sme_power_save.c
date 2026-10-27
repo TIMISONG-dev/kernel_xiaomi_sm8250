@@ -603,8 +603,8 @@ QDF_STATUS sme_ps_start_uapsd(mac_handle_t mac_handle, uint32_t session_id)
 
 /**
  * sme_set_ps_host_offload(): Set the host offload feature.
- * @mac_handle - The handle returned by mac_open.
- * @request - Pointer to the offload request.
+ * @mac_handle: The handle returned by mac_open.
+ * @request: Pointer to the offload request.
  *
  * Return QDF_STATUS
  *            QDF_STATUS_E_FAILURE  Cannot set the offload.
@@ -661,8 +661,8 @@ QDF_STATUS sme_set_ps_host_offload(mac_handle_t mac_handle,
 #ifdef WLAN_NS_OFFLOAD
 /**
  * sme_set_ps_ns_offload(): Set the host offload feature.
- * @mac_handle - The handle returned by mac_open.
- * @request - Pointer to the offload request.
+ * @mac_handle: The handle returned by mac_open.
+ * @request: Pointer to the offload request.
  *
  * Return QDF_STATUS
  *		QDF_STATUS_E_FAILURE  Cannot set the offload.
@@ -721,7 +721,7 @@ QDF_STATUS sme_set_ps_ns_offload(mac_handle_t mac_handle,
  *
  * NOTE:
  *
- * @param msg pointer to message
+ * @msg: pointer to message
  * @return None
  */
 

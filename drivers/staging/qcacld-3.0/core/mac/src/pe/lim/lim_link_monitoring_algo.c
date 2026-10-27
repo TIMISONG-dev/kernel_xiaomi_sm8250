@@ -295,8 +295,8 @@ void lim_delete_sta_context(struct mac_context *mac_ctx,
  * lim_trigger_sta_deletion() -
  *          This function is called to trigger STA context deletion.
  *
- * @param  mac_ctx   - Pointer to global MAC structure
- * @param  sta_ds - Pointer to internal STA Datastructure
+ * @mac_ctx: Pointer to global MAC structure
+ * @sta_ds: Pointer to internal STA Datastructure
  * @session_entry: PE session entry
 
  * @return None

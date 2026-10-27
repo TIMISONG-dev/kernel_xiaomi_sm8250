@@ -30,7 +30,7 @@
 #if DP_RX_TM_DEBUG
 /**
  * dp_rx_tm_walk_skb_list() - Walk skb list and print members
- * @nbuf_list - nbuf list to print
+ * @nbuf_list: nbuf list to print
  *
  * Returns: None
  */
@@ -54,7 +54,7 @@ static inline void dp_rx_tm_walk_skb_list(qdf_nbuf_t nbuf_list)
 
 /**
  * dp_rx_tm_get_soc_handle() - get soc handle from struct dp_rx_tm_handle_cmn
- * @rx_tm_handle_cmn - rx thread manager cmn handle
+ * @rx_tm_handle_cmn: rx thread manager cmn handle
  *
  * Returns: ol_txrx_soc_handle on success, NULL on failure.
  */
@@ -73,7 +73,7 @@ ol_txrx_soc_handle dp_rx_tm_get_soc_handle(struct dp_rx_tm_handle_cmn *rx_tm_han
 
 /**
  * dp_rx_tm_thread_dump_stats() - display stats for a rx_thread
- * @rx_thread - rx_thread pointer for which the stats need to be
+ * @rx_thread: rx_thread pointer for which the stats need to be
  *            displayed
  *
  * Returns: None
@@ -213,8 +213,8 @@ QDF_STATUS dp_check_and_update_pending(struct dp_rx_tm_handle_cmn
 
 /**
  * dp_rx_tm_thread_enqueue() - enqueue nbuf list into rx_thread
- * @rx_thread - rx_thread in which the nbuf needs to be queued
- * @nbuf_list - list of packets to be queued into the thread
+ * @rx_thread: rx_thread in which the nbuf needs to be queued
+ * @nbuf_list: list of packets to be queued into the thread
  *
  * Enqueue packet into rx_thread and wake it up. The function
  * moves the next pointer of the nbuf_list into the ext list of
@@ -336,7 +336,7 @@ static QDF_STATUS dp_rx_tm_thread_gro_flush_ind(struct dp_rx_thread *rx_thread)
 
 /**
  * dp_rx_thread_adjust_nbuf_list() - create an nbuf list from the frag list
- * @head - nbuf list to be created
+ * @head: nbuf list to be created
  *
  * Returns: void
  */
@@ -356,7 +356,7 @@ static void dp_rx_thread_adjust_nbuf_list(qdf_nbuf_t head)
 
 /**
  * dp_rx_tm_thread_dequeue() - dequeue nbuf list from rx_thread
- * @rx_thread - rx_thread from which the nbuf needs to be dequeued
+ * @rx_thread: rx_thread from which the nbuf needs to be dequeued
  *
  * Returns: nbuf or nbuf_list dequeued from rx_thread
  */
@@ -373,7 +373,7 @@ static qdf_nbuf_t dp_rx_tm_thread_dequeue(struct dp_rx_thread *rx_thread)
 
 /**
  * dp_rx_thread_process_nbufq() - process nbuf queue of a thread
- * @rx_thread - rx_thread whose nbuf queue needs to be processed
+ * @rx_thread: rx_thread whose nbuf queue needs to be processed
  *
  * Returns: 0 on success, error code on failure
  */
@@ -432,7 +432,7 @@ static int dp_rx_thread_process_nbufq(struct dp_rx_thread *rx_thread)
 
 /**
  * dp_rx_thread_gro_flush() - flush GRO packets for the RX thread
- * @rx_thread - rx_thread to be processed
+ * @rx_thread: rx_thread to be processed
  *
  * Returns: void
  */
@@ -449,8 +449,8 @@ static void dp_rx_thread_gro_flush(struct dp_rx_thread *rx_thread)
 
 /**
  * dp_rx_thread_sub_loop() - rx thread subloop
- * @rx_thread - rx_thread to be processed
- * @shutdown - pointer to shutdown variable
+ * @rx_thread: rx_thread to be processed
+ * @shutdown: pointer to shutdown variable
  *
  * The function handles shutdown and suspend events from other
  * threads and processes nbuf queue of a rx thread. In case a
@@ -789,7 +789,7 @@ suspend_fail:
 /**
  * dp_rx_thread_flush_by_vdev_id() - flush rx packets by vdev_id in
 				     a particular rx thread queue
- * @rx_thread - rx_thread pointer of the queue from which packets are
+ * @rx_thread: rx_thread pointer of the queue from which packets are
  *              to be flushed out
  * @vdev_id: vdev id for which packets are to be flushed
  *

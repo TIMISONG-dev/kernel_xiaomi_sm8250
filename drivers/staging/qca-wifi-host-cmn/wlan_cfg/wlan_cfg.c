@@ -433,7 +433,7 @@ void wlan_cfg_fill_interrupt_mask(struct wlan_cfg_dp_soc_ctxt *wlan_cfg_ctx,
 
 /**
  * wlan_cfg_soc_attach() - Allocate and prepare SoC configuration
- * @psoc - Object manager psoc
+ * @psoc: Object manager psoc
  * Return: wlan_cfg_ctx - Handle to Configuration context
  */
 struct wlan_cfg_dp_soc_ctxt *

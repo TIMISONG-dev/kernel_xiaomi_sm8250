@@ -285,7 +285,7 @@ static void __sch_beacon_process_no_session(struct mac_context *mac,
 
 /**
  * get_operating_channel_width() - Get operating channel width
- * @stads - station entry.
+ * @stads: station entry.
  *
  * This function returns the operating channel width based on
  * the supported channel width entry.

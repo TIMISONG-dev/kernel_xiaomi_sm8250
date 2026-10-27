@@ -90,10 +90,10 @@ struct kgsl_sync_fence_event_priv {
 
 /**
  * kgsl_sync_fence_event_cb - Event callback for a fence timestamp event
- * @device - The KGSL device that expired the timestamp
+ * @device: The KGSL device that expired the timestamp
  * @context- Pointer to the context that owns the event
  * @priv: Private data for the callback
- * @result - Result of the event (retired or canceled)
+ * @result: Result of the event (retired or canceled)
  *
  * Signal a fence following the expiration of a timestamp
  */
@@ -154,11 +154,11 @@ static void kgsl_sync_cancel(struct kgsl_sync_fence *kfence)
 
 /**
  * kgsl_add_fence_event - Create a new fence event
- * @device - KGSL device to create the event on
- * @timestamp - Timestamp to trigger the event
- * @data - Return fence fd stored in struct kgsl_timestamp_event_fence
- * @len - length of the fence event
- * @owner - driver instance that owns this event
+ * @device: KGSL device to create the event on
+ * @timestamp: Timestamp to trigger the event
+ * @data: Return fence fd stored in struct kgsl_timestamp_event_fence
+ * @len: length of the fence event
+ * @owner: driver instance that owns this event
  * @returns 0 on success or error code on error
  *
  * Create a fence and register an event to signal the fence when

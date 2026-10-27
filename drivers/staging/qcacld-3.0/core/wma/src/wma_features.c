@@ -1422,7 +1422,7 @@ QDF_STATUS wma_pktlog_wmi_send_cmd(WMA_HANDLE handle,
 
 /**
  * wma_wow_wake_reason_str() -  Converts wow wakeup reason code to text format
- * @wake_reason - WOW wake reason
+ * @wake_reason: WOW wake reason
  *
  * Return: reason code in string format
  */
@@ -2940,8 +2940,8 @@ void wma_add_ts_req(tp_wma_handle wma, struct add_ts_param *msg)
 #define TSM_DELAY_HISTROGRAM_BINS 4
 /**
  * wma_process_tsm_stats_req() - process tsm stats request
- * @wma_handler - handle to wma
- * @pTsmStatsMsg - TSM stats struct that needs to be populated and
+ * @wma_handler: handle to wma
+ * @pTsmStatsMsg: TSM stats struct that needs to be populated and
  *         passed in message.
  *
  * A parallel function to WMA_ProcessTsmStatsReq for pronto. This

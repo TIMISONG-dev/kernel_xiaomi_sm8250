@@ -104,7 +104,7 @@ void lim_init_peer_idxpool(struct mac_context *mac, struct pe_session *pe_sessio
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @return peerIdx  - assigned peer Station IDx for STA
  */
 
@@ -151,8 +151,8 @@ uint16_t lim_assign_peer_idx(struct mac_context *mac, struct pe_session *pe_sess
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
- * @param  peerIdx - peer station index that need to return to free pool
+ * @mac: Pointer to Global MAC structure
+ * @peerIdx: peer station index that need to return to free pool
  *
  * @return None
  */

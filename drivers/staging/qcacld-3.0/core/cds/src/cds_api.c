@@ -1599,7 +1599,7 @@ void cds_clear_driver_state(enum cds_driver_state state)
  * @module_context: pointer to location where the pointer to the
  *	allocated context is returned. Note this output pointer
  *	is valid only if the API returns QDF_STATUS_SUCCESS
- * @param size: size of the context area to be allocated.
+ * @size: size of the context area to be allocated.
  *
  * This API allows any user to allocate a user context area within the
  * CDS Global Context.

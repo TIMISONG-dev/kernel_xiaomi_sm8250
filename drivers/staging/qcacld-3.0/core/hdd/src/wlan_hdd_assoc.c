@@ -2648,7 +2648,7 @@ done:
 
 /**
  * hdd_is_roam_sync_in_progress()- Check if roam offloaded
- * @roaminfo - Roaming Information
+ * @roaminfo: Roaming Information
  *
  * Return: roam sync status if roaming offloaded else false
  */

@@ -2558,7 +2558,7 @@ void bond_3ad_handle_link_change(struct slave *slave, char link)
 
 /**
  * bond_3ad_set_carrier - set link state for bonding master
- * @bond - bonding structure
+ * @bond: bonding structure
  *
  * if we have an active aggregator, we're up, if not, we're down.
  * Presumes that we cannot have an active aggregator if there are
@@ -2668,7 +2668,7 @@ int bond_3ad_lacpdu_recv(const struct sk_buff *skb, struct bonding *bond,
 
 /**
  * bond_3ad_update_lacp_rate - change the lacp rate
- * @bond - bonding struct
+ * @bond: bonding struct
  *
  * When modify lacp_rate parameter via sysfs,
  * update actor_oper_port_state of each port.

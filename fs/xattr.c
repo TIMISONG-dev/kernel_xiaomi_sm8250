@@ -154,11 +154,11 @@ EXPORT_SYMBOL(__vfs_setxattr);
  *  __vfs_setxattr_noperm - perform setxattr operation without performing
  *  permission checks.
  *
- *  @dentry - object to perform setxattr on
- *  @name - xattr name to set
- *  @value - value to set @name to
- *  @size - size of @value
- *  @flags - flags to pass into filesystem operations
+ *  @dentry: object to perform setxattr on
+ *  @name: xattr name to set
+ *  @value: value to set @name to
+ *  @size: size of @value
+ *  @flags: flags to pass into filesystem operations
  *
  *  returns the result of the internal setxattr or setsecurity operations.
  *
@@ -207,12 +207,12 @@ int __vfs_setxattr_noperm(struct dentry *dentry, const char *name,
  * __vfs_setxattr_locked: set an extended attribute while holding the inode
  * lock
  *
- *  @dentry - object to perform setxattr on
- *  @name - xattr name to set
- *  @value - value to set @name to
- *  @size - size of @value
- *  @flags - flags to pass into filesystem operations
- *  @delegated_inode - on return, will contain an inode pointer that
+ *  @dentry: object to perform setxattr on
+ *  @name: xattr name to set
+ *  @value: value to set @name to
+ *  @size: size of @value
+ *  @flags: flags to pass into filesystem operations
+ *  @delegated_inode: on return, will contain an inode pointer that
  *  a delegation was broken on, NULL if none.
  */
 int
@@ -427,9 +427,9 @@ EXPORT_SYMBOL(__vfs_removexattr);
  * __vfs_removexattr_locked: set an extended attribute while holding the inode
  * lock
  *
- *  @dentry - object to perform setxattr on
- *  @name - name of xattr to remove
- *  @delegated_inode - on return, will contain an inode pointer that
+ *  @dentry: object to perform setxattr on
+ *  @name: name of xattr to remove
+ *  @delegated_inode: on return, will contain an inode pointer that
  *  a delegation was broken on, NULL if none.
  */
 int

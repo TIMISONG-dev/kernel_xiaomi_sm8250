@@ -1138,8 +1138,8 @@ end:
 /**
  * lim_check_disassoc_deauth_ack_pending() - check if deauth is pending
  *
- * @mac_ctx - global MAC context
- * @sta_mac - station MAC
+ * @mac_ctx: global MAC context
+ * @sta_mac: station MAC
  *
  * This function checks if diassociation or deauthentication is pending for
  * given station MAC address.

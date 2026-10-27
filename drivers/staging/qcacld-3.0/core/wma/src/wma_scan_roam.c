@@ -2338,7 +2338,7 @@ void wma_process_roam_synch_fail(WMA_HANDLE handle,
  * wma_free_roam_synch_frame_ind() - Free the bcn_probe_rsp, reassoc_req,
  * reassoc_rsp received as part of the ROAM_SYNC_FRAME event
  *
- * @iface - interaface corresponding to a vdev
+ * @iface: interaface corresponding to a vdev
  *
  * This API is used to free the buffer allocated during the ROAM_SYNC_FRAME
  * event

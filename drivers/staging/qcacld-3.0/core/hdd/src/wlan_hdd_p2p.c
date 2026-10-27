@@ -417,8 +417,8 @@ int wlan_hdd_cfg80211_mgmt_tx_cancel_wait(struct wiphy *wiphy,
  *
  ***NOTE:
  *
- * @param dev          Pointer to net device structure
- * @param command      Pointer to command
+ * @dev: Pointer to net device structure
+ * @command: Pointer to command
  *
  * @return Status
  */
@@ -501,8 +501,8 @@ int hdd_set_p2p_noa(struct net_device *dev, uint8_t *command)
  *
  ***NOTE:
  *
- * @param  dev         Pointer to net device structure
- * @param  command     Pointer to command
+ * @dev: Pointer to net device structure
+ * @command: Pointer to command
  *
  * @return Status
  */

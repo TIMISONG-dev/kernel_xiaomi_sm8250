@@ -464,7 +464,7 @@ int hdd_set_udp_qos_upgrade_config(struct hdd_adapter *adapter,
 
 /**
  * wlan_hdd_classify_pkt() - classify packet
- * @skb - sk buff
+ * @skb: sk buff
  *
  * Return: none
  */

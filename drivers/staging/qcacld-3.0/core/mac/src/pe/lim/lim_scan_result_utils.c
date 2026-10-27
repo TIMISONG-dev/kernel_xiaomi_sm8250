@@ -52,10 +52,10 @@
  ***NOTE:
  * NA
  *
- * @param  mac - Pointer to Global MAC structure
- * @param  pBPR - Pointer to parsed Beacon/Probe Response structure
- * @param  pRxPacketInfo  - Pointer to Received frame's BD
- * @param  fScanning - flag to indicate if it is during scan.
+ * @mac: Pointer to Global MAC structure
+ * @pBPR: Pointer to parsed Beacon/Probe Response structure
+ * @pRxPacketInfo: Pointer to Received frame's BD
+ * @fScanning: flag to indicate if it is during scan.
  * ---------------------------------------------
  *
  * @return None

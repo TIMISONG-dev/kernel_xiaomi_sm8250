@@ -99,17 +99,17 @@ struct __thermal_zone {
 
 /**
  * struct virtual_sensor - internal representation of a virtual thermal zone
- * @num_sensors - number of sensors this virtual sensor will reference to
+ * @num_sensors: number of sensors this virtual sensor will reference to
  *		  estimate temperature
- * @tz - Array of thermal zones of the sensors this virtual sensor will use
+ * @tz: Array of thermal zones of the sensors this virtual sensor will use
  *	 to estimate temperature
- * @virt_tz - Virtual thermal zone pointer
- * @logic - aggregation logic to be used to estimate the temperature
- * @last_reading - last estimated temperature
- * @coefficients - array of coefficients to be used for weighted aggregation
+ * @virt_tz: Virtual thermal zone pointer
+ * @logic: aggregation logic to be used to estimate the temperature
+ * @last_reading: last estimated temperature
+ * @coefficients: array of coefficients to be used for weighted aggregation
  *		       logic
- * @avg_offset - offset value to be used for the weighted aggregation logic
- * @avg_denominator - denominator value to be used for the weighted aggregation
+ * @avg_offset: offset value to be used for the weighted aggregation logic
+ * @avg_denominator: denominator value to be used for the weighted aggregation
  *			logic
  */
 struct virtual_sensor {

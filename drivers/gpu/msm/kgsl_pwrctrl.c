@@ -2691,7 +2691,7 @@ kgsl_pwrctrl_clk_set_options(struct kgsl_device *device, bool on)
 
 /**
  * _init() - Get the GPU ready to start, but don't turn anything on
- * @device - Pointer to the kgsl_device struct
+ * @device: Pointer to the kgsl_device struct
  */
 static int _init(struct kgsl_device *device)
 {
@@ -2732,7 +2732,7 @@ static int _init(struct kgsl_device *device)
 
 /**
  * _wake() - Power up the GPU from a slumber state
- * @device - Pointer to the kgsl_device struct
+ * @device: Pointer to the kgsl_device struct
  *
  * Resume the GPU from a lower power state to ACTIVE.
  */

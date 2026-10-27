@@ -73,8 +73,8 @@ void adreno_perfcounter_init(struct adreno_device *adreno_dev)
 /**
  * adreno_perfcounter_write() - Write the physical performance
  * counter values.
- * @adreno_dev -  Adreno device whose registers are to be written to.
- * @reg - register address of the physical counter to which the value is
+ * @adreno_dev: Adreno device whose registers are to be written to.
+ * @reg: register address of the physical counter to which the value is
  *		written to.
  *
  * This function loads the 64 bit saved value into the particular physical
@@ -852,10 +852,10 @@ static int _perfcounter_enable_default(struct adreno_device *adreno_dev,
 
 /**
  * adreno_perfcounter_enable - Configure a performance counter for a countable
- * @adreno_dev -  Adreno device to configure
- * @group - Desired performance counter group
- * @counter - Desired performance counter in the group
- * @countable - Desired countable
+ * @adreno_dev: Adreno device to configure
+ * @group: Desired performance counter group
+ * @counter: Desired performance counter in the group
+ * @countable: Desired countable
  *
  * Function is used for adreno cores
  * Physically set up a counter within a group with the desired countable

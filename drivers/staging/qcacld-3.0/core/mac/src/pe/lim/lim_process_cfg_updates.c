@@ -110,8 +110,8 @@ void lim_set_cfg_protection(struct mac_context *mac, struct pe_session *pesessio
  *
  ***NOTE:
  *
- * @param  mac  - Pointer to Global MAC structure
- * @param  cfgId - ID of CFG parameter that got updated
+ * @mac: Pointer to Global MAC structure
+ * @cfgId: ID of CFG parameter that got updated
  * @return None
  */
 void lim_handle_param_update(struct mac_context *mac, eUpdateIEsType cfgId)
@@ -152,7 +152,7 @@ void lim_handle_param_update(struct mac_context *mac, eUpdateIEsType cfgId)
  *
  ***NOTE:
  *
- * @param  mac  - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @return None
  */
 

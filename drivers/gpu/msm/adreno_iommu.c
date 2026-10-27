@@ -121,8 +121,8 @@ static unsigned int a3xx_tlbiall(struct adreno_device *adreno_dev,
 
 /**
  * _adreno_iommu_add_idle_cmds - Add pm4 packets for GPU idle
- * @adreno_dev - Pointer to device structure
- * @cmds - Pointer to memory where idle commands need to be added
+ * @adreno_dev: Pointer to device structure
+ * @cmds: Pointer to memory where idle commands need to be added
  */
 static inline int _adreno_iommu_add_idle_cmds(struct adreno_device *adreno_dev,
 							unsigned int *cmds)

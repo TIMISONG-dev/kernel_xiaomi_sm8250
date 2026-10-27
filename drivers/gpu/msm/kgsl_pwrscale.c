@@ -32,9 +32,9 @@ static struct kgsl_popp popp_param[POPP_MAX] = {
 
 /**
  * struct kgsl_midframe_info - midframe power stats sampling info
- * @timer - midframe sampling timer
- * @timer_check_ws - Updates powerstats on midframe expiry
- * @device - pointer to kgsl_device
+ * @timer: midframe sampling timer
+ * @timer_check_ws: Updates powerstats on midframe expiry
+ * @device: pointer to kgsl_device
  */
 static struct kgsl_midframe_info {
 	struct hrtimer timer;

@@ -610,9 +610,9 @@ static uint32_t hal_rx_hw_desc_get_ppduid_get_6390(void *hw_desc_addr)
 
 /**
  * hal_reo_status_get_header_6390 - Process reo desc info
- * @d - Pointer to reo descriptior
- * @b - tlv type info
- * @h1 - Pointer to hal_reo_status_header where info to be stored
+ * @d: Pointer to reo descriptior
+ * @b: tlv type info
+ * @h1: Pointer to hal_reo_status_header where info to be stored
  *
  * Return - none.
  *
@@ -826,7 +826,7 @@ void hal_reo_config_6390(struct hal_soc *soc,
 
 /**
  * hal_rx_msdu_desc_info_get_ptr_6390() - Get msdu desc info ptr
- * @msdu_details_ptr - Pointer to msdu_details_ptr
+ * @msdu_details_ptr: Pointer to msdu_details_ptr
  * Return - Pointer to rx_msdu_desc_info structure.
  *
  */
@@ -837,7 +837,7 @@ static void *hal_rx_msdu_desc_info_get_ptr_6390(void *msdu_details_ptr)
 
 /**
  * hal_rx_link_desc_msdu0_ptr_6390 - Get pointer to rx_msdu details
- * @link_desc - Pointer to link desc
+ * @link_desc: Pointer to link desc
  * Return - Pointer to rx_msdu_details structure
  *
  */

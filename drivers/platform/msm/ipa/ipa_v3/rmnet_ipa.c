@@ -2925,7 +2925,7 @@ static void rmnet_ipa_get_stats_and_update(void)
 
 /**
  * tethering_stats_poll_queue() - Stats polling function
- * @work - Work entry
+ * @work: Work entry
  *
  * This function is scheduled periodically (per the interval) in
  * order to poll the IPA Modem driver for the pipe stats.
@@ -3005,7 +3005,7 @@ static void rmnet_ipa_send_quota_reach_ind(void)
 
 /**
  * rmnet_ipa3_poll_tethering_stats() - Tethering stats polling IOCTL handler
- * @data - IOCTL data
+ * @data: IOCTL data
  *
  * This function handles WAN_IOC_POLL_TETHERING_STATS.
  * In case polling interval received is 0, polling will stop
@@ -3034,7 +3034,7 @@ int rmnet_ipa3_poll_tethering_stats(struct wan_ioctl_poll_tethering_stats *data)
 
 /**
  * rmnet_ipa_set_data_quota_modem() - Data quota setting IOCTL handler
- * @data - IOCTL data
+ * @data: IOCTL data
  *
  * This function handles WAN_IOC_SET_DATA_QUOTA on modem interface.
  * It translates the given interface name to the Modem MUX ID and
@@ -3107,7 +3107,7 @@ static int rmnet_ipa3_set_data_quota_wifi(struct wan_ioctl_set_data_quota *data)
 
 /**
  * rmnet_ipa_set_data_quota() - Data quota setting IOCTL handler
- * @data - IOCTL data
+ * @data: IOCTL data
  *
  * This function handles WAN_IOC_SET_DATA_QUOTA.
  * It translates the given interface name to the Modem MUX ID and
@@ -4068,7 +4068,7 @@ int rmnet_ipa3_reset_tethering_stats(struct wan_ioctl_reset_tether_stats *data)
 
 /**
  * ipa3_broadcast_quota_reach_ind() - Send Netlink broadcast on Quota
- * @mux_id - The MUX ID on which the quota has been reached
+ * @mux_id: The MUX ID on which the quota has been reached
  *
  * This function broadcasts a Netlink event using the kobject of the
  * rmnet_ipa interface in order to alert the user space that the quota
@@ -4144,7 +4144,7 @@ void ipa3_broadcast_quota_reach_ind(u32 mux_id,
 
 /**
  * ipa3_q6_handshake_complete() - Perform operations once Q6 is up
- * @ssr_bootup - Indicates whether this is a cold boot-up or post-SSR.
+ * @ssr_bootup: Indicates whether this is a cold boot-up or post-SSR.
  *
  * This function is invoked once the handshake between the IPA AP driver
  * and IPA Q6 driver is complete. At this point, it is possible to perform

@@ -6855,8 +6855,8 @@ static void ipa3_set_tag_process_before_gating(bool val)
 
 /**
  * ipa3_is_vlan_mode - check if a LAN driver should load in VLAN mode
- * @iface - type of vlan capable device
- * @res - query result: true for vlan mode, false for non vlan mode
+ * @iface: type of vlan capable device
+ * @res: query result: true for vlan mode, false for non vlan mode
  *
  * API must be called after ipa_is_ready() returns true, otherwise it will fail
  *

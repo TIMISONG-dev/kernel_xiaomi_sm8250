@@ -128,7 +128,7 @@ static void lim_convert_supported_channels(struct mac_context *mac_ctx,
  * lim_check_sta_in_pe_entries() - checks if sta exists in any dph tables.
  * @mac_ctx: Pointer to Global MAC structure
  * @hdr: A pointer to the MAC header
- * @sessionid - session id for which session is initiated
+ * @sessionid: session id for which session is initiated
  * @dup_entry: pointer for duplicate entry found
  *
  * This function is called by lim_process_assoc_req_frame() to check if STA

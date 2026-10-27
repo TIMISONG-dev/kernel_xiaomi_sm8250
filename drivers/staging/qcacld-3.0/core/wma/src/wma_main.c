@@ -2131,11 +2131,11 @@ static int wma_flush_complete_evt_handler(void *handle,
 /**
  * wma_extract_single_phyerr_spectral() - extract single phy error from event
  * @handle: wma handle
- * @param evt_buf: pointer to event buffer
- * @param datalen: data length of event buffer
- * @param buf_offset: Pointer to hold value of current event buffer offset
+ * @evt_buf: pointer to event buffer
+ * @datalen: data length of event buffer
+ * @buf_offset: Pointer to hold value of current event buffer offset
  * post extraction
- * @param phyerr: Pointer to hold phyerr
+ * @phyerr: Pointer to hold phyerr
  *
  * Return: QDF_STATUS
  */
@@ -3705,8 +3705,8 @@ fail:
  *
  * @handle: WMA handle
  * @fixed_param: Event fixed parameters
- * @vdev_mac_entry - vdev mac entry
- * @hw_mode_trans_ind - Buffer to store parsed information
+ * @vdev_mac_entry: vdev mac entry
+ * @hw_mode_trans_ind: Buffer to store parsed information
  *
  * Parses fixed_param, vdev_mac_entry and fills in the information into
  * hw_mode_trans_ind and wma
@@ -4883,7 +4883,7 @@ static void wma_derive_ext_ht_cap(
 
 /**
  * wma_update_target_ext_ht_cap() - Update HT caps with given extended cap
- * @tgt_hdl - target psoc information
+ * @tgt_hdl: target psoc information
  * @ht_cap: HT cap structure to be filled
  *
  * This function loop through each hardware mode and for each hardware mode
@@ -5057,7 +5057,7 @@ static void wma_derive_ext_vht_cap(
 
 /**
  * wma_update_target_ext_vht_cap() - Update VHT caps with given extended cap
- * @tgt_hdl - target psoc information
+ * @tgt_hdl: target psoc information
  * @vht_cap: VHT cap structure to be filled
  *
  * This function loop through each hardware mode and for each hardware mode
@@ -6437,7 +6437,7 @@ static void wma_set_hw_mode_params(t_wma_handle *wma_handle,
 /**
  * wma_update_hw_mode_list() - updates hw_mode_list
  * @wma_handle: pointer to wma global structure
- * @tgt_hdl - target psoc information
+ * @tgt_hdl: target psoc information
  *
  * This function updates hw_mode_list with tx_streams, rx_streams,
  * bandwidth, dbs and agile dfs for each hw_mode.
