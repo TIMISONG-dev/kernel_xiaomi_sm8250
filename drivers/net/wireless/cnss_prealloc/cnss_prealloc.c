@@ -93,7 +93,7 @@ static struct wcnss_prealloc wcnss_allocs[] = {
 	{0, 128 * 1024, NULL},
 };
 
-int wcnss_prealloc_init(void)
+static int wcnss_prealloc_init(void)
 {
 	int i;
 
@@ -107,7 +107,7 @@ int wcnss_prealloc_init(void)
 	return 0;
 }
 
-void wcnss_prealloc_deinit(void)
+static void wcnss_prealloc_deinit(void)
 {
 	int i = 0;
 
