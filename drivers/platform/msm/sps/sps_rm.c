@@ -23,7 +23,9 @@
 static struct sps_rm *sps_rm;
 
 /**
- * Initialize resource manager module
+ * sps_rm_init() - Initialize resource manager module
+ * @rm: Resource manager state to initialize.
+ * @options: Driver initialization options (currently unused).
  */
 int sps_rm_init(struct sps_rm *rm, u32 options)
 {
@@ -38,8 +40,8 @@ int sps_rm_init(struct sps_rm *rm, u32 options)
 }
 
 /**
- * Initialize client state context
- *
+ * sps_rm_config_init() - Initialize client state context
+ * @connect: Connection parameters to reset to SPSRM_CLEAR defaults.
  */
 void sps_rm_config_init(struct sps_connect *connect)
 {
@@ -47,12 +49,10 @@ void sps_rm_config_init(struct sps_connect *connect)
 }
 
 /**
- * Remove reference to connection mapping
+ * sps_rm_remove_ref() - Remove reference to connection mapping
+ * @map: pointer to connection mapping struct
  *
  * This function removes a reference from a connection mapping struct.
- *
- * @map - pointer to connection mapping struct
- *
  */
 static void sps_rm_remove_ref(struct sps_connection *map)
 {
@@ -70,15 +70,14 @@ static void sps_rm_remove_ref(struct sps_connection *map)
 }
 
 /**
- * Compare map to connect parameters
+ * sps_rm_map_match() - Compare map to connect parameters
+ * @cfg: Client connection parameters to compare.
+ * @map: Allocated connection mapping to compare against.
  *
  * This function compares client connect parameters to an allocated
  * connection mapping.
  *
- * @pipe - client context for SPS connection end point
- *
- * @return - true if match, false otherwise
- *
+ * Return: true if match, false otherwise
  */
 static int sps_rm_map_match(const struct sps_connect *cfg,
 			    const struct sps_connection *map)
@@ -125,14 +124,12 @@ static int sps_rm_map_match(const struct sps_connect *cfg,
 }
 
 /**
- * Find unconnected mapping
+ * find_unconnected() - Find unconnected mapping
+ * @pipe: client context for SPS connection end point
  *
  * This function finds an allocated a connection mapping.
  *
- * @pipe - client context for SPS connection end point
- *
- * @return - pointer to allocated connection mapping, or NULL if not found
- *
+ * Return: pointer to allocated connection mapping, or NULL if not found
  */
 static struct sps_connection *find_unconnected(struct sps_pipe *pipe)
 {
@@ -153,16 +150,13 @@ static struct sps_connection *find_unconnected(struct sps_pipe *pipe)
 }
 
 /**
- * Assign connection to client
+ * sps_rm_assign() - Assign connection to client
+ * @pipe: client context for SPS connection end point
+ * @map: connection mapping
  *
  * This function assigns a connection to a client.
  *
- * @pipe - client context for SPS connection end point
- *
- * @map - connection mapping
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_rm_assign(struct sps_pipe *pipe,
 			 struct sps_connection *map)
@@ -239,12 +233,10 @@ static int sps_rm_assign(struct sps_pipe *pipe,
 }
 
 /**
- * Free connection mapping resources
+ * sps_rm_free_map_rsrc() - Free connection mapping resources
+ * @map: Connection mapping whose pipe and FIFO resources are released.
  *
  * This function frees a connection mapping resources.
- *
- * @pipe - client context for SPS connection end point
- *
  */
 static void sps_rm_free_map_rsrc(struct sps_connection *map)
 {
@@ -295,17 +287,12 @@ static void sps_rm_free_map_rsrc(struct sps_connection *map)
 }
 
 /**
- * Init connection mapping from client connect
+ * sps_rm_init_map() - Init connection mapping from client connect
+ * @map: connection mapping struct
+ * @cfg: client connect parameters
  *
  * This function initializes a connection mapping from the client's
  * connect parameters.
- *
- * @map - connection mapping struct
- *
- * @cfg - client connect parameters
- *
- * @return - pointer to allocated connection mapping, or NULL on error
- *
  */
 static void sps_rm_init_map(struct sps_connection *map,
 			    const struct sps_connect *cfg)
@@ -353,14 +340,10 @@ static void sps_rm_init_map(struct sps_connection *map,
 }
 
 /**
- * Create a new connection mapping
+ * sps_rm_create() - Create a new connection mapping
+ * @pipe: client context for SPS connection end point
  *
  * This function creates a new connection mapping.
- *
- * @pipe - client context for SPS connection end point
- *
- * @return - pointer to allocated connection mapping, or NULL on error
- *
  */
 static struct sps_connection *sps_rm_create(struct sps_pipe *pipe)
 {
@@ -569,14 +552,12 @@ exit_err:
 }
 
 /**
- * Free connection mapping
+ * sps_rm_free() - Free connection mapping
+ * @pipe: client context for SPS connection end point
  *
  * This function frees a connection mapping.
  *
- * @pipe - client context for SPS connection end point
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_rm_free(struct sps_pipe *pipe)
 {
@@ -603,14 +584,12 @@ static int sps_rm_free(struct sps_pipe *pipe)
 }
 
 /**
- * Allocate an SPS connection end point
+ * sps_rm_alloc() - Allocate an SPS connection end point
+ * @pipe: client context for SPS connection end point
  *
  * This function allocates resources and initializes a BAM connection.
  *
- * @pipe - client context for SPS connection end point
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_rm_alloc(struct sps_pipe *pipe)
 {
@@ -697,14 +676,12 @@ exit_err:
 }
 
 /**
- * Disconnect an SPS connection end point
+ * sps_rm_disconnect() - Disconnect an SPS connection end point
+ * @pipe: client context for SPS connection end point
  *
  * This function frees resources and de-initializes a BAM connection.
  *
- * @pipe - client context for SPS connection end point
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 static int sps_rm_disconnect(struct sps_pipe *pipe)
 {
@@ -713,16 +690,13 @@ static int sps_rm_disconnect(struct sps_pipe *pipe)
 }
 
 /**
- * Process connection state change
+ * sps_rm_state_change() - Process connection state change
+ * @pipe: pointer to client context
+ * @state: new state for connection
  *
  * This function processes a connection state change.
  *
- * @pipe - pointer to client context
- *
- * @state - new state for connection
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_rm_state_change(struct sps_pipe *pipe, u32 state)
 {

@@ -3,7 +3,7 @@
  * Copyright (c) 2011, 2013, 2015, 2017-2019, The Linux Foundation. All rights reserved.
  */
 /**
- * Pipe-Memory allocation/free management.
+ * DOC: Pipe-Memory allocation/free management.
  */
 
 #include <linux/types.h>	/* u32 */
@@ -29,8 +29,8 @@ static u32 total_alloc;
 static u32 total_free;
 
 /**
- * Translate physical to virtual address
- *
+ * spsi_get_mem_ptr() - Translate physical to virtual address
+ * @phys_addr: physical address to translate
  */
 void *spsi_get_mem_ptr(phys_addr_t phys_addr)
 {
@@ -48,8 +48,8 @@ void *spsi_get_mem_ptr(phys_addr_t phys_addr)
 }
 
 /**
- * Allocate I/O (pipe) memory
- *
+ * sps_mem_alloc_io() - Allocate I/O (pipe) memory
+ * @bytes: number of bytes to allocate
  */
 phys_addr_t sps_mem_alloc_io(u32 bytes)
 {
@@ -73,8 +73,9 @@ phys_addr_t sps_mem_alloc_io(u32 bytes)
 }
 
 /**
- * Free I/O memory
- *
+ * sps_mem_free_io() - Free I/O memory
+ * @phys_addr: physical address of memory to free
+ * @bytes: number of bytes to free.
  */
 void sps_mem_free_io(phys_addr_t phys_addr, u32 bytes)
 {
@@ -91,8 +92,9 @@ void sps_mem_free_io(phys_addr_t phys_addr, u32 bytes)
 }
 
 /**
- * Initialize driver memory module
- *
+ * sps_mem_init() - Initialize driver memory module
+ * @pipemem_phys_base: Pipe-Memory physical base.
+ * @pipemem_size: Pipe-Memory size.
  */
 int sps_mem_init(phys_addr_t pipemem_phys_base, u32 pipemem_size)
 {
@@ -143,8 +145,7 @@ int sps_mem_init(phys_addr_t pipemem_phys_base, u32 pipemem_size)
 }
 
 /**
- * De-initialize driver memory module
- *
+ * sps_mem_de_init() - De-initialize driver memory module
  */
 int sps_mem_de_init(void)
 {

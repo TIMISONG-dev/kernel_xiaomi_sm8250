@@ -223,337 +223,265 @@ struct sps_bam {
 };
 
 /**
- * BAM driver initialization
+ * sps_bam_driver_init() - BAM driver initialization
+ * @options: Driver initialization options (currently unused).
  *
  * This function initializes the BAM driver.
  *
- * @options - driver options bitflags (see SPS_OPT_*)
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_driver_init(u32 options);
 
 /**
- * BAM device initialization
+ * sps_bam_device_init() - BAM device initialization
+ * @dev: pointer to BAM device descriptor
  *
  * This function initializes a BAM device.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_device_init(struct sps_bam *dev);
 
 /**
- * BAM device de-initialization
+ * sps_bam_device_de_init() - BAM device de-initialization
+ * @dev: pointer to BAM device descriptor
  *
  * This function de-initializes a BAM device.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_device_de_init(struct sps_bam *dev);
 
 /**
- * BAM device reset
+ * sps_bam_reset() - BAM device reset
+ * @dev: pointer to BAM device descriptor
  *
  * This Function resets a BAM device.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_reset(struct sps_bam *dev);
 
 /**
- * BAM device enable
+ * sps_bam_enable() - BAM device enable
+ * @dev: pointer to BAM device descriptor
  *
  * This function enables a BAM device.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_enable(struct sps_bam *dev);
 
 /**
- * BAM device disable
+ * sps_bam_disable() - BAM device disable
+ * @dev: pointer to BAM device descriptor
  *
  * This Function disables a BAM device.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_disable(struct sps_bam *dev);
 
 /**
- * Allocate a BAM pipe
+ * sps_bam_pipe_alloc() - Allocate a BAM pipe
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: client-specified pipe index, or SPS_BAM_PIPE_INVALID if any
+ *   available pipe is acceptable
  *
  * This function allocates a BAM pipe.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - client-specified pipe index, or SPS_BAM_PIPE_INVALID if
- *    any available pipe is acceptable
- *
- * @return - allocated pipe index, or SPS_BAM_PIPE_INVALID on error
- *
+ * Return: allocated pipe index, or SPS_BAM_PIPE_INVALID on error
  */
 u32 sps_bam_pipe_alloc(struct sps_bam *dev, u32 pipe_index);
 
 /**
- * Free a BAM pipe
+ * sps_bam_pipe_free() - Free a BAM pipe
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
  *
  * This function frees a BAM pipe.
- *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
  */
 void sps_bam_pipe_free(struct sps_bam *dev, u32 pipe_index);
 
 /**
- * Establish BAM pipe connection
+ * sps_bam_pipe_connect() - Establish BAM pipe connection
+ * @client: pointer to client pipe state struct
+ * @params: connection parameters
  *
  * This function establishes a connection for a BAM pipe (end point).
  *
- * @client - pointer to client pipe state struct
- *
- * @params - connection parameters
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_connect(struct sps_pipe *client,
 			const struct sps_bam_connect_param *params);
 
 /**
- * Disconnect a BAM pipe connection
+ * sps_bam_pipe_disconnect() - Disconnect a BAM pipe connection
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
  *
  * This function disconnects a connection for a BAM pipe (end point).
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_disconnect(struct sps_bam *dev, u32 pipe_index);
 
 /**
- * Set BAM pipe parameters
+ * sps_bam_pipe_set_params() - Set BAM pipe parameters
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @options: bitflag options (see SPS_O_*)
  *
  * This function sets parameters for a BAM pipe.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @options - bitflag options (see SPS_O_*)
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_set_params(struct sps_bam *dev, u32 pipe_index, u32 options);
 
 /**
- * Enable a BAM pipe
+ * sps_bam_pipe_enable() - Enable a BAM pipe
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
  *
  * This function enables a BAM pipe.  Note that this function
  *    is separate from the pipe connect function to allow proper
  *    sequencing of consumer enable followed by producer enable.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_enable(struct sps_bam *dev, u32 pipe_index);
 
 /**
- * Disable a BAM pipe
+ * sps_bam_pipe_disable() - Disable a BAM pipe
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
  *
  * This function disables a BAM pipe.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_disable(struct sps_bam *dev, u32 pipe_index);
 
 /**
- * Register an event for a BAM pipe
+ * sps_bam_pipe_reg_event() - Register an event for a BAM pipe
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @reg: pointer to event registration struct
  *
  * This function registers an event for a BAM pipe.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @reg - pointer to event registration struct
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_reg_event(struct sps_bam *dev, u32 pipe_index,
 			   struct sps_register_event *reg);
 
 /**
- * Submit a transfer of a single buffer to a BAM pipe
+ * sps_bam_pipe_transfer_one() - Submit a transfer of a single buffer to a BAM pipe
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @addr: physical address of buffer to transfer
+ * @size: number of bytes to transfer
+ * @user: user pointer to register for event
+ * @flags: descriptor flags (see SPS_IOVEC_FLAG defines)
  *
  * This function submits a transfer of a single buffer to a BAM pipe.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @addr - physical address of buffer to transfer
- *
- * @size - number of bytes to transfer
- *
- * @user - user pointer to register for event
- *
- * @flags - descriptor flags (see SPS_IOVEC_FLAG defines)
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_transfer_one(struct sps_bam *dev, u32 pipe_index, u32 addr,
 			      u32 size, void *user, u32 flags);
 
 /**
- * Submit a transfer to a BAM pipe
+ * sps_bam_pipe_transfer() - Submit a transfer to a BAM pipe
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @transfer: pointer to transfer struct
  *
  * This function submits a transfer to a BAM pipe.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @transfer - pointer to transfer struct
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_transfer(struct sps_bam *dev, u32 pipe_index,
 			 struct sps_transfer *transfer);
 
 /**
- * Get a BAM pipe event
+ * sps_bam_pipe_get_event() - Get a BAM pipe event
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @notify: pointer to event notification struct
  *
  * This function polls for a BAM pipe event.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @notify - pointer to event notification struct
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_get_event(struct sps_bam *dev, u32 pipe_index,
 			   struct sps_event_notify *notify);
 
 /**
- * Get processed I/O vector
+ * sps_bam_pipe_get_iovec() - Get processed I/O vector
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @iovec: Pointer to I/O vector struct (output). This struct will be zeroed if
+ *   there are no more processed I/O vectors.
  *
  * This function fetches the next processed I/O vector.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @iovec - Pointer to I/O vector struct (output).
- *   This struct will be zeroed if there are no more processed I/O vectors.
- *
- * @return 0 on success, negative value on error
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_get_iovec(struct sps_bam *dev, u32 pipe_index,
 			   struct sps_iovec *iovec);
 
 /**
- * Determine whether a BAM pipe descriptor FIFO is empty
+ * sps_bam_pipe_is_empty() - Determine whether a BAM pipe descriptor FIFO is empty
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @empty: pointer to client's empty status word (boolean)
  *
  * This function returns the empty state of a BAM pipe descriptor FIFO.
  *
  * The pipe mutex must be locked before calling this function.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @empty - pointer to client's empty status word (boolean)
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_is_empty(struct sps_bam *dev, u32 pipe_index, u32 *empty);
 
 /**
- * Get number of free slots in a BAM pipe descriptor FIFO
+ * sps_bam_get_free_count() - Get number of free slots in a BAM pipe descriptor FIFO
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @count: pointer to count status
  *
  * This function returns the number of free slots in a BAM pipe descriptor FIFO.
  *
  * The pipe mutex must be locked before calling this function.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @count - pointer to count status
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_get_free_count(struct sps_bam *dev, u32 pipe_index, u32 *count);
 
 /**
- * Set BAM pipe to satellite ownership
+ * sps_bam_set_satellite() - Set BAM pipe to satellite ownership
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
  *
  * This function sets the BAM pipe to satellite ownership.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_set_satellite(struct sps_bam *dev, u32 pipe_index);
 
 /**
- * Perform BAM pipe timer control
+ * sps_bam_pipe_timer_ctrl() - Perform BAM pipe timer control
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @timer_ctrl: Pointer to timer control specification
+ * @timer_result: Pointer to buffer for timer operation result. This argument
+ *   can be NULL if no result is expected for the operation. If non-NULL, the
+ *   current timer value will always provided.
  *
  * This function performs BAM pipe timer control operations.
  *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @timer_ctrl - Pointer to timer control specification
- *
- * @timer_result - Pointer to buffer for timer operation result.
- *    This argument can be NULL if no result is expected for the operation.
- *    If non-NULL, the current timer value will always provided.
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_bam_pipe_timer_ctrl(struct sps_bam *dev, u32 pipe_index,
 			    struct sps_timer_ctrl *timer_ctrl,
@@ -561,15 +489,12 @@ int sps_bam_pipe_timer_ctrl(struct sps_bam *dev, u32 pipe_index,
 
 
 /**
- * Get the number of unused descriptors in the descriptor FIFO
+ * sps_bam_pipe_get_unused_desc_num() - Get the number of unused descriptors in the descriptor FIFO
+ * @dev: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @desc_num: number of unused descriptors
+ *
  * of a pipe
- *
- * @dev - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @desc_num - number of unused descriptors
- *
  */
 int sps_bam_pipe_get_unused_desc_num(struct sps_bam *dev, u32 pipe_index,
 					u32 *desc_num);

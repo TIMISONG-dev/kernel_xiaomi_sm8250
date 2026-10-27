@@ -3,7 +3,7 @@
  * Copyright (c) 2011-2018, 2020, The Linux Foundation. All rights reserved.
  */
 /**
- * Smart-Peripheral-Switch (SPS) internal API.
+ * DOC: Smart-Peripheral-Switch (SPS) internal API.
  */
 
 #ifndef _SPSI_H_
@@ -308,55 +308,51 @@ void print_bam_test_bus_reg(void *base, u32 tb_sel);
 void bam_pipe_halt(void *base, u32 pipe, bool halt);
 
 /**
- * Translate physical to virtual address
+ * spsi_get_mem_ptr() - Translate physical to virtual address
+ * @phys_addr: physical address to translate
  *
  * This Function translates physical to virtual address.
  *
- * @phys_addr - physical address to translate
- *
- * @return virtual memory pointer
- *
+ * Return: virtual memory pointer
  */
 void *spsi_get_mem_ptr(phys_addr_t phys_addr);
 
 /**
- * Allocate I/O (pipe) memory
+ * sps_mem_alloc_io() - Allocate I/O (pipe) memory
+ * @bytes: number of bytes to allocate
  *
  * This function allocates target I/O (pipe) memory.
  *
- * @bytes - number of bytes to allocate
- *
- * @return physical address of allocated memory, or SPS_ADDR_INVALID on error
+ * Return: physical address of allocated memory, or SPS_ADDR_INVALID on error
  */
 phys_addr_t sps_mem_alloc_io(u32 bytes);
 
 /**
- * Free I/O (pipe) memory
+ * sps_mem_free_io() - Free I/O (pipe) memory
+ * @phys_addr: physical address of memory to free
+ * @bytes: number of bytes to free.
  *
  * This function frees target I/O (pipe) memory.
- *
- * @phys_addr - physical address of memory to free
- *
- * @bytes - number of bytes to free.
  */
 void sps_mem_free_io(phys_addr_t phys_addr, u32 bytes);
 
 /**
- * Find matching connection mapping
+ * sps_map_find() - Find matching connection mapping
+ * @connect: pointer to client connection parameters
  *
  * This function searches for a connection mapping that matches the
  * parameters supplied by the client.  If a match is found, the client's
  * parameter struct is updated with the values specified in the mapping.
  *
- * @connect - pointer to client connection parameters
- *
- * @return 0 if match is found, negative value otherwise
- *
+ * Return: 0 if match is found, negative value otherwise
  */
 int sps_map_find(struct sps_connect *connect);
 
 /**
- * Allocate a BAM DMA pipe
+ * sps_dma_pipe_alloc() - Allocate a BAM DMA pipe
+ * @bam: pointer to BAM device descriptor
+ * @pipe_index: pipe index
+ * @dir: pipe direction
  *
  * This function allocates a BAM DMA pipe, and is intended to be called
  * internally from the BAM resource manager.  Allocation implies that
@@ -367,138 +363,111 @@ int sps_map_find(struct sps_connect *connect);
  * specify exactly which pipe should be used directly through the Connect() API.
  * sps_dma_alloc_chan() does not allow the client to specify the pipes/channel.
  *
- * @bam - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @dir - pipe direction
- *
- * @return 0 on success, negative value on error
+ * Return: 0 on success, negative value on error
  */
 int sps_dma_pipe_alloc(void *bam, u32 pipe_index, enum sps_mode dir);
 
 /**
- * Enable a BAM DMA pipe
+ * sps_dma_pipe_enable() - Enable a BAM DMA pipe
+ * @bam: pointer to BAM device descriptor
+ * @pipe_index: pipe index
  *
  * This function enables the channel associated with a BAM DMA pipe, and
  * is intended to be called internally from the BAM resource manager.
  * Enable must occur *after* the pipe has been enabled so that proper
  * sequencing between pipe and DMA channel enables can be enforced.
  *
- * @bam - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_dma_pipe_enable(void *bam, u32 pipe_index);
 
 /**
- * Free a BAM DMA pipe
+ * sps_dma_pipe_free() - Free a BAM DMA pipe
+ * @bam: BAM device descriptor for the DMA pipe.
+ * @pipe_index: pipe index
  *
  * This function disables and frees a BAM DMA pipe, and is intended to be
  * called internally from the BAM resource manager.  This must occur *after*
  * the pipe has been disabled/reset so that proper sequencing between pipe and
  * DMA channel resets can be enforced.
  *
- * @bam_arg - pointer to BAM device descriptor
- *
- * @pipe_index - pipe index
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_dma_pipe_free(void *bam, u32 pipe_index);
 
 /**
- * Initialize driver memory module
+ * sps_mem_init() - Initialize driver memory module
+ * @pipemem_phys_base: Pipe-Memory physical base.
+ * @pipemem_size: Pipe-Memory size.
  *
  * This function initializes the driver memory module.
  *
- * @pipemem_phys_base - Pipe-Memory physical base.
- *
- * @pipemem_size - Pipe-Memory size.
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_mem_init(phys_addr_t pipemem_phys_base, u32 pipemem_size);
 
 /**
- * De-initialize driver memory module
+ * sps_mem_de_init() - De-initialize driver memory module
  *
  * This function de-initializes the driver memory module.
  *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_mem_de_init(void);
 
 /**
- * Initialize BAM DMA module
+ * sps_dma_init() - Initialize BAM DMA module
+ * @bam_props: pointer to BAM DMA devices BSP configuration properties
  *
  * This function initializes the BAM DMA module.
  *
- * @bam_props - pointer to BAM DMA devices BSP configuration properties
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_dma_init(const struct sps_bam_props *bam_props);
 
 /**
- * De-initialize BAM DMA module
+ * sps_dma_de_init() - De-initialize BAM DMA module
  *
  * This function de-initializes the SPS BAM DMA module.
- *
  */
 void sps_dma_de_init(void);
 
 /**
- * Initialize BAM DMA device
+ * sps_dma_device_init() - Initialize BAM DMA device
+ * @h: BAM handle
  *
  * This function initializes a BAM DMA device.
  *
- * @h - BAM handle
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_dma_device_init(unsigned long h);
 
 /**
- * De-initialize BAM DMA device
+ * sps_dma_device_de_init() - De-initialize BAM DMA device
+ * @h: BAM handle
  *
  * This function de-initializes a BAM DMA device.
  *
- * @h - BAM handle
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 int sps_dma_device_de_init(unsigned long h);
 
 /**
- * Initialize connection mapping module
+ * sps_map_init() - Initialize connection mapping module
+ * @map_props: pointer to connection mapping BSP configuration properties
+ * @options: driver options bitflags (see SPS_OPT_*)
  *
  * This function initializes the SPS connection mapping module.
  *
- * @map_props - pointer to connection mapping BSP configuration properties
- *
- * @options - driver options bitflags (see SPS_OPT_*)
- *
- * @return 0 on success, negative value on error
- *
+ * Return: 0 on success, negative value on error
  */
 
 int sps_map_init(const struct sps_map *map_props, u32 options);
 
 /**
- * De-initialize connection mapping module
+ * sps_map_de_init() - De-initialize connection mapping module
  *
  * This function de-initializes the SPS connection mapping module.
- *
  */
 void sps_map_de_init(void);
 
