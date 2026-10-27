@@ -674,7 +674,7 @@ static void dun_cser_connect(struct cserial *cser)
 	port_notify_serial_state(cser);
 }
 
-unsigned int dun_cser_get_dtr(struct cserial *cser)
+static unsigned int dun_cser_get_dtr(struct cserial *cser)
 {
 	if (cser->port_handshake_bits & ACM_CTRL_DTR)
 		return 1;
@@ -682,7 +682,7 @@ unsigned int dun_cser_get_dtr(struct cserial *cser)
 		return 0;
 }
 
-unsigned int dun_cser_get_rts(struct cserial *cser)
+static unsigned int dun_cser_get_rts(struct cserial *cser)
 {
 	if (cser->port_handshake_bits & ACM_CTRL_RTS)
 		return 1;
@@ -690,7 +690,7 @@ unsigned int dun_cser_get_rts(struct cserial *cser)
 		return 0;
 }
 
-unsigned int dun_cser_send_carrier_detect(struct cserial *cser,
+static unsigned int dun_cser_send_carrier_detect(struct cserial *cser,
 				unsigned int yes)
 {
 	u16 state;
@@ -704,7 +704,7 @@ unsigned int dun_cser_send_carrier_detect(struct cserial *cser,
 	return port_notify_serial_state(cser);
 }
 
-unsigned int dun_cser_send_ring_indicator(struct cserial *cser,
+static unsigned int dun_cser_send_ring_indicator(struct cserial *cser,
 				unsigned int yes)
 {
 	u16 state;
@@ -1118,7 +1118,7 @@ static void usb_cser_stop_io(struct f_cdev *port)
 	spin_unlock_irqrestore(&port->port_lock, flags);
 }
 
-int f_cdev_open(struct inode *inode, struct file *file)
+static int f_cdev_open(struct inode *inode, struct file *file)
 {
 	int ret;
 	unsigned long flags;
@@ -1152,7 +1152,7 @@ int f_cdev_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-int f_cdev_release(struct inode *inode, struct file *file)
+static int f_cdev_release(struct inode *inode, struct file *file)
 {
 	unsigned long flags;
 	struct f_cdev *port;
@@ -1168,7 +1168,7 @@ int f_cdev_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-ssize_t f_cdev_read(struct file *file,
+static ssize_t f_cdev_read(struct file *file,
 		       char __user *buf,
 		       size_t count,
 		       loff_t *ppos)
@@ -1270,7 +1270,7 @@ start_rx:
 	return bytes_copied;
 }
 
-ssize_t f_cdev_write(struct file *file,
+static ssize_t f_cdev_write(struct file *file,
 		       const char __user *buf,
 		       size_t count,
 		       loff_t *ppos)
