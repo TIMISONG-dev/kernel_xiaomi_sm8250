@@ -31,6 +31,7 @@ extern enum swiotlb_force swiotlb_force;
  */
 #define IO_TLB_SHIFT 11
 
+int swiotlb_late_init_with_default_size(size_t default_size);
 extern void swiotlb_init(int verbose);
 int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
 extern unsigned long swiotlb_nr_tbl(void);
