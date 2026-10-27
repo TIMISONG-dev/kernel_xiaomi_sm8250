@@ -112,13 +112,13 @@ static int mhi_arch_pm_notifier(struct notifier_block *nb,
 	return NOTIFY_DONE;
 }
 
-void mhi_arch_timesync_log(struct mhi_controller *mhi_cntrl, u64 remote_time)
+static void mhi_arch_timesync_log(struct mhi_controller *mhi_cntrl, u64 remote_time)
 {
 	struct mhi_dev *mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
 	struct arch_info *arch_info = mhi_dev->arch_info;
 
 	if (remote_time != U64_MAX)
-		ipc_log_string(arch_info->tsync_ipc_log, "%6u.%06lu 0x%llx",
+		ipc_log_string(arch_info->tsync_ipc_log, "%6llu.%06llu 0x%llx",
 			       REMOTE_TICKS_TO_SEC(remote_time),
 			       REMOTE_TIME_REMAINDER_US(remote_time),
 			       remote_time);
