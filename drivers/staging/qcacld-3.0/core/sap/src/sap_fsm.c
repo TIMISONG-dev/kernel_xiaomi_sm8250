@@ -1381,6 +1381,31 @@ static bool sap_save_owe_pending_assoc_ind(struct sap_context *sap_ctx,
 }
 
 /**
+ * sap_hdd_event_status() - decode the status token of a SAP event
+ * @context: status encoded in the opaque event argument
+ *
+ * Only status-bearing events use this decoder. Other events may carry real
+ * pointers in context, and must continue to handle those payloads directly.
+ *
+ * Return: decoded status, or failure for an invalid status token
+ */
+static eSapStatus sap_hdd_event_status(void *context)
+{
+	switch ((uintptr_t)context) {
+	case eSAP_STATUS_SUCCESS:
+		return eSAP_STATUS_SUCCESS;
+	case eSAP_STATUS_FAILURE:
+		return eSAP_STATUS_FAILURE;
+	case eSAP_START_BSS_CHANNEL_NOT_SELECTED:
+		return eSAP_START_BSS_CHANNEL_NOT_SELECTED;
+	case eSAP_ERROR_MAC_START_FAIL:
+		return eSAP_ERROR_MAC_START_FAIL;
+	default:
+		return eSAP_STATUS_FAILURE;
+	}
+}
+
+/**
  * sap_signal_hdd_event() - send event notification
  * @sap_ctx: Sap Context
  * @csr_roaminfo: Pointer to CSR roam information
@@ -1486,7 +1511,7 @@ QDF_STATUS sap_signal_hdd_event(struct sap_context *sap_ctx,
 			return QDF_STATUS_E_INVAL;
 		}
 
-		bss_complete->status = (eSapStatus) context;
+		bss_complete->status = sap_hdd_event_status(context);
 		bss_complete->staId = sap_ctx->sap_sta_id;
 
 		QDF_TRACE(QDF_MODULE_ID_SAP, QDF_TRACE_LEVEL_INFO_HIGH,
@@ -1505,16 +1530,16 @@ QDF_STATUS sap_signal_hdd_event(struct sap_context *sap_ctx,
 	case eSAP_DFS_NO_AVAILABLE_CHANNEL:
 		sap_ap_event.sapHddEventCode = sap_hddevent;
 		sap_ap_event.sapevt.sapStopBssCompleteEvent.status =
-			(eSapStatus) context;
+			sap_hdd_event_status(context);
 		break;
 	case eSAP_ACS_SCAN_SUCCESS_EVENT:
 		sap_handle_acs_scan_event(sap_ctx, &sap_ap_event,
-			(eSapStatus)context);
+			sap_hdd_event_status(context));
 		break;
 	case eSAP_ACS_CHANNEL_SELECTED:
 		sap_ap_event.sapHddEventCode = sap_hddevent;
 		acs_selected = &sap_ap_event.sapevt.sap_ch_selected;
-		if (eSAP_STATUS_SUCCESS == (eSapStatus)context) {
+		if (eSAP_STATUS_SUCCESS == sap_hdd_event_status(context)) {
 			acs_selected->pri_ch_freq =
 						sap_ctx->acs_cfg->pri_ch_freq;
 			acs_selected->ht_sec_ch_freq =
@@ -1524,7 +1549,7 @@ QDF_STATUS sap_signal_hdd_event(struct sap_context *sap_ctx,
 				sap_ctx->acs_cfg->vht_seg0_center_ch_freq;
 			acs_selected->vht_seg1_center_ch_freq =
 				sap_ctx->acs_cfg->vht_seg1_center_ch_freq;
-		} else if (eSAP_STATUS_FAILURE == (eSapStatus)context) {
+		} else if (eSAP_STATUS_FAILURE == sap_hdd_event_status(context)) {
 			acs_selected->pri_ch_freq = 0;
 		}
 		break;
@@ -1532,7 +1557,7 @@ QDF_STATUS sap_signal_hdd_event(struct sap_context *sap_ctx,
 	case eSAP_STOP_BSS_EVENT:
 		sap_ap_event.sapHddEventCode = eSAP_STOP_BSS_EVENT;
 		sap_ap_event.sapevt.sapStopBssCompleteEvent.status =
-			(eSapStatus) context;
+			sap_hdd_event_status(context);
 		break;
 
 	case eSAP_STA_ASSOC_EVENT:
@@ -1606,7 +1631,7 @@ QDF_STATUS sap_signal_hdd_event(struct sap_context *sap_ctx,
 		chaninfo->rate_flags = csr_roaminfo->chan_info.rate_flags;
 
 		reassoc_complete->wmmEnabled = csr_roaminfo->wmmEnabledSta;
-		reassoc_complete->status = (eSapStatus) context;
+		reassoc_complete->status = sap_hdd_event_status(context);
 		reassoc_complete->timingMeasCap = csr_roaminfo->timingMeasCap;
 		reassoc_complete->ampdu = csr_roaminfo->ampdu;
 		reassoc_complete->sgi_enable = csr_roaminfo->sgi_enable;
@@ -1650,7 +1675,7 @@ QDF_STATUS sap_signal_hdd_event(struct sap_context *sap_ctx,
 			disassoc_comp->reason = eSAP_MAC_INITATED_DISASSOC;
 
 		disassoc_comp->status_code = csr_roaminfo->status_code;
-		disassoc_comp->status = (eSapStatus) context;
+		disassoc_comp->status = sap_hdd_event_status(context);
 		disassoc_comp->rssi = csr_roaminfo->rssi;
 		disassoc_comp->rx_rate = csr_roaminfo->rx_rate;
 		disassoc_comp->tx_rate = csr_roaminfo->tx_rate;
@@ -1669,7 +1694,7 @@ QDF_STATUS sap_signal_hdd_event(struct sap_context *sap_ctx,
 		sap_ap_event.sapHddEventCode = eSAP_STA_SET_KEY_EVENT;
 		key_complete =
 			&sap_ap_event.sapevt.sapStationSetKeyCompleteEvent;
-		key_complete->status = (eSapStatus) context;
+		key_complete->status = sap_hdd_event_status(context);
 		qdf_copy_macaddr(&key_complete->peerMacAddr,
 				 &csr_roaminfo->peerMac);
 		break;
@@ -1719,13 +1744,13 @@ QDF_STATUS sap_signal_hdd_event(struct sap_context *sap_ctx,
 	case eSAP_DISCONNECT_ALL_P2P_CLIENT:
 		sap_ap_event.sapHddEventCode = eSAP_DISCONNECT_ALL_P2P_CLIENT;
 		sap_ap_event.sapevt.sapActionCnf.actionSendSuccess =
-			(eSapStatus) context;
+			sap_hdd_event_status(context);
 		break;
 
 	case eSAP_MAC_TRIG_STOP_BSS_EVENT:
 		sap_ap_event.sapHddEventCode = eSAP_MAC_TRIG_STOP_BSS_EVENT;
 		sap_ap_event.sapevt.sapActionCnf.actionSendSuccess =
-			(eSapStatus) context;
+			sap_hdd_event_status(context);
 		break;
 
 	case eSAP_UNKNOWN_STA_JOIN:
