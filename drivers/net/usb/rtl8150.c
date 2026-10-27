@@ -398,7 +398,6 @@ static void read_bulk_callback(struct urb *urb)
 	unsigned pkt_len, res;
 	struct sk_buff *skb;
 	struct net_device *netdev;
-	u16 rx_stat;
 	int status = urb->status;
 	int result;
 	unsigned long flags;
@@ -434,7 +433,6 @@ static void read_bulk_callback(struct urb *urb)
 		goto goon;
 
 	res = urb->actual_length;
-	rx_stat = le16_to_cpu(*(__le16 *)(urb->transfer_buffer + res - 4));
 	pkt_len = res - 4;
 
 	skb_put(dev->rx_skb, pkt_len);
