@@ -1320,7 +1320,7 @@ static int mpq_dmx_init_internal_buffers(
 
 	ret = mpq_sdmx_create_shm_bridge(dbuf->dmabuf, dbuf->sgt);
 	if (ret) {
-		MPQ_DVB_ERR_PRINT("%s mpq_sdmx_create_shm_bridge failed\n");
+		MPQ_DVB_ERR_PRINT("%s mpq_sdmx_create_shm_bridge failed\n", __func__);
 		return ret;
 	}
 
@@ -1352,7 +1352,6 @@ static int mpq_dmx_init_external_buffers(
 	bool is_secure_feed)
 {
 	struct ion_dma_buff_info buff;
-	int actual_buffer_size = 0;
 	int ret = 0;
 	int i;
 
@@ -1363,7 +1362,6 @@ static int mpq_dmx_init_external_buffers(
 	MPQ_DVB_DBG_PRINT("%s: External decoder buffer allocation\n", __func__);
 	memset(&buff, 0, sizeof(struct ion_dma_buff_info));
 
-	actual_buffer_size = dec_buffs->buffers_size;
 	if (!dec_buffs->is_linear) {
 		MPQ_DVB_DBG_PRINT("%s: Ex. Ring-buffer\n", __func__);
 		feed_data->buffer_desc.decoder_buffers_num = 1;
@@ -1826,7 +1824,7 @@ static int mpq_sdmx_alloc_data_buf(struct mpq_feed *mpq_feed, size_t size)
 
 	shminfo = vmalloc(sizeof(struct qtee_shm));
 	if (!shminfo) {
-		MPQ_DVB_ERR_PRINT("%s: shminfo alloc failed\n");
+		MPQ_DVB_ERR_PRINT("%s: shminfo alloc failed\n", __func__);
 		return -ENOMEM;
 	}
 
@@ -1872,7 +1870,7 @@ static int mpq_sdmx_init_metadata_buffer(struct mpq_demux *mpq_demux,
 	shminfo = vmalloc(sizeof(struct qtee_shm));
 
 	if (!shminfo) {
-		MPQ_DVB_ERR_PRINT("%s: shminfo alloc failed\n");
+		MPQ_DVB_ERR_PRINT("%s: shminfo alloc failed\n", __func__);
 		return -ENOMEM;
 	}
 	qtee_shmbridge_allocate_shm(SDMX_METADATA_BUFFER_SIZE, shminfo);
@@ -3717,7 +3715,7 @@ static int mpq_sdmx_get_buffer_chunks(struct mpq_demux *mpq_demux,
 
 	ret = mpq_sdmx_create_shm_bridge(buff_info->dmabuf, buff_info->sgt);
 	if (ret) {
-		MPQ_DVB_ERR_PRINT("%s mpq_sdmx_create_shm_bridge failed\n");
+		MPQ_DVB_ERR_PRINT("%s mpq_sdmx_create_shm_bridge failed\n", __func__);
 		return ret;
 	}
 
@@ -3744,7 +3742,7 @@ static int mpq_sdmx_init_data_buffer(struct mpq_demux *mpq_demux,
 			*buf_mode = SDMX_LINEAR_GROUP_BUF;
 		*num_buffers = feed_data->buffer_desc.decoder_buffers_num;
 
-		MPQ_DVB_ERR_PRINT("%s: video feed case no of buffers=%zu\n",
+		MPQ_DVB_ERR_PRINT("%s: video feed case no of buffers=%u\n",
 				  __func__, *num_buffers);
 
 		for (i = 0; i < *num_buffers; i++) {
@@ -4184,19 +4182,6 @@ int mpq_dmx_set_cipher_ops(struct dvb_demux_feed *feed,
 
 static int mpq_sdmx_invalidate_buffer(struct mpq_feed *mpq_feed)
 {
-	struct dvb_demux_feed *feed = mpq_feed->dvb_demux_feed;
-	struct dvb_ringbuffer *buffer;
-
-	if (!dvb_dmx_is_video_feed(feed)) {
-		if (dvb_dmx_is_sec_feed(feed) ||
-			dvb_dmx_is_pcr_feed(feed)) {
-			buffer = (struct dvb_ringbuffer *)
-				&mpq_feed->sdmx_buf;
-		} else {
-			buffer = (struct dvb_ringbuffer *)
-				feed->feed.ts.buffer.ringbuff;
-		}
-	}
 	return 0;
 }
 
@@ -5031,7 +5016,6 @@ static int mpq_sdmx_process_buffer(struct mpq_demux *mpq_demux,
 	u8 flags = 0;
 	u32 errors;
 	u32 status;
-	u32 prev_read_offset;
 	u32 prev_fill_count;
 	enum sdmx_status sdmx_res;
 	int i;
@@ -5093,7 +5077,6 @@ static int mpq_sdmx_process_buffer(struct mpq_demux *mpq_demux,
 
 	process_start_time = ktime_get();
 
-	prev_read_offset = read_offset;
 	prev_fill_count = fill_count;
 	sdmx_res = sdmx_process(mpq_demux->sdmx_session_handle, flags, input,
 		&fill_count, &read_offset, &errors, &status,
@@ -5183,8 +5166,6 @@ static int mpq_sdmx_write(struct mpq_demux *mpq_demux,
 	const char *buf,
 	size_t count)
 {
-	struct ion_dma_buff_info *buff;
-	struct dvb_ringbuffer *rbuf;
 	struct sdmx_buff_descr buf_desc;
 	u32 read_offset;
 	int ret;
@@ -5194,8 +5175,6 @@ static int mpq_sdmx_write(struct mpq_demux *mpq_demux,
 		return -EINVAL;
 	}
 
-	buff = &mpq_demux->demux.dmx.dvr_input.buff_dma_info;
-	rbuf = (struct dvb_ringbuffer *)mpq_demux->demux.dmx.dvr_input.ringbuff;
 
 	ret = mpq_sdmx_dvr_buffer_desc(mpq_demux, &buf_desc);
 	if (ret) {
