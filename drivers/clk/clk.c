@@ -3445,48 +3445,6 @@ static int clk_dump_show(struct seq_file *s, void *data)
 }
 DEFINE_SHOW_ATTRIBUTE(clk_dump);
 
-static const struct {
-	unsigned long flag;
-	const char *name;
-} clk_flags[] = {
-#define ENTRY(f) { f, #f }
-	ENTRY(CLK_SET_RATE_GATE),
-	ENTRY(CLK_SET_PARENT_GATE),
-	ENTRY(CLK_SET_RATE_PARENT),
-	ENTRY(CLK_IGNORE_UNUSED),
-	ENTRY(CLK_IS_BASIC),
-	ENTRY(CLK_GET_RATE_NOCACHE),
-	ENTRY(CLK_SET_RATE_NO_REPARENT),
-	ENTRY(CLK_GET_ACCURACY_NOCACHE),
-	ENTRY(CLK_RECALC_NEW_RATES),
-	ENTRY(CLK_SET_RATE_UNGATE),
-	ENTRY(CLK_IS_CRITICAL),
-	ENTRY(CLK_OPS_PARENT_ENABLE),
-	ENTRY(CLK_DUTY_CYCLE_PARENT),
-#undef ENTRY
-};
-
-static int clk_flags_show(struct seq_file *s, void *data)
-{
-	struct clk_core *core = s->private;
-	unsigned long flags = core->flags;
-	unsigned int i;
-
-	for (i = 0; flags && i < ARRAY_SIZE(clk_flags); i++) {
-		if (flags & clk_flags[i].flag) {
-			seq_printf(s, "%s\n", clk_flags[i].name);
-			flags &= ~clk_flags[i].flag;
-		}
-	}
-	if (flags) {
-		/* Unknown flags */
-		seq_printf(s, "0x%lx\n", flags);
-	}
-
-	return 0;
-}
-DEFINE_SHOW_ATTRIBUTE(clk_flags);
-
 static int possible_parents_show(struct seq_file *s, void *data)
 {
 	struct clk_core *core = s->private;
@@ -3500,17 +3458,6 @@ static int possible_parents_show(struct seq_file *s, void *data)
 	return 0;
 }
 DEFINE_SHOW_ATTRIBUTE(possible_parents);
-
-static int clk_duty_cycle_show(struct seq_file *s, void *data)
-{
-	struct clk_core *core = s->private;
-	struct clk_duty *duty = &core->duty;
-
-	seq_printf(s, "%u/%u\n", duty->num, duty->den);
-
-	return 0;
-}
-DEFINE_SHOW_ATTRIBUTE(clk_duty_cycle);
 
 static int clock_debug_rate_set(void *data, u64 val)
 {
