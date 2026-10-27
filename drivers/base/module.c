@@ -33,7 +33,7 @@ static void module_create_drivers_dir(struct module_kobject *mk)
 void module_add_driver(struct module *mod, struct device_driver *drv)
 {
 	char *driver_name;
-	int no_warn;
+	int ret;
 	struct module_kobject *mk = NULL;
 
 	if (!drv)
@@ -58,13 +58,17 @@ void module_add_driver(struct module *mod, struct device_driver *drv)
 	if (!mk)
 		return;
 
-	/* Don't check return codes; these calls are idempotent */
-	no_warn = sysfs_create_link(&drv->p->kobj, &mk->kobj, "module");
+	/* Existing links are harmless; report other registration failures. */
+	ret = sysfs_create_link(&drv->p->kobj, &mk->kobj, "module");
+	if (ret && ret != -EEXIST)
+		pr_warn("%s: failed to create module link: %d\n", drv->name, ret);
 	driver_name = make_driver_name(drv);
 	if (driver_name) {
 		module_create_drivers_dir(mk);
-		no_warn = sysfs_create_link(mk->drivers_dir, &drv->p->kobj,
+		ret = sysfs_create_link(mk->drivers_dir, &drv->p->kobj,
 					    driver_name);
+		if (ret && ret != -EEXIST)
+			pr_warn("%s: failed to create driver link: %d\n", drv->name, ret);
 		kfree(driver_name);
 	}
 }
