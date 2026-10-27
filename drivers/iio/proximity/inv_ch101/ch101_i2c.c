@@ -303,7 +303,6 @@ static int ch101_i2c_probe(struct i2c_client *client,
 	struct device *dev;
 	struct gpio_chip *gpio;
 	int irq;
-	struct irq_desc *desc;
 	struct ch101_callbacks *cbk;
 	int ret = 0;
 
@@ -324,7 +323,6 @@ static int ch101_i2c_probe(struct i2c_client *client,
 		return -ENOMEM;
 
 	irq = client->irq;
-	desc = irq_to_desc(irq);
 
 	dev_info(dev, "%s: Start: %p, %s\n", __func__,
 		dev, dev ? dev->init_name : "");
