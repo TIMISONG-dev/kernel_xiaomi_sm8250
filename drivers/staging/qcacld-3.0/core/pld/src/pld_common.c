@@ -1562,7 +1562,7 @@ void pld_release_pm_sem(struct device *dev)
  * @dev: device pointer
  * @flags: variable pointer to save CPU states
  *
- * It uses spinlock_bh so avoid calling in top half context.
+ * PCIe register accesses preserve the caller IRQ state through @flags.
  *
  * Return: void
  */
@@ -1592,7 +1592,7 @@ void pld_lock_reg_window(struct device *dev, unsigned long *flags)
  * @dev: device pointer
  * @flags: variable pointer to save CPU states
  *
- * It uses spinlock_bh so avoid calling in top half context.
+ * PCIe register accesses preserve the caller IRQ state through @flags.
  *
  * Return: void
  */
