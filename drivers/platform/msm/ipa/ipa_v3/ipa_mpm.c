@@ -709,8 +709,8 @@ fail_dma_mapping:
 
 /**
  * ipa_mpm_smmu_unmap() - SMMU unmaps ring and the buffer pointer.
- * @va_addr: virtual address that needs to be mapped
- * @sz: size of the address to be mapped
+ * @carved_iova: IOVA in the carved context bank to unmap
+ * @sz: Size of the mapping to unmap
  * @dir: ipa_mpm_dma_data_direction
  * @ap_cb_iova: iova for AP context bank
  *
@@ -1495,12 +1495,12 @@ static void ipa_mpm_mhip_shutdown(int mhip_idx)
 }
 
 /**
- * @ipa_mpm_vote_unvote_pcie_clk - Vote/Unvote PCIe Clock per probe_id
+ * ipa_mpm_vote_unvote_pcie_clk() - Vote/Unvote PCIe Clock per probe_id
  *                                 Returns if success or failure.
- * @ipa_mpm_clk_vote_type - Vote or Unvote for PCIe Clock
- * @probe_id - MHI probe_id per client.
- * @is_force - Forcebly casts vote - should be true only in probe.
- * @is_acted - Output param - This indicates the clk is actually voted or not
+ * @vote: Vote or Unvote for PCIe Clock
+ * @probe_id: MHI probe_id per client.
+ * @is_force: Forcebly casts vote - should be true only in probe.
+ * @is_acted: Output param - This indicates the clk is actually voted or not
  *             The flag output is checked only when we vote for clocks.
  * Return value: PCIe clock voting is success or failure.
  */
@@ -1619,12 +1619,11 @@ static void ipa_mpm_vote_unvote_ipa_clk(enum ipa_mpm_clk_vote_type vote,
 }
 
 /**
- * @ipa_mpm_start_stop_remote_mhip_chan - Start/Stop Remote device side MHIP
+ * ipa_mpm_start_stop_remote_mhip_chan() - Start/Stop Remote device side MHIP
  *                                        channels.
- * @ipa_mpm_clk_vote_type - Vote or Unvote for PCIe Clock
- * @probe_id - MHI probe_id per client.
- * @ipa_mpm_start_stop_type - Start/Stop remote channels.
- * @is_force - Forcebly casts remote channels to be started/stopped.
+ * @probe_id: MHI probe_id per client.
+ * @start_stop: Start/Stop remote channels.
+ * @is_force: Forcebly casts remote channels to be started/stopped.
  *             should be true only in probe.
  * Return value: 0 if success or error value.
  */
