@@ -226,15 +226,11 @@ ce_sendlist_send_srng(struct CE_handle *copyeng,
 	struct CE_state *CE_state = (struct CE_state *)copyeng;
 	struct CE_ring_state *src_ring = CE_state->src_ring;
 	unsigned int num_items = sl->num_items;
-	unsigned int sw_index;
-	unsigned int write_index;
 	struct hif_softc *scn = CE_state->scn;
 
 	QDF_ASSERT((num_items > 0) && (num_items < src_ring->nentries));
 
 	qdf_spin_lock_bh(&CE_state->ce_index_lock);
-	sw_index = src_ring->sw_index;
-	write_index = src_ring->write_index;
 
 	if (hal_srng_src_num_avail(scn->hal_soc, src_ring->srng_ctx, false) >=
 	    num_items) {
@@ -306,14 +302,12 @@ ce_recv_buf_enqueue_srng(struct CE_handle *copyeng,
 	struct CE_ring_state *dest_ring = CE_state->dest_ring;
 	unsigned int nentries_mask = dest_ring->nentries_mask;
 	unsigned int write_index;
-	unsigned int sw_index;
 	uint64_t dma_addr = buffer;
 	struct hif_softc *scn = CE_state->scn;
 	struct ce_srng_dest_desc *dest_desc = NULL;
 
 	qdf_spin_lock_bh(&CE_state->ce_index_lock);
 	write_index = dest_ring->write_index;
-	sw_index = dest_ring->sw_index;
 
 	if (Q_TARGET_ACCESS_BEGIN(scn) < 0) {
 		qdf_spin_unlock_bh(&CE_state->ce_index_lock);
