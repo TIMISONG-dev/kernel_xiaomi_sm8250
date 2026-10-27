@@ -1753,7 +1753,7 @@ static void __policy_mgr_check_sta_ap_concurrent_ch_intf(void *data)
 	struct wlan_objmgr_psoc *psoc;
 	struct policy_mgr_psoc_priv_obj *pm_ctx = NULL;
 	struct sta_ap_intf_check_work_ctx *work_info = NULL;
-	uint32_t mcc_to_scc_switch, cc_count = 0, i;
+	uint32_t cc_count = 0, i;
 	QDF_STATUS status;
 	uint32_t ch_freq;
 	uint32_t op_ch_freq_list[MAX_NUMBER_OF_CONC_CONNECTIONS];
@@ -1777,8 +1777,7 @@ static void __policy_mgr_check_sta_ap_concurrent_ch_intf(void *data)
 		return;
 	}
 
-	mcc_to_scc_switch =
-		policy_mgr_get_mcc_to_scc_switch_mode(psoc);
+	policy_mgr_get_mcc_to_scc_switch_mode(psoc);
 
 	policy_mgr_debug("Concurrent open sessions running: %d",
 			 policy_mgr_concurrent_open_sessions_running(psoc));
