@@ -199,6 +199,7 @@ EXPORT_SYMBOL(unregister_restart_handler);
 
 /**
  *	do_kernel_restart - Execute kernel restart handler call chain
+ * @cmd: Optional restart command passed to the registered handlers
  *
  *	Calls functions registered with register_restart_handler.
  *

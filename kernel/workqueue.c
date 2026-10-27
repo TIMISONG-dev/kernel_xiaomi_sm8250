@@ -917,6 +917,7 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task)
 
 /**
  * wq_worker_last_func - retrieve worker's last work function
+ * @task: Worker task whose last function is queried
  *
  * Determine the last function a worker executed. This is called from
  * the scheduler to get a worker's last known identity.
