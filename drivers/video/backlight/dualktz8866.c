@@ -158,7 +158,7 @@ static int ktz8866_case2_test(int pwm, char *result)
     diff_a = (u64)ktime_us_delta(time_b, time_a);
     diff_b = (u64)ktime_us_delta(time_c, time_b);
 
-    sprintf(result, "case2_%d_%d",diff_a, diff_b);
+	sprintf(result, "case2_%llu_%llu", diff_a, diff_b);
 
     printk("bl_selftest:  ktz8866_case2_test result: %s\n", result);
     return 0;
