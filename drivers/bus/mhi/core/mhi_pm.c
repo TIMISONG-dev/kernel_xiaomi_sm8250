@@ -187,7 +187,7 @@ static void mhi_toggle_dev_wake(struct mhi_controller *mhi_cntrl)
 }
 
 /* set device wake */
-void mhi_assert_dev_wake(struct mhi_controller *mhi_cntrl, bool force)
+static void mhi_assert_dev_wake(struct mhi_controller *mhi_cntrl, bool force)
 {
 	unsigned long flags;
 
@@ -220,7 +220,7 @@ void mhi_assert_dev_wake(struct mhi_controller *mhi_cntrl, bool force)
 }
 
 /* clear device wake */
-void mhi_deassert_dev_wake(struct mhi_controller *mhi_cntrl, bool override)
+static void mhi_deassert_dev_wake(struct mhi_controller *mhi_cntrl, bool override)
 {
 	unsigned long flags;
 
@@ -779,7 +779,7 @@ int mhi_debugfs_trigger_reset(void *data, u64 val)
 }
 
 /* queue disable transition work item */
-int mhi_queue_disable_transition(struct mhi_controller *mhi_cntrl,
+static int mhi_queue_disable_transition(struct mhi_controller *mhi_cntrl,
 				 enum MHI_PM_STATE pm_state)
 {
 	struct state_transition *item = kmalloc(sizeof(*item), GFP_ATOMIC);
