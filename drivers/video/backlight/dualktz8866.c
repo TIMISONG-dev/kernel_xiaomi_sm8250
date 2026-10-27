@@ -183,29 +183,35 @@ static ssize_t bl_selftest_read(struct file *file, char __user *buf, size_t coun
 
 static ssize_t bl_selftest_write(struct file *file, const char __user *buf, size_t count, loff_t *pos)
 {
-    char tmp[6] = {0};
-    int pwm_value = 0;
+	char tmp[6] = { 0 };
+	int pwm_value = 0;
+	int ret;
+
+	if (count >= sizeof(tmp))
+		return -EINVAL;
 
     if (copy_from_user(tmp, buf, count)) {
         printk("Failed to copy data from user space\n");
         goto out;
     }
 
-    if (!strncmp(tmp, "case1", 5))
-        caseid = 0;
-    else if (!strncmp(tmp, "case2", 5))
-        caseid = 1;
-    else {
-        kstrtoint(tmp, 10, &pwm_value);
-        switch (caseid) {
-        case 0:
-            ktz8866_case1_test(pwm_value, gresult);
-            break;
-        case 1:
-            ktz8866_case2_test(pwm_value, gresult);
-            break;
-        }
-    }
+	if (!strncmp(tmp, "case1", 5))
+		caseid = 0;
+	else if (!strncmp(tmp, "case2", 5))
+		caseid = 1;
+	else {
+		ret = kstrtoint(tmp, 10, &pwm_value);
+		if (ret)
+			return ret;
+		switch (caseid) {
+		case 0:
+			ktz8866_case1_test(pwm_value, gresult);
+			break;
+		case 1:
+			ktz8866_case2_test(pwm_value, gresult);
+			break;
+		}
+	}
 
 out:
 	return count;
