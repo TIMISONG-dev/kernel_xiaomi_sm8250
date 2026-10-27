@@ -104,7 +104,7 @@ static int pwm_to_51(int pwm)
     return pwm_map[i].bl_value;
 }
 
-static int ktz8866_case1_test(int pwm, char *result)
+static int ktz8866_case1_test(int pwm, char *result, size_t result_size)
 {
     int bl;
     struct pwm_reg pwm_reg_a;
@@ -125,13 +125,14 @@ static int ktz8866_case1_test(int pwm, char *result)
     pwm_digital_value_a = pwm_reg_a.hbyte << 8 | pwm_reg_a.lbyte;
     pwm_digital_value_b = pwm_reg_b.hbyte << 8 | pwm_reg_b.lbyte;
 
-    sprintf(result, "case1_%d_%d",pwm_digital_value_a, pwm_digital_value_b);
-    printk("bl_selftest:  ktz8866_case1_test result: %s\n", result);
+	scnprintf(result, result_size, "case1_%d_%d", pwm_digital_value_a,
+		pwm_digital_value_b);
+	printk("bl_selftest:  ktz8866_case1_test result: %s\n", result);
 
     return 0;
 }
 
-static int ktz8866_case2_test(int pwm, char *result)
+static int ktz8866_case2_test(int pwm, char *result, size_t result_size)
 {
     int bl;
     struct pwm_reg pwm_reg_a;
@@ -158,7 +159,7 @@ static int ktz8866_case2_test(int pwm, char *result)
     diff_a = (u64)ktime_us_delta(time_b, time_a);
     diff_b = (u64)ktime_us_delta(time_c, time_b);
 
-	sprintf(result, "case2_%llu_%llu", diff_a, diff_b);
+	scnprintf(result, result_size, "case2_%llu_%llu", diff_a, diff_b);
 
     printk("bl_selftest:  ktz8866_case2_test result: %s\n", result);
     return 0;
@@ -205,10 +206,10 @@ static ssize_t bl_selftest_write(struct file *file, const char __user *buf, size
 			return ret;
 		switch (caseid) {
 		case 0:
-			ktz8866_case1_test(pwm_value, gresult);
+			ktz8866_case1_test(pwm_value, gresult, sizeof(gresult));
 			break;
 		case 1:
-			ktz8866_case2_test(pwm_value, gresult);
+			ktz8866_case2_test(pwm_value, gresult, sizeof(gresult));
 			break;
 		}
 	}
