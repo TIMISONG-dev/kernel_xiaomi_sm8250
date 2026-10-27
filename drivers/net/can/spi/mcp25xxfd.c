@@ -4162,7 +4162,7 @@ static void mcp25xxfd_debugfs_remove(struct mcp25xxfd_priv *priv)
 #endif
 
 #ifdef CONFIG_OF_DYNAMIC
-int mcp25xxfd_of_parse(struct mcp25xxfd_priv *priv)
+static int mcp25xxfd_of_parse(struct mcp25xxfd_priv *priv)
 {
 	struct spi_device *spi = priv->spi;
 	const struct device_node *np = spi->dev.of_node;
@@ -4197,7 +4197,7 @@ int mcp25xxfd_of_parse(struct mcp25xxfd_priv *priv)
 	return 0;
 }
 #else
-int mcp25xxfd_of_parse(struct mcp25xxfd_priv *priv)
+static int mcp25xxfd_of_parse(struct mcp25xxfd_priv *priv)
 {
 	return 0;
 }
