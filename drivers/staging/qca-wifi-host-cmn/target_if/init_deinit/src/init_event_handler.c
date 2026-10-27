@@ -50,7 +50,6 @@ static int init_deinit_service_ready_event_handler(ol_scn_t scn_handle,
 	struct target_psoc_info *tgt_hdl;
 	wmi_legacy_service_ready_callback legacy_callback;
 	struct wmi_unified *wmi_handle;
-	QDF_STATUS ret_val;
 
 	if (!scn_handle) {
 		target_if_err("scn handle NULL in service ready handler");
@@ -69,7 +68,7 @@ static int init_deinit_service_ready_event_handler(ol_scn_t scn_handle,
 		return -EINVAL;
 	}
 
-	ret_val = target_if_sw_version_check(psoc, tgt_hdl, event);
+	target_if_sw_version_check(psoc, tgt_hdl, event);
 
 	wmi_handle = target_psoc_get_wmi_hdl(tgt_hdl);
 
