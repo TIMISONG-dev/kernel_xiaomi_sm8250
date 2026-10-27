@@ -149,6 +149,9 @@
 
 /**
  * struct spcom_msg_hdr - Request/Response message header between HLOS and SP.
+ * @reserved: Reserved for future use.
+ * @txn_id: Transaction ID matching a response to its request.
+ * @buf: Variable-length request or response payload.
  *
  * This header is proceeding any request specific parameters.
  * The transaction id is used to match request with response.
@@ -163,6 +166,7 @@ struct spcom_msg_hdr {
 
 /**
  * struct spcom_client - Client handle
+ * @ch: Channel used by this client.
  */
 struct spcom_client {
 	struct spcom_channel *ch;
@@ -170,6 +174,7 @@ struct spcom_client {
 
 /**
  * struct spcom_server - Server handle
+ * @ch: Channel used by this server.
  */
 struct spcom_server {
 	struct spcom_channel *ch;
@@ -177,6 +182,29 @@ struct spcom_server {
 
 /**
  * struct spcom_channel - channel context
+ * @name: RPMSG channel name and character-device filename.
+ * @lock: Mutex protecting channel state.
+ * @txn_id: Current transaction ID, incremented for each client request.
+ * @is_server: Whether this side receives requests and sends responses.
+ * @comm_role_undefined: Whether the first send or receive must establish the role.
+ * @response_timeout_msec: Client response timeout in milliseconds.
+ * @cdev: Channel character device.
+ * @dev: Device exposing the channel to userspace.
+ * @attr: Device attribute storage, unused by this implementation.
+ * @rpdrv: RPMSG driver registered for this channel.
+ * @rpdev: Connected remote RPMSG device, or NULL when disconnected.
+ * @rx_done: Completion signalling received data or an aborted receive.
+ * @connect: Completion signalling remote channel connection.
+ * @is_sharable: Whether multiple clients may open this channel.
+ * @active_pid: PID owning the current shared-channel transaction.
+ * @num_clients: Number of clients with the channel open.
+ * @shared_sync_lock: Mutex serializing shared-channel request/response transactions.
+ * @pid: PIDs of clients registered on the channel.
+ * @rpmsg_abort: Whether RPMSG operations must abort.
+ * @actual_rx_size: Number of bytes in the pending receive buffer.
+ * @rpmsg_rx_buf: Pending received packet, including its message header.
+ * @dmabuf_fd_table: File descriptors associated with retained shared buffers.
+ * @dmabuf_handle_table: DMA-BUF references retained by buffer-lock commands.
  */
 struct spcom_channel {
 	char name[SPCOM_CHANNEL_NAME_SIZE];
@@ -201,9 +229,8 @@ struct spcom_channel {
 	struct completion connect;
 
 	/**
-	 * Only one client or server per non-sharable channel       .
-	 * SPCOM_MAX_CHANNEL_CLIENTS clients for sharable channel
-	 * Only one tx-rx transaction at a time (request + response).
+	 * @is_busy: Client limit reached: one for a non-sharable channel or
+	 * SPCOM_MAX_CHANNEL_CLIENTS for a sharable channel.
 	 */
 	bool is_busy;
 	bool is_sharable;              /* channel's sharable property   */
@@ -221,8 +248,8 @@ struct spcom_channel {
 	void *rpmsg_rx_buf;
 
 	/**
-	 * to track if rx_buf is read in the same session
-	 * in which it is updated
+	 * @rx_buf_txn_id: Transaction ID used to reject a buffer from an earlier
+	 * session when receiving data.
 	 */
 	uint32_t rx_buf_txn_id;
 
@@ -233,6 +260,10 @@ struct spcom_channel {
 
 /**
  * struct rx_buff_list - holds rx rpmsg data, before it will be consumed
+ * @list: Entry in the device pending-receive list.
+ * @rpmsg_rx_buf: Copy of the received RPMSG packet.
+ * @rx_buf_size: Size of the received packet in bytes.
+ * @ch: Destination channel processed by the receive worker.
  * by spcom_signal_rx_done worker, item per rx packet
  */
 struct rx_buff_list {
@@ -245,6 +276,21 @@ struct rx_buff_list {
 
 /**
  * struct spcom_device - device state structure.
+ * @predefined_ch_name: Channel names read from the device tree.
+ * @cdev: Control character device.
+ * @device_no: Base device number allocated for SPCOM character devices.
+ * @driver_class: Class containing the SPCOM character devices.
+ * @class_dev: Control device serving as the channel devices' parent.
+ * @pdev: Platform device bound to this driver.
+ * @channels: Channel state slots, with an empty name marking a free slot.
+ * @chdev_count: Number of exposed character devices, including the control node.
+ * @rpmsg_state_change: Completion signalling transport link up or down.
+ * @rpmsg_dev_count: Number of connected RPMSG devices.
+ * @rx_list_head: Packets awaiting processing by the receive worker.
+ * @rx_lock: Spinlock protecting the pending-receive list.
+ * @nvm_ion_fd: NVM ION file descriptor stored through the control ioctl.
+ * @ioctl_lock: Mutex initialized at probe but otherwise unused.
+ * @create_channel_lock: Mutex serializing channel character-device creation.
  */
 struct spcom_device {
 	char predefined_ch_name[SPCOM_MAX_CHANNELS][SPCOM_CHANNEL_NAME_SIZE];
@@ -303,9 +349,10 @@ int (*desc_powerup)(const struct subsys_desc *) = NULL;
 
 /**
  * spcom_is_channel_open() - channel is open on this side.
+ * @ch: Channel to inspect.
  *
- * Channel is fully connected, when rpmsg driver is registered and
- * rpmsg device probed
+ * An open channel has a registered RPMSG driver. The remote device may
+ * connect later.
  */
 static inline bool spcom_is_channel_open(struct spcom_channel *ch)
 {
@@ -314,6 +361,7 @@ static inline bool spcom_is_channel_open(struct spcom_channel *ch)
 
 /**
  * spcom_is_channel_connected() - channel is fully connected by both sides.
+ * @ch: Channel to inspect.
  */
 static inline bool spcom_is_channel_connected(struct spcom_channel *ch)
 {
@@ -425,6 +473,7 @@ static struct spcom_channel *spcom_find_channel_by_name(const char *name)
 /**
  * spcom_rx() - wait for received data until timeout, unless pending rx data is
  *              already ready
+ * @timeout_msec: Receive timeout in milliseconds, or zero to wait indefinitely.
  *
  * @ch: channel state struct pointer
  * @buf: buffer pointer
@@ -750,8 +799,9 @@ static int spcom_handle_restart_sp_command(void *cmd_buf, int cmd_size)
 /**
  * spcom_handle_send_command() - Handle send request/response from user space.
  *
- * @buf:	command buffer.
- * @buf_size:	command buffer size.
+ * @ch: Channel on which to send the request or response.
+ * @cmd_buf: Kernel copy of the userspace send command.
+ * @size: Size of the command buffer in bytes.
  *
  * Return: 0 on successful operation, negative value otherwise.
  */
@@ -1066,6 +1116,9 @@ static int spcom_handle_send_modified_command(struct spcom_channel *ch,
 
 /**
  * spcom_handle_lock_ion_buf_command() - Lock an shared buffer.
+ * @ch: Channel whose retained buffer table is updated.
+ * @cmd_buf: Kernel copy of the command containing the buffer file descriptor.
+ * @size: Size of the command buffer in bytes.
  *
  * Lock an shared buffer, prevent it from being free if the userspace App crash,
  * while it is used by the remote subsystem.
@@ -1135,6 +1188,9 @@ static int spcom_handle_lock_ion_buf_command(struct spcom_channel *ch,
 
 /**
  * spcom_handle_unlock_ion_buf_command() - Unlock an ION buffer.
+ * @ch: Channel whose retained buffer table is updated.
+ * @cmd_buf: Kernel copy of the command containing the buffer file descriptor.
+ * @size: Size of the command buffer in bytes.
  *
  * Unlock an ION buffer, let it be free, when it is no longer being used by
  * the remote subsystem.
@@ -1248,6 +1304,7 @@ static int spcom_handle_enable_ssr_command(void)
 
 /**
  * spcom_handle_write() - Handle user space write commands.
+ * @ch: Channel handling the command, or NULL for the control device.
  *
  * @buf:	command buffer.
  * @buf_size:	command buffer size.
@@ -1499,6 +1556,7 @@ static char *file_to_filename(struct file *filp)
 
 /**
  * spcom_device_open() - handle channel file open() from user space.
+ * @inode: Device inode, unused.
  *
  * @filp: file pointer
  *
@@ -1602,14 +1660,12 @@ static int spcom_device_open(struct inode *inode, struct file *filp)
 
 /**
  * spcom_device_release() - handle channel file close() from user space.
+ * @inode: Device inode, unused.
  *
  * @filp: file pointer
  *
- * The file name (without path) is the channel name.
- * Open the relevant glink channel.
- * Store the channel context in the file private
- * date pointer for future read/write/close
- * operations.
+ * Release the caller's channel slot and, for the last client, discard
+ * unconsumed receive data and clear the file's channel pointer.
  */
 static int spcom_device_release(struct inode *inode, struct file *filp)
 {
@@ -1691,6 +1747,9 @@ static int spcom_device_release(struct inode *inode, struct file *filp)
 
 /**
  * spcom_device_write() - handle channel file write() from user space.
+ * @user_buff: Userspace buffer containing the command to execute.
+ * @size: Requested byte count.
+ * @f_pos: File position pointer, required but not advanced.
  *
  * @filp: file pointer
  *
@@ -1771,6 +1830,9 @@ static ssize_t spcom_device_write(struct file *filp,
 
 /**
  * spcom_device_read() - handle channel file read() from user space.
+ * @user_buff: Userspace destination for received data.
+ * @size: Requested byte count or SPCOM_GET_NEXT_REQUEST_SIZE to query request size.
+ * @f_pos: File position pointer, required but not advanced.
  *
  * @filp: file pointer
  *
@@ -1984,6 +2046,8 @@ static const struct file_operations fops = {
 /**
  * spcom_create_channel_chardev() - Create a channel char-dev node file
  * for user space interface
+ * @name: Name of the RPMSG channel and its character-device node.
+ * @is_sharable: Whether multiple clients may open the channel.
  */
 static int spcom_create_channel_chardev(const char *name, bool is_sharable)
 {
