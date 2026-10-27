@@ -14,7 +14,8 @@
 #define IPA_HW_MAX_CHANNEL_HANDLE	(IPA_HW_MAX_NUMBER_OF_CHANNELS-1)
 
 /**
- * Values that represent the MHI commands from CPU to IPA HW.
+ * enum ipa_cpu_2_hw_mhi_commands - Values that represent the MHI commands
+ * from CPU to IPA HW.
  * @IPA_CPU_2_HW_CMD_MHI_INIT: Initialize HW to be ready for MHI processing.
  *	Once operation was completed HW shall respond with
  *	IPA_HW_2_CPU_RESPONSE_CMD_COMPLETED.
@@ -47,7 +48,8 @@ enum ipa_cpu_2_hw_mhi_commands {
 };
 
 /**
- * Values that represent MHI related HW responses to CPU commands.
+ * enum ipa_hw_2_cpu_mhi_responses - Values that represent MHI related HW
+ * responses to CPU commands.
  * @IPA_HW_2_CPU_RESPONSE_MHI_CHANGE_CHANNEL_STATE: Response to
  *	IPA_CPU_2_HW_CMD_MHI_INIT_CHANNEL or
  *	IPA_CPU_2_HW_CMD_MHI_CHANGE_CHANNEL_STATE commands.
@@ -58,7 +60,8 @@ enum ipa_hw_2_cpu_mhi_responses {
 };
 
 /**
- * Values that represent MHI related HW event to be sent to CPU.
+ * enum ipa_hw_2_cpu_mhi_events - Values that represent MHI related HW event
+ * to be sent to CPU.
  * @IPA_HW_2_CPU_EVENT_MHI_CHANNEL_ERROR: Event specify the device detected an
  *	error in an element from the transfer ring associated with the channel
  * @IPA_HW_2_CPU_EVENT_MHI_CHANNEL_WAKE_UP_REQUEST: Event specify a transport
@@ -72,7 +75,7 @@ enum ipa_hw_2_cpu_mhi_events {
 };
 
 /**
- * Channel error types.
+ * enum ipa_hw_channel_errors - Channel error types.
  * @IPA_HW_CHANNEL_ERROR_NONE: No error persists.
  * @IPA_HW_CHANNEL_INVALID_RE_ERROR: Invalid Ring Element was detected
  */
@@ -82,7 +85,7 @@ enum ipa_hw_channel_errors {
 };
 
 /**
- * MHI error types.
+ * enum ipa_hw_mhi_errors - MHI error types.
  * @IPA_HW_INVALID_MMIO_ERROR: Invalid data read from MMIO space
  * @IPA_HW_INVALID_CHANNEL_ERROR: Invalid data read from channel context array
  * @IPA_HW_INVALID_EVENT_ERROR: Invalid data read from event ring context array
@@ -105,7 +108,8 @@ enum ipa_hw_mhi_errors {
 
 
 /**
- * Structure referring to the common and MHI section of 128B shared memory
+ * struct IpaHwSharedMemMhiMapping_t - Structure referring to the common and
+ * MHI section of 128B shared memory
  * located in offset zero of SW Partition in IPA SRAM.
  * The shared memory is used for communication between IPA HW and CPU.
  * @common: common section in IPA SRAM
@@ -115,13 +119,13 @@ enum ipa_hw_mhi_errors {
  * @mhiCnl0State: State of MHI channel 0.
  *	The state carries information regarding the error type.
  *	See IPA_HW_MHI_CHANNEL_STATES.
- * @mhiCnl0State: State of MHI channel 1.
- * @mhiCnl0State: State of MHI channel 2.
- * @mhiCnl0State: State of MHI channel 3
- * @mhiCnl0State: State of MHI channel 4.
- * @mhiCnl0State: State of MHI channel 5.
- * @mhiCnl0State: State of MHI channel 6.
- * @mhiCnl0State: State of MHI channel 7.
+ * @mhiCnl1State: State of MHI channel 1.
+ * @mhiCnl2State: State of MHI channel 2.
+ * @mhiCnl3State: State of MHI channel 3
+ * @mhiCnl4State: State of MHI channel 4.
+ * @mhiCnl5State: State of MHI channel 5.
+ * @mhiCnl6State: State of MHI channel 6.
+ * @mhiCnl7State: State of MHI channel 7.
  * @reserved_37_34: reserved
  * @reserved_3B_38: reserved
  * @reserved_3F_3C: reserved
@@ -146,22 +150,23 @@ struct IpaHwSharedMemMhiMapping_t {
 
 
 /**
- * Structure holding the parameters for IPA_CPU_2_HW_CMD_MHI_INIT command.
+ * struct IpaHwMhiInitCmdData_t - Structure holding the parameters for
+ * IPA_CPU_2_HW_CMD_MHI_INIT command.
  * Parameters are sent as pointer thus should be reside in address accessible
  * to HW.
  * @msiAddress: The MSI base (in device space) used for asserting the interrupt
  *	(MSI) associated with the event ring
- * mmioBaseAddress: The address (in device space) of MMIO structure in
+ * @mmioBaseAddress: The address (in device space) of MMIO structure in
  *	host space
- * deviceMhiCtrlBaseAddress: Base address of the memory region in the device
+ * @deviceMhiCtrlBaseAddress: Base address of the memory region in the device
  *	address space where the MHI control data structures are allocated by
  *	the host, including channel context array, event context array,
  *	and rings. This value is used for host/device address translation.
- * deviceMhiDataBaseAddress: Base address of the memory region in the device
+ * @deviceMhiDataBaseAddress: Base address of the memory region in the device
  *	address space where the MHI data buffers are allocated by the host.
  *	This value is used for host/device address translation.
- * firstChannelIndex: First channel ID. Doorbell 0 is mapped to this channel
- * firstEventRingIndex: First event ring ID. Doorbell 16 is mapped to this
+ * @firstChannelIndex: First channel ID. Doorbell 0 is mapped to this channel
+ * @firstEventRingIndex: First event ring ID. Doorbell 16 is mapped to this
  *	event ring.
  */
 struct IpaHwMhiInitCmdData_t {
@@ -174,16 +179,19 @@ struct IpaHwMhiInitCmdData_t {
 };
 
 /**
- * Structure holding the parameters for IPA_CPU_2_HW_CMD_MHI_INIT_CHANNEL
+ * union IpaHwMhiInitChannelCmdData_t - Structure holding the parameters for
+ * IPA_CPU_2_HW_CMD_MHI_INIT_CHANNEL
  *	command. Parameters are sent as 32b immediate parameters.
- * @hannelHandle: The channel identifier as allocated by driver.
+ * @params.channelHandle: The channel identifier as allocated by driver.
  *	value is within the range 0 to IPA_HW_MAX_CHANNEL_HANDLE
- * @contexArrayIndex: Unique index for channels, between 0 and 255. The index is
+ * @params.contexArrayIndex: Unique index for channels, between 0 and 255. The index is
  *	used as an index in channel context array structures.
- * @bamPipeId: The IPA pipe number for pipe dedicated for this channel
- * @channelDirection: The direction of the channel as defined in the channel
+ * @params.bamPipeId: The IPA pipe number for pipe dedicated for this channel
+ * @params.channelDirection: The direction of the channel as defined in the channel
  *	type field (CHTYPE) in the channel context data structure.
- * @reserved: reserved.
+ * @params.reserved: reserved.
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwMhiInitChannelCmdData_t {
 	struct IpaHwMhiInitChannelCmdParams_t {
@@ -197,7 +205,8 @@ union IpaHwMhiInitChannelCmdData_t {
 };
 
 /**
- * Structure holding the parameters for IPA_CPU_2_HW_CMD_MHI_UPDATE_MSI command.
+ * struct IpaHwMhiMsiCmdData_t - Structure holding the parameters for
+ * IPA_CPU_2_HW_CMD_MHI_UPDATE_MSI command.
  * @msiAddress_low: The MSI lower base addr (in device space) used for asserting
  *	the interrupt (MSI) associated with the event ring.
  * @msiAddress_hi: The MSI higher base addr (in device space) used for asserting
@@ -213,16 +222,18 @@ struct IpaHwMhiMsiCmdData_t {
 };
 
 /**
- * Structure holding the parameters for
+ * union IpaHwMhiChangeChannelStateCmdData_t - Structure holding the parameters for
  * IPA_CPU_2_HW_CMD_MHI_CHANGE_CHANNEL_STATE command.
  * Parameters are sent as 32b immediate parameters.
- * @requestedState: The requested channel state as was indicated from Host.
+ * @params.requestedState: The requested channel state as was indicated from Host.
  *	Use IPA_HW_MHI_CHANNEL_STATES to specify the requested state
- * @channelHandle: The channel identifier as allocated by driver.
+ * @params.channelHandle: The channel identifier as allocated by driver.
  *	value is within the range 0 to IPA_HW_MAX_CHANNEL_HANDLE
- * @LPTransitionRejected: Indication that low power state transition was
+ * @params.LPTransitionRejected: Indication that low power state transition was
  *	rejected
- * @reserved: reserved
+ * @params.reserved: reserved
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwMhiChangeChannelStateCmdData_t {
 	struct IpaHwMhiChangeChannelStateCmdParams_t {
@@ -235,12 +246,14 @@ union IpaHwMhiChangeChannelStateCmdData_t {
 };
 
 /**
- * Structure holding the parameters for
+ * union IpaHwMhiStopEventUpdateData_t - Structure holding the parameters for
  *	IPA_CPU_2_HW_CMD_MHI_STOP_EVENT_UPDATE command.
  * Parameters are sent as 32b immediate parameters.
- * @channelHandle: The channel identifier as allocated by driver.
+ * @params.channelHandle: The channel identifier as allocated by driver.
  *	value is within the range 0 to IPA_HW_MAX_CHANNEL_HANDLE
- * @reserved: reserved
+ * @params.reserved: reserved
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwMhiStopEventUpdateData_t {
 	struct IpaHwMhiStopEventUpdateDataParams_t {
@@ -251,14 +264,17 @@ union IpaHwMhiStopEventUpdateData_t {
 };
 
 /**
- * Structure holding the parameters for
+ * union IpaHwMhiChangeChannelStateResponseData_t - Structure holding the
+ * parameters for
  *	IPA_HW_2_CPU_RESPONSE_MHI_CHANGE_CHANNEL_STATE response.
  * Parameters are sent as 32b immediate parameters.
- * @state: The new channel state. In case state is not as requested this is
+ * @params.state: The new channel state. In case state is not as requested this is
  *	error indication for the last command
- * @channelHandle: The channel identifier
- * @additonalParams: For stop: the number of pending transport descriptors
+ * @params.channelHandle: The channel identifier
+ * @params.additonalParams: For stop: the number of pending transport descriptors
  * currently queued
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwMhiChangeChannelStateResponseData_t {
 	struct IpaHwMhiChangeChannelStateResponseParams_t {
@@ -270,13 +286,15 @@ union IpaHwMhiChangeChannelStateResponseData_t {
 };
 
 /**
- * Structure holding the parameters for
+ * union IpaHwMhiChannelErrorEventData_t - Structure holding the parameters for
  *	IPA_HW_2_CPU_EVENT_MHI_CHANNEL_ERROR event.
  * Parameters are sent as 32b immediate parameters.
- * @errorType: Type of error - IPA_HW_CHANNEL_ERRORS
- * @channelHandle: The channel identifier as allocated by driver.
+ * @params.errorType: Type of error - IPA_HW_CHANNEL_ERRORS
+ * @params.channelHandle: The channel identifier as allocated by driver.
  *	value is within the range 0 to IPA_HW_MAX_CHANNEL_HANDLE
- * @reserved: reserved
+ * @params.reserved: reserved
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwMhiChannelErrorEventData_t {
 	struct IpaHwMhiChannelErrorEventParams_t {
@@ -288,12 +306,14 @@ union IpaHwMhiChannelErrorEventData_t {
 };
 
 /**
- * Structure holding the parameters for
+ * union IpaHwMhiChannelWakeupEventData_t - Structure holding the parameters for
  *	IPA_HW_2_CPU_EVENT_MHI_CHANNEL_WAKE_UP_REQUEST event.
  * Parameters are sent as 32b immediate parameters.
- * @channelHandle: The channel identifier as allocated by driver.
+ * @params.channelHandle: The channel identifier as allocated by driver.
  *	value is within the range 0 to IPA_HW_MAX_CHANNEL_HANDLE
- * @reserved: reserved
+ * @params.reserved: reserved
+ * @params: Structured view of the immediate parameter word
+ * @raw32b: Raw immediate parameter word
  */
 union IpaHwMhiChannelWakeupEventData_t {
 	struct IpaHwMhiChannelWakeupEventParams_t {
@@ -304,9 +324,11 @@ union IpaHwMhiChannelWakeupEventData_t {
 };
 
 /**
- * Structure holding the MHI Common statistics
+ * struct IpaHwStatsMhiCmnInfoData_t - Structure holding the MHI Common statistics
  * @numULDLSync: Number of times UL activity trigged due to DL activity
  * @numULTimerExpired: Number of times UL Accm Timer expired
+ * @numChEvCtxWpRead: Number of channel or event context write-pointer reads
+ * @reserved: Reserved firmware statistics word
  */
 struct IpaHwStatsMhiCmnInfoData_t {
 	u32 numULDLSync;
@@ -316,7 +338,7 @@ struct IpaHwStatsMhiCmnInfoData_t {
 };
 
 /**
- * Structure holding the MHI Channel statistics
+ * struct IpaHwStatsMhiCnlInfoData_t - Structure holding the MHI Channel statistics
  * @doorbellInt: The number of doorbell int
  * @reProccesed: The number of ring elements processed
  * @bamFifoFull: Number of times Bam Fifo got full
@@ -334,7 +356,7 @@ struct IpaHwStatsMhiCmnInfoData_t {
  * @thresholdMsi: Number of times device triggered MSI due to max pending
  *	events threshold reached
  * @numSuspend: Number of times channel was suspended
- * @numResume: Number of times channel was suspended
+ * @numResume: Number of times channel was resumed
  * @num_OOB: Number of times we indicated that we are OOB
  * @num_OOB_timer_expiry: Number of times we indicated that we are OOB
  *	after timer expiry
@@ -367,7 +389,7 @@ struct IpaHwStatsMhiCnlInfoData_t {
 };
 
 /**
- * Structure holding the MHI statistics
+ * struct IpaHwStatsMhiInfoData_t - Structure holding the MHI statistics
  * @mhiCmnStats: Stats pertaining to MHI
  * @mhiCnlStats: Stats pertaining to each channel
  */
@@ -378,7 +400,7 @@ struct IpaHwStatsMhiInfoData_t {
 };
 
 /**
- * Structure holding the MHI Common Config info
+ * struct IpaHwConfigMhiCmnInfoData_t - Structure holding the MHI Common Config info
  * @isDlUlSyncEnabled: Flag to indicate if DL-UL synchronization is enabled
  * @UlAccmVal: Out Channel(UL) accumulation time in ms when DL UL Sync is
  *	enabled
@@ -393,7 +415,8 @@ struct IpaHwConfigMhiCmnInfoData_t {
 };
 
 /**
- * Structure holding the parameters for MSI info data
+ * struct IpaHwConfigMhiMsiInfoData_t - Structure holding the parameters for
+ * MSI info data
  * @msiAddress_low: The MSI lower base addr (in device space) used for asserting
  *	the interrupt (MSI) associated with the event ring.
  * @msiAddress_hi: The MSI higher base addr (in device space) used for asserting
@@ -409,7 +432,7 @@ struct IpaHwConfigMhiMsiInfoData_t {
 };
 
 /**
- * Structure holding the MHI Channel Config info
+ * struct IpaHwConfigMhiCnlInfoData_t - Structure holding the MHI Channel Config info
  * @transferRingSize: The Transfer Ring size in terms of Ring Elements
  * @transferRingIndex: The Transfer Ring channel number as defined by host
  * @eventRingIndex: The Event Ring Index associated with this Transfer Ring
@@ -429,7 +452,7 @@ struct IpaHwConfigMhiCnlInfoData_t {
 };
 
 /**
- * Structure holding the MHI Event Config info
+ * struct IpaHwConfigMhiEventInfoData_t - Structure holding the MHI Event Config info
  * @msiVec: msi vector to invoke MSI interrupt
  * @intmodtValue: Interrupt moderation timer (in milliseconds)
  * @eventRingSize: The Event Ring size in terms of Ring Elements
@@ -449,7 +472,7 @@ struct IpaHwConfigMhiEventInfoData_t {
 };
 
 /**
- * Structure holding the MHI Config info
+ * struct IpaHwConfigMhiInfoData_t - Structure holding the MHI Config info
  * @mhiCmnCfg: Common Config pertaining to MHI
  * @mhiMsiCfg: Config pertaining to MSI config
  * @mhiCnlCfg: Config pertaining to each channel
