@@ -12,6 +12,7 @@
 #include <linux/skbuff.h>
 #include <linux/slab.h>
 #include <linux/mhi.h>
+#include <asm/unaligned.h>
 #include "mhi_internal.h"
 
 static char *mhi_generic_sfr = "unknown reason";
@@ -204,8 +205,9 @@ void mhi_ring_er_db(struct mhi_event *mhi_event)
 {
 	struct mhi_ring *ring = &mhi_event->ring;
 
-	mhi_event->db_cfg.process_db(mhi_event->mhi_cntrl, &mhi_event->db_cfg,
-				     ring->db_addr, *ring->ctxt_wp);
+	mhi_event->db_cfg.process_db(mhi_event->mhi_cntrl,
+				     &mhi_event->db_cfg, ring->db_addr,
+				     get_unaligned_le64(ring->ctxt_wp));
 }
 
 void mhi_ring_cmd_db(struct mhi_controller *mhi_cntrl, struct mhi_cmd *mhi_cmd)
@@ -214,7 +216,7 @@ void mhi_ring_cmd_db(struct mhi_controller *mhi_cntrl, struct mhi_cmd *mhi_cmd)
 	struct mhi_ring *ring = &mhi_cmd->ring;
 
 	db = ring->iommu_base + (ring->wp - ring->base);
-	*ring->ctxt_wp = db;
+	put_unaligned_le64(db, ring->ctxt_wp);
 	mhi_write_db(mhi_cntrl, ring->db_addr, db);
 }
 
@@ -225,7 +227,7 @@ void mhi_ring_chan_db(struct mhi_controller *mhi_cntrl,
 	dma_addr_t db;
 
 	db = ring->iommu_base + (ring->wp - ring->base);
-	*ring->ctxt_wp = db;
+	put_unaligned_le64(db, ring->ctxt_wp);
 	mhi_chan->db_cfg.process_db(mhi_cntrl, &mhi_chan->db_cfg, ring->db_addr,
 				    db);
 }
@@ -331,14 +333,14 @@ static void mhi_recycle_ev_ring_element(struct mhi_controller *mhi_cntrl,
 
 	/* update the WP */
 	ring->wp += ring->el_size;
-	ctxt_wp = *ring->ctxt_wp + ring->el_size;
+	ctxt_wp = get_unaligned_le64(ring->ctxt_wp) + ring->el_size;
 
 	if (ring->wp >= (ring->base + ring->len)) {
 		ring->wp = ring->base;
 		ctxt_wp = ring->iommu_base;
 	}
 
-	*ring->ctxt_wp = ctxt_wp;
+	put_unaligned_le64(ctxt_wp, ring->ctxt_wp);
 
 	/* update the RP */
 	ring->rp += ring->el_size;
@@ -361,7 +363,7 @@ static void mhi_recycle_fwd_ev_ring_element(struct mhi_controller *mhi_cntrl,
 
 	/* update the context WP based on the RP to support fast forwarding */
 	ctxt_wp = ring->iommu_base + (ring->wp - ring->base);
-	*ring->ctxt_wp = ctxt_wp;
+	put_unaligned_le64(ctxt_wp, ring->ctxt_wp);
 
 	/* update the RP */
 	ring->rp += ring->el_size;
