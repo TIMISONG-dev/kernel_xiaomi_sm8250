@@ -320,12 +320,12 @@ static int sdcardfs_get_tree(struct fs_context *fc)
 			__sdcardfs_fill_super);
 }
 
-void *sdcardfs_alloc_mnt_data(void)
+static void *sdcardfs_alloc_mnt_data(void)
 {
 	return kmalloc(sizeof(struct sdcardfs_vfsmount_options), GFP_KERNEL);
 }
 
-void sdcardfs_kill_sb(struct super_block *sb)
+static void sdcardfs_kill_sb(struct super_block *sb)
 {
 	struct sdcardfs_sb_info *sbi;
 
