@@ -763,13 +763,17 @@ int qcom_smem_get_free_space(unsigned host)
 }
 EXPORT_SYMBOL(qcom_smem_get_free_space);
 
-static int addr_in_range(void *virt_base, unsigned int size, void *addr)
+static bool addr_in_range(const void __iomem *virt_base, size_t size,
+			  const void *addr, unsigned long *offset)
 {
-	if (virt_base && addr >= virt_base &&
-			addr < virt_base + size)
-		return 1;
+	unsigned long base = (unsigned long)virt_base;
+	unsigned long address = (unsigned long)addr;
 
-	return 0;
+	if (!virt_base || address < base || address - base >= size)
+		return false;
+
+	*offset = address - base;
+	return true;
 }
 
 /**
@@ -783,14 +787,13 @@ phys_addr_t qcom_smem_virt_to_phys(void *p)
 {
 	struct smem_partition_desc *p_desc;
 	struct smem_region *area;
-	u64 offset;
+	unsigned long offset;
 	u32 i;
 
 	for (i = 0; i < SMEM_HOST_COUNT; i++) {
 		p_desc = &__smem->partition_desc[i];
 
-		if (addr_in_range(p_desc->virt_base, p_desc->size, p)) {
-			offset = p - p_desc->virt_base;
+		if (addr_in_range(p_desc->virt_base, p_desc->size, p, &offset)) {
 
 			return (phys_addr_t)p_desc->phys_base + offset;
 		}
@@ -798,8 +801,7 @@ phys_addr_t qcom_smem_virt_to_phys(void *p)
 
 	p_desc = &__smem->global_partition_desc;
 
-	if (addr_in_range(p_desc->virt_base, p_desc->size, p)) {
-		offset = p - p_desc->virt_base;
+	if (addr_in_range(p_desc->virt_base, p_desc->size, p, &offset)) {
 
 		return (phys_addr_t)p_desc->phys_base + offset;
 	}
@@ -807,8 +809,7 @@ phys_addr_t qcom_smem_virt_to_phys(void *p)
 	for (i = 0; i < __smem->num_regions; i++) {
 		area = &__smem->regions[i];
 
-		if (addr_in_range(area->virt_base, area->size, p)) {
-			offset = p - area->virt_base;
+		if (addr_in_range(area->virt_base, area->size, p, &offset)) {
 
 			return (phys_addr_t)area->aux_base + offset;
 		}
