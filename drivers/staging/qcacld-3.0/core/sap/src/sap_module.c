@@ -2760,7 +2760,6 @@ QDF_STATUS wlansap_filter_ch_based_acs(struct sap_context *sap_ctx,
 bool wlansap_is_6ghz_included_in_acs_range(struct sap_context *sap_ctx)
 {
 	uint32_t i;
-	uint32_t *ch_freq_list;
 
 	if (!sap_ctx || !sap_ctx->acs_cfg ||
 	    !sap_ctx->acs_cfg->master_freq_list ||
@@ -2768,9 +2767,9 @@ bool wlansap_is_6ghz_included_in_acs_range(struct sap_context *sap_ctx)
 		sap_err("NULL parameters");
 		return false;
 	}
-	ch_freq_list = sap_ctx->acs_cfg->master_freq_list;
 	for (i = 0; i < sap_ctx->acs_cfg->master_ch_list_count; i++) {
-		if (WLAN_REG_IS_6GHZ_CHAN_FREQ(ch_freq_list[i]))
+		if (WLAN_REG_IS_6GHZ_CHAN_FREQ(
+				sap_ctx->acs_cfg->master_freq_list[i]))
 			return true;
 	}
 	return false;
@@ -2793,7 +2792,6 @@ wlansap_get_safe_channel(struct sap_context *sap_ctx)
 	struct mac_context *mac;
 	uint32_t pcl_freqs[NUM_CHANNELS];
 	QDF_STATUS status;
-	mac_handle_t mac_handle;
 	uint32_t pcl_len = 0;
 
 	if (!sap_ctx) {
@@ -2806,7 +2804,7 @@ wlansap_get_safe_channel(struct sap_context *sap_ctx)
 		sap_err("Invalid MAC context");
 		return INVALID_CHANNEL_ID;
 	}
-	mac_handle = MAC_HANDLE(mac);
+	MAC_HANDLE(mac);
 
 	/* get the channel list for current domain */
 	status = policy_mgr_get_valid_chans(mac->psoc, pcl_freqs, &pcl_len);
@@ -2866,7 +2864,6 @@ wlansap_get_safe_channel_from_pcl_and_acs_range(struct sap_context *sap_ctx)
 	struct sir_pcl_list pcl = {0};
 	uint32_t pcl_freqs[NUM_CHANNELS] = {0};
 	QDF_STATUS status;
-	mac_handle_t mac_handle;
 	uint32_t pcl_len = 0;
 
 	if (!sap_ctx) {
@@ -2879,7 +2876,7 @@ wlansap_get_safe_channel_from_pcl_and_acs_range(struct sap_context *sap_ctx)
 		sap_err("Invalid MAC context");
 		return INVALID_CHANNEL_ID;
 	}
-	mac_handle = MAC_HANDLE(mac);
+	MAC_HANDLE(mac);
 
 	if (policy_mgr_get_connection_count(mac->psoc) == 1) {
 		sap_debug("only SAP present return best channel from ACS list");

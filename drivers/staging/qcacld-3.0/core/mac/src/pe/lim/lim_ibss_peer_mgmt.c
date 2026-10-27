@@ -1062,7 +1062,6 @@ void lim_process_ibss_del_sta_rsp(struct mac_context *mac_ctx,
 {
 	tpDphHashNode sta_ds = NULL;
 	tpDeleteStaParams del_sta_params = (tpDeleteStaParams) lim_msg->bodyptr;
-	tSirResultCodes status = eSIR_SME_SUCCESS;
 
 	if (!del_sta_params) {
 		pe_err("del_sta_params is NULL");
@@ -1070,7 +1069,6 @@ void lim_process_ibss_del_sta_rsp(struct mac_context *mac_ctx,
 	}
 	if (!LIM_IS_IBSS_ROLE(pe_session)) {
 		pe_err("Session %d is not IBSS role", del_sta_params->assocId);
-		status = eSIR_SME_REFUSED;
 		goto skip_event;
 	}
 
@@ -1079,13 +1077,11 @@ void lim_process_ibss_del_sta_rsp(struct mac_context *mac_ctx,
 	if (!sta_ds) {
 		pe_err("DPH Entry for STA %X is missing",
 			del_sta_params->assocId);
-		status = eSIR_SME_REFUSED;
 		goto skip_event;
 	}
 
 	if (QDF_STATUS_SUCCESS != del_sta_params->status) {
 		pe_err("DEL STA failed!");
-		status = eSIR_SME_REFUSED;
 		goto skip_event;
 	}
 	pe_debug("Deleted STA associd %d MAC " QDF_MAC_ADDR_FMT,
