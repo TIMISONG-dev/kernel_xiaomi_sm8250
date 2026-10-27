@@ -58,7 +58,7 @@ static inline void qstr_init(struct qstr *q, const char *name)
 {
 	q->name = name;
 	q->len = strlen(q->name);
-	q->hash = full_name_case_hash(0, q->name, q->len);
+	q->hash = full_name_case_hash(NULL, q->name, q->len);
 }
 
 static inline int qstr_copy(const struct qstr *src, struct qstr *dest)
