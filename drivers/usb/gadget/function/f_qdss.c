@@ -221,14 +221,11 @@ static void qdss_write_complete(struct usb_ep *ep,
 	struct f_qdss *qdss = ep->driver_data;
 	struct qdss_req *qreq = req->context;
 	struct qdss_request *d_req = qreq->qdss_req;
-	struct usb_ep *in;
 	struct list_head *list_pool;
 	enum qdss_state state;
 	unsigned long flags;
 
 	qdss_log("%s\n", __func__);
-
-	in = qdss->port.data;
 	list_pool = &qdss->data_write_pool;
 	state = USB_QDSS_DATA_WRITE_DONE;
 
@@ -896,7 +893,6 @@ EXPORT_SYMBOL(usb_qdss_open);
 void usb_qdss_close(struct usb_qdss_ch *ch)
 {
 	struct f_qdss *qdss = ch->priv_usb;
-	struct usb_gadget *gadget;
 	unsigned long flags;
 	int status;
 	struct qdss_req *qreq;
@@ -941,7 +937,6 @@ close:
 		usb_ep_dequeue(qdss->port.data, qdss->endless_req);
 		spin_lock_irqsave(&channel_lock, flags);
 	}
-	gadget = qdss->gadget;
 	ch->app_conn = 0;
 	spin_unlock_irqrestore(&channel_lock, flags);
 
