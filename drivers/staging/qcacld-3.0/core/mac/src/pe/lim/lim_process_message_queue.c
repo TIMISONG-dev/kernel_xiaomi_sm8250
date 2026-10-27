@@ -1094,7 +1094,6 @@ lim_check_mgmt_registered_frames(struct mac_context *mac_ctx, uint8_t *buff_desc
 	bool match = false;
 	tpSirMacActionFrameHdr action_hdr;
 	uint8_t actionID, category;
-	QDF_STATUS qdf_status;
 
 	hdr = WMA_GET_RX_MAC_HEADER(buff_desc);
 	fc = hdr->fc;
@@ -1135,8 +1134,7 @@ lim_check_mgmt_registered_frames(struct mac_context *mac_ctx, uint8_t *buff_desc
 		}
 
 		qdf_mutex_acquire(&mac_ctx->lim.lim_frame_register_lock);
-		qdf_status =
-			qdf_list_peek_next(
+		qdf_list_peek_next(
 			&mac_ctx->lim.gLimMgmtFrameRegistratinQueue,
 			(qdf_list_node_t *) mgmt_frame,
 			(qdf_list_node_t **) &next_frm);
@@ -1262,7 +1260,6 @@ lim_handle80211_frames(struct mac_context *mac, struct scheduler_msg *limMsg,
 	tpSirMacMgmtHdr pHdr = NULL;
 	struct pe_session *pe_session = NULL;
 	uint8_t sessionId;
-	bool isFrmFt = false;
 	uint32_t frequency;
 	bool is_hw_sbs_capable = false;
 
@@ -1271,7 +1268,7 @@ lim_handle80211_frames(struct mac_context *mac, struct scheduler_msg *limMsg,
 				  (uint32_t **) &pRxPacketInfo);
 
 	pHdr = WMA_GET_RX_MAC_HEADER(pRxPacketInfo);
-	isFrmFt = WMA_GET_RX_FT_DONE(pRxPacketInfo);
+	WMA_GET_RX_FT_DONE(pRxPacketInfo);
 	frequency = WMA_GET_RX_FREQ(pRxPacketInfo);
 	fc = pHdr->fc;
 

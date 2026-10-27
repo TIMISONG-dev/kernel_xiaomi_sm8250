@@ -183,10 +183,9 @@ qdf_export_symbol(wlan_vdev_mlme_is_active);
 QDF_STATUS wlan_vdev_chan_config_valid(struct wlan_objmgr_vdev *vdev)
 {
 	enum wlan_vdev_state state;
-	enum wlan_vdev_state substate;
 
 	state = wlan_vdev_mlme_get_state(vdev);
-	substate = wlan_vdev_mlme_get_substate(vdev);
+	wlan_vdev_mlme_get_substate(vdev);
 	if (!((state == WLAN_VDEV_S_INIT) || (state == WLAN_VDEV_S_STOP)))
 		return QDF_STATUS_SUCCESS;
 

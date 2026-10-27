@@ -808,7 +808,7 @@ rrm_fill_beacon_ies(struct mac_context *mac, uint8_t *pIes,
 		    uint8_t numEids, uint8_t start_offset,
 		    struct bss_description *bss_desc)
 {
-	uint8_t *pBcnIes, count = 0, i;
+	uint8_t *pBcnIes, i;
 	uint16_t BcnNumIes, total_ies_len, len;
 	uint8_t rem_len = 0;
 
@@ -872,7 +872,6 @@ rrm_fill_beacon_ies(struct mac_context *mac, uint8_t *pIes,
 					qdf_mem_copy(pIes, pBcnIes, len);
 					pIes += len;
 					*pNumIes += len;
-					count++;
 				} else {
 					/*
 					 * If max size of fragment is reached,

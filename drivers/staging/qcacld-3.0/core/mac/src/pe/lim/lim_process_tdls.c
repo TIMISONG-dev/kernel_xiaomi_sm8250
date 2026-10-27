@@ -498,7 +498,6 @@ static QDF_STATUS lim_send_tdls_dis_req_frame(struct mac_context *mac,
 	tDot11fTDLSDisReq tdlsDisReq;
 	uint32_t status = 0;
 	uint32_t nPayload = 0;
-	uint32_t size = 0;
 	uint32_t nBytes = 0;
 	uint32_t header_offset = 0;
 	uint8_t *pFrame;
@@ -528,7 +527,6 @@ static QDF_STATUS lim_send_tdls_dis_req_frame(struct mac_context *mac,
 	tdlsDisReq.Action.action = TDLS_DISCOVERY_REQUEST;
 	tdlsDisReq.DialogToken.token = dialog;
 
-	size = sizeof(tSirMacAddr);
 
 	populate_dot11f_link_iden(mac, pe_session, &tdlsDisReq.LinkIdentifier,
 				  peer_mac, TDLS_INITIATOR);
@@ -3020,7 +3018,6 @@ static void lim_check_aid_and_delete_peer(struct mac_context *p_mac,
 	int i, aid;
 	size_t aid_bitmap_size = sizeof(session_entry->peerAIDBitmap);
 	struct qdf_mac_addr mac_addr;
-	QDF_STATUS status;
 	/*
 	 * Check all the set bit in peerAIDBitmap and delete the peer
 	 * (with that aid) entry from the hash table and add the aid
@@ -3049,7 +3046,7 @@ static void lim_check_aid_and_delete_peer(struct mac_context *p_mac,
 			qdf_mem_copy(mac_addr.bytes, stads->staAddr,
 				     QDF_MAC_ADDR_SIZE);
 
-			status = lim_tdls_del_sta(p_mac, mac_addr,
+			lim_tdls_del_sta(p_mac, mac_addr,
 						  session_entry, false);
 
 			dph_delete_hash_entry(p_mac,
