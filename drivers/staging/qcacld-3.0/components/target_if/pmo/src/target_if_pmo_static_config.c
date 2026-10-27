@@ -67,7 +67,6 @@ QDF_STATUS target_if_pmo_send_action_frame_patterns(
 		struct wlan_objmgr_vdev *vdev,
 		struct pmo_action_wakeup_set_params *ip_cmd)
 {
-	uint8_t vdev_id;
 	struct wlan_objmgr_psoc *psoc;
 	QDF_STATUS status;
 	wmi_unified_t wmi_handle;
@@ -78,7 +77,7 @@ QDF_STATUS target_if_pmo_send_action_frame_patterns(
 	}
 
 	psoc = wlan_vdev_get_psoc(vdev);
-	vdev_id = wlan_vdev_get_id(vdev);
+	wlan_vdev_get_id(vdev);
 	if (!psoc) {
 		target_if_err("psoc handle is NULL");
 		return QDF_STATUS_E_INVAL;
