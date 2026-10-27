@@ -693,28 +693,21 @@ static int aw2015_led_err_handle(struct aw2015_led *led_array, int parsed_leds)
  */
 static u8 aw2015_led_find_closest_time_idx(uint32_t time)
 {
-	const u8 cnt = sizeof(aw2015_ton_toff) / sizeof(uint32_t);
-	u8 idx;
-	if (time <= aw2015_ton_toff[0]) {
-		idx = 0;
-	} else if (time >= aw2015_ton_toff[cnt - 1]) {
-		idx = cnt - 1;
-	} else {
-		int i = 0;
-		for (; i < cnt - 1; ++i) {
-			if (time >= aw2015_ton_toff[i] &&
-			    time <= aw2015_ton_toff[i + 1]) {
-				if ((time - aw2015_ton_toff[i]) <
-				    (aw2015_ton_toff[i + 1] - time)) {
-					idx = i;
-				} else {
-					idx = i + 1;
-				}
-				break;
-			}
+	u8 i;
+
+	if (time <= aw2015_ton_toff[0])
+		return 0;
+
+	for (i = 1; i < ARRAY_SIZE(aw2015_ton_toff); i++) {
+		if (time <= aw2015_ton_toff[i]) {
+			if (time - aw2015_ton_toff[i - 1] <
+			    aw2015_ton_toff[i] - time)
+				return i - 1;
+			return i;
 		}
 	}
-	return idx;
+
+	return ARRAY_SIZE(aw2015_ton_toff) - 1;
 }
 
 /*
