@@ -874,7 +874,6 @@ int ipa_rm_resource_producer_release(struct ipa_rm_resource_prod *producer)
 	int peers_index;
 	int result = 0;
 	struct ipa_rm_resource *consumer;
-	int consumer_result;
 	enum ipa_rm_resource_state state;
 
 	state = producer->resource.state;
@@ -902,7 +901,7 @@ int ipa_rm_resource_producer_release(struct ipa_rm_resource_prod *producer)
 				producer->resource.peers_list);
 		if (consumer) {
 			producer->pending_release++;
-			consumer_result = ipa_rm_resource_consumer_release(
+			ipa_rm_resource_consumer_release(
 				(struct ipa_rm_resource_cons *)consumer,
 				producer->resource.max_bw,
 				true);

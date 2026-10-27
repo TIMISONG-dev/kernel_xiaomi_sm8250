@@ -3394,7 +3394,6 @@ int ipahal_fltrt_init(enum ipa_hw_type ipa_hw_type)
 	struct ipa_mem_buffer *mem;
 	int rc = -EFAULT;
 	u32 eq_bits;
-	u8 *eq_bitfield;
 
 	IPAHAL_DBG("Entry - HW_TYPE=%d\n", ipa_hw_type);
 
@@ -3527,7 +3526,6 @@ int ipahal_fltrt_init(enum ipa_hw_type ipa_hw_type)
 	}
 
 	eq_bits = 0;
-	eq_bitfield = ipahal_fltrt_objs[ipa_hw_type].eq_bitfield;
 	for (i = 0; i < IPA_EQ_MAX; i++) {
 		if (!IPA_IS_RULE_EQ_VALID(i))
 			continue;

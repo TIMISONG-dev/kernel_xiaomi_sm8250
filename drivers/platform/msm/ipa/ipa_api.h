@@ -11,6 +11,14 @@
 #ifndef _IPA_API_H_
 #define _IPA_API_H_
 
+int ipa_sys_setup(struct ipa_sys_connect_params *sys_in,
+	unsigned long *ipa_bam_or_gsi_hdl,
+	u32 *ipa_pipe_num, u32 *clnt_hdl, bool en_status);
+int ipa_sys_teardown(u32 clnt_hdl);
+int ipa_sys_update_gsi_hdls(u32 clnt_hdl, unsigned long gsi_ch_hdl,
+	unsigned long gsi_ev_hdl);
+struct device *ipa_get_pdev(void);
+
 struct ipa_api_controller {
 
 	int (*ipa_connect)(const struct ipa_connect_params *in,
