@@ -656,12 +656,10 @@ enum {
 static int snd_compressed_ioctl32(struct snd_pcm_substream *substream,
 				 unsigned int cmd, void __user *arg)
 {
-	struct snd_pcm_runtime *runtime;
 	int err = 0;
 
 	if (PCM_RUNTIME_CHECK(substream))
 		return -ENXIO;
-	runtime = substream->runtime;
 	if (substream->ops->compat_ioctl) {
 		err = substream->ops->compat_ioctl(substream, cmd, arg);
 	} else {
@@ -674,12 +672,10 @@ static int snd_compressed_ioctl32(struct snd_pcm_substream *substream,
 static int snd_user_ioctl32(struct snd_pcm_substream *substream,
 			  unsigned int cmd, void __user *arg)
 {
-	struct snd_pcm_runtime *runtime;
 	int err = -ENOIOCTLCMD;
 
 	if (PCM_RUNTIME_CHECK(substream))
 		return -ENXIO;
-	runtime = substream->runtime;
 	if (substream->ops->compat_ioctl)
 		err = substream->ops->compat_ioctl(substream, cmd, arg);
 	return err;
