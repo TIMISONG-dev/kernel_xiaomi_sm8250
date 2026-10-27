@@ -695,10 +695,8 @@ static bool mlme_vdev_subst_start_start_progress_event(void *ctx,
 		uint16_t event, uint16_t event_data_len, void *event_data)
 {
 	struct vdev_mlme_obj *vdev_mlme = (struct vdev_mlme_obj *)ctx;
-	struct wlan_objmgr_vdev *vdev;
 	bool status;
 
-	vdev = vdev_mlme->vdev;
 
 	switch (event) {
 	case WLAN_VDEV_SM_EV_START_REQ:
@@ -799,10 +797,8 @@ static bool mlme_vdev_subst_start_restart_progress_event(void *ctx,
 		uint16_t event, uint16_t event_data_len, void *event_data)
 {
 	struct vdev_mlme_obj *vdev_mlme = (struct vdev_mlme_obj *)ctx;
-	struct wlan_objmgr_vdev *vdev;
 	bool status;
 
-	vdev = vdev_mlme->vdev;
 
 	switch (event) {
 	case WLAN_VDEV_SM_EV_RESTART_REQ:

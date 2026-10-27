@@ -340,7 +340,6 @@ static void lim_send_mlm_assoc_req(struct mac_context *mac_ctx,
 	uint32_t val;
 	uint16_t caps;
 	uint32_t tele_bcn = 0;
-	tpSirMacCapabilityInfo cap_info;
 
 	if (!session_entry->lim_join_req) {
 		pe_err("Join Request is NULL");
@@ -390,7 +389,6 @@ static void lim_send_mlm_assoc_req(struct mac_context *mac_ctx,
 	}
 
 	assoc_req->capabilityInfo = caps;
-	cap_info = ((tpSirMacCapabilityInfo) &assoc_req->capabilityInfo);
 
 	/*
 	 * If telescopic beaconing is enabled, set listen interval to
@@ -1351,7 +1349,6 @@ void lim_handle_sme_join_result(struct mac_context *mac_ctx,
 	struct pe_session *session)
 {
 	join_params param;
-	QDF_STATUS status;
 
 	if (!session) {
 		pe_err("session is NULL");
@@ -1375,11 +1372,11 @@ void lim_handle_sme_join_result(struct mac_context *mac_ctx,
 	mlme_set_connection_fail(session->vdev, true);
 	if (wlan_vdev_mlme_get_substate(session->vdev) ==
 	    WLAN_VDEV_SS_START_START_PROGRESS)
-		status = wlan_vdev_mlme_sm_deliver_evt(session->vdev,
+		wlan_vdev_mlme_sm_deliver_evt(session->vdev,
 					       WLAN_VDEV_SM_EV_START_REQ_FAIL,
 					       sizeof(param), &param);
 	else
-		status = wlan_vdev_mlme_sm_deliver_evt(session->vdev,
+		wlan_vdev_mlme_sm_deliver_evt(session->vdev,
 					       WLAN_VDEV_SM_EV_CONNECTION_FAIL,
 					       sizeof(param), &param);
 
@@ -1845,7 +1842,6 @@ void lim_process_sta_mlm_del_sta_rsp(struct mac_context *mac,
 				     struct scheduler_msg *limMsgQ,
 				     struct pe_session *pe_session)
 {
-	tSirResultCodes status_code = eSIR_SME_SUCCESS;
 	tpDeleteStaParams pDelStaParams = (tpDeleteStaParams) limMsgQ->bodyptr;
 
 	if (!pDelStaParams) {
@@ -1869,7 +1865,6 @@ void lim_process_sta_mlm_del_sta_rsp(struct mac_context *mac,
 	if (eLIM_MLM_WT_DEL_STA_RSP_STATE != pe_session->limMlmState) {
 		pe_err("Received unexpected WDA_DELETE_STA_RSP in state %s",
 			lim_mlm_state_str(pe_session->limMlmState));
-		status_code = eSIR_SME_REFUSED;
 		goto end;
 	}
 	/*
@@ -2226,7 +2221,6 @@ static void lim_process_sta_mlm_add_bss_rsp(struct mac_context *mac_ctx,
 {
 	tLimMlmAssocCnf mlm_assoc_cnf;
 	uint32_t msg_type = LIM_MLM_ASSOC_CNF;
-	uint32_t sub_type = LIM_ASSOC;
 	tpDphHashNode sta_ds = NULL;
 	uint8_t update_sta = false;
 
@@ -2235,7 +2229,6 @@ static void lim_process_sta_mlm_add_bss_rsp(struct mac_context *mac_ctx,
 		|| (eLIM_MLM_WT_ADD_BSS_RSP_FT_REASSOC_STATE ==
 		session_entry->limMlmState)) {
 		msg_type = LIM_MLM_REASSOC_CNF;
-		sub_type = LIM_REASSOC;
 		/*
 		 * If Reassoc is happening for the same BSS, then
 		 * use the existing StaId and indicate to HAL to update

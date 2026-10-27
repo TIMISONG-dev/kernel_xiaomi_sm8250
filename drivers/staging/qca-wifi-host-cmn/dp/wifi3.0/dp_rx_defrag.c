@@ -1405,7 +1405,7 @@ static QDF_STATUS dp_rx_defrag_reo_reinject(struct dp_peer *peer,
 static QDF_STATUS dp_rx_defrag(struct dp_peer *peer, unsigned tid,
 			qdf_nbuf_t frag_list_head, qdf_nbuf_t frag_list_tail)
 {
-	qdf_nbuf_t tmp_next, prev;
+	qdf_nbuf_t tmp_next;
 	qdf_nbuf_t cur = frag_list_head, msdu;
 	uint32_t index, tkip_demic = 0;
 	uint16_t hdr_space;
@@ -1423,7 +1423,6 @@ static QDF_STATUS dp_rx_defrag(struct dp_peer *peer, unsigned tid,
 		tmp_next = qdf_nbuf_next(cur);
 		qdf_nbuf_set_next(cur, NULL);
 		qdf_nbuf_trim_tail(cur, DEFRAG_IEEE80211_FCS_LEN);
-		prev = cur;
 		qdf_nbuf_set_next(cur, tmp_next);
 		cur = tmp_next;
 	}

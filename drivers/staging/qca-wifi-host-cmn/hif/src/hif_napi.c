@@ -587,7 +587,12 @@ int hif_napi_event(struct hif_opaque_softc *hif_ctx, enum qca_napi_event event,
 	}
 
 	case NAPI_EVT_TPUT_STATE: {
-		tput_mode = (enum qca_napi_tput_state)data;
+		/* Throughput events encode a state, not a pointer payload. */
+		if ((uintptr_t)data > QCA_NAPI_TPUT_HI) {
+			rc = -EINVAL;
+			break;
+		}
+		tput_mode = (uintptr_t)data;
 		if (tput_mode == QCA_NAPI_TPUT_LO) {
 			/* from TPUT_HI -> TPUT_LO */
 			NAPI_DEBUG("%s: Moving to napi_tput_LO state",
@@ -1145,7 +1150,6 @@ static int hnc_link_clusters(struct qca_napi_data *napid)
 	int rc = 0;
 
 	int i;
-	int it = 0;
 	uint32_t cl_done = 0x0;
 	int cl, curcl, curclhead = 0;
 	int more;
@@ -1159,7 +1163,7 @@ static int hnc_link_clusters(struct qca_napi_data *napid)
 
 	do {
 		more = 0;
-		it++; curcl = -1;
+		curcl = -1;
 		for (i = 0; i < NR_CPUS; i++) {
 			cl = cpus[i].cluster_id;
 			NAPI_DEBUG("Processing cpu[%d], cluster=%d\n",

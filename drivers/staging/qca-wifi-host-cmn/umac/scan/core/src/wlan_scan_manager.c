@@ -146,7 +146,6 @@ static void scm_scan_post_event(struct wlan_objmgr_vdev *vdev,
 	uint32_t i = 0;
 	struct wlan_scan_obj *scan;
 	struct pdev_scan_ev_handler *pdev_ev_handler;
-	struct cb_handler *cb_handlers;
 	struct scan_requester_info *requesters;
 	struct scan_event_listeners *listeners;
 
@@ -162,7 +161,6 @@ static void scm_scan_post_event(struct wlan_objmgr_vdev *vdev,
 	pdev_ev_handler = wlan_vdev_get_pdev_scan_ev_handlers(vdev);
 	if (!pdev_ev_handler)
 		return;
-	cb_handlers = &(pdev_ev_handler->cb_handlers[0]);
 	requesters = scan->requesters;
 
 	listeners = qdf_mem_malloc_atomic(sizeof(*listeners));

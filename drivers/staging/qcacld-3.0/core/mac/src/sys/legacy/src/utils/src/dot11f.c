@@ -12965,7 +12965,7 @@ static uint32_t unpack_core(tpAniSirGlobal pCtx,
 	const tIEDefn *pIe;
 	uint8_t   *pBufRemaining;
 	uint32_t  nBufRemaining, status;
-	uint8_t   eid, len, extn_eid;
+	uint8_t   len;
 	tFRAMES_BOOL  *pfFound;
 	uint32_t  countOffset = 0;
 
@@ -13218,18 +13218,15 @@ static uint32_t unpack_core(tpAniSirGlobal pCtx,
 
 		pIe = find_ie_defn(pCtx, pBufRemaining, nBufRemaining, IEs);
 
-		eid = *pBufRemaining++; --nBufRemaining;
+		pBufRemaining++; --nBufRemaining;
 		len = *pBufRemaining++; --nBufRemaining;
 		if (pIe && pIe->extn_eid) {
-			extn_eid = *pBufRemaining++; --nBufRemaining;
+			pBufRemaining++; --nBufRemaining;
 			len--;
 		}
 
 		if (pIe && pIe->noui) {
 			if (pIe->noui > nBufRemaining) {
-				FRAMES_LOG4(pCtx, FRLOGW, FRFL("IE %d extn id %d reports "
-					"length %d, but it has an OUI of %d bytes.\n"),
-					eid, extn_eid, len, pIe->noui);
 				FRAMES_DUMP(pCtx, FRLOG1, pBuf, nBuf);
 				FRAMES_LOG2(pCtx, FRLOG1, FRFL("We've parsed %d by"
 					"tes of this buffer, and show %d left.\n"),
@@ -13244,9 +13241,6 @@ static uint32_t unpack_core(tpAniSirGlobal pCtx,
 		}
 
 		if (len > nBufRemaining) {
-			FRAMES_LOG4(pCtx, FRLOGW, FRFL("IE %d extn id %d reports length %"
-				"d, but there are only %d bytes remaining in this"
-				" frame.\n"), eid, extn_eid, len, nBufRemaining);
 			FRAMES_DUMP(pCtx, FRLOG1, pBuf, nBuf);
 			FRAMES_LOG2(pCtx, FRLOG1, FRFL("We've parsed %d by"
 				"tes of this buffer, and show %d left.\n"),
@@ -14845,8 +14839,6 @@ static uint32_t unpack_core(tpAniSirGlobal pCtx,
 					(++(*(uint16_t *)(pFrm + pIe->countOffset)));
 			}
 		} else {
-			FRAMES_LOG3(pCtx, FRLOG3, FRFL("Skipping unknown IE %d extn ID %d"
-				     " (length %d)\n"), eid, extn_eid, len);
 			FRAMES_DUMP(pCtx, FRLOG3, pBufRemaining - 2, len);
 			status |= DOT11F_UNKNOWN_IES;
 		}
@@ -16750,7 +16742,7 @@ static uint32_t get_packed_size_core(tpAniSirGlobal pCtx,
 				      const tIEDefn  IEs[])
 {
 	const tIEDefn *pIe;
-	uint16_t  i, n;
+	uint16_t  i;
 	uint32_t  status;
 	tFRAMES_BOOL *pfFound;
 	uint32_t countOffset = 0;
@@ -16762,7 +16754,6 @@ static uint32_t get_packed_size_core(tpAniSirGlobal pCtx,
 
 	(void)pCtx; /* Shutup the compiler if we have no FFs nor IEs... */
 	i = 0;
-	n = 0;
 	pIe = &(IEs[0]);
 	while (0xff != pIe->eid || pIe->extn_eid) {
 		pfFound = (tFRAMES_BOOL *)(pFrm + pIe->offset +

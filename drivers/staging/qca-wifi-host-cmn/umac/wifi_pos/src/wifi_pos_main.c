@@ -93,7 +93,8 @@ static uint8_t *
 wifi_pos_prepare_reg_resp(uint32_t *rsp_len,
 			  struct app_reg_rsp_vdev_info *vdevs_info)
 {
-	uint32_t *nl_sign;
+	uint32_t nl_sign;
+	uint8_t *flags;
 	uint8_t *resp_buf;
 	struct wifi_app_reg_rsp *app_reg_rsp;
 
@@ -113,8 +114,10 @@ wifi_pos_prepare_reg_resp(uint32_t *rsp_len,
 	qdf_mem_copy(&app_reg_rsp->vdevs, vdevs_info,
 		     sizeof(struct app_reg_rsp_vdev_info) * vdev_idx);
 
-	nl_sign = (uint32_t *)&app_reg_rsp->vdevs[vdev_idx];
-	*nl_sign |= NL_ENABLE_OEM_REQ_RSP;
+	flags = (uint8_t *)&app_reg_rsp->vdevs[vdev_idx];
+	qdf_mem_copy(&nl_sign, flags, sizeof(nl_sign));
+	nl_sign |= NL_ENABLE_OEM_REQ_RSP;
+	qdf_mem_copy(flags, &nl_sign, sizeof(nl_sign));
 
 	return resp_buf;
 }
@@ -146,7 +149,6 @@ static QDF_STATUS wifi_pos_process_data_req(struct wlan_objmgr_psoc *psoc,
 {
 	uint8_t idx;
 	uint32_t sub_type = 0;
-	uint32_t channel_mhz = 0;
 	uint32_t pdev_id = 0;
 	uint32_t offset;
 	struct oem_data_req data_req;
@@ -179,7 +181,7 @@ static QDF_STATUS wifi_pos_process_data_req(struct wlan_objmgr_psoc *psoc,
 
 			if (req->field_info_buf->fields[idx].id ==
 					WMIRTT_FIELD_ID_channel_mhz) {
-				channel_mhz = *((uint32_t *)&req->buf[offset]);
+				/* Channel is forwarded in the request payload. */
 				continue;
 			}
 
@@ -466,7 +468,7 @@ static QDF_STATUS wifi_pos_process_ch_info_req(struct wlan_objmgr_psoc *psoc,
 {
 	uint8_t idx, band_mask;
 	uint8_t *buf;
-	uint32_t len, i, freq;
+	uint32_t len, i;
 	uint32_t reg_info_1;
 	uint32_t reg_info_2;
 	bool oem_6g_support_disable;
@@ -511,9 +513,9 @@ static QDF_STATUS wifi_pos_process_ch_info_req(struct wlan_objmgr_psoc *psoc,
 
 		/* ch_list has the frequencies in order of 2.4g, 5g & 6g */
 		for (i = 0; i < ch_list->num_channels; i++) {
-			freq = ch_list->chan_info[i].center_freq;
 			if (oem_6g_support_disable &&
-			    WLAN_REG_IS_6GHZ_CHAN_FREQ(freq))
+			    WLAN_REG_IS_6GHZ_CHAN_FREQ(
+				ch_list->chan_info[i].center_freq))
 				continue;
 			num_valid_channels++;
 		}
@@ -854,7 +856,6 @@ QDF_STATUS wifi_pos_populate_caps(struct wlan_objmgr_psoc *psoc,
 			   struct wifi_pos_driver_caps *caps)
 {
 	uint16_t i, count = 0;
-	uint32_t freq;
 	struct wifi_pos_psoc_priv_obj *wifi_pos_obj =
 					wifi_pos_get_psoc_priv_obj(psoc);
 	struct wifi_pos_channel_list *ch_list = NULL;
@@ -887,8 +888,8 @@ QDF_STATUS wifi_pos_populate_caps(struct wlan_objmgr_psoc *psoc,
 
 	/* copy valid channels list to caps */
 	for (i = 0; i < ch_list->num_channels; i++) {
-		freq = ch_list->chan_info[i].center_freq;
-		if (WLAN_REG_IS_6GHZ_CHAN_FREQ(freq))
+		if (WLAN_REG_IS_6GHZ_CHAN_FREQ(
+				ch_list->chan_info[i].center_freq))
 			continue;
 		caps->channel_list[count++] = ch_list->chan_info[i].chan_num;
 	}

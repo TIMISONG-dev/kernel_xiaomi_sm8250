@@ -742,7 +742,6 @@ static int32_t wma_set_priv_cfg(tp_wma_handle wma_handle,
 		uint8_t mcc_channel = privcmd->param_value & 0x000000FF;
 		uint8_t mcc_channel_latency =
 			(privcmd->param_value & 0x0000FF00) >> 8;
-		int ret = -1;
 
 		WMA_LOGD("%s: Parsed input: Channel #1:%d, latency:%dms",
 			__func__, mcc_channel, mcc_channel_latency);
@@ -763,7 +762,6 @@ static int32_t wma_set_priv_cfg(tp_wma_handle wma_handle,
 			(privcmd->param_value & 0x0000FF00) >> 8;
 		uint8_t adapter_1_quota =
 			(privcmd->param_value & 0x00FF0000) >> 16;
-		int ret = -1;
 
 		WMA_LOGD("%s: Parsed input: Channel #1:%d, Channel #2:%d, quota 1:%dms",
 			  __func__, adapter_1_chan_number,
@@ -1772,7 +1770,6 @@ static void wma_shutdown_notifier_cb(void *priv)
 {
 	tp_wma_handle wma_handle = priv;
 	struct scheduler_msg msg = { 0 };
-	QDF_STATUS status;
 
 	ucfg_pmo_psoc_wakeup_host_event_received(wma_handle->psoc);
 	wmi_stop(wma_handle->wmi_handle);
@@ -1780,7 +1777,7 @@ static void wma_shutdown_notifier_cb(void *priv)
 	msg.bodyptr = wma_handle;
 	msg.callback = wma_cleanup_vdev_resp_and_hold_req;
 	msg.flush_callback = wma_cleanup_vdev_resp_and_hold_req_flush_cb;
-	status = scheduler_post_message(QDF_MODULE_ID_WMA,
+	scheduler_post_message(QDF_MODULE_ID_WMA,
 					QDF_MODULE_ID_WMA,
 					QDF_MODULE_ID_TARGET_IF, &msg);
 }
@@ -6457,7 +6454,6 @@ static QDF_STATUS wma_update_hw_mode_list(t_wma_handle *wma_handle,
 	struct mac_ss_bw_info mac1_ss_bw_info = {0};
 	WMI_PHY_CAPABILITY new_supported_band = 0;
 	bool supported_band_update_failure = false;
-	struct wlan_psoc_target_capability_info *tgt_cap_info;
 	int num_hw_modes;
 
 	if (!wma_handle) {
@@ -6467,7 +6463,7 @@ static QDF_STATUS wma_update_hw_mode_list(t_wma_handle *wma_handle,
 
 	num_hw_modes = target_psoc_get_num_hw_modes(tgt_hdl);
 	mac_phy_cap = target_psoc_get_mac_phy_cap(tgt_hdl);
-	tgt_cap_info = target_psoc_get_target_caps(tgt_hdl);
+	target_psoc_get_target_caps(tgt_hdl);
 
 	if (!mac_phy_cap) {
 		WMA_LOGE("mac_phy_cap Null");

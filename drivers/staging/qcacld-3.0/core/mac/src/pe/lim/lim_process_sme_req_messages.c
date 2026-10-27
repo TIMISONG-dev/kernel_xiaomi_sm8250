@@ -3211,7 +3211,7 @@ __lim_process_sme_delts_req(struct mac_context *mac, uint32_t *msg_buf)
 
 	/* send an sme response back */
 end:
-	lim_send_sme_delts_rsp(mac, pDeltsReq, QDF_STATUS_SUCCESS, pe_session,
+	lim_send_sme_delts_rsp(mac, pDeltsReq, status, pe_session,
 			       smesessionId);
 }
 
@@ -3955,7 +3955,6 @@ lim_send_set_max_tx_power_req(struct mac_context *mac, int8_t txPower,
 static void __lim_process_sme_register_mgmt_frame_req(struct mac_context *mac_ctx,
 		uint32_t *msg_buf)
 {
-	QDF_STATUS qdf_status;
 	struct register_mgmt_frame *sme_req =
 					(struct register_mgmt_frame *)msg_buf;
 	struct mgmt_frm_reg_info *lim_mgmt_regn = NULL;
@@ -3990,7 +3989,7 @@ static void __lim_process_sme_register_mgmt_frame_req(struct mac_context *mac_ct
 		}
 skip_match:
 		qdf_mutex_acquire(&mac_ctx->lim.lim_frame_register_lock);
-		qdf_status = qdf_list_peek_next(
+		qdf_list_peek_next(
 				&mac_ctx->lim.gLimMgmtFrameRegistratinQueue,
 				(qdf_list_node_t *)lim_mgmt_regn,
 				(qdf_list_node_t **)&next);

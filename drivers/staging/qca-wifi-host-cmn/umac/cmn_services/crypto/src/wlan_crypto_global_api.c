@@ -307,6 +307,7 @@ int32_t wlan_crypto_get_peer_param(struct wlan_objmgr_peer *peer,
 		crypto_err("crypto_params NULL");
 		return QDF_STATUS_E_INVAL;
 	}
+	crypto_params = &(crypto_priv->crypto_params);
 	value = wlan_crypto_get_param_value(param, crypto_params);
 
 	return value;
@@ -959,10 +960,9 @@ qdf_export_symbol(wlan_crypto_get_key_type);
 struct wlan_crypto_key *wlan_crypto_vdev_getkey(struct wlan_objmgr_vdev *vdev,
 						uint16_t keyix){
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	struct wlan_crypto_key *key = NULL;
 
-	crypto_params = wlan_crypto_vdev_get_comp_params(vdev, &crypto_priv);
+	wlan_crypto_vdev_get_comp_params(vdev, &crypto_priv);
 
 	if (!crypto_priv) {
 		crypto_err("crypto_priv NULL");
@@ -999,10 +999,9 @@ qdf_export_symbol(wlan_crypto_vdev_getkey);
 struct wlan_crypto_key *wlan_crypto_peer_getkey(struct wlan_objmgr_peer *peer,
 						uint16_t keyix){
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	struct wlan_crypto_key *key = NULL;
 
-	crypto_params = wlan_crypto_peer_get_comp_params(peer, &crypto_priv);
+	wlan_crypto_peer_get_comp_params(peer, &crypto_priv);
 
 	if (!crypto_priv) {
 		crypto_err("crypto_priv NULL");
@@ -1134,7 +1133,6 @@ QDF_STATUS wlan_crypto_delkey(struct wlan_objmgr_vdev *vdev,
 				uint8_t *macaddr,
 				uint8_t key_idx){
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	struct wlan_crypto_key *key;
 	struct wlan_crypto_cipher *cipher_table;
 	struct wlan_objmgr_psoc *psoc;
@@ -1160,7 +1158,7 @@ QDF_STATUS wlan_crypto_delkey(struct wlan_objmgr_vdev *vdev,
 	wlan_vdev_obj_unlock(vdev);
 
 	if (qdf_is_macaddr_broadcast((struct qdf_mac_addr *)macaddr)) {
-		crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
+		wlan_crypto_vdev_get_comp_params(vdev,
 								&crypto_priv);
 		if (!crypto_priv) {
 			crypto_err("crypto_priv NULL");
@@ -1180,7 +1178,7 @@ QDF_STATUS wlan_crypto_delkey(struct wlan_objmgr_vdev *vdev,
 		if (!peer) {
 			return QDF_STATUS_E_INVAL;
 		}
-		crypto_params = wlan_crypto_peer_get_comp_params(peer,
+		wlan_crypto_peer_get_comp_params(peer,
 								&crypto_priv);
 		wlan_objmgr_peer_release_ref(peer, WLAN_CRYPTO_ID);
 		if (!crypto_priv) {
@@ -1271,7 +1269,6 @@ QDF_STATUS wlan_crypto_default_key(struct wlan_objmgr_vdev *vdev,
 					uint8_t key_idx,
 					bool unicast){
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	struct wlan_crypto_key *key;
 	struct wlan_objmgr_psoc *psoc;
 	uint8_t bssid_mac[QDF_MAC_ADDR_SIZE];
@@ -1294,7 +1291,7 @@ QDF_STATUS wlan_crypto_default_key(struct wlan_objmgr_vdev *vdev,
 	wlan_vdev_obj_unlock(vdev);
 
 	if (qdf_is_macaddr_broadcast((struct qdf_mac_addr *)macaddr)) {
-		crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
+		wlan_crypto_vdev_get_comp_params(vdev,
 								&crypto_priv);
 		if (!crypto_priv) {
 			crypto_err("crypto_priv NULL");
@@ -1320,7 +1317,7 @@ QDF_STATUS wlan_crypto_default_key(struct wlan_objmgr_vdev *vdev,
 			crypto_err("peer NULL");
 			return QDF_STATUS_E_INVAL;
 		}
-		crypto_params = wlan_crypto_peer_get_comp_params(peer,
+		wlan_crypto_peer_get_comp_params(peer,
 								&crypto_priv);
 		wlan_objmgr_peer_release_ref(peer, WLAN_CRYPTO_ID);
 		if (!crypto_priv) {
@@ -1359,7 +1356,6 @@ QDF_STATUS wlan_crypto_encap(struct wlan_objmgr_vdev *vdev,
 				uint8_t *mac_addr,
 				uint8_t encapdone){
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	struct wlan_crypto_key *key;
 	QDF_STATUS status;
 	struct wlan_crypto_cipher *cipher_table;
@@ -1396,7 +1392,7 @@ QDF_STATUS wlan_crypto_encap(struct wlan_objmgr_vdev *vdev,
 		wlan_objmgr_peer_release_ref(peer, WLAN_CRYPTO_ID);
 
 	if (qdf_is_macaddr_group((struct qdf_mac_addr *)mac_addr)) {
-		crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
+		wlan_crypto_vdev_get_comp_params(vdev,
 								&crypto_priv);
 		if (!crypto_priv) {
 			crypto_err("crypto_priv NULL");
@@ -1421,7 +1417,7 @@ QDF_STATUS wlan_crypto_encap(struct wlan_objmgr_vdev *vdev,
 			crypto_err("crypto_priv NULL");
 			return QDF_STATUS_E_INVAL;
 		}
-		crypto_params = wlan_crypto_peer_get_comp_params(peer,
+		wlan_crypto_peer_get_comp_params(peer,
 								&crypto_priv);
 		wlan_objmgr_peer_release_ref(peer, WLAN_CRYPTO_ID);
 
@@ -1465,7 +1461,6 @@ QDF_STATUS wlan_crypto_decap(struct wlan_objmgr_vdev *vdev,
 				uint8_t *mac_addr,
 				uint8_t tid){
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	struct wlan_crypto_key *key;
 	QDF_STATUS status;
 	struct wlan_crypto_cipher *cipher_table;
@@ -1514,7 +1509,7 @@ QDF_STATUS wlan_crypto_decap(struct wlan_objmgr_vdev *vdev,
 		wlan_objmgr_peer_release_ref(peer, WLAN_CRYPTO_ID);
 
 	if (qdf_is_macaddr_group((struct qdf_mac_addr *)mac_addr)) {
-		crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
+		wlan_crypto_vdev_get_comp_params(vdev,
 								&crypto_priv);
 		if (!crypto_priv) {
 			crypto_err("crypto_priv NULL");
@@ -1539,7 +1534,7 @@ QDF_STATUS wlan_crypto_decap(struct wlan_objmgr_vdev *vdev,
 			return QDF_STATUS_E_INVAL;
 		}
 
-		crypto_params = wlan_crypto_peer_get_comp_params(peer,
+		wlan_crypto_peer_get_comp_params(peer,
 								&crypto_priv);
 		wlan_objmgr_peer_release_ref(peer, WLAN_CRYPTO_ID);
 
@@ -1575,7 +1570,6 @@ QDF_STATUS wlan_crypto_enmic(struct wlan_objmgr_vdev *vdev,
 				uint8_t *mac_addr,
 				uint8_t encapdone){
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	struct wlan_crypto_key *key;
 	QDF_STATUS status;
 	struct wlan_crypto_cipher *cipher_table;
@@ -1599,7 +1593,7 @@ QDF_STATUS wlan_crypto_enmic(struct wlan_objmgr_vdev *vdev,
 	wlan_vdev_obj_unlock(vdev);
 
 	if (qdf_is_macaddr_broadcast((struct qdf_mac_addr *)mac_addr)) {
-		crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
+		wlan_crypto_vdev_get_comp_params(vdev,
 								&crypto_priv);
 		if (!crypto_priv) {
 			crypto_err("crypto_priv NULL");
@@ -1624,7 +1618,7 @@ QDF_STATUS wlan_crypto_enmic(struct wlan_objmgr_vdev *vdev,
 			return QDF_STATUS_E_INVAL;
 		}
 
-		crypto_params = wlan_crypto_peer_get_comp_params(peer,
+		wlan_crypto_peer_get_comp_params(peer,
 								&crypto_priv);
 		wlan_objmgr_peer_release_ref(peer, WLAN_CRYPTO_ID);
 
@@ -1668,7 +1662,6 @@ QDF_STATUS wlan_crypto_demic(struct wlan_objmgr_vdev *vdev,
 			     uint8_t tid,
 			     uint8_t keyid){
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	struct wlan_crypto_key *key;
 	QDF_STATUS status;
 	struct wlan_crypto_cipher *cipher_table;
@@ -1697,7 +1690,7 @@ QDF_STATUS wlan_crypto_demic(struct wlan_objmgr_vdev *vdev,
 	wlan_vdev_obj_unlock(vdev);
 
 	if (qdf_is_macaddr_broadcast((struct qdf_mac_addr *)mac_addr)) {
-		crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
+		wlan_crypto_vdev_get_comp_params(vdev,
 								&crypto_priv);
 		if (!crypto_priv) {
 			crypto_err("crypto_priv NULL");
@@ -1722,7 +1715,7 @@ QDF_STATUS wlan_crypto_demic(struct wlan_objmgr_vdev *vdev,
 			return QDF_STATUS_E_INVAL;
 		}
 
-		crypto_params = wlan_crypto_peer_get_comp_params(peer,
+		wlan_crypto_peer_get_comp_params(peer,
 								&crypto_priv);
 		wlan_objmgr_peer_release_ref(peer, WLAN_CRYPTO_ID);
 
@@ -1907,7 +1900,6 @@ uint8_t *wlan_crypto_add_mmie(struct wlan_objmgr_vdev *vdev,
 	uint32_t i, hdrlen, mic_len, aad_len;
 	uint8_t mic[16];
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	int32_t ret = -1;
 
 	if (!bfrm) {
@@ -1915,7 +1907,7 @@ uint8_t *wlan_crypto_add_mmie(struct wlan_objmgr_vdev *vdev,
 		return NULL;
 	}
 
-	crypto_params = wlan_crypto_vdev_get_comp_params(vdev,
+	wlan_crypto_vdev_get_comp_params(vdev,
 							&crypto_priv);
 	if (!crypto_priv) {
 		crypto_err("crypto_priv NULL");
@@ -2040,7 +2032,6 @@ bool wlan_crypto_is_mmie_valid(struct wlan_objmgr_vdev *vdev,
 	struct wlan_frame_hdr *hdr;
 	uint16_t mic_len, hdrlen, len;
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	uint8_t aad_len = 20;
 	int32_t ret = -1;
 
@@ -2058,7 +2049,6 @@ bool wlan_crypto_is_mmie_valid(struct wlan_objmgr_vdev *vdev,
 		return false;
 	}
 
-	crypto_params = &(crypto_priv->crypto_params);
 
 
 	mic_len = (crypto_priv->igtk_key_type
@@ -3681,7 +3671,6 @@ static void crypto_plumb_peer_keys(struct wlan_objmgr_vdev *vdev,
 	struct wlan_objmgr_peer *peer = (struct wlan_objmgr_peer *)object;
 	struct wlan_objmgr_psoc *psoc = (struct wlan_objmgr_psoc *)arg;
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	struct wlan_crypto_key *key = NULL;
 	int i;
 
@@ -3690,7 +3679,7 @@ static void crypto_plumb_peer_keys(struct wlan_objmgr_vdev *vdev,
 		return;
 	}
 
-	crypto_params = wlan_crypto_peer_get_comp_params(peer,
+	wlan_crypto_peer_get_comp_params(peer,
 							 &crypto_priv);
 
 	if (!crypto_priv) {
@@ -3727,7 +3716,6 @@ void wlan_crypto_restore_keys(struct wlan_objmgr_vdev *vdev)
 {
 	int i;
 	struct wlan_crypto_comp_priv *crypto_priv;
-	struct wlan_crypto_params *crypto_params;
 	struct wlan_crypto_key *key;
 	uint8_t macaddr[QDF_MAC_ADDR_SIZE] =
 			{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -3750,7 +3738,7 @@ void wlan_crypto_restore_keys(struct wlan_objmgr_vdev *vdev)
 	if (wlan_vdev_mlme_feat_cap_get(vdev, WLAN_VDEV_F_PRIVACY)) {
 		/* restore static shared keys */
 		for (i = 0; i < WLAN_CRYPTO_MAXKEYIDX; i++) {
-			crypto_params = wlan_crypto_vdev_get_comp_params
+			wlan_crypto_vdev_get_comp_params
 				(
 				 vdev,
 				 &crypto_priv

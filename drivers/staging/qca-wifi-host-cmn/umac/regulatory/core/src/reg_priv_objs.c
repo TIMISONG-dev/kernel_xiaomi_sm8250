@@ -280,11 +280,10 @@ QDF_STATUS wlan_regulatory_pdev_obj_destroyed_notification(
 	QDF_STATUS status;
 	struct wlan_regulatory_pdev_priv_obj *pdev_priv_obj;
 	struct wlan_regulatory_psoc_priv_obj *psoc_priv_obj;
-	uint32_t pdev_id;
 
 	pdev_priv_obj = reg_get_pdev_obj(pdev);
 
-	pdev_id = wlan_objmgr_pdev_get_pdev_id(pdev);
+	wlan_objmgr_pdev_get_pdev_id(pdev);
 
 	if (!IS_VALID_PDEV_REG_OBJ(pdev_priv_obj)) {
 		reg_err("reg pdev private obj is NULL");

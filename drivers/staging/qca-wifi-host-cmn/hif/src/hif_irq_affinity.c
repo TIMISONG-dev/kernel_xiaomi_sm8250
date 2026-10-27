@@ -101,7 +101,6 @@ int hif_exec_event(struct hif_opaque_softc *hif_ctx, enum qca_napi_event event,
 		   void *data)
 {
 	int      rc = 0;
-	uint32_t prev_state;
 	struct hif_softc *hif = HIF_GET_SOFTC(hif_ctx);
 	struct qca_napi_data *napid = &(hif->napi_data);
 	enum qca_napi_tput_state tput_mode = QCA_NAPI_TPUT_UNINITIALIZED;
@@ -114,7 +113,6 @@ int hif_exec_event(struct hif_opaque_softc *hif_ctx, enum qca_napi_event event,
 	NAPI_DEBUG("%s: -->(event=%d, aux=%pK)", __func__, event, data);
 
 	qdf_spin_lock_bh(&(napid->lock));
-	prev_state = napid->state;
 	switch (event) {
 	case NAPI_EVT_INI_FILE:
 	case NAPI_EVT_CMD_STATE:
@@ -145,7 +143,12 @@ int hif_exec_event(struct hif_opaque_softc *hif_ctx, enum qca_napi_event event,
 	}
 
 	case NAPI_EVT_TPUT_STATE: {
-		tput_mode = (enum qca_napi_tput_state)data;
+		/* Throughput events encode a state, not a pointer payload. */
+		if ((uintptr_t)data > QCA_NAPI_TPUT_HI) {
+			rc = -EINVAL;
+			break;
+		}
+		tput_mode = (uintptr_t)data;
 		if (tput_mode == QCA_NAPI_TPUT_LO) {
 			/* from TPUT_HI -> TPUT_LO */
 			NAPI_DEBUG("%s: Moving to napi_tput_LO state",

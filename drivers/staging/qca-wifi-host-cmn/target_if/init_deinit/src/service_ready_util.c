@@ -687,7 +687,6 @@ QDF_STATUS init_deinit_validate_160_80p80_fw_caps(
 	bool vhtcap_160mhz_sgi = false;
 	bool valid = false;
 	struct wlan_psoc_host_hal_reg_capabilities_ext *reg_cap;
-	struct wmi_unified *wmi_handle;
 
 	if (!tgt_hdl) {
 		target_if_err(
@@ -695,7 +694,7 @@ QDF_STATUS init_deinit_validate_160_80p80_fw_caps(
 		return QDF_STATUS_E_INVAL;
 	}
 
-	wmi_handle = target_psoc_get_wmi_hdl(tgt_hdl);
+	target_psoc_get_wmi_hdl(tgt_hdl);
 
 	if ((tgt_hdl->info.target_type == TARGET_TYPE_QCA8074) ||
 	    (tgt_hdl->info.target_type == TARGET_TYPE_QCA8074V2) ||

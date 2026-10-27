@@ -417,7 +417,7 @@ struct qdf_dp_trace_data_buf {
 struct qdf_dp_trace_record_s {
 	uint64_t time;
 	uint8_t code;
-	uint8_t data[QDF_DP_TRACE_RECORD_SIZE];
+	uint8_t data[QDF_DP_TRACE_RECORD_SIZE] __aligned(8);
 	uint8_t size;
 	uint32_t pid;
 	uint8_t pdev_id;

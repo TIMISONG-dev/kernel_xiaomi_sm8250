@@ -151,13 +151,12 @@ static QDF_STATUS pmo_configure_wow_ap(struct wlan_objmgr_vdev *vdev)
 static QDF_STATUS pmo_configure_mc_ssdp(
 	struct wlan_objmgr_vdev *vdev)
 {
-	struct wlan_objmgr_psoc *psoc;
 	const uint8_t ssdp_addr[QDF_MAC_ADDR_SIZE] = {
 		0x01, 0x00, 0x5e, 0x7f, 0xff, 0xfa };
 	struct qdf_mac_addr multicast_addr;
 	QDF_STATUS status = QDF_STATUS_SUCCESS;
 
-	psoc = pmo_vdev_get_psoc(vdev);
+	pmo_vdev_get_psoc(vdev);
 
 	qdf_mem_copy(&multicast_addr.bytes, &ssdp_addr, QDF_MAC_ADDR_SIZE);
 	status = pmo_tgt_set_mc_filter_req(vdev,

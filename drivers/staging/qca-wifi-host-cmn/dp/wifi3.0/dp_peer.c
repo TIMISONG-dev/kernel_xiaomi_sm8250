@@ -2544,7 +2544,6 @@ void dp_peer_rx_init(struct dp_pdev *pdev, struct dp_peer *peer)
 void dp_peer_rx_cleanup(struct dp_vdev *vdev, struct dp_peer *peer, bool reuse)
 {
 	int tid;
-	uint32_t tid_delete_mask = 0;
 
 	dp_info("Remove tids for peer: %pK", peer);
 	for (tid = 0; tid < DP_MAX_TIDS; tid++) {
@@ -2560,18 +2559,9 @@ void dp_peer_rx_cleanup(struct dp_vdev *vdev, struct dp_peer *peer, bool reuse)
 		if (peer->rx_tid[tid].hw_qdesc_vaddr_unaligned) {
 			dp_rx_tid_delete_wifi3(peer, tid);
 
-			tid_delete_mask |= (1 << tid);
 		}
 		qdf_spin_unlock_bh(&rx_tid->tid_lock);
 	}
-#ifdef notyet /* See if FW can remove queues as part of peer cleanup */
-	if (soc->ol_ops->peer_rx_reorder_queue_remove) {
-		soc->ol_ops->peer_rx_reorder_queue_remove(soc->ctrl_psoc,
-			peer->vdev->pdev->pdev_id,
-			peer->vdev->vdev_id, peer->mac_addr.raw,
-			tid_delete_mask);
-	}
-#endif
 	if (!reuse)
 		for (tid = 0; tid < DP_MAX_TIDS; tid++)
 			qdf_spinlock_destroy(&peer->rx_tid[tid].tid_lock);
@@ -3141,7 +3131,6 @@ dp_set_pn_check_wifi3(struct cdp_soc_t *soc, uint8_t vdev_id,
 		      uint8_t *peer_mac, enum cdp_sec_type sec_type,
 		      uint32_t *rx_pn)
 {
-	struct dp_pdev *pdev;
 	int i;
 	uint8_t pn_size;
 	struct hal_reo_cmd_params params;
@@ -3159,7 +3148,6 @@ dp_set_pn_check_wifi3(struct cdp_soc_t *soc, uint8_t vdev_id,
 		goto fail;
 	}
 
-	pdev = vdev->pdev;
 	qdf_mem_zero(&params, sizeof(params));
 
 	params.std.need_status = 1;

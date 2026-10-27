@@ -802,7 +802,6 @@ target_if_process_phyerr_gen2(struct target_if_spectral *spectral,
 	uint8_t extension_rssi = 0;
 	uint8_t combined_rssi = 0;
 
-	uint32_t tstamp = 0;
 
 	struct target_if_spectral_ops *p_sops =
 		GET_TARGET_IF_SPECTRAL_OPS(spectral);
@@ -873,7 +872,7 @@ target_if_process_phyerr_gen2(struct target_if_spectral *spectral,
 		target_if_process_sfft_report_gen2(ptlv, ptlv->length,
 						   &search_fft_info);
 
-		tstamp = p_sops->get_tsf64(spectral) & SPECTRAL_TSMASK;
+		p_sops->get_tsf64(spectral);
 
 		combined_rssi = p_rfqual->rssi_comb;
 
@@ -887,7 +886,7 @@ target_if_process_phyerr_gen2(struct target_if_spectral *spectral,
 		else
 			rssi_low = extension_rssi;
 
-		params.rssi = p_rfqual->rssi_comb;
+		params.rssi = combined_rssi;
 		params.lower_rssi = rssi_low;
 		params.upper_rssi = rssi_up;
 
@@ -1806,7 +1805,6 @@ target_if_consume_spectral_report_gen3(
 	struct spectral_search_fft_info_gen3 *p_sfft = &search_fft_info;
 	int8_t chn_idx_lowest_enabled  = 0;
 	int fft_hdr_length = 0;
-	int report_len = 0;
 	size_t fft_bin_count;
 	struct target_if_spectral_ops *p_sops =
 		GET_TARGET_IF_SPECTRAL_OPS(spectral);
@@ -1867,7 +1865,6 @@ target_if_consume_spectral_report_gen3(
 			goto fail;
 		}
 
-		report_len = (fft_hdr_length + 8);
 
 		target_if_process_sfft_report_gen3(p_fft_report, p_sfft);
 		/* It is expected to have same detector id for
@@ -1995,7 +1992,6 @@ target_if_consume_spectral_report_gen3(
 			goto fail;
 		}
 
-		report_len     = (fft_hdr_length + 8);
 
 		target_if_process_sfft_report_gen3(p_fft_report, p_sfft);
 		/* It is expected to have same detector id for

@@ -856,7 +856,6 @@ QDF_STATUS p2p_process_cleanup_roc_queue(
 QDF_STATUS p2p_process_roc_req(struct p2p_roc_context *roc_ctx)
 {
 	struct p2p_soc_priv_obj *p2p_soc_obj;
-	struct p2p_roc_context *curr_roc_ctx;
 	QDF_STATUS status;
 	uint32_t size;
 
@@ -880,7 +879,7 @@ QDF_STATUS p2p_process_roc_req(struct p2p_roc_context *roc_ctx)
 	if (size == 1) {
 		status = p2p_execute_roc_req(roc_ctx);
 	} else if (size > 1) {
-		curr_roc_ctx = p2p_find_current_roc_ctx(p2p_soc_obj);
+		p2p_find_current_roc_ctx(p2p_soc_obj);
 		/*TODO, to handle extend roc */
 	}
 

@@ -33,6 +33,8 @@
 typedef void *tpAniSirGlobal;
 
 struct mac_context;
+#include <linux/stddef.h>
+
 #include "qdf_types.h"
 #include "cds_regdomain.h"
 #include "sir_types.h"
@@ -50,7 +52,7 @@ struct mac_context;
 #include "qca_vendor.h"
 #include "wlan_cp_stats_mc_defs.h"
 
-#define OFFSET_OF(structType, fldName)   (&((structType *)0)->fldName)
+#define OFFSET_OF(structType, fldName) offsetof(structType, fldName)
 
 /* / Max supported channel list */
 #define SIR_MAX_SUPPORTED_CHANNEL_LIST      96
@@ -3483,8 +3485,12 @@ typedef struct {
 	};
 
 	uint32_t peer_event_number;
-	/* Variable  length field - Do not add anything after this */
-	uint8_t results[0];
+	/*
+	 * Host-only payload includes pointer-bearing radio stats. Keep its
+	 * storage aligned; sizeof this envelope includes the padding.
+	 * Variable length field - Do not add anything after this.
+	 */
+	uint8_t results[0] __aligned(8);
 } tSirLLStatsResults, *tpSirLLStatsResults;
 
 #ifdef WLAN_FEATURE_LINK_LAYER_STATS

@@ -1485,10 +1485,12 @@ static void dp_tx_get_tid(struct dp_vdev *vdev, qdf_nbuf_t nbuf,
 		 * use flowlabel
 		 *igmpmld cases to be handled in phase 2
 		 */
-		unsigned long ver_pri_flowlabel;
-		unsigned long pri;
-		ver_pri_flowlabel = *(unsigned long *) L3datap;
-		pri = (ntohl(ver_pri_flowlabel) & IPV6_FLOWINFO_PRIORITY) >>
+		__be32 ver_pri_flowlabel;
+		u32 pri;
+
+		qdf_mem_copy(&ver_pri_flowlabel, L3datap,
+			     sizeof(ver_pri_flowlabel));
+		pri = (be32_to_cpu(ver_pri_flowlabel) & IPV6_FLOWINFO_PRIORITY) >>
 			DP_IPV6_PRIORITY_SHIFT;
 		tos = pri;
 		dscp_tid_override = 1;
@@ -2457,7 +2459,6 @@ qdf_nbuf_t dp_tx_send_mesh(struct cdp_soc_t *soc, uint8_t vdev_id,
  */
 qdf_nbuf_t dp_tx_send(struct cdp_soc_t *soc, uint8_t vdev_id, qdf_nbuf_t nbuf)
 {
-	qdf_ether_header_t *eh = NULL;
 	struct dp_tx_msdu_info_s msdu_info;
 	struct dp_tx_seg_info_s seg_info;
 	uint16_t peer_id = HTT_INVALID_PEER;
@@ -2472,7 +2473,6 @@ qdf_nbuf_t dp_tx_send(struct cdp_soc_t *soc, uint8_t vdev_id, qdf_nbuf_t nbuf)
 	qdf_mem_zero(&msdu_info, sizeof(msdu_info));
 	qdf_mem_zero(&seg_info, sizeof(seg_info));
 
-	eh = (qdf_ether_header_t *)qdf_nbuf_data(nbuf);
 
 	dp_verbose_debug("skb "QDF_MAC_ADDR_FMT,
 			 QDF_MAC_ADDR_REF(nbuf->data));
@@ -2555,7 +2555,8 @@ qdf_nbuf_t dp_tx_send(struct cdp_soc_t *soc, uint8_t vdev_id, qdf_nbuf_t nbuf)
 #ifdef ATH_SUPPORT_IQUE
 	/* Mcast to Ucast Conversion*/
 	if (qdf_unlikely(vdev->mcast_enhancement_en > 0)) {
-		eh = (qdf_ether_header_t *)qdf_nbuf_data(nbuf);
+		qdf_ether_header_t *eh =
+			(qdf_ether_header_t *)qdf_nbuf_data(nbuf);
 		if (DP_FRAME_IS_MULTICAST((eh)->ether_dhost) &&
 		    !DP_FRAME_IS_BROADCAST((eh)->ether_dhost)) {
 			dp_verbose_debug("Mcast frm for ME %pK", vdev);

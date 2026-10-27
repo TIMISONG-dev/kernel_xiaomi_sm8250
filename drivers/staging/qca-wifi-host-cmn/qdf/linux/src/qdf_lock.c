@@ -836,10 +836,8 @@ void qdf_lock_stats_cookie_create(struct lock_stats *stats,
 	struct qdf_lock_cookie *cookie = qdf_get_lock_cookie();
 
 	if (!cookie) {
-		int count;
-
 		qdf_atomic_inc(&lock_cookie_get_failures);
-		count = qdf_atomic_inc_return(&lock_cookie_untracked_num);
+		qdf_atomic_inc_return(&lock_cookie_untracked_num);
 		stats->cookie = (void *) DUMMY_LOCK_COOKIE;
 		return;
 	}

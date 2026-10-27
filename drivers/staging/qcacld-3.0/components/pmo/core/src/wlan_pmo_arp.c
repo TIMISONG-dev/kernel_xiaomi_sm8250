@@ -401,7 +401,6 @@ pmo_core_get_arp_offload_params(struct wlan_objmgr_vdev *vdev,
 {
 	QDF_STATUS status;
 	struct pmo_vdev_priv_obj *vdev_ctx;
-	uint8_t vdev_id;
 
 	pmo_enter();
 
@@ -424,7 +423,7 @@ pmo_core_get_arp_offload_params(struct wlan_objmgr_vdev *vdev,
 	if (status != QDF_STATUS_SUCCESS)
 		goto put_ref;
 
-	vdev_id = pmo_vdev_get_id(vdev);
+	pmo_vdev_get_id(vdev);
 	vdev_ctx = pmo_vdev_get_priv(vdev);
 	qdf_spin_lock_bh(&vdev_ctx->pmo_vdev_lock);
 	*params = vdev_ctx->vdev_arp_req;

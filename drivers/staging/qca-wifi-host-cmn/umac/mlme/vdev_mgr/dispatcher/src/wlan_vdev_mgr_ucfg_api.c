@@ -82,7 +82,6 @@ void ucfg_wlan_vdev_mgr_get_beacon_buffer(
 				qdf_nbuf_t buf)
 {
 	struct vdev_mlme_obj *vdev_mlme;
-	struct vdev_mlme_mgmt *mlme_mgmt;
 
 	vdev_mlme = wlan_objmgr_vdev_get_comp_private_obj(
 			vdev, WLAN_UMAC_COMP_MLME);
@@ -92,9 +91,6 @@ void ucfg_wlan_vdev_mgr_get_beacon_buffer(
 		return;
 	}
 
-	mlme_mgmt = &vdev_mlme->mgmt;
-
-	buf = mlme_mgmt->beacon_info.beacon_buffer;
 }
 
 qdf_export_symbol(ucfg_wlan_vdev_mgr_get_beacon_buffer);

@@ -270,7 +270,6 @@ bool spectral_dbr_event_handler(struct wlan_objmgr_pdev *pdev,
 QDF_STATUS spectral_pdev_open(struct wlan_objmgr_pdev *pdev)
 {
 	struct wlan_objmgr_psoc *psoc;
-	QDF_STATUS status;
 
 	psoc = wlan_pdev_get_psoc(pdev);
 
@@ -282,7 +281,7 @@ QDF_STATUS spectral_pdev_open(struct wlan_objmgr_pdev *pdev)
 	if (cfg_get(psoc, CFG_SPECTRAL_POISON_BUFS))
 		tgt_set_spectral_dma_debug(pdev, SPECTRAL_DMA_BUFFER_DEBUG, 1);
 
-	status = tgt_spectral_register_to_dbr(pdev);
+	tgt_spectral_register_to_dbr(pdev);
 	return QDF_STATUS_SUCCESS;
 }
 

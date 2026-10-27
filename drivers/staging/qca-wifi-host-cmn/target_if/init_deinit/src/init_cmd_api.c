@@ -293,14 +293,12 @@ void init_deinit_derive_band_to_mac_param(
 	uint8_t i;
 	struct wlan_psoc_host_mac_phy_caps *mac_phy_cap;
 	struct wlan_psoc_host_hal_reg_capabilities_ext *reg_cap;
-	struct tgt_info *info;
 
 	if (!tgt_hdl) {
 		target_if_err("target_psoc_info is null ");
 		return;
 	}
 
-	info = (&tgt_hdl->info);
 
 	reg_cap = ucfg_reg_get_hal_reg_cap(psoc);
 	if (!reg_cap) {

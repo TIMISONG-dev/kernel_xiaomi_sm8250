@@ -1735,6 +1735,12 @@ static __iw_softap_getassoc_stamacaddr(struct net_device *dev,
 	hdd_for_each_sta_ref(adapter->sta_info_list, sta_info,
 			     STA_INFO_SAP_GETASSOC_STAMACADDR) {
 		if (!qdf_is_macaddr_broadcast(&sta_info->sta_mac)) {
+			if (left < QDF_MAC_ADDR_SIZE) {
+				hdd_put_sta_info_ref(&adapter->sta_info_list,
+					&sta_info, true,
+					STA_INFO_SAP_GETASSOC_STAMACADDR);
+				break;
+			}
 			memcpy(&buf[maclist_index], &sta_info->sta_mac,
 			       QDF_MAC_ADDR_SIZE);
 			maclist_index += QDF_MAC_ADDR_SIZE;

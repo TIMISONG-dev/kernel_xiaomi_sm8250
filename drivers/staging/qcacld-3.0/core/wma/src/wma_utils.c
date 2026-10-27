@@ -1077,7 +1077,11 @@ static tSirLLStatsResults *wma_get_ll_stats_ext_buf(uint32_t *len,
 		}
 	} while (0);
 
-	if (excess_data || (buf_len > WMI_SVC_MSG_MAX_SIZE)) {
+	/* The envelope padding is host storage, not firmware payload. */
+	if (excess_data ||
+	    (buf_len - (sizeof(tSirLLStatsResults) -
+			offsetofend(tSirLLStatsResults, peer_event_number)) >
+	     WMI_SVC_MSG_MAX_SIZE)) {
 		WMA_LOGE("%s: excess wmi buffer: peer %d cca %d tx_mpdu %d tx_succ%d tx_fail %d tx_ppdu %d rx_mpdu %d rx_mcs %d",
 			 __func__, peer_num, fixed_param->num_chan_cca_stats,
 			 fixed_param->tx_mpdu_aggr_array_len,
@@ -2010,7 +2014,7 @@ static int wma_unified_link_radio_stats_event_handler(void *handle,
 	wmi_radio_link_stats *radio_stats;
 	wmi_channel_stats *channel_stats;
 	tSirLLStatsResults *link_stats_results;
-	uint8_t *results, *t_radio_stats, *t_channel_stats;
+	uint8_t *results, *t_channel_stats;
 	uint32_t next_chan_offset, count;
 	size_t radio_stats_size, chan_stats_size;
 	size_t link_stats_results_size;
@@ -2123,7 +2127,6 @@ static int wma_unified_link_radio_stats_event_handler(void *handle,
 		 fixed_param->more_radio_events);
 
 	results = (uint8_t *) link_stats_results->results;
-	t_radio_stats = (uint8_t *) radio_stats;
 	t_channel_stats = (uint8_t *) channel_stats;
 
 	rs_results = (struct wifi_radio_stats *) &results[0] + radio_stats->radio_id;
@@ -2508,9 +2511,8 @@ int wma_unified_link_iface_stats_event_handler(void *handle,
 	tSirLLStatsResults *link_stats_results;
 	struct wifi_interface_stats *iface_stat;
 	uint32_t count;
-	size_t link_stats_size, ac_stats_size, iface_info_size;
-	size_t link_stats_results_size, offload_stats_size;
-	size_t total_ac_size, total_offload_size;
+	size_t link_stats_size;
+	size_t link_stats_results_size;
 	bool db2dbm_enabled;
 
 	struct mac_context *mac = cds_get_context(QDF_MODULE_ID_PE);
@@ -2564,15 +2566,7 @@ int wma_unified_link_iface_stats_event_handler(void *handle,
 	}
 
 	link_stats_size = sizeof(struct wifi_interface_stats);
-	iface_info_size = sizeof(struct wifi_interface_info);
 
-	ac_stats_size = sizeof(wmi_wmm_ac_stats);
-	offload_stats_size = sizeof(wmi_iface_offload_stats);
-
-	total_ac_size = ac_stats_size * WIFI_AC_MAX;
-	total_offload_size = offload_stats_size * WMI_OFFLOAD_STATS_TYPE_MAX +
-			      member_size(struct wifi_interface_stats,
-					  num_offload_stats);
 
 	link_stats_results_size = sizeof(*link_stats_results) +	link_stats_size;
 
@@ -4639,14 +4633,12 @@ QDF_STATUS wma_mon_mlme_vdev_up_send(struct vdev_mlme_obj *vdev_mlme,
 	uint8_t vdev_id;
 	tp_wma_handle wma = cds_get_context(QDF_MODULE_ID_WMA);
 	QDF_STATUS status;
-	struct wma_txrx_node *iface;
 
 	if (!wma) {
 		WMA_LOGE("%s wma handle is NULL", __func__);
 		return QDF_STATUS_E_INVAL;
 	}
 	vdev_id = wlan_vdev_get_id(vdev_mlme->vdev);
-	iface = &wma->interfaces[vdev_id];
 	vdev_mlme->proto.sta.assoc_id = 0;
 
 	status = vdev_mgr_up_send(vdev_mlme);
