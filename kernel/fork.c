@@ -1123,6 +1123,8 @@ void mmput_async(struct mm_struct *mm)
 
 /**
  * set_mm_exe_file - change a reference to the mm's executable file
+ * @mm: address space whose executable file is being changed
+ * @new_exe_file: replacement executable file, or NULL to clear the reference
  *
  * This changes mm's executable file (shown as symlink /proc/[pid]/exe).
  *
@@ -1152,6 +1154,7 @@ void set_mm_exe_file(struct mm_struct *mm, struct file *new_exe_file)
 
 /**
  * get_mm_exe_file - acquire a reference to the mm's executable file
+ * @mm: address space whose executable file is requested
  *
  * Returns %NULL if mm has no associated executable file.
  * User must release file via fput().
@@ -1171,6 +1174,7 @@ EXPORT_SYMBOL(get_mm_exe_file);
 
 /**
  * get_task_exe_file - acquire a reference to the task's executable file
+ * @task: task whose executable file is requested
  *
  * Returns %NULL if task's mm (if any) has no associated executable file or
  * this is a kernel thread with borrowed mm (see the comment above get_task_mm).
@@ -1194,6 +1198,7 @@ EXPORT_SYMBOL(get_task_exe_file);
 
 /**
  * get_task_mm - acquire a reference to the task's mm
+ * @task: task whose address space is requested
  *
  * Returns %NULL if the task has no mm.  Checks PF_KTHREAD (meaning
  * this kernel workthread has transiently adopted a user mm with use_mm,
