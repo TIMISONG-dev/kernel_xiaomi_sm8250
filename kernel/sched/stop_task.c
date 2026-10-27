@@ -61,7 +61,7 @@ static void yield_task_stop(struct rq *rq)
 
 static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
 {
-	struct task_struct *curr = rq->curr;
+	struct task_struct *curr = rq_curr_locked(rq);
 	u64 delta_exec;
 
 	delta_exec = rq_clock_task(rq) - curr->se.exec_start;
