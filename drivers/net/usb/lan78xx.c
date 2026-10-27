@@ -4443,9 +4443,7 @@ static int lan78xx_suspend(struct usb_interface *intf, pm_message_t message)
 	struct lan78xx_net *dev = usb_get_intfdata(intf);
 	bool dev_open;
 	int ret;
-	int event;
 
-	event = message.event;
 
 	mutex_lock(&dev->dev_mutex);
 
