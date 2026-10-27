@@ -29,7 +29,11 @@ extern __initconst const u8 system_certificate_list[];
 extern __initconst const unsigned long system_certificate_list_size;
 
 /**
- * restrict_link_to_builtin_trusted - Restrict keyring addition by built in CA
+ * restrict_link_by_builtin_trusted - Restrict keyring addition by built in CA
+ * @dest_keyring: Keyring receiving the new key
+ * @type: Type of the new key
+ * @payload: Payload of the new key
+ * @restriction_key: Unused; trust is checked against the built-in keyring
  *
  * Restrict the addition of keys into a keyring based on the key-to-be-added
  * being vouched for by a key in the built in system keyring.
@@ -47,6 +51,10 @@ int restrict_link_by_builtin_trusted(struct key *dest_keyring,
 /**
  * restrict_link_by_builtin_and_secondary_trusted - Restrict keyring
  *   addition by both builtin and secondary keyrings
+ * @dest_keyring: Keyring receiving the new key
+ * @type: Type of the new key
+ * @payload: Payload of the new key
+ * @restrict_key: Unused; trust is checked against the secondary keyring
  *
  * Restrict the addition of keys into a keyring based on the key-to-be-added
  * being vouched for by a key in either the built-in or the secondary system
