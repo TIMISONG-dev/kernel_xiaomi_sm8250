@@ -112,11 +112,9 @@ static void sel_netport_insert(struct sel_netport *port)
 	list_add_rcu(&port->list, &sel_netport_hash[idx].list);
 	if (sel_netport_hash[idx].size == SEL_NETPORT_HASH_BKT_LIMIT) {
 		struct sel_netport *tail;
-		tail = list_entry(
-			rcu_dereference_protected(
-				sel_netport_hash[idx].list.prev,
-				lockdep_is_held(&sel_netport_lock)),
-			struct sel_netport, list);
+		lockdep_assert_held(&sel_netport_lock);
+		tail = list_last_entry(&sel_netport_hash[idx].list,
+				       struct sel_netport, list);
 		list_del_rcu(&tail->list);
 		kfree_rcu(tail, rcu);
 	} else
