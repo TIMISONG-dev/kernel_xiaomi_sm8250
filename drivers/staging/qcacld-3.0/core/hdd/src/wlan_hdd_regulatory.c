@@ -57,6 +57,7 @@ static bool init_by_reg_core;
 
 struct regulatory_channel reg_channels[NUM_CHANNELS];
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0))
 static const struct ieee80211_regdomain
 hdd_world_regrules_60_61_62 = {
 	.n_reg_rules = 6,
@@ -125,7 +126,6 @@ hdd_world_regrules_67_68_6A_6C = {
  *
  * Return: regulatory rules ptr
  */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0))
 static const struct ieee80211_regdomain *hdd_get_world_regrules(
 	struct regulatory *reg)
 {
@@ -663,15 +663,13 @@ void hdd_update_indoor_channel(struct hdd_context *hdd_ctx,
 	int band_num;
 	int chan_num;
 	enum channel_enum chan_enum = CHAN_ENUM_2412;
-	struct ieee80211_channel *wiphy_chan, *wiphy_chan_144 = NULL;
+	struct ieee80211_channel *wiphy_chan;
 	struct regulatory_channel *cds_chan;
-	uint8_t band_capability;
 	struct wiphy *wiphy = hdd_ctx->wiphy;
 
 	hdd_enter();
 	hdd_debug("mark indoor channel disable: %d", disable);
 
-	band_capability = hdd_ctx->curr_band;
 	for (band_num = 0; band_num < HDD_NUM_NL80211_BANDS; band_num++) {
 
 		if (!wiphy->bands[band_num])
@@ -685,8 +683,6 @@ void hdd_update_indoor_channel(struct hdd_context *hdd_ctx,
 			wiphy_chan =
 				&(wiphy->bands[band_num]->channels[chan_num]);
 			cds_chan = &(reg_channels[chan_enum]);
-			if (chan_enum == CHAN_ENUM_5720)
-				wiphy_chan_144 = wiphy_chan;
 
 			chan_enum++;
 			hdd_modify_indoor_channel_state_flags(hdd_ctx,
@@ -1507,10 +1503,9 @@ int hdd_regulatory_init(struct hdd_context *hdd_ctx, struct wiphy *wiphy)
 
 void hdd_update_regdb_offload_config(struct hdd_context *hdd_ctx)
 {
-	QDF_STATUS status;
 	bool ignore_fw_reg_offload_ind = false;
 
-	status = ucfg_mlme_get_ignore_fw_reg_offload_ind(
+	ucfg_mlme_get_ignore_fw_reg_offload_ind(
 						hdd_ctx->psoc,
 						&ignore_fw_reg_offload_ind);
 	if (!ignore_fw_reg_offload_ind) {
