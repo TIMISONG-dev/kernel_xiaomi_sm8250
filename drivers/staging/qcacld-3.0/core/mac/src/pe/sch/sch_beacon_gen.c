@@ -1005,7 +1005,7 @@ static QDF_STATUS write_beacon_to_memory(struct mac_context *mac, uint16_t size,
  *
  * NOTE:
  *
- * @param mac pointer to global mac structure
+ * @mac: pointer to global mac structure
  * @param **pPtr pointer to the buffer, where the TIM bit is to be written.
  * @param *timLength pointer to limLength, which needs to be returned.
  * @return None

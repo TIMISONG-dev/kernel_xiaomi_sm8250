@@ -491,7 +491,7 @@ bad:
 
 /**
  * spectral_ctx_deinit() - De-initialize function pointers from spectral context
- * @sc - Reference to spectral_context object
+ * @sc: Reference to spectral_context object
  *
  * Return: None
  */

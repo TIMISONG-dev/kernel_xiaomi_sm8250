@@ -2119,7 +2119,7 @@ bool __qdf_nbuf_data_is_ipv6_tcp_pkt(uint8_t *data)
 
 /**
  * __qdf_nbuf_is_bcast_pkt() - is destination address broadcast
- * @nbuf - sk buff
+ * @nbuf: sk buff
  *
  * Return: true if packet is broadcast
  *	   false otherwise
@@ -4585,7 +4585,7 @@ void __qdf_nbuf_reg_free_cb(qdf_nbuf_free_t cb_func_ptr)
 
 /**
  * qdf_nbuf_classify_pkt() - classify packet
- * @skb - sk buff
+ * @skb: sk buff
  *
  * Return: none
  */

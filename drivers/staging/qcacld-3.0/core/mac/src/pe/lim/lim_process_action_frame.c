@@ -1421,9 +1421,9 @@ __lim_process_neighbor_report(struct mac_context *mac, uint8_t *pRxPacketInfo,
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @param  *pRxPacketInfo - Handle to the Rx packet info
- * @param  pe_session - PE session entry
+ * @pe_session: PE session entry
  *
  * @return None
  */
@@ -1489,9 +1489,9 @@ static void __lim_process_sa_query_request_action_frame(struct mac_context *mac,
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @param  *pRxPacketInfo - Handle to the Rx packet info
- * @param  pe_session - PE session entry
+ * @pe_session: PE session entry
  * @return None
  */
 static void __lim_process_sa_query_response_action_frame(struct mac_context *mac,
@@ -1584,10 +1584,10 @@ static void __lim_process_sa_query_response_action_frame(struct mac_context *mac
  *
  ***NOTE:
  *
- * @param  mac - Global MAC structure
- * @param  pe_session - PE session entry
- * @param  pHdr - Frame header
- * @param  category - Action frame category
+ * @mac: Global MAC structure
+ * @pe_session: PE session entry
+ * @pHdr: Frame header
+ * @category: Action frame category
  * @return true if frame should be dropped
  */
 
@@ -2231,7 +2231,7 @@ void lim_process_action_frame(struct mac_context *mac_ctx,
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @param  *pBd - A pointer to Buffer descriptor + associated PDUs
  * @return None
  */

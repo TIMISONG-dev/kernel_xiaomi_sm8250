@@ -3433,8 +3433,8 @@ static bool adreno_is_rbbm_batch_reg(struct adreno_device *adreno_dev,
 
 /**
  * adreno_regread - Used to read adreno device registers
- * @offsetwords - Word (4 Bytes) offset to the register to be read
- * @value - Value read from device register
+ * @offsetwords: Word (4 Bytes) offset to the register to be read
+ * @value: Value read from device register
  */
 static void adreno_regread(struct kgsl_device *device, unsigned int offsetwords,
 	unsigned int *value)
@@ -3730,10 +3730,10 @@ void adreno_cx_misc_regrmw(struct adreno_device *adreno_dev,
 
 /**
  * adreno_waittimestamp - sleep while waiting for the specified timestamp
- * @device - pointer to a KGSL device structure
- * @context - pointer to the active kgsl context
- * @timestamp - GPU timestamp to wait for
- * @msecs - amount of time to wait (in milliseconds)
+ * @device: pointer to a KGSL device structure
+ * @context: pointer to the active kgsl context
+ * @timestamp: GPU timestamp to wait for
+ * @msecs: amount of time to wait (in milliseconds)
  *
  * Wait up to 'msecs' milliseconds for the specified timestamp to expire.
  */

@@ -589,7 +589,7 @@ static void cap_wt_learning_update(struct cap_learning *cl, int batt_soc_cp,
 /**
  * cap_learning_update -
  * @cl: Capacity learning object
- * @batt_temp - Battery temperature
+ * @batt_temp: Battery temperature
  * @batt_soc: Battery State of Charge (SOC)
  * @charge_status: Charging status from power supply
  * @charge_done: Indicator for charge termination

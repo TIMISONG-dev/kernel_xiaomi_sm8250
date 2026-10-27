@@ -778,7 +778,7 @@ static void setup_flush_timer(void)
 
 /**
  * wlan_logging_thread() - The WLAN Logger thread
- * @Arg - pointer to the HDD context
+ * @Arg: pointer to the HDD context
  *
  * This thread logs log message to App registered for the logs.
  */

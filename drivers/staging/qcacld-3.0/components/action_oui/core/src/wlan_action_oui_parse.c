@@ -31,10 +31,10 @@
 
 /**
  * action_oui_string_to_hex() - convert string to uint8_t hex array
- * @token - string to be converted
- * @hex - output string to hold converted string
- * @no_of_lengths - count of possible lengths for input string
- * @possible_lengths - array holding possible lengths
+ * @token: string to be converted
+ * @hex: output string to hold converted string
+ * @no_of_lengths: count of possible lengths for input string
+ * @possible_lengths: array holding possible lengths
  *
  * This function converts the continuous input string of even length and
  * containing hexa decimal characters into hexa decimal array of uint8_t type.

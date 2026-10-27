@@ -73,7 +73,7 @@ static long dmaengine_ref_count;
 
 /**
  * dev_to_dma_chan - convert a device pointer to the its sysfs container object
- * @dev - device node
+ * @dev: device node
  *
  * Must be called under dma_list_mutex
  */
@@ -195,7 +195,7 @@ static struct module *dma_chan_to_owner(struct dma_chan *chan)
 
 /**
  * balance_ref_count - catch up the channel reference count
- * @chan - channel to balance ->client_count versus dmaengine_ref_count
+ * @chan: channel to balance ->client_count versus dmaengine_ref_count
  *
  * balance_ref_count must be called under dma_list_mutex
  */
@@ -211,7 +211,7 @@ static void balance_ref_count(struct dma_chan *chan)
 
 /**
  * dma_chan_get - try to grab a dma channel's parent driver module
- * @chan - channel to grab
+ * @chan: channel to grab
  *
  * Must be called under dma_list_mutex
  */
@@ -251,7 +251,7 @@ err_out:
 
 /**
  * dma_chan_put - drop a reference to a dma channel's parent driver module
- * @chan - channel to release
+ * @chan: channel to release
  *
  * Must be called under dma_list_mutex
  */
@@ -307,7 +307,7 @@ static dma_cap_mask_t dma_cap_mask_all;
 
 /**
  * dma_chan_tbl_ent - tracks channel allocations per core/operation
- * @chan - associated channel for this entry
+ * @chan: associated channel for this entry
  */
 struct dma_chan_tbl_ent {
 	struct dma_chan *chan;

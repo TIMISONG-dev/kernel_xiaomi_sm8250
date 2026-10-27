@@ -882,8 +882,8 @@ send_update_tdls_peer_state_cmd_tlv(wmi_unified_t wmi_handle,
 /**
  * extract_vdev_tdls_ev_param_tlv() - extract vdev tdls param from event
  * @wmi_handle: wmi handle
- * @param evt_buf: pointer to event buffer
- * @param param: Pointer to hold vdev tdls param
+ * @evt_buf: pointer to event buffer
+ * @param: Pointer to hold vdev tdls param
  *
  * Return: QDF_STATUS_SUCCESS for success or error code
  */
@@ -1594,7 +1594,7 @@ static QDF_STATUS send_del_ts_cmd_tlv(wmi_unified_t wmi_handle, uint8_t vdev_id,
 /**
  * send_aggr_qos_cmd_tlv() - send aggr qos request to fw
  * @wmi_handle: handle to wmi
- * @aggr_qos_rsp_msg - combined struct for all ADD_TS requests.
+ * @aggr_qos_rsp_msg: combined struct for all ADD_TS requests.
  *
  * A function to handle WMI_AGGR_QOS_REQ. This will send out
  * ADD_TS requests to firmware in loop for all the ACs with

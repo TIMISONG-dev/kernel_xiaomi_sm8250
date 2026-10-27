@@ -561,9 +561,9 @@ static void _drawctxt_switch_wait_callback(struct kgsl_device *device,
 
 /**
  * adreno_drawctxt_switch - switch the current draw context in a given RB
- * @adreno_dev - The 3D device that owns the context
+ * @adreno_dev: The 3D device that owns the context
  * @rb: The ringubffer pointer on which the current context is being changed
- * @drawctxt - the 3D context to switch to
+ * @drawctxt: the 3D context to switch to
  *
  * Switch the current draw context in given RB
  */

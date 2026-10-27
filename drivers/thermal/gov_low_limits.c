@@ -82,8 +82,8 @@ static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
 
 /**
  * low_limits_throttle - throttles devices associated with the given zone
- * @tz - thermal_zone_device
- * @trip - the trip point
+ * @tz: thermal_zone_device
+ * @trip: the trip point
  *
  * Throttling Logic: If the sensor reading goes below a trip point, the
  * pre-defined mitigation will be applied for the cooling device.

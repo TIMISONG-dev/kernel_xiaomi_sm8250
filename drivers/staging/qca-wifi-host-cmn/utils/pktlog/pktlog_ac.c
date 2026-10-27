@@ -1096,7 +1096,7 @@ static enum htc_send_full_action pktlog_h2t_full(void *context, HTC_PACKET *pkt)
 
 /**
  * pktlog_htc_connect_service() - create new endpoint for packetlog
- * @pdev - pktlog pdev
+ * @pdev: pktlog pdev
  *
  * Return: 0 for success/failure
  */

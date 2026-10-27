@@ -2485,8 +2485,8 @@ static inline int mpq_dmx_notify_overflow(struct dvb_demux_feed *feed)
  * mpq_dmx_decoder_frame_closure - Helper function to handle closing current
  * pending frame upon reaching EOS.
  *
- * @mpq_demux - mpq demux instance
- * @mpq_feed - mpq feed object
+ * @mpq_demux: mpq demux instance
+ * @mpq_feed: mpq feed object
  */
 static void mpq_dmx_decoder_frame_closure(struct mpq_demux *mpq_demux,
 		struct mpq_feed *mpq_feed)
@@ -2566,8 +2566,8 @@ static void mpq_dmx_decoder_frame_closure(struct mpq_demux *mpq_demux,
  * mpq_dmx_decoder_pes_closure - Helper function to handle closing current PES
  * upon reaching EOS.
  *
- * @mpq_demux - mpq demux instance
- * @mpq_feed - mpq feed object
+ * @mpq_demux: mpq demux instance
+ * @mpq_feed: mpq feed object
  */
 static void mpq_dmx_decoder_pes_closure(struct mpq_demux *mpq_demux,
 	struct mpq_feed *mpq_feed)

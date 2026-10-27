@@ -1079,7 +1079,7 @@ completed:
  * written to dest descriptor on async_cons ep).
  *
  * @priv -not in use.
- * @evt - event name - IPA_RECIVE.
+ * @evt: event name - IPA_RECIVE.
  * @data -the ipa_mem_buffer.
  */
 void ipa3_dma_async_memcpy_notify_cb(void *priv

@@ -717,10 +717,10 @@ reg_get_op_class_tbl_by_chan_map(const struct
 /**
  * reg_get_channel_cen - Calculate central channel in the channel set.
  *
- * @op_class_tbl - Pointer to op_class_tbl.
- * @idx - Pointer to channel index.
- * @num_channels - Number of channels.
- * @center_chan - Pointer to center channel number
+ * @op_class_tbl: Pointer to op_class_tbl.
+ * @idx: Pointer to channel index.
+ * @num_channels: Number of channels.
+ * @center_chan: Pointer to center channel number
  *
  * Return : void
  */
@@ -744,8 +744,8 @@ static void reg_get_channel_cen(const struct
 /**
  * reg_get_chan_or_chan_center - Calculate central channel in the channel set.
  *
- * @op_class_tbl - Pointer to op_class_tbl.
- * @idx - Pointer to channel index.
+ * @op_class_tbl: Pointer to op_class_tbl.
+ * @idx: Pointer to channel index.
  *
  * Return : Center channel number
  */

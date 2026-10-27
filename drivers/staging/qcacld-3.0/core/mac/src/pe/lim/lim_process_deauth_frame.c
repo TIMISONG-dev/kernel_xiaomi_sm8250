@@ -52,7 +52,7 @@
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @param  *pRxPacketInfo - A pointer to Buffer descriptor + associated PDUs
  * @return None
  */

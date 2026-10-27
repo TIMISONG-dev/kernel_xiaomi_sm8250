@@ -57,7 +57,7 @@
  *
  ***NOTE:
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @param  *pRxPacketInfo - A pointer to Rx packet info structure
  * @return None
  */

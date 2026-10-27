@@ -155,9 +155,9 @@ dp_tx_outstanding_dec(struct dp_pdev *pdev)
 /**
  * dp_tx_tso_unmap_segment() - Unmap TSO segment
  *
- * @soc - core txrx main context
- * @seg_desc - tso segment descriptor
- * @num_seg_desc - tso number segment descriptor
+ * @soc: core txrx main context
+ * @seg_desc: tso segment descriptor
+ * @num_seg_desc: tso number segment descriptor
  */
 static void dp_tx_tso_unmap_segment(
 		struct dp_soc *soc,
@@ -191,8 +191,8 @@ static void dp_tx_tso_unmap_segment(
  * dp_tx_tso_desc_release() - Release the tso segment and tso_cmn_num_seg
  *                            back to the freelist
  *
- * @soc - soc device handle
- * @tx_desc - Tx software descriptor
+ * @soc: soc device handle
+ * @tx_desc: Tx software descriptor
  */
 static void dp_tx_tso_desc_release(struct dp_soc *soc,
 				   struct dp_tx_desc_s *tx_desc)
@@ -503,7 +503,7 @@ static void dp_tx_unmap_tso_seg_list(
 #ifdef FEATURE_TSO_STATS
 /**
  * dp_tso_get_stats_idx: Retrieve the tso packet id
- * @pdev - pdev handle
+ * @pdev: pdev handle
  *
  * Return: id
  */
@@ -2213,7 +2213,7 @@ qdf_nbuf_t dp_tx_extract_mesh_meta_data(struct dp_vdev *vdev, qdf_nbuf_t nbuf,
 
 /**
  * dp_check_exc_metadata() - Checks if parameters are valid
- * @tx_exc - holds all exception path parameters
+ * @tx_exc: holds all exception path parameters
  *
  * Returns true when all the parameters are valid else false
  *

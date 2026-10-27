@@ -996,7 +996,7 @@ void lim_handle_sap_beacon(struct wlan_objmgr_pdev *pdev,
  ***NOTE:
  * NA
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @param  pMsg of type struct scheduler_msg - Pointer to the message structure
  * @return None
  */
@@ -1246,7 +1246,7 @@ lim_is_mgmt_frame_loggable(uint8_t type, uint8_t subtype)
  ***NOTE:
  * NA
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @param  pMsg of type struct scheduler_msg - Pointer to the message structure
  * @return None
  */

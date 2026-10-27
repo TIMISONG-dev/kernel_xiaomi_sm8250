@@ -366,8 +366,8 @@ void sch_qos_update_local(struct mac_context *mac, struct pe_session *pe_session
 /**
  * sch_set_default_edca_params() - This function sets the gLimEdcaParams to the
  * default local wmm profile.
- * @mac - Global mac context
- * @pe_session - PE session
+ * @mac: Global mac context
+ * @pe_session: PE session
  *
  * return none
  */
@@ -387,9 +387,9 @@ void sch_set_default_edca_params(struct mac_context *mac, struct pe_session *pe_
 /**
  * set_sch_edca_params() - This function fills in the gLimEdcaParams structure
  * with the given edca params.
- * @mac - global mac context
- * @pe_session - PE session
- * @params - EDCA parameters
+ * @mac: global mac context
+ * @pe_session: PE session
+ * @params: EDCA parameters
  *
  * Return  none
  */
@@ -490,7 +490,7 @@ get_wmm_local_params(struct mac_context *mac_ctx,
  * EDCA params in the gLimEdcaParams structure. It also updates the
  * edcaParamSetCount.
  *
- * @mac - global mac context
+ * @mac: global mac context
  *
  * Return  none
  */

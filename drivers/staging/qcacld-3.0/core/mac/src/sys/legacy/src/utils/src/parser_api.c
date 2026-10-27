@@ -1668,9 +1668,9 @@ populate_dot11f_supp_rates(struct mac_context *mac,
  * populate_dot11f_rates_tdls() - populate supported rates and
  *                                extended supported rates IE.
  * @p_mac gloabl - header.
- * @p_supp_rates - pointer to supported rates IE
- * @p_ext_supp_rates - pointer to extended supported rates IE
- * @curr_oper_channel - current operating channel
+ * @p_supp_rates: pointer to supported rates IE
+ * @p_ext_supp_rates: pointer to extended supported rates IE
+ * @curr_oper_channel: current operating channel
  *
  * This function populates the supported rates and extended supported
  * rates IE based in the STA capability. If the number of rates

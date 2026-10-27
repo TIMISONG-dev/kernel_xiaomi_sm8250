@@ -6453,8 +6453,8 @@ static ssize_t ipa3_write(struct file *file, const char __user *buf,
 /**
  * ipa3_tz_unlock_reg - Unlocks memory regions so that they become accessible
  *	from AP.
- * @reg_info - Pointer to array of memory regions to unlock
- * @num_regs - Number of elements in the array
+ * @reg_info: Pointer to array of memory regions to unlock
+ * @num_regs: Number of elements in the array
  *
  * Converts the input array of regions to a struct that TZ understands and
  * issues an SCM call.

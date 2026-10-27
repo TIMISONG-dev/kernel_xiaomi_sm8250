@@ -700,8 +700,8 @@ void lim_cleanup_mlm(struct mac_context *mac_ctx)
  * NA
  *
  ***NOTE:
- * @param  macAddr  - MacAddr to be printed
- * @param  logLevel - Loglevel to be used
+ * @macAddr: MacAddr to be printed
+ * @logLevel: Loglevel to be used
  *
  * @return None.
  */
@@ -1883,7 +1883,7 @@ lim_decide_sta_protection(struct mac_context *mac_ctx,
  *
  *
  ***NOTE:
- * @param  pe_session           - Pointer to pe session
+ * @pe_session: Pointer to pe session
  * @return None
  */
 static void __lim_process_channel_switch_timeout(struct pe_session *pe_session)
@@ -2131,7 +2131,7 @@ lim_update_channel_switch(struct mac_context *mac_ctx,
  *
  ***NOTE:
  *
- * @param  mac    - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  *
  * @return None
  */
@@ -2242,10 +2242,10 @@ static void lim_switch_channel_vdev_started(struct pe_session *pe_session)
  *  after AP indicates a channel switch for spectrum management (11h).
  *
  ***NOTE:
- * @param  mac               Pointer to Global MAC structure
- * @param  status             Status of channel switch request
- * @param  data               User data
- * @param  pe_session      Session information
+ * @mac: Pointer to Global MAC structure
+ * @status: Status of channel switch request
+ * @data: User data
+ * @pe_session: Session information
  * @return NONE
  */
 void lim_switch_channel_cback(struct mac_context *mac, QDF_STATUS status,
@@ -2406,8 +2406,8 @@ void lim_switch_primary_secondary_channel(struct mac_context *mac,
  *
  ***NOTE:
  *
- * @param  mac  Pointer to Global MAC structure
- * @param  htCap The HT capability being queried
+ * @mac: Pointer to Global MAC structure
+ * @htCap: The HT capability being queried
  * @return uint8_t The current state of the requested HT capability is returned in a
  *            uint8_t variable
  */
@@ -3797,7 +3797,7 @@ lim_enable_ht_rifs_protection(struct mac_context *mac, uint8_t enable,
  *
  * NOTE:
  *
- * @param enable        Flag to enable/disable short preamble
+ * @enable: Flag to enable/disable short preamble
  * @return None
  */
 
@@ -4288,8 +4288,8 @@ lim_validate_delts_req(struct mac_context *mac_ctx, tpSirDeltsReq delts_req,
  *      NOTE:
  *          NA
  *
- * @param  mac - Pointer to Global MAC structure
- * @param  limMsg - Lim Message structure object with the MimoPSparam in body
+ * @mac: Pointer to Global MAC structure
+ * @limMsg: Lim Message structure object with the MimoPSparam in body
  * @return None
  */
 QDF_STATUS
@@ -4357,8 +4357,8 @@ void lim_pkt_free(struct mac_context *mac,
  ***NOTE:
  * NA
  *
- * @param  body    - Received message body
- * @param  pRxPacketInfo     - Pointer to received BD
+ * @body: Received message body
+ * @pRxPacketInfo: Pointer to received BD
  * @return None
  */
 
@@ -4467,7 +4467,7 @@ bool lim_is_channel_valid_for_channel_switch(struct mac_context *mac,
  *      NOTE:
  *          NA
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @return None
  */
 
@@ -4501,7 +4501,7 @@ lim_restore_pre_channel_switch_state(struct mac_context *mac, struct pe_session 
  *      NOTE:
  *          NA
  *
- * @param  mac - Pointer to Global MAC structure
+ * @mac: Pointer to Global MAC structure
  * @param  pe_session
  * @return None
  */

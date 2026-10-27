@@ -38,8 +38,8 @@
 
 /**
  * hal_uniform_desc_hdr_setup - setup reo_queue_ext descritpro
- * @owner - owner info
- * @buffer_type - buffer type
+ * @owner: owner info
+ * @buffer_type: buffer type
  */
 static inline void hal_uniform_desc_hdr_setup(uint32_t *desc, uint32_t owner,
 	uint32_t buffer_type)

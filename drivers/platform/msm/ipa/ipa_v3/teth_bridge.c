@@ -49,9 +49,9 @@ static struct ipa3_teth_bridge_ctx *ipa3_teth_ctx;
 
 /**
  * teth_bridge_ipa_cb() - Callback to handle IPA data path events
- * @priv - private data
- * @evt - event type
- * @data - event specific data (usually skb)
+ * @priv: private data
+ * @evt: event type
+ * @data: event specific data (usually skb)
  *
  * This callback is called by IPA driver for exception packets from USB.
  * All exception packets are handled by Q6 and should not reach this function.
@@ -77,7 +77,7 @@ static void teth_bridge_ipa_cb(void *priv, enum ipa_dp_evt_type evt,
 
 /**
  * ipa3_teth_bridge_init() - Initialize the Tethering bridge driver
- * @params - in/out params for USB initialization API (please look at struct
+ * @params: in/out params for USB initialization API (please look at struct
  *  definition for more info)
  *
  * USB driver gets a pointer to a callback function (usb_notify_cb) and an

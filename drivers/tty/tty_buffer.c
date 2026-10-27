@@ -42,7 +42,7 @@
  *	tty_buffer_lock_exclusive	-	gain exclusive access to buffer
  *	tty_buffer_unlock_exclusive	-	release exclusive access
  *
- *	@port - tty_port owning the flip buffer
+ *	@port: tty_port owning the flip buffer
  *
  *	Guarantees safe use of the line discipline's receive_buf() method by
  *	excluding the buffer work and any pending flush from using the flip
@@ -78,7 +78,7 @@ EXPORT_SYMBOL_GPL(tty_buffer_unlock_exclusive);
 
 /**
  *	tty_buffer_space_avail	-	return unused buffer space
- *	@port - tty_port owning the flip buffer
+ *	@port: tty_port owning the flip buffer
  *
  *	Returns the # of bytes which can be written by the driver without
  *	reaching the buffer limit.

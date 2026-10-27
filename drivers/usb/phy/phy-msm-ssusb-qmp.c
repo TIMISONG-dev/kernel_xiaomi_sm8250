@@ -665,8 +665,8 @@ static int msm_ssphy_power_enable(struct msm_ssphy_qmp *phy, bool on)
 /**
  * Performs QMP PHY suspend/resume functionality.
  *
- * @uphy - usb phy pointer.
- * @suspend - to enable suspend or not. 1 - suspend, 0 - resume
+ * @uphy: usb phy pointer.
+ * @suspend: to enable suspend or not. 1 - suspend, 0 - resume
  *
  */
 static int msm_ssphy_qmp_set_suspend(struct usb_phy *uphy, int suspend)

@@ -1784,8 +1784,8 @@ EXPORT_SYMBOL_GPL(blkcg_maybe_throttle_current);
 
 /**
  * blkcg_schedule_throttle - this task needs to check for throttling
- * @q - the request queue IO was submitted on
- * @use_memdelay - do we charge this to memory delay for PSI
+ * @q: the request queue IO was submitted on
+ * @use_memdelay: do we charge this to memory delay for PSI
  *
  * This is called by the IO controller when we know there's delay accumulated
  * for the blkg for this task.  We do not pass the blkg because there are places
@@ -1818,8 +1818,8 @@ EXPORT_SYMBOL_GPL(blkcg_schedule_throttle);
 
 /**
  * blkcg_add_delay - add delay to this blkg
- * @now - the current time in nanoseconds
- * @delta - how many nanoseconds of delay to add
+ * @now: the current time in nanoseconds
+ * @delta: how many nanoseconds of delay to add
  *
  * Charge @delta to the blkg's current delay accumulation.  This is used to
  * throttle tasks if an IO controller thinks we need more throttling.

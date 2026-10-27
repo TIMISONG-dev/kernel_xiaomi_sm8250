@@ -137,8 +137,8 @@ end:
 /**
  * extract_p2p_noa_ev_param_tlv() - extract p2p noa information from event
  * @wmi_handle: wmi handle
- * @param evt_buf: pointer to event buffer
- * @param param: Pointer to hold p2p noa info
+ * @evt_buf: pointer to event buffer
+ * @param: Pointer to hold p2p noa info
  *
  * Return: QDF_STATUS_SUCCESS for success or error code
  */
@@ -431,8 +431,8 @@ static QDF_STATUS send_p2p_lo_stop_cmd_tlv(wmi_unified_t wmi_handle,
  * extract_p2p_lo_stop_ev_param_tlv() - extract p2p lo stop
  * information from event
  * @wmi_handle: wmi handle
- * @param evt_buf: pointer to event buffer
- * @param param: Pointer to hold p2p lo stop event information
+ * @evt_buf: pointer to event buffer
+ * @param: Pointer to hold p2p lo stop event information
  *
  * Return: QDF_STATUS_SUCCESS for success or error code
  */

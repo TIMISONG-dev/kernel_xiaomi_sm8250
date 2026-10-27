@@ -19,8 +19,8 @@
  * struct ipa_rm_it_private - IPA RM Inactivity Timer private
  *	data
  * @initied: indicates if instance was initialized
- * @lock - spinlock for mutual exclusion
- * @resource_name - resource name
+ * @lock: spinlock for mutual exclusion
+ * @resource_name: resource name
  * @work: delayed work object for running delayed releas
  *	function
  * @resource_requested: boolean flag indicates if resource was requested

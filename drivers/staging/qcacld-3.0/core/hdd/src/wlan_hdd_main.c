@@ -8976,7 +8976,7 @@ int hdd_wlan_notify_modem_power_state(int state)
 /**
  *
  * hdd_post_cds_enable_config() - HDD post cds start config helper
- * @adapter - Pointer to the HDD
+ * @adapter: Pointer to the HDD
  *
  * Return: None
  */
@@ -9213,7 +9213,7 @@ static int hdd_wiphy_init(struct hdd_context *hdd_ctx)
 #ifdef WLAN_FEATURE_DP_BUS_BANDWIDTH
 /**
  * hdd_display_periodic_stats() - Function to display periodic stats
- * @hdd_ctx - handle to hdd context
+ * @hdd_ctx: handle to hdd context
  * @bool data_in_interval - true, if data detected in bw time interval
  *
  * The periodicity is determined by hdd_ctx->config->periodic_stats_disp_time.
@@ -9398,9 +9398,9 @@ static inline void hdd_pm_qos_update_request(struct hdd_context *hdd_ctx,
 
 /**
  * hdd_pld_request_bus_bandwidth() - Function to control bus bandwidth
- * @hdd_ctx - handle to hdd context
- * @tx_packets - transmit packet count
- * @rx_packets - receive packet count
+ * @hdd_ctx: handle to hdd context
+ * @tx_packets: transmit packet count
+ * @rx_packets: receive packet count
  *
  * The function controls the bus bandwidth and dynamic control of
  * tcp delayed ack configuration
@@ -11331,7 +11331,7 @@ static uint32_t hdd_log_level_to_bitmask(enum host_log_level user_log_level)
 
 /**
  * hdd_set_trace_level_for_each - Set trace level for each INI config
- * @hdd_ctx - HDD context
+ * @hdd_ctx: HDD context
  *
  * Set trace level for each module based on INI config.
  *
@@ -11740,7 +11740,7 @@ static void hdd_sar_cfg_update(struct hdd_config *config,
 
 /**
  * hdd_cfg_params_init() - Initialize hdd params in hdd_config strucuture
- * @hdd_ctx - Pointer to HDD context
+ * @hdd_ctx: Pointer to HDD context
  *
  * Return: None
  */
@@ -13314,7 +13314,7 @@ static void hdd_features_deinit(struct hdd_context *hdd_ctx)
 
 /**
  * hdd_register_bcn_cb() - register scan beacon callback
- * @hdd_ctx - Pointer to the HDD context
+ * @hdd_ctx: Pointer to the HDD context
  *
  * Return: QDF_STATUS
  */
@@ -17795,7 +17795,7 @@ int hdd_get_rssi_snr_by_bssid(struct hdd_adapter *adapter, const uint8_t *bssid,
 
 /**
  * hdd_reset_limit_off_chan() - reset limit off-channel command parameters
- * @adapter - HDD adapter
+ * @adapter: HDD adapter
  *
  * Return: 0 on success and non zero value on failure
  */

@@ -3338,11 +3338,11 @@ static QDF_STATUS sme_qos_process_ft_reassoc_req_ev(
 /**
  * sme_qos_fill_aggr_info - fill QOS Aggregation info
  *
- * @ac_id - index to the AC
- * @ts_id - index to TS for a given AC
- * @direction - traffic direction
- * @msg - QOS message
- * @session - sme session information
+ * @ac_id: index to the AC
+ * @ts_id: index to TS for a given AC
+ * @direction: traffic direction
+ * @msg: QOS message
+ * @session: sme session information
  *
  * this is a helper function to populate aggregation information
  * for QOS message.
@@ -3388,8 +3388,8 @@ static void sme_qos_fill_aggr_info(int ac_id, int ts_id,
 /**
  * sme_qos_ft_aggr_qos_req - send aggregated QOS request
  *
- * @mac_ctx - global MAC context
- * @session_id - sme session Id
+ * @mac_ctx: global MAC context
+ * @session_id: sme session Id
  *
  * This function is used to send aggregated QOS request to HAL.
  *
@@ -3521,8 +3521,8 @@ QDF_STATUS sme_qos_process_ftric_response(struct mac_context *mac,
 /**
  * sme_qos_process_aggr_qos_rsp - process qos aggregation response
  *
- * @mac_ctx - global mac context
- * @msgbuf - SME message buffer
+ * @mac_ctx: global mac context
+ * @msgbuf: SME message buffer
  *
  * this function process the QOS aggregation response received.
  *
@@ -7350,9 +7350,9 @@ bool qos_process_command(struct mac_context *mac, tSmeCmd *pCommand)
  *
  * @mac_ctx  Pointer to mac context
  * @session_id  SME session id
- * @qos_info - Tspec information
- * @ac - Access category
- * @tspec_mask - Tspec Mask
+ * @qos_info: Tspec information
+ * @ac: Access category
+ * @tspec_mask: Tspec Mask
  *
  * This function is called to re-send AddTS for the combined QoS request
  *

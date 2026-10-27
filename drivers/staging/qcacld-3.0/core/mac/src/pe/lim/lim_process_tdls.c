@@ -2216,13 +2216,13 @@ lim_tdls_populate_dot11f_vht_caps(struct mac_context *mac,
 /**
  * lim_tdls_populate_matching_rate_set() - populate matching rate set
  *
- * @mac_ctx  - global MAC context
- * @stads - station hash entry
- * @supp_rate_set - pointer to supported rate set
- * @supp_rates_len - length of the supported rates
- * @supp_mcs_set - pointer to supported MSC set
- * @session_entry - pointer to PE session entry
- * @vht_caps - pointer to VHT capability
+ * @mac_ctx: global MAC context
+ * @stads: station hash entry
+ * @supp_rate_set: pointer to supported rate set
+ * @supp_rates_len: length of the supported rates
+ * @supp_mcs_set: pointer to supported MSC set
+ * @session_entry: pointer to PE session entry
+ * @vht_caps: pointer to VHT capability
  *
  *
  * This function gets set of available rates from the config and compare them
@@ -3070,8 +3070,8 @@ void lim_update_tdls_set_state_for_fw(struct pe_session *session_entry,
 /**
  * lim_delete_tdls_peers() - delete tdls peers
  *
- * @mac_ctx - global MAC context
- * @session_entry - PE session entry
+ * @mac_ctx: global MAC context
+ * @session_entry: PE session entry
  *
  * Delete all the TDLS peer connected before leaving the BSS
  *

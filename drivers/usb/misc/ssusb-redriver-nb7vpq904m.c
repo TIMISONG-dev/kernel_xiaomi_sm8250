@@ -211,8 +211,8 @@ static int redriver_i2c_reg_set(struct ssusb_redriver *redriver,
  *  - Two lanes of DisplayPort 1.4 + One port of USB 3.1 Gen1/Gen2
  *  - Four lanes of DisplayPort 1.4
  *
- * @redriver - contain redriver status
- * @on - re-driver chip enable or not
+ * @redriver: contain redriver status
+ * @on: re-driver chip enable or not
  */
 static void ssusb_redriver_gen_dev_set(
 		struct ssusb_redriver *redriver, bool on)
