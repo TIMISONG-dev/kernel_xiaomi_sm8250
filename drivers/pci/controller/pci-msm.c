@@ -3737,6 +3737,8 @@ static int pcie_phy_init(struct msm_pcie_dev_t *dev)
 
 	/* Enable the pipe clock */
 	ret = msm_pcie_pipe_clk_init(dev);
+	if (ret)
+		return ret;
 
 	/* ensure that changes propagated to the hardware */
 	wmb();
