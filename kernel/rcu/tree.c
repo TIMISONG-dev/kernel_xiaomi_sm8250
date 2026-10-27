@@ -1102,10 +1102,10 @@ static void rcu_disable_urgency_upon_qs(struct rcu_data *rdp)
 /**
  * rcu_is_watching - see if RCU thinks that the current CPU is not idle
  *
- * Return true if RCU is watching the running CPU, which means that this
+ * Return: true if RCU is watching the running CPU, which means that this
  * CPU can safely enter RCU read-side critical sections.  In other words,
  * if the current CPU is not in its idle loop or is in an interrupt or
- * NMI handler, return true.
+ * NMI handler, return false.
  *
  * Make notrace because it can be called by the internal functions of
  * ftrace, and making this notrace removes unnecessary recursion calls.
@@ -3773,7 +3773,7 @@ EXPORT_SYMBOL_GPL(synchronize_rcu);
 /**
  * get_state_synchronize_rcu - Snapshot current RCU state
  *
- * Returns a cookie that is used by a later call to cond_synchronize_rcu()
+ * Return: a cookie that is used by a later call to cond_synchronize_rcu()
  * to determine whether or not a full grace period has elapsed in the
  * meantime.
  */
