@@ -109,51 +109,6 @@ int wlan_hdd_tdls_get_all_peers(struct hdd_adapter *adapter,
 }
 
 static const struct nla_policy
-	wlan_hdd_tdls_config_enable_policy[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAX +
-					   1] = {
-	[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAC_ADDR] = {
-		.type = NLA_UNSPEC,
-		.len = QDF_MAC_ADDR_SIZE},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_CHANNEL] = {.type = NLA_U32},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_GLOBAL_OPERATING_CLASS] = {.type =
-								NLA_U32},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MAX_LATENCY_MS] = {.type = NLA_U32},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_ENABLE_MIN_BANDWIDTH_KBPS] = {.type =
-								NLA_U32},
-};
-static const struct nla_policy
-	wlan_hdd_tdls_config_disable_policy[QCA_WLAN_VENDOR_ATTR_TDLS_DISABLE_MAX +
-					    1] = {
-	[QCA_WLAN_VENDOR_ATTR_TDLS_DISABLE_MAC_ADDR] = {
-		.type = NLA_UNSPEC,
-		.len = QDF_MAC_ADDR_SIZE},
-};
-static const struct nla_policy
-	wlan_hdd_tdls_config_state_change_policy[QCA_WLAN_VENDOR_ATTR_TDLS_STATE_MAX
-						 + 1] = {
-	[QCA_WLAN_VENDOR_ATTR_TDLS_STATE_MAC_ADDR] = {
-		.type = NLA_UNSPEC,
-		.len = QDF_MAC_ADDR_SIZE},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_NEW_STATE] = {.type = NLA_U32},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_STATE_REASON] = {.type = NLA_S32},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_STATE_CHANNEL] = {.type = NLA_U32},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_STATE_GLOBAL_OPERATING_CLASS] = {.type =
-								NLA_U32},
-};
-static const struct nla_policy
-	wlan_hdd_tdls_config_get_status_policy
-[QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_MAX + 1] = {
-	[QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_MAC_ADDR] = {
-		.type = NLA_UNSPEC,
-		.len = QDF_MAC_ADDR_SIZE},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_STATE] = {.type = NLA_U32},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_REASON] = {.type = NLA_S32},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_CHANNEL] = {.type = NLA_U32},
-	[QCA_WLAN_VENDOR_ATTR_TDLS_GET_STATUS_GLOBAL_OPERATING_CLASS] = {
-							.type = NLA_U32},
-};
-
-static const struct nla_policy
 	wlan_hdd_tdls_mode_configuration_policy
 	[QCA_WLAN_VENDOR_ATTR_TDLS_CONFIG_MAX + 1] = {
 		[QCA_WLAN_VENDOR_ATTR_TDLS_CONFIG_TRIGGER_MODE] = {

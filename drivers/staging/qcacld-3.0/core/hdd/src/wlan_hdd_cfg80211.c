@@ -2482,7 +2482,6 @@ static int wlan_hdd_sap_get_valid_channellist(struct hdd_adapter *adapter,
 					      uint32_t *freq_list,
 					      enum band_info band)
 {
-	struct sap_config *sap_config;
 	struct hdd_context *hdd_ctx = WLAN_HDD_GET_CTX(adapter);
 	uint32_t pcl_freqs[NUM_CHANNELS] = {0};
 	uint32_t chan_count;
@@ -2490,7 +2489,6 @@ static int wlan_hdd_sap_get_valid_channellist(struct hdd_adapter *adapter,
 	QDF_STATUS status;
 	struct wlan_objmgr_pdev *pdev = hdd_ctx->pdev;
 
-	sap_config = &adapter->session.ap.sap_config;
 
 	status = policy_mgr_get_valid_chans(hdd_ctx->psoc,
 					    pcl_freqs,
@@ -17559,7 +17557,6 @@ static int __wlan_hdd_change_station(struct wiphy *wiphy,
 	QDF_STATUS status = QDF_STATUS_SUCCESS;
 	struct hdd_adapter *adapter = WLAN_HDD_GET_PRIV_PTR(dev);
 	struct hdd_context *hdd_ctx;
-	struct hdd_station_ctx *sta_ctx;
 	struct hdd_ap_ctx *ap_ctx;
 	struct qdf_mac_addr sta_macaddr;
 	int ret;
@@ -17583,7 +17580,7 @@ static int __wlan_hdd_change_station(struct wiphy *wiphy,
 	if (0 != ret)
 		return ret;
 
-	sta_ctx = WLAN_HDD_GET_STATION_CTX_PTR(adapter);
+	WLAN_HDD_GET_STATION_CTX_PTR(adapter);
 
 	qdf_mem_copy(sta_macaddr.bytes, mac, QDF_MAC_ADDR_SIZE);
 
@@ -20525,7 +20522,6 @@ static int __wlan_hdd_cfg80211_join_ibss(struct wiphy *wiphy,
 	struct hdd_context *hdd_ctx = WLAN_HDD_GET_CTX(adapter);
 	struct qdf_mac_addr bssid;
 	uint8_t channelNum = 0;
-	mac_handle_t mac_handle;
 	struct wlan_mlme_ibss_cfg ibss_cfg = {0};
 	uint8_t conn_info_channel;
 
@@ -20556,7 +20552,6 @@ static int __wlan_hdd_cfg80211_join_ibss(struct wiphy *wiphy,
 		return -EINVAL;
 	}
 
-	mac_handle = hdd_ctx->mac_handle;
 	if (NULL !=
 		params->chandef.chan) {
 		uint32_t numChans = CFG_VALID_CHANNEL_LIST_LEN;
@@ -22346,7 +22341,6 @@ int __wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
 	struct hdd_context *hdd_ctx;
 	struct hdd_hostapd_state *hapd_state;
 	uint8_t *mac;
-	mac_handle_t mac_handle;
 	struct hdd_station_info *sta_info;
 
 	hdd_enter();
@@ -22370,7 +22364,6 @@ int __wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
 	}
 
 	mac = (uint8_t *) param->peerMacAddr.bytes;
-	mac_handle = hdd_ctx->mac_handle;
 
 	if (QDF_SAP_MODE != adapter->device_mode &&
 	    QDF_P2P_GO_MODE != adapter->device_mode)
