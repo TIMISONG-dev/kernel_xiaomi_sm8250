@@ -145,7 +145,12 @@ int hif_exec_event(struct hif_opaque_softc *hif_ctx, enum qca_napi_event event,
 	}
 
 	case NAPI_EVT_TPUT_STATE: {
-		tput_mode = (enum qca_napi_tput_state)data;
+		/* Throughput events encode a state, not a pointer payload. */
+		if ((uintptr_t)data > QCA_NAPI_TPUT_HI) {
+			rc = -EINVAL;
+			break;
+		}
+		tput_mode = (uintptr_t)data;
 		if (tput_mode == QCA_NAPI_TPUT_LO) {
 			/* from TPUT_HI -> TPUT_LO */
 			NAPI_DEBUG("%s: Moving to napi_tput_LO state",
