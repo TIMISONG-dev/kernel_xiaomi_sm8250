@@ -1112,7 +1112,6 @@ static int __sctp_connect(struct sock *sk,
 	enum sctp_scope scope;
 	long timeo;
 	int err = 0;
-	int addrcnt = 0;
 	int walk_size = 0;
 	union sctp_addr *sa_addr = NULL;
 	void *addr_buf;
@@ -1241,7 +1240,6 @@ static int __sctp_connect(struct sock *sk,
 			goto out_free;
 		}
 
-		addrcnt++;
 		addr_buf += af->sockaddr_len;
 		walk_size += af->sockaddr_len;
 	}
