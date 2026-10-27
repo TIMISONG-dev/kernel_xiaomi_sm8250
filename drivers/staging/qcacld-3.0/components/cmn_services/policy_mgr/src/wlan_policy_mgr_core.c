@@ -1253,7 +1253,6 @@ void policy_mgr_dump_current_concurrency(struct wlan_objmgr_psoc *psoc)
 {
 	uint32_t num_connections = 0;
 	char cc_mode[POLICY_MGR_MAX_CON_STRING_LEN] = {0};
-	uint32_t count = 0;
 	struct policy_mgr_psoc_priv_obj *pm_ctx;
 
 	pm_ctx = policy_mgr_get_context(psoc);
@@ -1271,7 +1270,7 @@ void policy_mgr_dump_current_concurrency(struct wlan_objmgr_psoc *psoc)
 		policy_mgr_debug("%s Standalone", cc_mode);
 		break;
 	case 2:
-		count = policy_mgr_dump_current_concurrency_two_connection(
+		policy_mgr_dump_current_concurrency_two_connection(
 			cc_mode, sizeof(cc_mode));
 		qdf_mutex_acquire(&pm_ctx->qdf_conc_list_lock);
 		if (pm_conc_connection_list[0].freq ==
@@ -1286,7 +1285,7 @@ void policy_mgr_dump_current_concurrency(struct wlan_objmgr_psoc *psoc)
 		policy_mgr_debug("%s", cc_mode);
 		break;
 	case 3:
-		count = policy_mgr_dump_current_concurrency_three_connection(
+		policy_mgr_dump_current_concurrency_three_connection(
 			cc_mode, sizeof(cc_mode));
 		qdf_mutex_acquire(&pm_ctx->qdf_conc_list_lock);
 		if (pm_conc_connection_list[0].freq ==
