@@ -349,7 +349,7 @@ static void __qrtr_node_release(struct kref *kref)
 
 	if (node->nid != QRTR_EP_NID_AUTO) {
 		radix_tree_for_each_slot(slot, &qrtr_nodes, &iter, 0) {
-			if (node == *slot)
+			if (node == rcu_access_pointer(*slot))
 				radix_tree_iter_delete(&qrtr_nodes, &iter,
 						       slot);
 		}
@@ -361,7 +361,8 @@ static void __qrtr_node_release(struct kref *kref)
 	/* Free tx flow counters */
 	mutex_lock(&node->qrtr_tx_lock);
 	radix_tree_for_each_slot(slot, &node->qrtr_tx_flow, &iter, 0) {
-		flow = *slot;
+		flow = rcu_dereference_protected(*slot,
+				lockdep_is_held(&node->qrtr_tx_lock));
 		list_for_each_entry_safe(waiter, temp, &flow->waiters, node) {
 			list_del(&waiter->node);
 			sock_put(waiter->sk);
@@ -1310,7 +1311,7 @@ void qrtr_endpoint_unregister(struct qrtr_endpoint *ep)
 	/* Notify the local controller about the event */
 	down_read(&qrtr_node_lock);
 	radix_tree_for_each_slot(slot, &qrtr_nodes, &iter, 0) {
-		if (node != *slot)
+		if (node != rcu_access_pointer(*slot))
 			continue;
 
 		skb = qrtr_alloc_ctrl_packet(&pkt);
