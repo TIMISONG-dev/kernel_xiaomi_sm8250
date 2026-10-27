@@ -24684,59 +24684,59 @@ void hdd_send_update_owe_info_event(struct hdd_adapter *adapter,
 #endif
 
 /**
- * struct cfg80211_ops - cfg80211_ops
+ * DOC: WLAN cfg80211 callback registration
  *
- * @add_virtual_intf: Add virtual interface
- * @del_virtual_intf: Delete virtual interface
- * @change_virtual_intf: Change virtual interface
- * @change_station: Change station
- * @add_beacon: Add beacon in sap mode
- * @del_beacon: Delete beacon in sap mode
- * @set_beacon: Set beacon in sap mode
- * @start_ap: Start ap
- * @change_beacon: Change beacon
- * @stop_ap: Stop ap
- * @change_bss: Change bss
- * @add_key: Add key
- * @get_key: Get key
- * @del_key: Delete key
- * @set_default_key: Set default key
- * @set_channel: Set channel
- * @scan: Scan
- * @connect: Connect
- * @disconnect: Disconnect
- * @join_ibss = Join ibss
- * @leave_ibss = Leave ibss
- * @set_wiphy_params = Set wiphy params
- * @set_tx_power = Set tx power
- * @get_tx_power = get tx power
- * @remain_on_channel = Remain on channel
- * @cancel_remain_on_channel = Cancel remain on channel
- * @mgmt_tx = Tx management frame
- * @mgmt_tx_cancel_wait = Cancel management tx wait
- * @set_default_mgmt_key = Set default management key
- * @set_txq_params = Set tx queue parameters
- * @get_station = Get station
- * @set_power_mgmt = Set power management
- * @del_station = Delete station
- * @add_station = Add station
- * @set_pmksa = Set pmksa
- * @del_pmksa = Delete pmksa
- * @flush_pmksa = Flush pmksa
- * @update_ft_ies = Update FT IEs
- * @tdls_mgmt = Tdls management
- * @tdls_oper = Tdls operation
- * @set_rekey_data = Set rekey data
- * @sched_scan_start = Scheduled scan start
- * @sched_scan_stop = Scheduled scan stop
- * @resume = Resume wlan
- * @suspend = Suspend wlan
- * @set_mac_acl = Set mac acl
- * @testmode_cmd = Test mode command
- * @set_ap_chanwidth = Set AP channel bandwidth
- * @dump_survey = Dump survey
- * @key_mgmt_set_pmk = Set pmk key management
- * @update_connect_params = Update connect params
+ * add_virtual_intf: Add virtual interface
+ * del_virtual_intf: Delete virtual interface
+ * change_virtual_intf: Change virtual interface
+ * change_station: Change station
+ * add_beacon: Add beacon in sap mode
+ * del_beacon: Delete beacon in sap mode
+ * set_beacon: Set beacon in sap mode
+ * start_ap: Start ap
+ * change_beacon: Change beacon
+ * stop_ap: Stop ap
+ * change_bss: Change bss
+ * add_key: Add key
+ * get_key: Get key
+ * del_key: Delete key
+ * set_default_key: Set default key
+ * set_channel: Set channel
+ * scan: Scan
+ * connect: Connect
+ * disconnect: Disconnect
+ * join_ibss = Join ibss
+ * leave_ibss = Leave ibss
+ * set_wiphy_params = Set wiphy params
+ * set_tx_power = Set tx power
+ * get_tx_power = get tx power
+ * remain_on_channel = Remain on channel
+ * cancel_remain_on_channel = Cancel remain on channel
+ * mgmt_tx = Tx management frame
+ * mgmt_tx_cancel_wait = Cancel management tx wait
+ * set_default_mgmt_key = Set default management key
+ * set_txq_params = Set tx queue parameters
+ * get_station = Get station
+ * set_power_mgmt = Set power management
+ * del_station = Delete station
+ * add_station = Add station
+ * set_pmksa = Set pmksa
+ * del_pmksa = Delete pmksa
+ * flush_pmksa = Flush pmksa
+ * update_ft_ies = Update FT IEs
+ * tdls_mgmt = Tdls management
+ * tdls_oper = Tdls operation
+ * set_rekey_data = Set rekey data
+ * sched_scan_start = Scheduled scan start
+ * sched_scan_stop = Scheduled scan stop
+ * resume = Resume wlan
+ * suspend = Suspend wlan
+ * set_mac_acl = Set mac acl
+ * testmode_cmd = Test mode command
+ * set_ap_chanwidth = Set AP channel bandwidth
+ * dump_survey = Dump survey
+ * key_mgmt_set_pmk = Set pmk key management
+ * update_connect_params = Update connect params
  */
 static struct cfg80211_ops wlan_hdd_cfg80211_ops = {
 	.add_virtual_intf = wlan_hdd_add_virtual_intf,
