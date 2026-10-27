@@ -51,27 +51,27 @@ MODULE_PARM_DESC(callforward_filter, "only create call forwarding expectations "
 				     "(determined by routing information)");
 
 /* Hooks for NAT */
-int (*set_h245_addr_hook) (struct sk_buff *skb, unsigned int protoff,
+int (__rcu *set_h245_addr_hook) (struct sk_buff *skb, unsigned int protoff,
 			   unsigned char **data, int dataoff,
 			   H245_TransportAddress *taddr,
 			   union nf_inet_addr *addr, __be16 port)
 			   __read_mostly;
-int (*set_h225_addr_hook) (struct sk_buff *skb, unsigned int protoff,
+int (__rcu *set_h225_addr_hook) (struct sk_buff *skb, unsigned int protoff,
 			   unsigned char **data, int dataoff,
 			   TransportAddress *taddr,
 			   union nf_inet_addr *addr, __be16 port)
 			   __read_mostly;
-int (*set_sig_addr_hook) (struct sk_buff *skb,
+int (__rcu *set_sig_addr_hook) (struct sk_buff *skb,
 			  struct nf_conn *ct,
 			  enum ip_conntrack_info ctinfo,
 			  unsigned int protoff, unsigned char **data,
 			  TransportAddress *taddr, int count) __read_mostly;
-int (*set_ras_addr_hook) (struct sk_buff *skb,
+int (__rcu *set_ras_addr_hook) (struct sk_buff *skb,
 			  struct nf_conn *ct,
 			  enum ip_conntrack_info ctinfo,
 			  unsigned int protoff, unsigned char **data,
 			  TransportAddress *taddr, int count) __read_mostly;
-int (*nat_rtp_rtcp_hook) (struct sk_buff *skb,
+int (__rcu *nat_rtp_rtcp_hook) (struct sk_buff *skb,
 			  struct nf_conn *ct,
 			  enum ip_conntrack_info ctinfo,
 			  unsigned int protoff,
@@ -80,28 +80,28 @@ int (*nat_rtp_rtcp_hook) (struct sk_buff *skb,
 			  __be16 port, __be16 rtp_port,
 			  struct nf_conntrack_expect *rtp_exp,
 			  struct nf_conntrack_expect *rtcp_exp) __read_mostly;
-int (*nat_t120_hook) (struct sk_buff *skb,
+int (__rcu *nat_t120_hook) (struct sk_buff *skb,
 		      struct nf_conn *ct,
 		      enum ip_conntrack_info ctinfo,
 		      unsigned int protoff,
 		      unsigned char **data, int dataoff,
 		      H245_TransportAddress *taddr, __be16 port,
 		      struct nf_conntrack_expect *exp) __read_mostly;
-int (*nat_h245_hook) (struct sk_buff *skb,
+int (__rcu *nat_h245_hook) (struct sk_buff *skb,
 		      struct nf_conn *ct,
 		      enum ip_conntrack_info ctinfo,
 		      unsigned int protoff,
 		      unsigned char **data, int dataoff,
 		      TransportAddress *taddr, __be16 port,
 		      struct nf_conntrack_expect *exp) __read_mostly;
-int (*nat_callforwarding_hook) (struct sk_buff *skb,
+int (__rcu *nat_callforwarding_hook) (struct sk_buff *skb,
 				struct nf_conn *ct,
 				enum ip_conntrack_info ctinfo,
 				unsigned int protoff,
 				unsigned char **data, int dataoff,
 				TransportAddress *taddr, __be16 port,
 				struct nf_conntrack_expect *exp) __read_mostly;
-int (*nat_q931_hook) (struct sk_buff *skb,
+int (__rcu *nat_q931_hook) (struct sk_buff *skb,
 		      struct nf_conn *ct,
 		      enum ip_conntrack_info ctinfo,
 		      unsigned int protoff,
@@ -266,7 +266,7 @@ static int expect_rtp_rtcp(struct sk_buff *skb, struct nf_conn *ct,
 	union nf_inet_addr addr;
 	struct nf_conntrack_expect *rtp_exp;
 	struct nf_conntrack_expect *rtcp_exp;
-	typeof(nat_rtp_rtcp_hook) nat_rtp_rtcp;
+	typeof(*nat_rtp_rtcp_hook) *nat_rtp_rtcp;
 
 	/* Read RTP or RTCP address */
 	if (!get_h245_addr(ct, *data, taddr, &addr, &port) ||
@@ -338,7 +338,7 @@ static int expect_t120(struct sk_buff *skb,
 	__be16 port;
 	union nf_inet_addr addr;
 	struct nf_conntrack_expect *exp;
-	typeof(nat_t120_hook) nat_t120;
+	typeof(*nat_t120_hook) *nat_t120;
 
 	/* Read T.120 address */
 	if (!get_h245_addr(ct, *data, taddr, &addr, &port) ||
@@ -675,7 +675,7 @@ static int expect_h245(struct sk_buff *skb, struct nf_conn *ct,
 	__be16 port;
 	union nf_inet_addr addr;
 	struct nf_conntrack_expect *exp;
-	typeof(nat_h245_hook) nat_h245;
+	typeof(*nat_h245_hook) *nat_h245;
 
 	/* Read h245Address */
 	if (!get_h225_addr(ct, *data, taddr, &addr, &port) ||
@@ -796,7 +796,7 @@ static int expect_callforwarding(struct sk_buff *skb,
 	union nf_inet_addr addr;
 	struct nf_conntrack_expect *exp;
 	struct net *net = nf_ct_net(ct);
-	typeof(nat_callforwarding_hook) nat_callforwarding;
+	typeof(*nat_callforwarding_hook) *nat_callforwarding;
 
 	/* Read alternativeAddress */
 	if (!get_h225_addr(ct, *data, taddr, &addr, &port) || port == 0)
@@ -854,7 +854,7 @@ static int process_setup(struct sk_buff *skb, struct nf_conn *ct,
 	int i;
 	__be16 port;
 	union nf_inet_addr addr;
-	typeof(set_h225_addr_hook) set_h225_addr;
+	typeof(*set_h225_addr_hook) *set_h225_addr;
 
 	pr_debug("nf_ct_q931: Setup\n");
 
@@ -1261,7 +1261,7 @@ static int expect_q931(struct sk_buff *skb, struct nf_conn *ct,
 	__be16 port;
 	union nf_inet_addr addr;
 	struct nf_conntrack_expect *exp;
-	typeof(nat_q931_hook) nat_q931;
+	typeof(*nat_q931_hook) *nat_q931;
 
 	/* Look for the first related address */
 	for (i = 0; i < count; i++) {
@@ -1311,7 +1311,7 @@ static int process_grq(struct sk_buff *skb, struct nf_conn *ct,
 		       unsigned int protoff,
 		       unsigned char **data, GatekeeperRequest *grq)
 {
-	typeof(set_ras_addr_hook) set_ras_addr;
+	typeof(*set_ras_addr_hook) *set_ras_addr;
 
 	pr_debug("nf_ct_ras: GRQ\n");
 
@@ -1374,7 +1374,7 @@ static int process_rrq(struct sk_buff *skb, struct nf_conn *ct,
 {
 	struct nf_ct_h323_master *info = nfct_help_data(ct);
 	int ret;
-	typeof(set_ras_addr_hook) set_ras_addr;
+	typeof(*set_ras_addr_hook) *set_ras_addr;
 
 	pr_debug("nf_ct_ras: RRQ\n");
 
@@ -1412,7 +1412,7 @@ static int process_rcf(struct sk_buff *skb, struct nf_conn *ct,
 	int dir = CTINFO2DIR(ctinfo);
 	int ret;
 	struct nf_conntrack_expect *exp;
-	typeof(set_sig_addr_hook) set_sig_addr;
+	typeof(*set_sig_addr_hook) *set_sig_addr;
 
 	pr_debug("nf_ct_ras: RCF\n");
 
@@ -1462,7 +1462,7 @@ static int process_urq(struct sk_buff *skb, struct nf_conn *ct,
 	struct nf_ct_h323_master *info = nfct_help_data(ct);
 	int dir = CTINFO2DIR(ctinfo);
 	int ret;
-	typeof(set_sig_addr_hook) set_sig_addr;
+	typeof(*set_sig_addr_hook) *set_sig_addr;
 
 	pr_debug("nf_ct_ras: URQ\n");
 
@@ -1496,7 +1496,7 @@ static int process_arq(struct sk_buff *skb, struct nf_conn *ct,
 	int dir = CTINFO2DIR(ctinfo);
 	__be16 port;
 	union nf_inet_addr addr;
-	typeof(set_h225_addr_hook) set_h225_addr;
+	typeof(*set_h225_addr_hook) *set_h225_addr;
 
 	pr_debug("nf_ct_ras: ARQ\n");
 
@@ -1541,7 +1541,7 @@ static int process_acf(struct sk_buff *skb, struct nf_conn *ct,
 	__be16 port;
 	union nf_inet_addr addr;
 	struct nf_conntrack_expect *exp;
-	typeof(set_sig_addr_hook) set_sig_addr;
+	typeof(*set_sig_addr_hook) *set_sig_addr;
 
 	pr_debug("nf_ct_ras: ACF\n");
 
@@ -1584,7 +1584,7 @@ static int process_lrq(struct sk_buff *skb, struct nf_conn *ct,
 		       unsigned int protoff,
 		       unsigned char **data, LocationRequest *lrq)
 {
-	typeof(set_ras_addr_hook) set_ras_addr;
+	typeof(*set_ras_addr_hook) *set_ras_addr;
 
 	pr_debug("nf_ct_ras: LRQ\n");
 
@@ -1641,8 +1641,8 @@ static int process_irr(struct sk_buff *skb, struct nf_conn *ct,
 		       unsigned char **data, InfoRequestResponse *irr)
 {
 	int ret;
-	typeof(set_ras_addr_hook) set_ras_addr;
-	typeof(set_sig_addr_hook) set_sig_addr;
+	typeof(*set_ras_addr_hook) *set_ras_addr;
+	typeof(*set_sig_addr_hook) *set_sig_addr;
 
 	pr_debug("nf_ct_ras: IRR\n");
 
