@@ -5,6 +5,8 @@
  * Copyright (C) 2020 Paul E. McKenney
  */
 
+#include <linux/rcupdate_trace.h>
+
 #ifdef CONFIG_TASKS_RCU
 
 struct rcu_tasks;
