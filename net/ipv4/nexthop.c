@@ -1053,11 +1053,12 @@ static int insert_nexthop(struct net *net, struct nexthop *new_nh,
 	int replace_notify = 0;
 	int rc = -EEXIST;
 
+	ASSERT_RTNL();
 	pp = &root->rb_node;
 	while (1) {
 		struct nexthop *nh;
 
-		next = rtnl_dereference(*pp);
+		next = *pp;
 		if (!next)
 			break;
 
