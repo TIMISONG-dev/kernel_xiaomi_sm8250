@@ -4856,9 +4856,9 @@ static struct page *mc_handle_swap_pte(struct vm_area_struct *vma,
 
 	/*
 	 * Because lookup_swap_cache() updates some statistics counter,
-	 * we call find_get_page() with swapper_space directly.
+	 * use the swapcache lookup that only takes a page reference.
 	 */
-	page = find_get_page(swap_address_space(ent), swp_offset(ent));
+	page = find_get_swapcache_page(ent);
 	if (do_memsw_account())
 		entry->val = ent.val;
 
@@ -4900,7 +4900,7 @@ static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
 
 			if (do_memsw_account())
 				*entry = swp;
-			spaces = READ_ONCE(swapper_spaces[swp_type(swp)]);
+			spaces = swapper_spaces_rcu(swp_type(swp));
 			if (spaces)
 				page = find_get_page(spaces + (swp_offset(swp) >>
 							      SWAP_ADDRESS_SPACE_SHIFT),
