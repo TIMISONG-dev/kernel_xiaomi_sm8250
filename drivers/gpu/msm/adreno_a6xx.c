@@ -2659,12 +2659,24 @@ static int a6xx_perfcounter_update(struct adreno_device *adreno_dev,
 	struct cpu_gpu_lock *lock = ptr;
 	u32 *data = ptr + sizeof(*lock);
 	int i, offset = 0;
-	/* No of pairs to add: <reg,val> */
-	u32 pending_pairs = adreno_is_a612(adreno_dev) ? 2 : 1;
+	size_t max_dwords;
+
+	if (adreno_dev->pwrup_reglist.size < sizeof(*lock))
+		return -EINVAL;
+
+	max_dwords = (adreno_dev->pwrup_reglist.size - sizeof(*lock)) /
+		sizeof(*data);
 
 	if (cpu_gpu_lock(lock)) {
 		cpu_gpu_unlock(lock);
 		return -EBUSY;
+	}
+
+	/* Validate the shared list before walking register/value pairs. */
+	if (lock->list_length > max_dwords || (lock->list_length & 1) ||
+		(adreno_is_a612(adreno_dev) && lock->list_length < 2)) {
+		cpu_gpu_unlock(lock);
+		return -EINVAL;
 	}
 
 	/*
@@ -2681,9 +2693,8 @@ static int a6xx_perfcounter_update(struct adreno_device *adreno_dev,
 		offset += 2;
 	}
 
-	/* Ensure there is enough space in the reglist buffer for new pairs */
-	if ((offset + (pending_pairs * 2)) >=
-		(adreno_dev->pwrup_reglist.size / sizeof(u32))) {
+	/* Both paths append one pair; A612 also replaces its trailing pair. */
+	if (max_dwords - offset < 2) {
 		cpu_gpu_unlock(lock);
 		return -ENOSPC;
 	}
