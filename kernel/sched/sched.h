@@ -1588,12 +1588,6 @@ static inline void sched_ttwu_pending(void) { }
 
 #endif /* CONFIG_SMP */
 
-/* The rq lock pins its current task and excludes context-switch updates. */
-static inline struct task_struct *rq_curr_locked(struct rq *rq)
-{
-	return rcu_dereference_protected(rq->curr, lockdep_is_held(&rq->lock));
-}
-
 #include "stats.h"
 #include "autogroup.h"
 
