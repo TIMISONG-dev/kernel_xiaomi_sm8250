@@ -18,7 +18,10 @@
 #include "spsi.h"
 
 static phys_addr_t iomem_phys;
-static void *iomem_virt;
+static union {
+	void *base;
+	void __iomem *io_base;
+} iomem;
 static u32 iomem_size;
 static u32 iomem_offset;
 static struct gen_pool *pool;
@@ -27,6 +30,31 @@ static u32 nid = 0xaa;
 /* Debug */
 static u32 total_alloc;
 static u32 total_free;
+
+/* Resolve only addresses backed by the actual ioremap pipe-memory pool. */
+int spsi_get_iomem_ptr(phys_addr_t phys_addr, const void *base, u32 size,
+		       void __iomem **io_base)
+{
+	void __iomem *alias;
+	phys_addr_t offset;
+
+	*io_base = NULL;
+	if (!iomem.io_base || phys_addr < iomem_phys ||
+	    phys_addr - iomem_phys >= iomem_size)
+		return 0;
+
+	offset = phys_addr - iomem_phys;
+	alias = iomem.io_base + offset;
+	/* DMA addresses can overlap pool physical addresses: check the CPU alias. */
+	if ((unsigned long)base != (unsigned long)alias)
+		return 0;
+
+	if (size > iomem_size - offset)
+		return -ERANGE;
+
+	*io_base = alias;
+	return 0;
+}
 
 /**
  * spsi_get_mem_ptr() - Translate physical to virtual address
@@ -38,7 +66,7 @@ void *spsi_get_mem_ptr(phys_addr_t phys_addr)
 
 	if ((phys_addr >= iomem_phys) &&
 	    (phys_addr < (iomem_phys + iomem_size))) {
-		virt = (u8 *) iomem_virt + (phys_addr - iomem_phys);
+		virt = (u8 *)iomem.base + (phys_addr - iomem_phys);
 	} else {
 		virt = phys_to_virt(phys_addr);
 		SPS_ERR(sps, "sps:%s.invalid phys addr=0x%pa.",
@@ -58,7 +86,7 @@ phys_addr_t sps_mem_alloc_io(u32 bytes)
 
 	virt_addr = gen_pool_alloc(pool, bytes);
 	if (virt_addr) {
-		iomem_offset = virt_addr - (uintptr_t) iomem_virt;
+		iomem_offset = virt_addr - (uintptr_t)iomem.base;
 		phys_addr = iomem_phys + iomem_offset;
 		total_alloc += bytes;
 	} else {
@@ -82,7 +110,7 @@ void sps_mem_free_io(phys_addr_t phys_addr, u32 bytes)
 	unsigned long virt_addr = 0;
 
 	iomem_offset = phys_addr - iomem_phys;
-	virt_addr = (uintptr_t) iomem_virt + iomem_offset;
+	virt_addr = (uintptr_t)iomem.base + iomem_offset;
 
 	SPS_DBG3(sps, "sps:%s.phys=%pa.virt=0x%pK.size=0x%x.",
 		__func__, &phys_addr, (void *)virt_addr, bytes);
@@ -112,8 +140,8 @@ int sps_mem_init(phys_addr_t pipemem_phys_base, u32 pipemem_size)
 				__func__);
 			return SPS_ERROR;
 		}
-		iomem_virt = ioremap(iomem_phys, iomem_size);
-		if (!iomem_virt) {
+		iomem.io_base = ioremap(iomem_phys, iomem_size);
+		if (!iomem.base) {
 			SPS_ERR(sps,
 				"sps:%s:Failed to IO map pipe memory.\n",
 					__func__);
@@ -122,8 +150,8 @@ int sps_mem_init(phys_addr_t pipemem_phys_base, u32 pipemem_size)
 
 		iomem_offset = 0;
 		SPS_DBG(sps,
-			"sps:%s.iomem_phys=%pa,iomem_virt=0x%pK.",
-			__func__, &iomem_phys, iomem_virt);
+			"sps:%s.iomem_phys=%pa,iomem.base=0x%pK.",
+			__func__, &iomem_phys, iomem.base);
 	}
 
 	pool = gen_pool_create(min_alloc_order, nid);
@@ -135,8 +163,8 @@ int sps_mem_init(phys_addr_t pipemem_phys_base, u32 pipemem_size)
 	}
 
 	if ((d_type == 0) || (d_type == 2) || imem) {
-		res = gen_pool_add(pool, (uintptr_t)iomem_virt,
-				iomem_size, nid);
+		res = gen_pool_add(pool, (uintptr_t)iomem.base,
+				   iomem_size, nid);
 		if (res)
 			return res;
 	}
@@ -149,11 +177,11 @@ int sps_mem_init(phys_addr_t pipemem_phys_base, u32 pipemem_size)
  */
 int sps_mem_de_init(void)
 {
-	if (iomem_virt != NULL) {
+	if (iomem.io_base) {
 		gen_pool_destroy(pool);
 		pool = NULL;
-		iounmap(iomem_virt);
-		iomem_virt = NULL;
+		iounmap(iomem.io_base);
+		iomem.base = NULL;
 	}
 
 	if (total_alloc == total_free)
