@@ -265,7 +265,7 @@ struct vs_service_device {
 	unsigned in_quota_set;
 	unsigned out_quota_set;
 
-	void *transport_priv;
+	void __rcu *transport_priv;
 
 	struct device dev;
 	struct vs_service_stats stats;
