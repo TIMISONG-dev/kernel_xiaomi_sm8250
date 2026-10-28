@@ -83,8 +83,8 @@ unsigned long total_swapcache_pages(void)
 		 * one grace period.  So it is impossible for them
 		 * belongs to different usage.
 		 */
-		nr = nr_swapper_spaces[i];
-		spaces = rcu_dereference(swapper_spaces[i]);
+		nr = READ_ONCE(nr_swapper_spaces[i]);
+		spaces = swapper_spaces_rcu(i);
 		if (!nr || !spaces)
 			continue;
 		for (j = 0; j < nr; j++)
@@ -325,6 +325,21 @@ static inline bool swap_use_vma_readahead(void)
 	return READ_ONCE(enable_vma_readahead) && !atomic_read(&nr_rotate_swap);
 }
 
+struct page *find_get_swapcache_page(swp_entry_t entry)
+{
+	struct address_space *spaces;
+	struct page *page = NULL;
+
+	rcu_read_lock();
+	spaces = swapper_spaces_rcu(swp_type(entry));
+	if (spaces)
+		page = find_get_page(spaces + (swp_offset(entry) >>
+					     SWAP_ADDRESS_SPACE_SHIFT),
+				     swp_offset(entry));
+	rcu_read_unlock();
+	return page;
+}
+
 /*
  * Lookup a swap entry in the swap cache. A found page will be returned
  * unlocked and with its refcount incremented - we rely on the kernel
@@ -336,7 +351,7 @@ struct page *lookup_swap_cache(swp_entry_t entry, struct vm_area_struct *vma,
 {
 	struct page *page;
 
-	page = find_get_page(swap_address_space(entry), swp_offset(entry));
+	page = find_get_swapcache_page(entry);
 
 	INC_CACHE_INFO(find_total);
 	if (page) {
@@ -380,7 +395,6 @@ struct page *__read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
 			bool *new_page_allocated)
 {
 	struct page *found_page, *new_page = NULL;
-	struct address_space *swapper_space = swap_address_space(entry);
 	int err;
 	*new_page_allocated = false;
 
@@ -390,7 +404,7 @@ struct page *__read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
 		 * called after lookup_swap_cache() failed, re-calling
 		 * that would confuse statistics.
 		 */
-		found_page = find_get_page(swapper_space, swp_offset(entry));
+		found_page = find_get_swapcache_page(entry);
 		if (found_page)
 			break;
 
@@ -634,8 +648,9 @@ int init_swap_address_space(unsigned int type, unsigned long nr_pages)
 		/* swap cache doesn't use writeback related tags */
 		mapping_set_no_writeback_tags(space);
 	}
-	nr_swapper_spaces[type] = nr;
-	rcu_assign_pointer(swapper_spaces[type], spaces);
+	WRITE_ONCE(nr_swapper_spaces[type], nr);
+	/* Publish initialized spaces to swapper_spaces_rcu() readers. */
+	smp_store_release(&swapper_spaces[type], spaces);
 
 	return 0;
 }
@@ -644,9 +659,9 @@ void exit_swap_address_space(unsigned int type)
 {
 	struct address_space *spaces;
 
-	spaces = swapper_spaces[type];
-	nr_swapper_spaces[type] = 0;
-	rcu_assign_pointer(swapper_spaces[type], NULL);
+	spaces = READ_ONCE(swapper_spaces[type]);
+	WRITE_ONCE(nr_swapper_spaces[type], 0);
+	WRITE_ONCE(swapper_spaces[type], NULL);
 	synchronize_rcu();
 	kvfree(spaces);
 }
