@@ -334,7 +334,7 @@ typedef struct pfm_context {
 	pfm_msg_t		ctx_msgq[PFM_MAX_MSGS];
 	int			ctx_msgq_head;
 	int			ctx_msgq_tail;
-	struct fasync_struct	*ctx_async_queue;
+	struct fasync_struct	__rcu *ctx_async_queue;
 
 	wait_queue_head_t 	ctx_zombieq;		/* termination cleanup wait queue */
 } pfm_context_t;

@@ -97,7 +97,7 @@ struct hpet_dev {
 	unsigned long hd_ireqfreq;
 	unsigned long hd_irqdata;
 	wait_queue_head_t hd_waitqueue;
-	struct fasync_struct *hd_async_queue;
+	struct fasync_struct __rcu *hd_async_queue;
 	unsigned int hd_flags;
 	unsigned int hd_irq;
 	unsigned int hd_hdwirq;

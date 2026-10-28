@@ -533,7 +533,7 @@ struct fuse_iqueue {
 	int forget_batch;
 
 	/** O_ASYNC requests */
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 
 	/** Device-specific callbacks */
 	const struct fuse_iqueue_ops *ops;

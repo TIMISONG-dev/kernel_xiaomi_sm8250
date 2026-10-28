@@ -72,7 +72,7 @@ struct uio_device {
 	struct device		dev;
         int                     minor;
         atomic_t                event;
-        struct fasync_struct    *async_queue;
+	struct fasync_struct __rcu *async_queue;
         wait_queue_head_t       wait;
         struct uio_info         *info;
 	struct mutex		info_lock;

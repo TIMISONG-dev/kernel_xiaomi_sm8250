@@ -42,7 +42,7 @@ void hid_debug_event(struct hid_device *, char *);
 
 struct hid_debug_list {
 	DECLARE_KFIFO_PTR(hid_debug_fifo, char);
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	struct hid_device *hdev;
 	struct list_head node;
 	struct mutex read_mutex;

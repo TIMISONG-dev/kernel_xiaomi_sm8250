@@ -56,8 +56,8 @@ struct pipe_inode_info {
 	unsigned int r_counter;
 	unsigned int w_counter;
 	struct page *tmp_page;
-	struct fasync_struct *fasync_readers;
-	struct fasync_struct *fasync_writers;
+	struct fasync_struct __rcu *fasync_readers;
+	struct fasync_struct __rcu *fasync_writers;
 	struct pipe_buffer *bufs;
 	struct user_struct *user;
 };

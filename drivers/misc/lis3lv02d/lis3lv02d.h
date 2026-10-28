@@ -303,7 +303,7 @@ struct lis3lv02d {
 	int			mapped_btns[3];
 
 	u32			irq;       /* IRQ number */
-	struct fasync_struct	*async_queue; /* queue for the misc device */
+	struct fasync_struct	__rcu *async_queue; /* queue for the misc device */
 	wait_queue_head_t	misc_wait; /* Wait queue for the misc device */
 	unsigned long		misc_opened; /* bit0: whether the device is open */
 	struct miscdevice	miscdev;

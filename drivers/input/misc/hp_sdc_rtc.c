@@ -60,7 +60,7 @@ static struct semaphore i8042tregs;
 
 static hp_sdc_irqhook hp_sdc_rtc_isr;
 
-static struct fasync_struct *hp_sdc_rtc_async_queue;
+static struct fasync_struct __rcu *hp_sdc_rtc_async_queue;
 
 static DECLARE_WAIT_QUEUE_HEAD(hp_sdc_rtc_wait);
 

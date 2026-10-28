@@ -137,7 +137,7 @@ struct gf_dev {
 	int irq_enabled;
 	int clk_enabled;
 #ifdef GF_FASYNC
-	struct fasync_struct *async;
+	struct fasync_struct __rcu *async;
 #endif
 	struct notifier_block notifier;
 	char device_available;
