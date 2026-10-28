@@ -403,9 +403,19 @@ int generic_swapfile_activate(struct swap_info_struct *, struct file *,
 #define SWAP_ADDRESS_SPACE_SHIFT	14
 #define SWAP_ADDRESS_SPACE_PAGES	(1 << SWAP_ADDRESS_SPACE_SHIFT)
 extern struct address_space *swapper_spaces[];
+
+static inline struct address_space *swapper_spaces_rcu(unsigned int type)
+{
+	RCU_LOCKDEP_WARN(!rcu_read_lock_held(),
+			 "swap address-space snapshot needs RCU protection");
+	return READ_ONCE(swapper_spaces[type]);
+}
+
+/* The caller owns a swap entry, a locked swapcache page or the swap scanner. */
 #define swap_address_space(entry)			    \
-	(&swapper_spaces[swp_type(entry)][swp_offset(entry) \
+	(&READ_ONCE(swapper_spaces[swp_type(entry)])[swp_offset(entry) \
 		>> SWAP_ADDRESS_SPACE_SHIFT])
+struct page *find_get_swapcache_page(swp_entry_t entry);
 extern unsigned long total_swapcache_pages(void);
 extern void show_swap_cache_info(void);
 extern int add_to_swap(struct page *page);
@@ -487,6 +497,10 @@ static inline struct swap_info_struct *swp_swap_info(swp_entry_t entry)
 }
 
 #define swap_address_space(entry)		(NULL)
+static inline struct page *find_get_swapcache_page(swp_entry_t entry)
+{
+	return NULL;
+}
 #define get_nr_swap_pages()			0L
 #define total_swap_pages			0L
 #define total_swapcache_pages()			0UL
