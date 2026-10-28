@@ -455,7 +455,7 @@ static void nfnl_overquota_report(struct net *net, struct nf_acct *nfacct)
 		kfree_skb(skb);
 		return;
 	}
-	netlink_broadcast(net->nfnl, skb, 0, NFNLGRP_ACCT_QUOTA,
+	netlink_broadcast(READ_ONCE(net->nfnl), skb, 0, NFNLGRP_ACCT_QUOTA,
 			  GFP_ATOMIC);
 }
 
