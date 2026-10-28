@@ -628,8 +628,8 @@ struct inode {
 	unsigned int		i_flags;
 
 #ifdef CONFIG_FS_POSIX_ACL
-	struct posix_acl	*i_acl;
-	struct posix_acl	*i_default_acl;
+	struct posix_acl __rcu	*i_acl;
+	struct posix_acl __rcu	*i_default_acl;
 #endif
 
 	const struct inode_operations	*i_op;
