@@ -548,12 +548,4 @@ bool rcu_is_nocb_cpu(int cpu);
 static inline bool rcu_is_nocb_cpu(int cpu) { return false; }
 #endif
 
-#ifdef CONFIG_SRCU
-void srcu_online_cpu(unsigned int cpu);
-void srcu_offline_cpu(unsigned int cpu);
-#else /* #ifdef CONFIG_SRCU */
-static inline void srcu_online_cpu(unsigned int cpu) { }
-static inline void srcu_offline_cpu(unsigned int cpu) { }
-#endif /* #else #ifdef CONFIG_SRCU */
-
 #endif /* __LINUX_RCU_H */

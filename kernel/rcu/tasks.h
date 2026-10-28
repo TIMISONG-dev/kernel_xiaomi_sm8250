@@ -1,4 +1,3 @@
-#include <linux/rcupdate_trace.h>
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Task-based RCU implementations.
