@@ -4476,8 +4476,8 @@ static void zap_class(struct lock_class *class)
 	hlist_del_rcu(&class->hash_entry);
 	list_del_rcu(&class->lock_entry);
 
-	WRITE_ONCE(class->key, NULL);
-	WRITE_ONCE(class->name, NULL);
+	RCU_INIT_POINTER(class->key, NULL);
+	RCU_INIT_POINTER(class->name, NULL);
 }
 
 static inline int within(const void *addr, void *start, unsigned long size)
@@ -4493,12 +4493,16 @@ static inline int within(const void *addr, void *start, unsigned long size)
  * nobody will look up these exact classes -- they're properly dead but still
  * allocated.
  */
-/* Unhash matching classes while the caller holds the graph lock. */
-static void __lockdep_free_key_range(void *start, unsigned long size)
+void lockdep_free_key_range(void *start, unsigned long size)
 {
 	struct lock_class *class;
 	struct hlist_head *head;
+	unsigned long flags;
 	int i;
+	int locked;
+
+	raw_local_irq_save(flags);
+	locked = graph_lock();
 
 	/*
 	 * Unhash all classes that were created by this module:
@@ -4512,17 +4516,7 @@ static void __lockdep_free_key_range(void *start, unsigned long size)
 				zap_class(class);
 		}
 	}
-}
 
-void lockdep_free_key_range(void *start, unsigned long size)
-{
-	unsigned long flags;
-	int locked;
-
-	raw_local_irq_save(flags);
-	locked = graph_lock();
-
-	__lockdep_free_key_range(start, size);
 	if (locked)
 		graph_unlock();
 	raw_local_irq_restore(flags);
@@ -4599,6 +4593,7 @@ void lockdep_unregister_key(struct lock_class_key *key)
 {
 	struct hlist_head *hash_head = keyhashentry(key);
 	struct lock_class_key *k;
+	struct pending_free *pf;
 	unsigned long flags;
 	bool found = false;
 
@@ -4611,6 +4606,7 @@ void lockdep_unregister_key(struct lock_class_key *key)
 	if (!graph_lock())
 		goto out_irq;
 
+	pf = get_pending_free();
 	hlist_for_each_entry_rcu(k, hash_head, hash_entry) {
 		if (k == key) {
 			hlist_del_rcu(&k->hash_entry);
@@ -4619,13 +4615,11 @@ void lockdep_unregister_key(struct lock_class_key *key)
 		}
 	}
 	WARN_ON_ONCE(!found);
-	__lockdep_free_key_range(key, sizeof(*key));
+	__lockdep_free_key_range(pf, key, 1);
+	call_rcu_zapped(pf);
 	graph_unlock();
 out_irq:
 	raw_local_irq_restore(flags);
-
-	/* Wait for IRQ-disabled class lookups before the key can be freed. */
-	synchronize_sched();
 
 	/* Wait until is_dynamic_key() has finished accessing k->hash_entry. */
 	synchronize_rcu();
