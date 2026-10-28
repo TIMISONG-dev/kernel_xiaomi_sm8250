@@ -12920,7 +12920,6 @@ static void walt_check_for_rotation(struct rq *src_rq)
 	int deserved_cpu = nr_cpu_ids, dst_cpu = nr_cpu_ids;
 	int i, src_cpu = cpu_of(src_rq);
 	struct rq *dst_rq;
-	struct task_struct *src_task, *dst_task;
 	struct walt_rotate_work *wr = NULL;
 
 	if (!walt_rotation_enabled)
@@ -12930,10 +12929,8 @@ static void walt_check_for_rotation(struct rq *src_rq)
 		return;
 
 	wc = sched_ktime_clock();
-	rcu_read_lock();
 	for_each_possible_cpu(i) {
 		struct rq *rq = cpu_rq(i);
-		struct task_struct *curr;
 
 		if (!is_min_capacity_cpu(i))
 			break;
@@ -12941,26 +12938,22 @@ static void walt_check_for_rotation(struct rq *src_rq)
 		if (is_reserved(i))
 			continue;
 
-		curr = rcu_dereference(rq->curr);
-		if (!rq->misfit_task_load || curr->sched_class !=
+		if (!rq->misfit_task_load || rq->curr->sched_class !=
 							&fair_sched_class)
 			continue;
 
-		wait = wc - curr->last_enqueued_ts;
+		wait = wc - rq->curr->last_enqueued_ts;
 		if (wait > max_wait) {
 			max_wait = wait;
 			deserved_cpu = i;
 		}
 	}
-	rcu_read_unlock();
 
 	if (deserved_cpu != src_cpu)
 		return;
 
-	rcu_read_lock();
 	for_each_possible_cpu(i) {
 		struct rq *rq = cpu_rq(i);
-		struct task_struct *curr;
 
 		if (is_min_capacity_cpu(i))
 			continue;
@@ -12968,14 +12961,13 @@ static void walt_check_for_rotation(struct rq *src_rq)
 		if (is_reserved(i))
 			continue;
 
-		curr = rcu_dereference(rq->curr);
-		if (curr->sched_class != &fair_sched_class)
+		if (rq->curr->sched_class != &fair_sched_class)
 			continue;
 
 		if (rq->nr_running > 1)
 			continue;
 
-		run = wc - curr->last_enqueued_ts;
+		run = wc - rq->curr->last_enqueued_ts;
 
 		if (run < WALT_ROTATION_THRESHOLD_NS)
 			continue;
@@ -12985,7 +12977,6 @@ static void walt_check_for_rotation(struct rq *src_rq)
 			dst_cpu = i;
 		}
 	}
-	rcu_read_unlock();
 
 	if (dst_cpu == nr_cpu_ids)
 		return;
@@ -12993,21 +12984,17 @@ static void walt_check_for_rotation(struct rq *src_rq)
 	dst_rq = cpu_rq(dst_cpu);
 
 	double_rq_lock(src_rq, dst_rq);
-	src_task = rcu_dereference_protected(src_rq->curr,
-					     lockdep_is_held(&src_rq->lock));
-	dst_task = rcu_dereference_protected(dst_rq->curr,
-					     lockdep_is_held(&dst_rq->lock));
-	if (dst_task->sched_class == &fair_sched_class &&
-	    !src_rq->active_balance && !dst_rq->active_balance) {
-		get_task_struct(src_task);
-		get_task_struct(dst_task);
+	if (dst_rq->curr->sched_class == &fair_sched_class &&
+		!src_rq->active_balance && !dst_rq->active_balance) {
+		get_task_struct(src_rq->curr);
+		get_task_struct(dst_rq->curr);
 
 		mark_reserved(src_cpu);
 		mark_reserved(dst_cpu);
 		wr = &per_cpu(walt_rotate_works, src_cpu);
 
-		wr->src_task = src_task;
-		wr->dst_task = dst_task;
+		wr->src_task = src_rq->curr;
+		wr->dst_task = dst_rq->curr;
 
 		wr->src_cpu = src_cpu;
 		wr->dst_cpu = dst_cpu;
