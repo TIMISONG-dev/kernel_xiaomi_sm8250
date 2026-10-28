@@ -22,7 +22,7 @@
 #include <linux/export.h>
 #include <linux/user_namespace.h>
 
-static struct posix_acl **acl_by_type(struct inode *inode, int type)
+static struct posix_acl __rcu **acl_by_type(struct inode *inode, int type)
 {
 	switch (type) {
 	case ACL_TYPE_ACCESS:
@@ -36,7 +36,7 @@ static struct posix_acl **acl_by_type(struct inode *inode, int type)
 
 struct posix_acl *get_cached_acl(struct inode *inode, int type)
 {
-	struct posix_acl **p = acl_by_type(inode, type);
+	struct posix_acl __rcu **p = acl_by_type(inode, type);
 	struct posix_acl *acl;
 
 	for (;;) {
@@ -59,22 +59,32 @@ struct posix_acl *get_cached_acl_rcu(struct inode *inode, int type)
 }
 EXPORT_SYMBOL(get_cached_acl_rcu);
 
+static struct posix_acl *exchange_cached_acl(struct posix_acl __rcu **p,
+					     struct posix_acl *acl)
+{
+	struct posix_acl __rcu *old;
+
+	old = xchg(p, RCU_INITIALIZER(acl));
+	/* The atomic replacement transfers the cache reference to us. */
+	return rcu_pointer_handoff(rcu_access_pointer(old));
+}
+
 void set_cached_acl(struct inode *inode, int type, struct posix_acl *acl)
 {
-	struct posix_acl **p = acl_by_type(inode, type);
+	struct posix_acl __rcu **p = acl_by_type(inode, type);
 	struct posix_acl *old;
 
-	old = xchg(p, posix_acl_dup(acl));
+	old = exchange_cached_acl(p, posix_acl_dup(acl));
 	if (!is_uncached_acl(old))
 		posix_acl_release(old);
 }
 EXPORT_SYMBOL(set_cached_acl);
 
-static void __forget_cached_acl(struct posix_acl **p)
+static void __forget_cached_acl(struct posix_acl __rcu **p)
 {
 	struct posix_acl *old;
 
-	old = xchg(p, ACL_NOT_CACHED);
+	old = exchange_cached_acl(p, ACL_NOT_CACHED);
 	if (!is_uncached_acl(old))
 		posix_acl_release(old);
 }
@@ -95,7 +105,7 @@ EXPORT_SYMBOL(forget_all_cached_acls);
 struct posix_acl *get_acl(struct inode *inode, int type)
 {
 	void *sentinel;
-	struct posix_acl **p;
+	struct posix_acl __rcu **p;
 	struct posix_acl *acl;
 
 	/*
@@ -122,8 +132,7 @@ struct posix_acl *get_acl(struct inode *inode, int type)
 	 * to just call ->get_acl to fetch the ACL ourself.  (This is going to
 	 * be an unlikely race.)
 	 */
-	if (cmpxchg(p, ACL_NOT_CACHED, sentinel) != ACL_NOT_CACHED)
-		/* fall through */ ;
+	posix_acl_cache_cmpxchg(p, ACL_NOT_CACHED, sentinel);
 
 	/*
 	 * Normally, the ACL returned by ->get_acl will be cached.
@@ -144,7 +153,7 @@ struct posix_acl *get_acl(struct inode *inode, int type)
 		 * Remove our sentinel so that we don't block future attempts
 		 * to cache the ACL.
 		 */
-		cmpxchg(p, sentinel, ACL_NOT_CACHED);
+		posix_acl_cache_cmpxchg(p, sentinel, ACL_NOT_CACHED);
 		return acl;
 	}
 
@@ -152,7 +161,7 @@ struct posix_acl *get_acl(struct inode *inode, int type)
 	 * Cache the result, but only if our sentinel is still in place.
 	 */
 	posix_acl_dup(acl);
-	if (unlikely(cmpxchg(p, sentinel, acl) != sentinel))
+	if (unlikely(!posix_acl_cache_cmpxchg(p, sentinel, acl)))
 		posix_acl_release(acl);
 	return acl;
 }

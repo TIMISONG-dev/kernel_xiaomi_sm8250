@@ -80,6 +80,15 @@ extern int posix_acl_update_mode(struct inode *, umode_t *, struct posix_acl **)
 extern int simple_set_acl(struct inode *, struct posix_acl *, int);
 extern int simple_acl_create(struct inode *, struct inode *);
 
+/* Publish only if this task still owns the cache sentinel. */
+static inline bool posix_acl_cache_cmpxchg(struct posix_acl __rcu **p,
+					   struct posix_acl *old,
+					   struct posix_acl *new)
+{
+	return cmpxchg(p, RCU_INITIALIZER(old), RCU_INITIALIZER(new)) ==
+		RCU_INITIALIZER(old);
+}
+
 struct posix_acl *get_cached_acl(struct inode *inode, int type);
 struct posix_acl *get_cached_acl_rcu(struct inode *inode, int type);
 void set_cached_acl(struct inode *inode, int type, struct posix_acl *acl);

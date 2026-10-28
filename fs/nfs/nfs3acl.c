@@ -17,31 +17,29 @@
  * caching get_acl results in a race-free way.  See fs/posix_acl.c:get_acl()
  * for explanations.
  */
-static void nfs3_prepare_get_acl(struct posix_acl **p)
+static void nfs3_prepare_get_acl(struct posix_acl __rcu **p)
 {
 	struct posix_acl *sentinel = uncached_acl_sentinel(current);
 
-	if (cmpxchg(p, ACL_NOT_CACHED, sentinel) != ACL_NOT_CACHED) {
-		/* Not the first reader or sentinel already in place. */
-	}
+	posix_acl_cache_cmpxchg(p, ACL_NOT_CACHED, sentinel);
 }
 
-static void nfs3_complete_get_acl(struct posix_acl **p, struct posix_acl *acl)
+static void nfs3_complete_get_acl(struct posix_acl __rcu **p, struct posix_acl *acl)
 {
 	struct posix_acl *sentinel = uncached_acl_sentinel(current);
 
 	/* Only cache the ACL if our sentinel is still in place. */
 	posix_acl_dup(acl);
-	if (cmpxchg(p, sentinel, acl) != sentinel)
+	if (!posix_acl_cache_cmpxchg(p, sentinel, acl))
 		posix_acl_release(acl);
 }
 
-static void nfs3_abort_get_acl(struct posix_acl **p)
+static void nfs3_abort_get_acl(struct posix_acl __rcu **p)
 {
 	struct posix_acl *sentinel = uncached_acl_sentinel(current);
 
 	/* Remove our sentinel upon failure. */
-	cmpxchg(p, sentinel, ACL_NOT_CACHED);
+	posix_acl_cache_cmpxchg(p, sentinel, ACL_NOT_CACHED);
 }
 
 struct posix_acl *nfs3_get_acl(struct inode *inode, int type)
