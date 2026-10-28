@@ -72,7 +72,7 @@ static unsigned char mincore_page(struct address_space *mapping, pgoff_t pgoff)
 			swp_entry_t swp = radix_to_swp_entry(page);
 			struct address_space *spaces;
 
-			spaces = READ_ONCE(swapper_spaces[swp_type(swp)]);
+			spaces = swapper_spaces_rcu(swp_type(swp));
 			if (spaces)
 				page = find_get_page(spaces + (swp_offset(swp) >>
 							      SWAP_ADDRESS_SPACE_SHIFT),
