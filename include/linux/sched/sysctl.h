@@ -63,20 +63,20 @@ extern unsigned int sysctl_walt_low_latency_task_threshold;
 
 extern int
 walt_proc_group_thresholds_handler(struct ctl_table *table, int write,
-			 void *buffer, size_t *lenp,
+			 void __user *buffer, size_t *lenp,
 			 loff_t *ppos);
 extern int
 walt_proc_user_hint_handler(struct ctl_table *table, int write,
-			 void *buffer, size_t *lenp,
+			 void __user *buffer, size_t *lenp,
 			 loff_t *ppos);
 
 extern int
 sched_ravg_window_handler(struct ctl_table *table, int write,
-			 void *buffer, size_t *lenp,
+			 void __user *buffer, size_t *lenp,
 			 loff_t *ppos);
 
 extern int sched_updown_migrate_handler(struct ctl_table *table,
-					int write, void *buffer,
+					int write, void __user *buffer,
 					size_t *lenp, loff_t *ppos);
 #endif
 
@@ -109,7 +109,7 @@ int sched_proc_update_handler(struct ctl_table *table, int write,
 #endif
 
 extern int sched_boost_handler(struct ctl_table *table, int write,
-			void *buffer, size_t *lenp, loff_t *ppos);
+			void __user *buffer, size_t *lenp, loff_t *ppos);
 /*
  *  control realtime throttling:
  *
