@@ -179,12 +179,16 @@ void km_state_expired(struct xfrm_state *x, int hard, u32 portid);
 static DEFINE_SPINLOCK(xfrm_type_lock);
 int xfrm_register_type(const struct xfrm_type *type, unsigned short family)
 {
-	struct xfrm_state_afinfo *afinfo = xfrm_state_get_afinfo(family);
+	struct xfrm_state_afinfo *afinfo;
 	const struct xfrm_type **typemap;
 	int err = 0;
 
-	if (unlikely(afinfo == NULL))
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (unlikely(afinfo == NULL)) {
+		rcu_read_unlock();
 		return -EAFNOSUPPORT;
+	}
 	typemap = afinfo->type_map;
 	spin_lock_bh(&xfrm_type_lock);
 
@@ -200,12 +204,16 @@ EXPORT_SYMBOL(xfrm_register_type);
 
 int xfrm_unregister_type(const struct xfrm_type *type, unsigned short family)
 {
-	struct xfrm_state_afinfo *afinfo = xfrm_state_get_afinfo(family);
+	struct xfrm_state_afinfo *afinfo;
 	const struct xfrm_type **typemap;
 	int err = 0;
 
-	if (unlikely(afinfo == NULL))
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (unlikely(afinfo == NULL)) {
+		rcu_read_unlock();
 		return -EAFNOSUPPORT;
+	}
 	typemap = afinfo->type_map;
 	spin_lock_bh(&xfrm_type_lock);
 
@@ -227,9 +235,12 @@ static const struct xfrm_type *xfrm_get_type(u8 proto, unsigned short family)
 	int modload_attempted = 0;
 
 retry:
-	afinfo = xfrm_state_get_afinfo(family);
-	if (unlikely(afinfo == NULL))
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (unlikely(afinfo == NULL)) {
+		rcu_read_unlock();
 		return NULL;
+	}
 	typemap = afinfo->type_map;
 
 	type = READ_ONCE(typemap[proto]);
@@ -256,12 +267,16 @@ static DEFINE_SPINLOCK(xfrm_type_offload_lock);
 int xfrm_register_type_offload(const struct xfrm_type_offload *type,
 			       unsigned short family)
 {
-	struct xfrm_state_afinfo *afinfo = xfrm_state_get_afinfo(family);
+	struct xfrm_state_afinfo *afinfo;
 	const struct xfrm_type_offload **typemap;
 	int err = 0;
 
-	if (unlikely(afinfo == NULL))
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (unlikely(afinfo == NULL)) {
+		rcu_read_unlock();
 		return -EAFNOSUPPORT;
+	}
 	typemap = afinfo->type_offload_map;
 	spin_lock_bh(&xfrm_type_offload_lock);
 
@@ -278,12 +293,16 @@ EXPORT_SYMBOL(xfrm_register_type_offload);
 int xfrm_unregister_type_offload(const struct xfrm_type_offload *type,
 				 unsigned short family)
 {
-	struct xfrm_state_afinfo *afinfo = xfrm_state_get_afinfo(family);
+	struct xfrm_state_afinfo *afinfo;
 	const struct xfrm_type_offload **typemap;
 	int err = 0;
 
-	if (unlikely(afinfo == NULL))
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (unlikely(afinfo == NULL)) {
+		rcu_read_unlock();
 		return -EAFNOSUPPORT;
+	}
 	typemap = afinfo->type_offload_map;
 	spin_lock_bh(&xfrm_type_offload_lock);
 
@@ -305,9 +324,12 @@ xfrm_get_type_offload(u8 proto, unsigned short family, bool try_load)
 	const struct xfrm_type_offload *type;
 
 retry:
-	afinfo = xfrm_state_get_afinfo(family);
-	if (unlikely(afinfo == NULL))
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (unlikely(afinfo == NULL)) {
+		rcu_read_unlock();
 		return NULL;
+	}
 	typemap = afinfo->type_offload_map;
 
 	type = typemap[proto];
@@ -340,9 +362,12 @@ int xfrm_register_mode(struct xfrm_mode *mode, int family)
 	if (unlikely(mode->encap >= XFRM_MODE_MAX))
 		return -EINVAL;
 
-	afinfo = xfrm_state_get_afinfo(family);
-	if (unlikely(afinfo == NULL))
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (unlikely(afinfo == NULL)) {
+		rcu_read_unlock();
 		return -EAFNOSUPPORT;
+	}
 
 	err = -EEXIST;
 	modemap = afinfo->mode_map;
@@ -374,9 +399,12 @@ int xfrm_unregister_mode(struct xfrm_mode *mode, int family)
 	if (unlikely(mode->encap >= XFRM_MODE_MAX))
 		return -EINVAL;
 
-	afinfo = xfrm_state_get_afinfo(family);
-	if (unlikely(afinfo == NULL))
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (unlikely(afinfo == NULL)) {
+		rcu_read_unlock();
 		return -EAFNOSUPPORT;
+	}
 
 	err = -ENOENT;
 	modemap = afinfo->mode_map;
@@ -403,9 +431,12 @@ static struct xfrm_mode *xfrm_get_mode(unsigned int encap, int family)
 		return NULL;
 
 retry:
-	afinfo = xfrm_state_get_afinfo(family);
-	if (unlikely(afinfo == NULL))
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (unlikely(afinfo == NULL)) {
+		rcu_read_unlock();
 		return NULL;
+	}
 
 	mode = READ_ONCE(afinfo->mode_map[encap]);
 	if (unlikely(mode && !try_module_get(mode->owner)))
@@ -1712,9 +1743,14 @@ xfrm_tmpl_sort(struct xfrm_tmpl **dst, struct xfrm_tmpl **src, int n,
 {
 	int i;
 	int err = 0;
-	struct xfrm_state_afinfo *afinfo = xfrm_state_get_afinfo(family);
-	if (!afinfo)
+	struct xfrm_state_afinfo *afinfo;
+
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (!afinfo) {
+		rcu_read_unlock();
 		return -EAFNOSUPPORT;
+	}
 
 	spin_lock_bh(&net->xfrm.xfrm_state_lock); /*FIXME*/
 	if (afinfo->tmpl_sort)
@@ -1734,11 +1770,15 @@ xfrm_state_sort(struct xfrm_state **dst, struct xfrm_state **src, int n,
 {
 	int i;
 	int err = 0;
-	struct xfrm_state_afinfo *afinfo = xfrm_state_get_afinfo(family);
+	struct xfrm_state_afinfo *afinfo;
 	struct net *net = xs_net(*src);
 
-	if (!afinfo)
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (!afinfo) {
+		rcu_read_unlock();
 		return -EAFNOSUPPORT;
+	}
 
 	spin_lock_bh(&net->xfrm.xfrm_state_lock);
 	if (afinfo->state_sort)
@@ -2313,17 +2353,6 @@ struct xfrm_state_afinfo *xfrm_state_afinfo_get_rcu(unsigned int family)
 	return rcu_dereference(xfrm_state_afinfo[family]);
 }
 
-struct xfrm_state_afinfo *xfrm_state_get_afinfo(unsigned int family)
-{
-	struct xfrm_state_afinfo *afinfo;
-	if (unlikely(family >= NPROTO))
-		return NULL;
-	rcu_read_lock();
-	afinfo = rcu_dereference(xfrm_state_afinfo[family]);
-	if (unlikely(!afinfo))
-		rcu_read_unlock();
-	return afinfo;
-}
 
 void xfrm_flush_gc(void)
 {
@@ -2362,9 +2391,12 @@ int __xfrm_init_state(struct xfrm_state *x, bool init_replay, bool offload)
 	int err;
 
 	err = -EAFNOSUPPORT;
-	afinfo = xfrm_state_get_afinfo(family);
-	if (!afinfo)
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(family);
+	if (!afinfo) {
+		rcu_read_unlock();
 		goto error;
+	}
 
 	err = 0;
 	if (afinfo->init_flags)
