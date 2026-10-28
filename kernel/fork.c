@@ -1683,9 +1683,9 @@ static inline void
 init_task_pid(struct task_struct *task, enum pid_type type, struct pid *pid)
 {
 	if (type == PIDTYPE_PID)
-		task->thread_pid = pid;
+		WRITE_ONCE(task->thread_pid, pid);
 	else
-		task->signal->pids[type] = pid;
+		WRITE_ONCE(task->signal->pids[type], pid);
 }
 
 static inline void rcu_copy_process(struct task_struct *p)
