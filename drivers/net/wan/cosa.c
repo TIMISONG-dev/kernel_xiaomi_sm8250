@@ -990,7 +990,7 @@ static int cosa_release(struct inode *inode, struct file *file)
 }
 
 #ifdef COSA_FASYNC_WORKING
-static struct fasync_struct *fasync[256] = { NULL, };
+static struct fasync_struct __rcu *fasync[256] = { NULL, };
 
 /* To be done ... */
 static int cosa_fasync(struct inode *inode, struct file *file, int on)

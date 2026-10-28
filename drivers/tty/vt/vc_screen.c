@@ -82,7 +82,7 @@ struct vcs_poll_data {
 	unsigned int cons_num;
 	bool seen_last_update;
 	wait_queue_head_t waitq;
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 };
 
 static int

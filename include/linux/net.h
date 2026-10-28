@@ -99,7 +99,7 @@ enum sock_shutdown_cmd {
 struct socket_wq {
 	/* Note: wait MUST be first field of socket_wq */
 	wait_queue_head_t	wait;
-	struct fasync_struct	*fasync_list;
+	struct fasync_struct	__rcu *fasync_list;
 	unsigned long		flags; /* %SOCKWQ_ASYNC_NOSPACE, etc */
 	struct rcu_head		rcu;
 } ____cacheline_aligned_in_smp;

@@ -670,7 +670,7 @@ struct perf_event {
 
 	/* poll related */
 	wait_queue_head_t		waitq;
-	struct fasync_struct		*fasync;
+	struct fasync_struct		__rcu *fasync;
 
 	/* delayed work for NMIs and such */
 	int				pending_wakeup;

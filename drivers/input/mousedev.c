@@ -95,7 +95,7 @@ struct mousedev_motion {
 
 #define PACKET_QUEUE_LEN	16
 struct mousedev_client {
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	struct mousedev *mousedev;
 	struct list_head node;
 

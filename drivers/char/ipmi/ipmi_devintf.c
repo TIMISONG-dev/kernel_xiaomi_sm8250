@@ -30,7 +30,7 @@ struct ipmi_file_private
 	spinlock_t           recv_msg_lock;
 	struct list_head     recv_msgs;
 	struct file          *file;
-	struct fasync_struct *fasync_queue;
+	struct fasync_struct __rcu *fasync_queue;
 	wait_queue_head_t    wait;
 	struct mutex	     recv_mutex;
 	int                  default_retries;

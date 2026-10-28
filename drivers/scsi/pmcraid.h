@@ -725,7 +725,7 @@ struct pmcraid_instance {
 	struct pmcraid_cmd *reset_cmd;
 
 	/* structures for supporting SIGIO based AEN. */
-	struct fasync_struct *aen_queue;
+	struct fasync_struct __rcu *aen_queue;
 	struct mutex aen_queue_lock;	/* lock for aen subscribers list */
 	struct cdev cdev;
 

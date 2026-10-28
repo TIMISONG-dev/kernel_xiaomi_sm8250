@@ -43,7 +43,7 @@ struct serio_raw {
 };
 
 struct serio_raw_client {
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	struct serio_raw *serio_raw;
 	struct list_head node;
 };

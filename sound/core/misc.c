@@ -173,7 +173,7 @@ EXPORT_SYMBOL(snd_pci_quirk_lookup);
  * to be called at releasing the relevant file object.
  */
 struct snd_fasync {
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	int signal;
 	int poll;
 	int on;
