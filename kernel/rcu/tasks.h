@@ -746,9 +746,8 @@ static bool trc_inspect_reader(struct task_struct *t, void *arg)
 		in_qs = likely(!t->trc_reader_nesting);
 	}
 
-	// Mark as checked so that the grace-period kthread will
-	// remove it from the holdout list.
 	t->trc_reader_checked = true;
+	trc_del_holdout(t);
 	if (in_qs)
 		return true;
 	atomic_inc(&trc_n_readers_need_end);
