@@ -317,7 +317,7 @@ static int __noreturn rcu_tasks_kthread(void *arg)
 			bool firstreport;
 			bool needreport;
 			int rtst;
-			struct list_head *pos, *next;
+			struct task_struct *t1;
 
 			if (list_empty(&rcu_tasks_holdouts))
 				break;
@@ -335,9 +335,8 @@ static int __noreturn rcu_tasks_kthread(void *arg)
 				lastreport = jiffies;
 			firstreport = true;
 			WARN_ON(signal_pending(current));
-			list_for_each_safe(pos, next, &rcu_tasks_holdouts) {
-				t = list_entry(pos, struct task_struct,
-					       rcu_tasks_holdout_list);
+			list_for_each_entry_safe(t, t1, &rcu_tasks_holdouts,
+						rcu_tasks_holdout_list) {
 				check_holdout_task(t, needreport, &firstreport);
 				cond_resched();
 			}
@@ -889,14 +888,12 @@ static void show_stalled_ipi_trace(void)
 static void check_all_holdout_tasks_trace(struct list_head *hop,
 					  bool needreport, bool *firstreport)
 {
-	struct task_struct *t;
-	struct list_head *pos, *next;
+	struct task_struct *g, *t;
 
 	// Disable CPU hotplug across the holdout list scan.
 	cpus_read_lock();
 
-	list_for_each_safe(pos, next, hop) {
-		t = list_entry(pos, struct task_struct, trc_holdout_list);
+	list_for_each_entry_safe(t, g, hop, trc_holdout_list) {
 		// If safe and needed, try to check the current task.
 		if (READ_ONCE(t->trc_ipi_to_cpu) == -1 &&
 		    !READ_ONCE(t->trc_reader_checked))
@@ -924,7 +921,6 @@ static void rcu_tasks_trace_postgp(struct rcu_tasks *rtp)
 {
 	bool firstreport;
 	struct task_struct *g, *t;
-	struct list_head *pos, *next;
 	LIST_HEAD(holdouts);
 	long ret;
 
@@ -956,8 +952,7 @@ static void rcu_tasks_trace_postgp(struct rcu_tasks *rtp)
 				trc_add_holdout(t, &holdouts);
 		rcu_read_unlock();
 		firstreport = true;
-		list_for_each_safe(pos, next, &holdouts) {
-			t = list_entry(pos, struct task_struct, trc_holdout_list);
+		list_for_each_entry_safe(t, g, &holdouts, trc_holdout_list) {
 			if (READ_ONCE(t->trc_reader_need_end))
 				show_stalled_task_trace(t, &firstreport);
 			trc_del_holdout(t);
