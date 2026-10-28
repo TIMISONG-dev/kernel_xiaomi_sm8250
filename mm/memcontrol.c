@@ -4891,14 +4891,24 @@ static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
 #ifdef CONFIG_SWAP
 	/* shmem/tmpfs may report page out on swap: account for that too. */
 	if (shmem_mapping(mapping)) {
+		/* Keep swap address spaces alive until the page is pinned. */
+		rcu_read_lock();
 		page = find_get_entry(mapping, pgoff);
 		if (xa_is_value(page)) {
 			swp_entry_t swp = radix_to_swp_entry(page);
+			struct address_space *spaces;
+
 			if (do_memsw_account())
 				*entry = swp;
-			page = find_get_page(swap_address_space(swp),
-					     swp_offset(swp));
+			spaces = READ_ONCE(swapper_spaces[swp_type(swp)]);
+			if (spaces)
+				page = find_get_page(spaces + (swp_offset(swp) >>
+							      SWAP_ADDRESS_SPACE_SHIFT),
+						     swp_offset(swp));
+			else
+				page = NULL;
 		}
+		rcu_read_unlock();
 	} else
 		page = find_get_page(mapping, pgoff);
 #else
