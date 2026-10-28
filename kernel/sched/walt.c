@@ -910,10 +910,10 @@ void fixup_busy_time(struct task_struct *p, int new_cpu)
 
 	wallclock = sched_ktime_clock();
 
-	update_task_ravg(rq_curr_locked(task_rq(p)), task_rq(p),
+	update_task_ravg(task_rq(p)->curr, task_rq(p),
 			 TASK_UPDATE,
 			 wallclock, 0);
-	update_task_ravg(rq_curr_locked(dest_rq), dest_rq,
+	update_task_ravg(dest_rq->curr, dest_rq,
 			 TASK_UPDATE, wallclock, 0);
 
 	update_task_ravg(p, task_rq(p), TASK_MIGRATE,
@@ -1030,7 +1030,7 @@ void set_window_start(struct rq *rq)
 		raw_spin_unlock(&sync_rq->lock);
 	}
 
-	rq_curr_locked(rq)->ravg.mark_start = rq->window_start;
+	rq->curr->ravg.mark_start = rq->window_start;
 }
 
 unsigned int max_possible_efficiency = 1;
@@ -2035,7 +2035,7 @@ update_task_rq_cpu_cycles(struct task_struct *p, struct rq *rq, int event,
 	 * for IO wait time accounting.  Use the previously
 	 * calculated frequency in such a case.
 	 */
-	if (!is_idle_task(rq_curr_locked(rq)) || irqtime) {
+	if (!is_idle_task(rq->curr) || irqtime) {
 		if (unlikely(cur_cycles < p->cpu_cycles))
 			cycles_delta = cur_cycles + (U64_MAX - p->cpu_cycles);
 		else
@@ -2596,7 +2596,7 @@ static int cpufreq_notifier_trans(struct notifier_block *nb,
 			struct rq *rq = cpu_rq(j);
 
 			raw_spin_lock_irqsave(&rq->lock, flags);
-			update_task_ravg(rq_curr_locked(rq), rq, TASK_UPDATE,
+			update_task_ravg(rq->curr, rq, TASK_UPDATE,
 					 sched_ktime_clock(), 0);
 			raw_spin_unlock_irqrestore(&rq->lock, flags);
 		}
@@ -3170,7 +3170,7 @@ static void transfer_busy_time(struct rq *rq, struct related_thread_group *grp,
 
 	wallclock = sched_ktime_clock();
 
-	update_task_ravg(rq_curr_locked(rq), rq, TASK_UPDATE, wallclock, 0);
+	update_task_ravg(rq->curr, rq, TASK_UPDATE, wallclock, 0);
 	update_task_ravg(p, rq, TASK_UPDATE, wallclock, 0);
 	new_task = is_new_task(p);
 
@@ -3384,7 +3384,7 @@ void walt_irq_work(struct irq_work *irq_work)
 		for_each_cpu(cpu, &cluster->cpus) {
 			rq = cpu_rq(cpu);
 			if (rq->curr) {
-				update_task_ravg(rq_curr_locked(rq), rq,
+				update_task_ravg(rq->curr, rq,
 						TASK_UPDATE, wc, 0);
 				account_load_subtractions(rq);
 				aggr_grp_load += rq->grp_time.prev_runnable_sum;
