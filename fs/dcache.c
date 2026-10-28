@@ -2697,45 +2697,16 @@ static void copy_name(struct dentry *dentry, struct dentry *target)
 		kfree_rcu(old_name, u.head);
 }
 
-/*
- * __d_move - move a dentry
- * @dentry: entry to move
- * @target: new dentry
- * @exchange: exchange the two dentries
- *
- * Update the dcache to reflect the move of a file name. Negative
- * dcache entries should not be moved in this way. Caller must hold
- * rename_lock, the i_mutex of the source and target directories,
- * and the sb->s_vfs_rename_mutex if they differ. See lock_rename().
- */
-static void __d_move(struct dentry *dentry, struct dentry *target,
-		     bool exchange)
+/* The caller holds the parent dentry locks. */
+static void __d_move_locked(struct dentry *dentry, struct dentry *target,
+			    bool exchange, struct dentry *old_parent,
+			    struct dentry *new_parent)
+	__acquires(&dentry->d_lock)
+	__acquires(&target->d_lock)
 {
-	struct dentry *old_parent, *p;
 	struct inode *dir = NULL;
 	unsigned n;
 
-	WARN_ON(!dentry->d_inode);
-	if (WARN_ON(dentry == target))
-		return;
-
-	BUG_ON(d_ancestor(target, dentry));
-	old_parent = dentry->d_parent;
-	p = d_ancestor(old_parent, target);
-	if (IS_ROOT(dentry)) {
-		BUG_ON(p);
-		spin_lock(&target->d_parent->d_lock);
-	} else if (!p) {
-		/* target is not a descendent of dentry->d_parent */
-		spin_lock(&target->d_parent->d_lock);
-		spin_lock_nested(&old_parent->d_lock, DENTRY_D_LOCK_NESTED);
-	} else {
-		BUG_ON(p == dentry);
-		spin_lock(&old_parent->d_lock);
-		if (p != target)
-			spin_lock_nested(&target->d_parent->d_lock,
-					DENTRY_D_LOCK_NESTED);
-	}
 	spin_lock_nested(&dentry->d_lock, 2);
 	spin_lock_nested(&target->d_lock, 3);
 
@@ -2755,7 +2726,7 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
 		___d_drop(target);
 
 	/* ... and switch them in the tree */
-	dentry->d_parent = target->d_parent;
+	dentry->d_parent = new_parent;
 	if (!exchange) {
 		copy_name(dentry, target);
 		target->d_hash.pprev = NULL;
@@ -2779,11 +2750,59 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
 
 	if (dir)
 		end_dir_add(dir, n);
+}
 
-	if (dentry->d_parent != old_parent)
-		spin_unlock(&dentry->d_parent->d_lock);
-	if (dentry != old_parent)
+/*
+ * __d_move - move a dentry
+ * @dentry: entry to move
+ * @target: new dentry
+ * @exchange: exchange the two dentries
+ *
+ * Update the dcache to reflect the move of a file name. Negative
+ * dcache entries should not be moved in this way. Caller must hold
+ * rename_lock, the i_mutex of the source and target directories,
+ * and the sb->s_vfs_rename_mutex if they differ. See lock_rename().
+ */
+static void __d_move(struct dentry *dentry, struct dentry *target,
+		     bool exchange)
+{
+	struct dentry *old_parent, *new_parent, *p;
+
+	WARN_ON(!dentry->d_inode);
+	if (WARN_ON(dentry == target))
+		return;
+
+	BUG_ON(d_ancestor(target, dentry));
+	old_parent = dentry->d_parent;
+	new_parent = target->d_parent;
+	p = d_ancestor(old_parent, target);
+	if (IS_ROOT(dentry)) {
+		BUG_ON(p);
+		spin_lock(&new_parent->d_lock);
+		__d_move_locked(dentry, target, exchange, old_parent, new_parent);
+		spin_unlock(&new_parent->d_lock);
+	} else if (!p) {
+		/* target is not a descendent of dentry->d_parent */
+		spin_lock(&new_parent->d_lock);
+		spin_lock_nested(&old_parent->d_lock, DENTRY_D_LOCK_NESTED);
+		__d_move_locked(dentry, target, exchange, old_parent, new_parent);
+		spin_unlock(&new_parent->d_lock);
 		spin_unlock(&old_parent->d_lock);
+	} else {
+		BUG_ON(p == dentry);
+		spin_lock(&old_parent->d_lock);
+		if (p != target) {
+			spin_lock_nested(&new_parent->d_lock,
+					 DENTRY_D_LOCK_NESTED);
+			__d_move_locked(dentry, target, exchange,
+					old_parent, new_parent);
+			spin_unlock(&new_parent->d_lock);
+		} else {
+			__d_move_locked(dentry, target, exchange,
+					old_parent, new_parent);
+		}
+		spin_unlock(&old_parent->d_lock);
+	}
 	spin_unlock(&target->d_lock);
 	spin_unlock(&dentry->d_lock);
 }
