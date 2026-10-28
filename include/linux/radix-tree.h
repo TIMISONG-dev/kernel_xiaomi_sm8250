@@ -30,10 +30,6 @@
 #include <linux/types.h>
 #include <linux/xarray.h>
 
-/* Shared node allocator used by radix trees and XArrays. */
-extern struct kmem_cache *radix_tree_node_cachep;
-void radix_tree_node_rcu_free(struct rcu_head *head);
-
 /* Keep unconverted code working */
 #define radix_tree_root		xarray
 #define radix_tree_node		xa_node
