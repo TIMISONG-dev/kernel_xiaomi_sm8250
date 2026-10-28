@@ -724,10 +724,7 @@ static int ngd_xfer_msg(struct slim_controller *ctrl, struct slim_msg_txn *txn)
 		*(puc++) = (txn->ec >> 8)&0xFF;
 	}
 	if (txn->wbuf) {
-		if (dev->lpass_mem_usage)
-			memcpy_toio(puc, txn->wbuf, txn->len);
-		else
-			memcpy(puc, txn->wbuf, txn->len);
+		memcpy(puc, txn->wbuf, txn->len);
 	}
 	if (txn->mt == SLIM_MSG_MT_DEST_REFERRED_USER &&
 		(txn->mc == SLIM_USR_MC_CONNECT_SRC ||
@@ -763,11 +760,9 @@ static int ngd_xfer_msg(struct slim_controller *ctrl, struct slim_msg_txn *txn)
 		int timeout = wait_for_completion_timeout(&tx_sent, HZ);
 
 		if (!timeout && dev->use_tx_msgqs == MSM_MSGQ_ENABLED) {
-			struct msm_slim_endp *endpoint = &dev->tx_msgq;
-			struct sps_mem_buffer *mem = &endpoint->buf;
-			u32 idx = (u32) (((u8 *)pbuf - (u8 *)mem->base) /
-						SLIM_MSGQ_BUF_LEN);
-			phys_addr_t addr = mem->phys_base +
+			u32 idx = ((u8 *)pbuf - (u8 *)msm_slim_tx_base(dev)) /
+				  SLIM_MSGQ_BUF_LEN;
+			phys_addr_t addr = dev->tx_msgq.buf.phys_base +
 						(idx * SLIM_MSGQ_BUF_LEN);
 			ret = -ETIMEDOUT;
 			SLIM_WARN(dev, "timeout, BAM desc_idx:%d, phys:%llx",

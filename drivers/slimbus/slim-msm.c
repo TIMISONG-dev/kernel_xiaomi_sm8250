@@ -170,10 +170,13 @@ static int msm_slim_sps_mem_alloc(
 
 	mem->size = len;
 	mem->min_size = 0;
-	mem->base = dev->lpass_mem_usage ? dev->lpass.base :
-		dma_alloc_coherent(dma_dev, mem->size, &phys, GFP_KERNEL);
+	if (dev->lpass_mem_usage)
+		mem->io_base = dev->lpass.base;
+	else
+		mem->base = dma_alloc_coherent(dma_dev, mem->size, &phys,
+					       GFP_KERNEL);
 
-	if (!mem->base) {
+	if (dev->lpass_mem_usage ? !mem->io_base : !mem->base) {
 		dev_err(dma_dev, "dma_alloc_coherent (%d) failed\n", len);
 		return -ENOMEM;
 	}
@@ -181,7 +184,7 @@ static int msm_slim_sps_mem_alloc(
 	mem->phys_base = dev->lpass_mem_usage ?
 			(unsigned long long)dev->lpass_mem->start : phys;
 	if (dev->lpass_mem_usage) {
-		memset_io(mem->base, 0x00, mem->size);
+		memset_io(mem->io_base, 0x00, mem->size);
 		dev->lpass.base = dev->lpass.base + mem->size;
 		dev->lpass_mem->start = dev->lpass_mem->start + mem->size;
 	} else {
@@ -373,10 +376,13 @@ int msm_slim_connect_pipe_port(struct msm_slim_ctrl *dev, u8 pn)
 	/* Space for descriptor FIFOs */
 	ret = msm_slim_sps_mem_alloc(dev, &cfg->desc,
 				MSM_SLIM_DESC_NUM * sizeof(struct sps_iovec));
-	if (ret)
+	if (ret) {
 		pr_err("mem alloc for descr failed:%d\n", ret);
-	else
+	} else {
+		if (dev->lpass_mem_usage)
+			cfg->options |= SPS_O_DESC_IO;
 		ret = sps_connect(dev->pipes[pn].sps, cfg);
+	}
 
 	if (!ret) {
 		dev->pipes[pn].connected = true;
@@ -539,6 +545,11 @@ int msm_slim_port_xfer(struct slim_controller *ctrl, u8 pn, void *buf,
 	return ret;
 }
 
+void *msm_slim_tx_base(struct msm_slim_ctrl *dev)
+{
+	return dev->lpass_mem_usage ? dev->tx_staging : dev->tx_msgq.buf.base;
+}
+
 /* Queue up Tx message buffer */
 static int msm_slim_post_tx_msgq(struct msm_slim_ctrl *dev, u8 *buf, int len)
 {
@@ -546,12 +557,15 @@ static int msm_slim_post_tx_msgq(struct msm_slim_ctrl *dev, u8 *buf, int len)
 	struct msm_slim_endp *endpoint = &dev->tx_msgq;
 	struct sps_mem_buffer *mem = &endpoint->buf;
 	struct sps_pipe *pipe = endpoint->sps;
-	int ix = (buf - (u8 *)mem->base);
+	int ix = buf - (u8 *)msm_slim_tx_base(dev);
 
 	phys_addr_t phys_addr = mem->phys_base + ix;
 
 	for (ret = 0; ret < ((len + 3) >> 2); ret++)
 		pr_debug("BAM TX buf[%d]:0x%x\n", ret, ((u32 *)buf)[ret]);
+
+	if (dev->lpass_mem_usage)
+		memcpy_toio(mem->io_base + ix, buf, (len + 3) & 0xFC);
 
 	ret = sps_transfer_one(pipe, phys_addr, ((len + 3) & 0xFC), NULL,
 				SPS_IOVEC_FLAG_EOT);
@@ -610,7 +624,7 @@ static void msm_slim_tx_msg_return(struct msm_slim_ctrl *dev, int err)
 			/ SLIM_MSGQ_BUF_LEN);
 		if (err) {
 			int i;
-			u32 *addr = (u32 *)mem->base +
+			u32 *addr = (u32 *)msm_slim_tx_base(dev) +
 					(idx * (SLIM_MSGQ_BUF_LEN >> 2));
 			/* print the descriptor that resulted in error */
 			for (i = 0; i < (SLIM_MSGQ_BUF_LEN >> 2); i++)
@@ -633,14 +647,12 @@ static void msm_slim_tx_msg_return(struct msm_slim_ctrl *dev, int err)
 static u32 *msm_slim_modify_tx_buf(struct msm_slim_ctrl *dev,
 					struct completion *comp)
 {
-	struct msm_slim_endp *endpoint = &dev->tx_msgq;
-	struct sps_mem_buffer *mem = &endpoint->buf;
 	u32 *retbuf = NULL;
 
 	if ((dev->tx_tail + 1) % MSM_TX_BUFS == dev->tx_head)
 		return NULL;
 
-	retbuf = (u32 *)((u8 *)mem->base +
+	retbuf = (u32 *)((u8 *)msm_slim_tx_base(dev) +
 				(dev->tx_tail * SLIM_MSGQ_BUF_LEN));
 	dev->wr_comp[dev->tx_tail] = comp;
 	dev->tx_tail = (dev->tx_tail + 1) % MSM_TX_BUFS;
@@ -798,7 +810,8 @@ static int msm_slim_post_rx_msgq(struct msm_slim_ctrl *dev, int ix)
 	struct sps_pipe *pipe = endpoint->sps;
 
 	/* Rx message queue buffers are 4 bytes in length */
-	u8 *virt_addr = mem->base + (4 * ix);
+	void *virt_addr = dev->lpass_mem_usage ? endpoint :
+		mem->base + (4 * ix);
 	phys_addr_t phys_addr = mem->phys_base + (4 * ix);
 
 	ret = sps_transfer_one(pipe, phys_addr, 4, virt_addr, 0);
@@ -836,9 +849,12 @@ int msm_slim_rx_msgq_get(struct msm_slim_ctrl *dev, u32 *data, int offset)
 
 	/* Calculate buffer index */
 	index = (addr - mem->phys_base) / 4;
-	*(data + offset) = *((u32 *)mem->base + index);
+	if (dev->lpass_mem_usage)
+		data[offset] = readl_relaxed(mem->io_base + index * 4);
+	else
+		data[offset] = *((u32 *)mem->base + index);
 
-	pr_debug("buf = 0x%p, data = 0x%x\n", (u32 *)mem->base + index, *data);
+	pr_debug("buffer index = %d, data = 0x%x\n", index, data[offset]);
 
 	/* Add buffer back to the queue */
 	(void)msm_slim_post_rx_msgq(dev, index);
@@ -856,6 +872,8 @@ int msm_slim_connect_endp(struct msm_slim_ctrl *dev,
 	struct sps_connect *config = &endpoint->config;
 	unsigned long flags;
 
+	if (dev->lpass_mem_usage)
+		config->options |= SPS_O_DESC_IO;
 	ret = sps_connect(endpoint->sps, config);
 	if (ret) {
 		dev_err(dev->dev, "sps_connect failed 0x%x\n", ret);
