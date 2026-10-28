@@ -680,10 +680,7 @@ do {									\
 	P(nr_load_updates);
 	P(nr_uninterruptible);
 	PN(next_balance);
-	rcu_read_lock();
-	SEQ_printf(m, "  .%-30s: %ld\n", "curr->pid",
-		   (long)task_pid_nr(rcu_dereference(rq->curr)));
-	rcu_read_unlock();
+	SEQ_printf(m, "  .%-30s: %ld\n", "curr->pid", (long)(task_pid_nr(rq->curr)));
 	PN(clock);
 	PN(clock_task);
 	P(cpu_load[0]);
