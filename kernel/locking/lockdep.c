@@ -1447,7 +1447,7 @@ check_redundant(struct lock_list *root, struct lock_class *target,
 
 static inline int usage_match(struct lock_list *entry, void *bit)
 {
-	return entry->class->usage_mask & (1 << *(const enum lock_usage_bit *)bit);
+	return entry->class->usage_mask & (1 << (enum lock_usage_bit)bit);
 }
 
 
@@ -1470,7 +1470,7 @@ find_usage_forwards(struct lock_list *root, enum lock_usage_bit bit,
 
 	debug_atomic_inc(nr_find_usage_forwards_checks);
 
-	result = __bfs_forwards(root, &bit, usage_match, target_entry);
+	result = __bfs_forwards(root, (void *)bit, usage_match, target_entry);
 
 	return result;
 }
@@ -1493,7 +1493,7 @@ find_usage_backwards(struct lock_list *root, enum lock_usage_bit bit,
 
 	debug_atomic_inc(nr_find_usage_backwards_checks);
 
-	result = __bfs_backwards(root, &bit, usage_match, target_entry);
+	result = __bfs_backwards(root, (void *)bit, usage_match, target_entry);
 
 	return result;
 }
