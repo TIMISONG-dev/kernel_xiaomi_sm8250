@@ -118,7 +118,8 @@ struct sps_bam;
 /* System mode control */
 struct sps_bam_sys_mode {
 	/* Descriptor FIFO control */
-	u8 *desc_buf; /* Descriptor FIFO for BAM pipe */
+	u8 *desc_buf; /* Descriptor FIFO in RAM */
+	void __iomem *desc_io; /* Descriptor FIFO in MMIO */
 	u32 desc_offset; /* Next new descriptor to be written to hardware */
 	u32 acked_offset; /* Next descriptor to be retired by software */
 
