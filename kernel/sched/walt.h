@@ -406,7 +406,7 @@ static inline void walt_task_dump(struct task_struct *p)
 static inline void walt_rq_dump(int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
-	struct task_struct *tsk;
+	struct task_struct *tsk = cpu_curr(cpu);
 	int i;
 
 	/*
@@ -417,10 +417,7 @@ static inline void walt_rq_dump(int cpu)
 	 * can't be done in atomic context, especially with
 	 * rq locks held.
 	 */
-	rcu_read_lock();
-	tsk = rcu_dereference(cpu_curr(cpu));
 	get_task_struct(tsk);
-	rcu_read_unlock();
 	printk_deferred("CPU:%d nr_running:%u current: %d (%s)\n",
 			cpu, rq->nr_running, tsk->pid, tsk->comm);
 
