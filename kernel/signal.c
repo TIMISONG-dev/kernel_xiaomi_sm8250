@@ -1351,7 +1351,9 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
 
 	rcu_read_lock();
 	for (;;) {
-		sighand = rcu_dereference(tsk->sighand);
+		RCU_LOCKDEP_WARN(!rcu_read_lock_held(),
+				 "sighand snapshot needs RCU protection");
+		sighand = READ_ONCE(tsk->sighand);
 		if (unlikely(sighand == NULL))
 			break;
 
@@ -1367,7 +1369,7 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
 		 * must see ->sighand == NULL.
 		 */
 		spin_lock_irqsave(&sighand->siglock, *flags);
-		if (likely(sighand == tsk->sighand))
+		if (likely(sighand == READ_ONCE(tsk->sighand)))
 			break;
 		spin_unlock_irqrestore(&sighand->siglock, *flags);
 	}
