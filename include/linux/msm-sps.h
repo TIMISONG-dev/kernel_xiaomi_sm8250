@@ -178,6 +178,7 @@ enum sps_option {
 	SPS_O_WRITE_NWD   = 0x00040000,
        /* EOT set after pipe SW offset advanced */
 	SPS_O_LATE_EOT   = 0x00080000,
+	SPS_O_DESC_IO    = 0x00100000, /* Descriptor FIFO is MMIO */
 
 	/* Options to enable software features */
 	/* Do not disable a pipe during disconnection */
@@ -479,7 +480,10 @@ struct sps_bam_props {
  *
  */
 struct sps_mem_buffer {
-	void *base;
+	union {
+		void *base;
+		void __iomem *io_base;
+	};
 	phys_addr_t phys_base;
 	unsigned long iova;
 	u32 size;

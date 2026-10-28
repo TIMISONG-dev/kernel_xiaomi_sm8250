@@ -223,7 +223,7 @@ static struct platform_driver regulator_stub_driver = {
 	.probe	= regulator_stub_probe,
 };
 
-int __init regulator_stub_init(void)
+static int __init regulator_stub_init(void)
 {
 	return platform_driver_register(&regulator_stub_driver);
 }

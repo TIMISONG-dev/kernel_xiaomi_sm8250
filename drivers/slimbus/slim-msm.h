@@ -277,6 +277,7 @@ struct msm_slim_ctrl {
 	u32			curr_bw;
 	u8			msg_cnt;
 	u32			tx_buf[10];
+	u32			tx_staging[MSM_TX_BUFS + 1][SLIM_MSGQ_BUF_LEN / 4];
 	u8			rx_msgs[MSM_CONCUR_MSG][SLIM_MSGQ_BUF_LEN];
 	int			tx_tail;
 	int			tx_head;
@@ -440,6 +441,7 @@ enum slim_port_err msm_slim_port_xfer_status(struct slim_controller *ctr,
 				u8 pn, phys_addr_t *done_buf, u32 *done_len);
 int msm_slim_port_xfer(struct slim_controller *ctrl, u8 pn, void *buf,
 			u32 len, struct completion *comp);
+void *msm_slim_tx_base(struct msm_slim_ctrl *dev);
 int msm_send_msg_buf(struct msm_slim_ctrl *dev, u32 *buf, u8 len, u32 tx_reg);
 u32 *msm_get_msg_buf(struct msm_slim_ctrl *dev, int len,
 			struct completion *comp);
