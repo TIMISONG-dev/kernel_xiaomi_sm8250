@@ -1458,10 +1458,9 @@ extern void sched_ttwu_pending(void);
  */
 #define for_each_domain(cpu, __sd) \
 	for (__sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd); \
-			__sd; __sd = rcu_dereference_check_sched_domain(__sd->parent))
+			__sd; __sd = __sd->parent)
 
-#define for_each_lower_domain(sd) \
-	for (; sd; sd = rcu_dereference_check_sched_domain(sd->child))
+#define for_each_lower_domain(sd) for (; sd; sd = sd->child)
 
 /**
  * highest_flag_domain - Return highest sched_domain containing flag.
@@ -1742,7 +1741,7 @@ static inline u64 global_rt_runtime(void)
 
 static inline int task_current(struct rq *rq, struct task_struct *p)
 {
-	return rcu_access_pointer(rq->curr) == p;
+	return rq->curr == p;
 }
 
 static inline int task_running(struct rq *rq, struct task_struct *p)
