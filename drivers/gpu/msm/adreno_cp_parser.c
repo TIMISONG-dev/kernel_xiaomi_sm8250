@@ -179,6 +179,8 @@ static int ib_save_mip_addresses(unsigned int *pkt,
 	int unitsize = 0;
 
 	block = (pkt[1] >> 19) & 0x07;
+	if (block >= ARRAY_SIZE(load_state_unit_sizes))
+		return -EINVAL;
 	type = pkt[2] & 0x03;
 
 	if (type == 0)
@@ -724,6 +726,11 @@ static int ib_parse_set_draw_state(struct kgsl_device *device,
 	 * loop counter by 2 always
 	 */
 	for (i = 1; i <= size; i += 2) {
+		if (i + 1 > size) {
+			ret = -EINVAL;
+			break;
+		}
+
 		grp_id = (ptr[i] & 0x1F000000) >> 24;
 		/* take action based on flags */
 		flags = (ptr[i] & 0x000F0000) >> 16;
@@ -907,8 +914,15 @@ static int adreno_ib_find_objs(struct kgsl_device *device,
 
 		if (pkt_is_type3(header)) {
 			if (adreno_cmd_is_ib(adreno_dev, header)) {
-				uint64_t gpuaddrib2 = src[i + 1];
-				uint64_t size = src[i + 2];
+				uint64_t gpuaddrib2, size;
+
+				if (pktsize < 2) {
+					ret = -EINVAL;
+					goto done;
+				}
+
+				gpuaddrib2 = src[i + 1];
+				size = src[i + 2];
 
 				ret = adreno_cp_parse_ib2(device, process,
 						gpuaddrib2, size, ib2base,
@@ -932,8 +946,15 @@ static int adreno_ib_find_objs(struct kgsl_device *device,
 
 		else if (pkt_is_type7(header)) {
 			if (adreno_cmd_is_ib(adreno_dev, header)) {
-				uint64_t size = src[i + 3];
-				uint64_t gpuaddrib2 = src[i + 2];
+				uint64_t size, gpuaddrib2;
+
+				if (pktsize < 3) {
+					ret = -EINVAL;
+					goto done;
+				}
+
+				size = src[i + 3];
+				gpuaddrib2 = src[i + 2];
 
 				gpuaddrib2 = gpuaddrib2 << 32 | src[i + 1];
 
