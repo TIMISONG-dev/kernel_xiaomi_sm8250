@@ -565,8 +565,8 @@ EXPORT_SYMBOL_GPL(nf_ct_hook);
 /* This does not belong here, but locally generated errors need it if connection
    tracking in use: without this, connection may not be in hash table, and hence
    manufactured ICMP or RST packets will not be associated with it. */
-void (*ip_ct_attach)(struct sk_buff *, const struct sk_buff *)
-		__rcu __read_mostly;
+void (__rcu *ip_ct_attach)(struct sk_buff *, const struct sk_buff *)
+		__read_mostly;
 EXPORT_SYMBOL(ip_ct_attach);
 
 struct nf_nat_hook __rcu *nf_nat_hook __read_mostly;
@@ -574,7 +574,7 @@ EXPORT_SYMBOL_GPL(nf_nat_hook);
 
 void nf_ct_attach(struct sk_buff *new, const struct sk_buff *skb)
 {
-	void (*attach)(struct sk_buff *, const struct sk_buff *);
+	typeof(*ip_ct_attach) *attach;
 
 	if (skb->_nfct) {
 		rcu_read_lock();

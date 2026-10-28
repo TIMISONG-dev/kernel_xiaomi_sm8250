@@ -7,6 +7,7 @@
 #include <net/ipv6.h>
 #include <net/ipv6_stubs.h>
 #include <net/ip.h>
+#include <net/addrconf.h>
 
 /* if ipv6 module registers this function is used by xfrm to force all
  * sockets to relookup their nodes - this is fairly expensive, be

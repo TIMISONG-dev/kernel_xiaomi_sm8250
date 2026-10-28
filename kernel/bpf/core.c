@@ -220,7 +220,7 @@ void bpf_prog_fill_jited_linfo(struct bpf_prog *prog,
 		/* The verifier ensures that linfo[i].insn_off is
 		 * strictly increasing
 		 */
-		jited_linfo[i] = prog->bpf_func +
+		jited_linfo[i] = (char *)prog->bpf_func +
 			insn_to_jit_off[linfo[i].insn_off - insn_start - 1];
 }
 

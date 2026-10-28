@@ -119,9 +119,9 @@ static inline bool is_zero_ether_addr(const u8 *addr)
 static inline bool is_multicast_ether_addr(const u8 *addr)
 {
 #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-	u32 a = *(const u32 *)addr;
+	u32 a = get_unaligned((const u32 *)addr);
 #else
-	u16 a = *(const u16 *)addr;
+	u16 a = get_unaligned((const u16 *)addr);
 #endif
 #ifdef __BIG_ENDIAN
 	return 0x01 & (a >> ((sizeof(a) * 8) - 8));

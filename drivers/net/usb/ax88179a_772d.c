@@ -251,7 +251,7 @@ const struct ethtool_ops ax88179a_ethtool_ops = {
 	.get_ts_info	= ethtool_op_get_ts_info,
 };
 
-void ax88179a_get_fw_version(struct ax_device *axdev)
+static void ax88179a_get_fw_version(struct ax_device *axdev)
 {
 	int i;
 
@@ -269,13 +269,13 @@ void ax88179a_get_fw_version(struct ax_device *axdev)
 		axdev->fw_version[3] &= 0xF;
 }
 
-int ax88179a_signature(struct ax_device *axdev, struct _ax_ioctl_command *info)
+static int ax88179a_signature(struct ax_device *axdev, struct _ax_ioctl_command *info)
 {
 	strlcpy(info->sig, AX88179A_SIGNATURE, sizeof(info->sig));
 	return 0;
 }
 
-int ax88179a_read_version(struct ax_device *axdev,
+static int ax88179a_read_version(struct ax_device *axdev,
 			  struct _ax_ioctl_command *info)
 {
 	unsigned char temp[16] = {0};
@@ -289,7 +289,7 @@ int ax88179a_read_version(struct ax_device *axdev,
 	return 0;
 }
 
-int ax88179a_write_flash(struct ax_device *axdev,
+static int ax88179a_write_flash(struct ax_device *axdev,
 			 struct _ax_ioctl_command *info)
 {
 	int i, ret;
@@ -338,7 +338,7 @@ out:
 	return ret;
 }
 
-int ax88179a_read_flash(struct ax_device *axdev, struct _ax_ioctl_command *info)
+static int ax88179a_read_flash(struct ax_device *axdev, struct _ax_ioctl_command *info)
 {
 	int i, ret = 0;
 	void *buf = NULL;
@@ -372,7 +372,7 @@ int ax88179a_read_flash(struct ax_device *axdev, struct _ax_ioctl_command *info)
 	return ret;
 }
 
-int ax88179a_program_efuse(struct ax_device *axdev,
+static int ax88179a_program_efuse(struct ax_device *axdev,
 			   struct _ax_ioctl_command *info)
 {
 	int ret = 0;
@@ -392,7 +392,7 @@ int ax88179a_program_efuse(struct ax_device *axdev,
 	return ret;
 }
 
-int ax88179a_dump_efuse(struct ax_device *axdev, struct _ax_ioctl_command *info)
+static int ax88179a_dump_efuse(struct ax_device *axdev, struct _ax_ioctl_command *info)
 {
 	int ret = 0;
 	u16 offset = (u16)(info->flash.offset * 16);
@@ -409,7 +409,7 @@ int ax88179a_dump_efuse(struct ax_device *axdev, struct _ax_ioctl_command *info)
 	return ret;
 }
 
-int ax88179a_boot_to_rom(struct ax_device *axdev,
+static int ax88179a_boot_to_rom(struct ax_device *axdev,
 			 struct _ax_ioctl_command *info)
 {
 	usb_control_msg(axdev->udev, usb_sndctrlpipe(axdev->udev, 0),
@@ -420,7 +420,7 @@ int ax88179a_boot_to_rom(struct ax_device *axdev,
 	return 0;
 }
 
-int ax88179a_erase_flash(struct ax_device *axdev,
+static int ax88179a_erase_flash(struct ax_device *axdev,
 			 struct _ax_ioctl_command *info)
 {
 	int ret = 0;
@@ -452,7 +452,7 @@ int ax88179a_erase_flash(struct ax_device *axdev,
 	return 0;
 }
 
-int ax88179a_sw_reset(struct ax_device *axdev, struct _ax_ioctl_command *info)
+static int ax88179a_sw_reset(struct ax_device *axdev, struct _ax_ioctl_command *info)
 {
 	void *buf = NULL;
 

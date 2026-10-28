@@ -131,20 +131,20 @@ nfnetlink_find_client(u16 type, const struct nfnetlink_subsystem *ss)
 
 int nfnetlink_has_listeners(struct net *net, unsigned int group)
 {
-	return netlink_has_listeners(net->nfnl, group);
+	return netlink_has_listeners(READ_ONCE(net->nfnl), group);
 }
 EXPORT_SYMBOL_GPL(nfnetlink_has_listeners);
 
 int nfnetlink_send(struct sk_buff *skb, struct net *net, u32 portid,
 		   unsigned int group, int echo, gfp_t flags)
 {
-	return nlmsg_notify(net->nfnl, skb, portid, group, echo, flags);
+	return nlmsg_notify(READ_ONCE(net->nfnl), skb, portid, group, echo, flags);
 }
 EXPORT_SYMBOL_GPL(nfnetlink_send);
 
 int nfnetlink_set_err(struct net *net, u32 portid, u32 group, int error)
 {
-	return netlink_set_err(net->nfnl, portid, group, error);
+	return netlink_set_err(READ_ONCE(net->nfnl), portid, group, error);
 }
 EXPORT_SYMBOL_GPL(nfnetlink_set_err);
 
@@ -152,7 +152,7 @@ int nfnetlink_unicast(struct sk_buff *skb, struct net *net, u32 portid)
 {
 	int err;
 
-	err = nlmsg_unicast(net->nfnl, skb, portid);
+	err = nlmsg_unicast(READ_ONCE(net->nfnl), skb, portid);
 	if (err == -EAGAIN)
 		err = -ENOBUFS;
 
@@ -220,7 +220,7 @@ replay:
 		}
 
 		if (nc->call_rcu) {
-			err = nc->call_rcu(net, net->nfnl, skb, nlh,
+			err = nc->call_rcu(net, READ_ONCE(net->nfnl), skb, nlh,
 					   (const struct nlattr **)cda,
 					   extack);
 			rcu_read_unlock();
@@ -231,7 +231,7 @@ replay:
 			    nfnetlink_find_client(type, ss) != nc)
 				err = -EAGAIN;
 			else if (nc->call)
-				err = nc->call(net, net->nfnl, skb, nlh,
+				err = nc->call(net, READ_ONCE(net->nfnl), skb, nlh,
 					       (const struct nlattr **)cda,
 					       extack);
 			else
@@ -435,7 +435,7 @@ replay:
 				goto ack;
 
 			if (nc->call_batch) {
-				err = nc->call_batch(net, net->nfnl, skb, nlh,
+				err = nc->call_batch(net, READ_ONCE(net->nfnl), skb, nlh,
 						     (const struct nlattr **)cda,
 						     &extack);
 			}
@@ -611,7 +611,7 @@ static void __net_exit nfnetlink_net_exit_batch(struct list_head *net_exit_list)
 	struct net *net;
 
 	list_for_each_entry(net, net_exit_list, exit_list)
-		RCU_INIT_POINTER(net->nfnl, NULL);
+		WRITE_ONCE(net->nfnl, NULL);
 	synchronize_net();
 	list_for_each_entry(net, net_exit_list, exit_list)
 		netlink_kernel_release(net->nfnl_stash);
