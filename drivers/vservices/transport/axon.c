@@ -529,12 +529,6 @@ transport_get_mbuf_service_id(struct vs_transport_axon *transport,
 	return id;
 }
 
-static void
-__transport_get_service_info(struct vs_mv_service_info *service_info)
-{
-	kref_get(&service_info->kref);
-}
-
 static struct vs_mv_service_info *
 transport_get_service_info(struct vs_service_device *service)
 {
@@ -542,8 +536,8 @@ transport_get_service_info(struct vs_service_device *service)
 
 	rcu_read_lock();
 	service_info = rcu_dereference(service->transport_priv);
-	if (service_info)
-		__transport_get_service_info(service_info);
+	if (service_info && !kref_get_unless_zero(&service_info->kref))
+		service_info = NULL;
 	rcu_read_unlock();
 
 	return service_info;
@@ -2118,7 +2112,10 @@ static void transport_service_remove(struct vs_transport *_transport,
 
 	__clear_bit(service->id, transport->service_bitmap);
 
-	service_info = service->transport_priv;
+	/* Registration failures remove the service before device_add succeeds. */
+	service_info = rcu_dereference_protected(service->transport_priv,
+						 lockdep_is_held(&service->ready_lock) ||
+						 !device_is_registered(&service->dev));
 	rcu_assign_pointer(service->transport_priv, NULL);
 
 	if (service_info->ready) {
@@ -2174,8 +2171,9 @@ static int transport_service_start(struct vs_transport *_transport,
 			transport->axon_dev, "Start service - id = %d\n",
 			service->id);
 
-	service_info = service->transport_priv;
-	__transport_get_service_info(service_info);
+	service_info = transport_get_service_info(service);
+	if (!service_info)
+		return -ENODEV;
 
 	/* We shouldn't have any mbufs left from before the last reset. */
 	if (WARN_ON(atomic_read(&service_info->outstanding_frees))) {
@@ -2286,8 +2284,9 @@ static int transport_service_reset(struct vs_transport *_transport,
 			transport->axon_dev, "Reset service - id = %d\n",
 			service->id);
 
-	service_info = service->transport_priv;
-	__transport_get_service_info(service_info);
+	service_info = transport_get_service_info(service);
+	if (!service_info)
+		return -ENODEV;
 
 	/*
 	 * Clear the ready bit with the tasklet disabled. After this point,
@@ -2397,11 +2396,9 @@ static ssize_t transport_service_send_avail(struct vs_transport *_transport,
 	struct vs_mv_service_info *service_info;
 	ssize_t count = 0;
 
-	service_info = service->transport_priv;
+	service_info = transport_get_service_info(service);
 	if (!service_info)
 		return -EINVAL;
-
-	__transport_get_service_info(service_info);
 
 	count = service->send_quota -
 		atomic_read(&service_info->send_inflight);
