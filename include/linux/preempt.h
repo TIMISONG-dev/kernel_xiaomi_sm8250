@@ -186,8 +186,6 @@ do { \
 #define preemptible()	(preempt_count() == 0 && !irqs_disabled())
 
 #ifdef CONFIG_PREEMPT
-asmlinkage void preempt_schedule_irq(void);
-
 #define preempt_enable() \
 do { \
 	barrier(); \
