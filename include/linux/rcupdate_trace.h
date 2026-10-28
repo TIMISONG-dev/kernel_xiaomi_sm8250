@@ -31,14 +31,14 @@ static inline int rcu_read_lock_trace_held(void)
 
 #ifdef CONFIG_TASKS_TRACE_RCU
 
-void rcu_read_unlock_trace_special(struct task_struct *t, int nesting);
+void rcu_read_unlock_trace_special(struct task_struct *t);
 
 /**
  * rcu_read_lock_trace - mark beginning of RCU-trace read-side critical section
  *
- * When synchronize_rcu_tasks_trace() is invoked by one task, then that
- * task is guaranteed to block until all other tasks exit their read-side
- * critical sections.  Similarly, if call_rcu_tasks_trace() is invoked on one
+ * When synchronize_rcu_trace() is invoked by one task, then that task
+ * is guaranteed to block until all other tasks exit their read-side
+ * critical sections.  Similarly, if call_rcu_trace() is invoked on one
  * task while other tasks are within RCU read-side critical sections,
  * invocation of the corresponding RCU callback is deferred until after
  * the all the other tasks exit their critical sections.
@@ -69,11 +69,10 @@ static inline void rcu_read_unlock_trace(void)
 
 	rcu_lock_release(&rcu_trace_lock_map);
 	nesting = READ_ONCE(t->trc_reader_nesting) - 1;
-	if (likely(!READ_ONCE(t->trc_reader_need_end)) || nesting) {
-		WRITE_ONCE(t->trc_reader_nesting, nesting);
+	WRITE_ONCE(t->trc_reader_nesting, nesting);
+	if (likely(!READ_ONCE(t->trc_reader_need_end)) || nesting)
 		return;  // We assume shallow reader nesting.
-	}
-	rcu_read_unlock_trace_special(t, nesting);
+	rcu_read_unlock_trace_special(t);
 }
 
 void call_rcu_tasks_trace(struct rcu_head *rhp, rcu_callback_t func);
