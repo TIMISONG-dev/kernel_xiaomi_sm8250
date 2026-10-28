@@ -111,13 +111,17 @@ static inline void rb_link_node(struct rb_node *node, struct rb_node *parent,
 	*rb_link = node;
 }
 
+/* RCU readers of the generic links need an annotated pointer view. */
+#define rb_node_rcu(link) \
+	(*((struct rb_node __rcu **)&(link)))
+
 static inline void rb_link_node_rcu(struct rb_node *node, struct rb_node *parent,
 				    struct rb_node **rb_link)
 {
 	node->__rb_parent_color = (unsigned long)parent;
 	node->rb_left = node->rb_right = NULL;
 
-	rcu_assign_pointer(*rb_link, node);
+	rcu_assign_pointer(rb_node_rcu(*rb_link), node);
 }
 
 #define rb_entry_safe(ptr, type, member) \
