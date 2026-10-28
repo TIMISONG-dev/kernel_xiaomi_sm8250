@@ -171,7 +171,7 @@ struct fsnotify_group {
 					 * response */
 	struct list_head marks_list;	/* all inode marks for this group */
 
-	struct fasync_struct *fsn_fa;    /* async notification */
+	struct fasync_struct __rcu *fsn_fa;    /* async notification */
 
 	struct fsnotify_event *overflow_event;	/* Event we queue when the
 						 * notification list is too

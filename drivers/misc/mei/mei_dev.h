@@ -224,7 +224,7 @@ struct mei_cl {
 	wait_queue_head_t rx_wait;
 	wait_queue_head_t wait;
 	wait_queue_head_t ev_wait;
-	struct fasync_struct *ev_async;
+	struct fasync_struct __rcu *ev_async;
 	int status;
 	struct mei_me_client *me_cl;
 	const struct file *fp;

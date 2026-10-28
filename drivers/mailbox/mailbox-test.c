@@ -46,7 +46,7 @@ struct mbox_test_device {
 	spinlock_t		lock;
 	struct mutex		mutex;
 	wait_queue_head_t	waitq;
-	struct fasync_struct	*async_queue;
+	struct fasync_struct	__rcu *async_queue;
 };
 
 static ssize_t mbox_test_signal_write(struct file *filp,

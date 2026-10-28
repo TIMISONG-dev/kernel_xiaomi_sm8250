@@ -87,7 +87,7 @@ struct qrc_dev {
 	struct mutex mutex;
 	wait_queue_head_t r_wait;
 	wait_queue_head_t w_wait;
-	struct fasync_struct *async_queue;
+	struct fasync_struct __rcu *async_queue;
 	struct cdev cdev;
 	struct device *dev;
 	void *data;

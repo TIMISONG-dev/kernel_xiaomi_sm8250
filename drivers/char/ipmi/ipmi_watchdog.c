@@ -152,7 +152,7 @@ static char preop[16] = "preop_none";
 static DEFINE_SPINLOCK(ipmi_read_lock);
 static char data_to_read;
 static DECLARE_WAIT_QUEUE_HEAD(read_q);
-static struct fasync_struct *fasync_q;
+static struct fasync_struct __rcu *fasync_q;
 static atomic_t pretimeout_since_last_heartbeat;
 static char expect_close;
 
