@@ -235,7 +235,7 @@ struct port {
 	char *name;
 
 	/* We can notify apps of host connect / disconnect events via SIGIO */
-	struct fasync_struct *async_queue;
+	struct fasync_struct __rcu *async_queue;
 
 	/* The 'id' to identify the port with the Host */
 	u32 id;

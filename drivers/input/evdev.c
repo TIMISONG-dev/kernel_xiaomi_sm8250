@@ -47,7 +47,7 @@ struct evdev_client {
 	unsigned int tail;
 	unsigned int packet_head; /* [future] position of the first element of next packet */
 	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	struct evdev *evdev;
 	struct list_head node;
 	enum input_clock_type clk_type;

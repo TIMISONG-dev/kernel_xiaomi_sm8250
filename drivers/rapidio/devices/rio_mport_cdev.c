@@ -201,7 +201,7 @@ struct mport_dev {
  */
 struct mport_cdev_priv {
 	struct mport_dev	*md;
-	struct fasync_struct	*async_queue;
+	struct fasync_struct	__rcu *async_queue;
 	struct list_head	list;
 	struct list_head	db_filters;
 	struct list_head        pw_filters;

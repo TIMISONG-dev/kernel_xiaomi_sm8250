@@ -61,7 +61,7 @@
 #include "mpt3sas_ctl.h"
 
 
-static struct fasync_struct *async_queue;
+static struct fasync_struct __rcu *async_queue;
 static DECLARE_WAIT_QUEUE_HEAD(ctl_poll_wait);
 
 

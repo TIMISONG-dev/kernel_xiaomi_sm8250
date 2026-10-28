@@ -172,7 +172,7 @@ MODULE_DEVICE_TABLE(pci, megasas_pci_table);
 
 static int megasas_mgmt_majorno;
 struct megasas_mgmt_info megasas_mgmt_info;
-static struct fasync_struct *megasas_async_queue;
+static struct fasync_struct __rcu *megasas_async_queue;
 static DEFINE_MUTEX(megasas_async_queue_mutex);
 
 static int megasas_poll_wait_aen;

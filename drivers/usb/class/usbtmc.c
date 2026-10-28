@@ -106,7 +106,7 @@ struct usbtmc_device_data {
 	struct kref kref;
 	struct mutex io_mutex;	/* only one i/o function running at a time */
 	wait_queue_head_t waitq;
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	spinlock_t dev_lock; /* lock for file_list */
 };
 #define to_usbtmc_data(d) container_of(d, struct usbtmc_device_data, kref)

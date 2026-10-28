@@ -53,7 +53,7 @@ struct hiddev_list {
 	int head;
 	int tail;
 	unsigned flags;
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	struct hiddev *hiddev;
 	struct list_head node;
 	struct mutex thread_lock;

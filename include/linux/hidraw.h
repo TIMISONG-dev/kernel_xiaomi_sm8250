@@ -36,7 +36,7 @@ struct hidraw_list {
 	struct hidraw_report buffer[HIDRAW_BUFFER_SIZE];
 	int head;
 	int tail;
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	struct hidraw *hidraw;
 	struct list_head node;
 	struct mutex read_mutex;

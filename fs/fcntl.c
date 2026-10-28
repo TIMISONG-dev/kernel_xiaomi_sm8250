@@ -860,14 +860,19 @@ static void fasync_free_rcu(struct rcu_head *head)
  * match the state "is the filp on a fasync list".
  *
  */
-int fasync_remove_entry(struct file *filp, struct fasync_struct **fapp)
+int fasync_remove_entry(struct file *filp, struct fasync_struct __rcu **fapp)
 {
-	struct fasync_struct *fa, **fp;
+	struct fasync_struct *fa;
+	struct fasync_struct __rcu **fp;
 	int result = 0;
 
 	spin_lock(&filp->f_lock);
 	spin_lock(&fasync_lock);
-	for (fp = fapp; (fa = *fp) != NULL; fp = &fa->fa_next) {
+	for (fp = fapp; ; fp = &fa->fa_next) {
+		fa = rcu_dereference_protected(*fp,
+					       lockdep_is_held(&fasync_lock));
+		if (!fa)
+			break;
 		if (fa->fa_file != filp)
 			continue;
 
@@ -875,7 +880,8 @@ int fasync_remove_entry(struct file *filp, struct fasync_struct **fapp)
 		fa->fa_file = NULL;
 		write_unlock_irq(&fa->fa_lock);
 
-		*fp = fa->fa_next;
+		rcu_assign_pointer(*fp, rcu_dereference_protected(fa->fa_next,
+								  lockdep_is_held(&fasync_lock)));
 		call_rcu(&fa->fa_rcu, fasync_free_rcu);
 		filp->f_flags &= ~FASYNC;
 		result = 1;
@@ -908,13 +914,20 @@ void fasync_free(struct fasync_struct *new)
  * NOTE! It is very important that the FASYNC flag always
  * match the state "is the filp on a fasync list".
  */
-struct fasync_struct *fasync_insert_entry(int fd, struct file *filp, struct fasync_struct **fapp, struct fasync_struct *new)
+struct fasync_struct *fasync_insert_entry(int fd, struct file *filp,
+					  struct fasync_struct __rcu **fapp,
+					  struct fasync_struct *new)
 {
-        struct fasync_struct *fa, **fp;
+	struct fasync_struct *fa;
+	struct fasync_struct __rcu **fp;
 
 	spin_lock(&filp->f_lock);
 	spin_lock(&fasync_lock);
-	for (fp = fapp; (fa = *fp) != NULL; fp = &fa->fa_next) {
+	for (fp = fapp; ; fp = &fa->fa_next) {
+		fa = rcu_dereference_protected(*fp,
+					       lockdep_is_held(&fasync_lock));
+		if (!fa)
+			break;
 		if (fa->fa_file != filp)
 			continue;
 
@@ -928,7 +941,9 @@ struct fasync_struct *fasync_insert_entry(int fd, struct file *filp, struct fasy
 	new->magic = FASYNC_MAGIC;
 	new->fa_file = filp;
 	new->fa_fd = fd;
-	new->fa_next = *fapp;
+	RCU_INIT_POINTER(new->fa_next,
+			 rcu_dereference_protected(*fapp,
+						   lockdep_is_held(&fasync_lock)));
 	rcu_assign_pointer(*fapp, new);
 	filp->f_flags |= FASYNC;
 
@@ -942,7 +957,8 @@ out:
  * Add a fasync entry. Return negative on error, positive if
  * added, and zero if did nothing but change an existing one.
  */
-static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fapp)
+static int fasync_add_entry(int fd, struct file *filp,
+			    struct fasync_struct __rcu **fapp)
 {
 	struct fasync_struct *new;
 
@@ -971,7 +987,8 @@ static int fasync_add_entry(int fd, struct file *filp, struct fasync_struct **fa
  * lease code. It returns negative on error, 0 if it did no changes
  * and positive if it added/deleted the entry.
  */
-int fasync_helper(int fd, struct file * filp, int on, struct fasync_struct **fapp)
+int fasync_helper(int fd, struct file *filp, int on,
+		  struct fasync_struct __rcu **fapp)
 {
 	if (!on)
 		return fasync_remove_entry(filp, fapp);
@@ -1008,12 +1025,12 @@ static void kill_fasync_rcu(struct fasync_struct *fa, int sig, int band)
 	}
 }
 
-void kill_fasync(struct fasync_struct **fp, int sig, int band)
+void kill_fasync(struct fasync_struct __rcu **fp, int sig, int band)
 {
 	/* First a quick test without locking: usually
 	 * the list is empty.
 	 */
-	if (*fp) {
+	if (rcu_access_pointer(*fp)) {
 		rcu_read_lock();
 		kill_fasync_rcu(rcu_dereference(*fp), sig, band);
 		rcu_read_unlock();

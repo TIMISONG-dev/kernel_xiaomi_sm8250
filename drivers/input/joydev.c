@@ -65,7 +65,7 @@ struct joydev_client {
 	int tail;
 	int startup;
 	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	struct joydev *joydev;
 	struct list_head node;
 };

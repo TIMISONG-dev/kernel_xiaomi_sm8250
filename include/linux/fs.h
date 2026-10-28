@@ -1098,7 +1098,7 @@ struct file_lock {
 	loff_t fl_start;
 	loff_t fl_end;
 
-	struct fasync_struct *	fl_fasync; /* for lease break notifications */
+	struct fasync_struct __rcu *fl_fasync; /* for lease break notifications */
 	/* for lease breaks: */
 	unsigned long fl_break_time;
 	unsigned long fl_downgrade_time;
@@ -1333,7 +1333,7 @@ struct fasync_struct {
 	rwlock_t		fa_lock;
 	int			magic;
 	int			fa_fd;
-	struct fasync_struct	*fa_next; /* singly linked list */
+	struct fasync_struct	__rcu *fa_next; /* singly linked list */
 	struct file		*fa_file;
 	struct rcu_head		fa_rcu;
 };
@@ -1341,14 +1341,17 @@ struct fasync_struct {
 #define FASYNC_MAGIC 0x4601
 
 /* SMP safe fasync helpers: */
-extern int fasync_helper(int, struct file *, int, struct fasync_struct **);
-extern struct fasync_struct *fasync_insert_entry(int, struct file *, struct fasync_struct **, struct fasync_struct *);
-extern int fasync_remove_entry(struct file *, struct fasync_struct **);
+int fasync_helper(int fd, struct file *filp, int on,
+		  struct fasync_struct __rcu **fapp);
+struct fasync_struct *fasync_insert_entry(int fd, struct file *filp,
+					  struct fasync_struct __rcu **fapp,
+					  struct fasync_struct *new);
+int fasync_remove_entry(struct file *filp, struct fasync_struct __rcu **fapp);
 extern struct fasync_struct *fasync_alloc(void);
 extern void fasync_free(struct fasync_struct *);
 
 /* can be called from interrupts */
-extern void kill_fasync(struct fasync_struct **, int, int);
+void kill_fasync(struct fasync_struct __rcu **fp, int sig, int band);
 
 extern void __f_setown(struct file *filp, struct pid *, enum pid_type, int force);
 extern int f_setown(struct file *filp, unsigned long arg, int force);
