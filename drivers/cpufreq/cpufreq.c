@@ -271,8 +271,6 @@ EXPORT_SYMBOL_GPL(cpufreq_cpu_put);
 
 /**
  * adjust_jiffies - adjust the system "loops_per_jiffy"
- * @val: frequency transition event, CPUFREQ_PRECHANGE or CPUFREQ_POSTCHANGE
- * @ci: old and new frequencies and flags for the transition
  *
  * This function alters the system "loops_per_jiffy" for the clock
  * speed change. Note that loops_per_jiffy cannot be updated on SMP
@@ -499,7 +497,6 @@ EXPORT_SYMBOL_GPL(cpufreq_disable_fast_switch);
 /**
  * cpufreq_driver_resolve_freq - Map a target frequency to a driver-supported
  * one.
- * @policy: CPU frequency policy supplying limits and the frequency table
  * @target_freq: target frequency to resolve.
  *
  * The target to driver frequency mapping is cached in the policy.
@@ -599,8 +596,6 @@ static struct cpufreq_governor *find_governor(const char *str_governor)
 
 /**
  * cpufreq_parse_governor - parse a governor string
- * @str_governor: requested governor name
- * @policy: policy receiving the parsed policy type or referenced governor
  */
 static int cpufreq_parse_governor(char *str_governor,
 				  struct cpufreq_policy *policy)
@@ -649,11 +644,10 @@ static int cpufreq_parse_governor(char *str_governor,
 }
 
 /**
- * show_one - define a CPU frequency policy sysfs show callback
- * @file_name: sysfs attribute suffix used to name the callback
- * @object: unsigned integer policy member to print
+ * cpufreq_per_cpu_attr_read() / show_##file_name() -
+ * print out cpufreq information
  *
- * Write out the selected policy member; @object must be
+ * Write out information from cpufreq_driver->policy[cpu]; object must be
  * "unsigned int".
  */
 
@@ -719,9 +713,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
 				struct cpufreq_policy *new_policy);
 
 /**
- * store_one - define a CPU frequency policy limit sysfs store callback
- * @file_name: sysfs attribute suffix used to name the callback
- * @object: policy limit member to parse, validate and update
+ * cpufreq_per_cpu_attr_write() / store_##file_name() - sysfs write access
  */
 #define store_one(file_name, object)			\
 static ssize_t store_##file_name					\
@@ -751,8 +743,6 @@ store_one(scaling_max_freq, max);
 
 /**
  * show_cpuinfo_cur_freq - current CPU frequency as detected by hardware
- * @policy: CPU frequency policy for the sysfs attribute
- * @buf: output buffer receiving hardware-reported current frequency in kHz
  */
 static ssize_t show_cpuinfo_cur_freq(struct cpufreq_policy *policy,
 					char *buf)
@@ -767,8 +757,6 @@ static ssize_t show_cpuinfo_cur_freq(struct cpufreq_policy *policy,
 
 /**
  * show_scaling_governor - show the current policy for the specified CPU
- * @policy: CPU frequency policy for the sysfs attribute
- * @buf: output buffer receiving active governor or fixed policy name
  */
 static ssize_t show_scaling_governor(struct cpufreq_policy *policy, char *buf)
 {
@@ -784,9 +772,6 @@ static ssize_t show_scaling_governor(struct cpufreq_policy *policy, char *buf)
 
 /**
  * store_scaling_governor - store policy for the specified CPU
- * @policy: CPU frequency policy whose governor is changed
- * @buf: input buffer containing the requested governor name
- * @count: number of bytes in @buf
  */
 static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 					const char *buf, size_t count)
@@ -814,8 +799,6 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 
 /**
  * show_scaling_driver - show the cpufreq driver currently loaded
- * @policy: CPU frequency policy for the sysfs attribute
- * @buf: output buffer receiving registered driver name
  */
 static ssize_t show_scaling_driver(struct cpufreq_policy *policy, char *buf)
 {
@@ -824,8 +807,6 @@ static ssize_t show_scaling_driver(struct cpufreq_policy *policy, char *buf)
 
 /**
  * show_scaling_available_governors - show the available CPUfreq governors
- * @policy: CPU frequency policy for the sysfs attribute
- * @buf: output buffer receiving available governor names
  */
 static ssize_t show_scaling_available_governors(struct cpufreq_policy *policy,
 						char *buf)
@@ -869,8 +850,6 @@ EXPORT_SYMBOL_GPL(cpufreq_show_cpus);
 /**
  * show_related_cpus - show the CPUs affected by each transition even if
  * hw coordination is in use
- * @policy: CPU frequency policy for the sysfs attribute
- * @buf: output buffer receiving CPUs sharing the policy, including offline CPUs
  */
 static ssize_t show_related_cpus(struct cpufreq_policy *policy, char *buf)
 {
@@ -879,8 +858,6 @@ static ssize_t show_related_cpus(struct cpufreq_policy *policy, char *buf)
 
 /**
  * show_affected_cpus - show the CPUs affected by each transition
- * @policy: CPU frequency policy for the sysfs attribute
- * @buf: output buffer receiving online CPUs sharing the policy
  */
 static ssize_t show_affected_cpus(struct cpufreq_policy *policy, char *buf)
 {
@@ -915,8 +892,6 @@ static ssize_t show_scaling_setspeed(struct cpufreq_policy *policy, char *buf)
 
 /**
  * show_bios_limit - show the current cpufreq HW/BIOS limitation
- * @policy: CPU frequency policy for the sysfs attribute
- * @buf: output buffer receiving hardware frequency limit in kHz
  */
 static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 {
@@ -1497,8 +1472,6 @@ unlock:
 
 /**
  * cpufreq_remove_dev - remove a CPU device
- * @dev: CPU device whose cpufreq interface is being removed
- * @sif: CPU bus subsystem interface invoking this callback (unused)
  *
  * Removes the cpufreq interface for a CPU device.
  */
@@ -2244,7 +2217,6 @@ EXPORT_SYMBOL_GPL(cpufreq_unregister_governor);
  * cpufreq_get_policy - get the current cpufreq_policy
  * @policy: struct cpufreq_policy into which the current cpufreq_policy
  *	is written
- * @cpu: CPU whose current policy is copied
  *
  * Reads the current cpufreq policy.
  */
@@ -2635,7 +2607,6 @@ EXPORT_SYMBOL_GPL(cpufreq_register_driver);
 
 /**
  * cpufreq_unregister_driver - unregister the current CPUFreq driver
- * @driver: registered driver to remove; must match the active driver
  *
  * Unregister the current CPUFreq driver. Only call this if you have
  * the right to do so, i.e. if you have succeeded in initialising before!
