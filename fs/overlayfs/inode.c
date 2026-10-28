@@ -595,7 +595,8 @@ static void ovl_fill_inode(struct inode *inode, umode_t mode, dev_t rdev,
 	inode->i_mode = mode;
 	inode->i_flags |= S_NOCMTIME;
 #ifdef CONFIG_FS_POSIX_ACL
-	inode->i_acl = inode->i_default_acl = ACL_DONT_CACHE;
+	RCU_INIT_POINTER(inode->i_acl, ACL_DONT_CACHE);
+	RCU_INIT_POINTER(inode->i_default_acl, ACL_DONT_CACHE);
 #endif
 
 	ovl_lockdep_annotate_inode_mutex_key(inode);
