@@ -239,7 +239,7 @@ static enum hrtimer_restart hrtick(struct hrtimer *timer)
 
 	rq_lock(rq, &rf);
 	update_rq_clock(rq);
-	rq_curr_locked(rq)->sched_class->task_tick(rq, rq_curr_locked(rq), 1);
+	rq->curr->sched_class->task_tick(rq, rq->curr, 1);
 	rq_unlock(rq, &rf);
 
 	return HRTIMER_NORESTART;
@@ -508,7 +508,7 @@ void wake_up_q(struct wake_q_head *head)
  */
 void resched_curr(struct rq *rq)
 {
-	struct task_struct *curr = rq_curr_locked(rq);
+	struct task_struct *curr = rq->curr;
 	int cpu;
 
 	lockdep_assert_held(&rq->lock);
@@ -1582,11 +1582,11 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
 {
 	const struct sched_class *class;
 
-	if (p->sched_class == rq_curr_locked(rq)->sched_class) {
-		rq_curr_locked(rq)->sched_class->check_preempt_curr(rq, p, flags);
+	if (p->sched_class == rq->curr->sched_class) {
+		rq->curr->sched_class->check_preempt_curr(rq, p, flags);
 	} else {
 		for_each_class(class) {
-			if (class == rq_curr_locked(rq)->sched_class)
+			if (class == rq->curr->sched_class)
 				break;
 			if (class == p->sched_class) {
 				resched_curr(rq);
@@ -1599,7 +1599,7 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
 	 * A queue event has occurred, and we're going to schedule.  In
 	 * this case, we can save a useless back to back clock update.
 	 */
-	if (task_on_rq_queued(rq_curr_locked(rq)) && test_tsk_need_resched(rq_curr_locked(rq)))
+	if (task_on_rq_queued(rq->curr) && test_tsk_need_resched(rq->curr))
 		rq_clock_skip_update(rq);
 }
 
@@ -2597,7 +2597,7 @@ void wake_up_if_idle(int cpu)
 		trace_sched_wake_idle_without_ipi(cpu);
 	} else {
 		rq_lock_irqsave(rq, &rf);
-		if (is_idle_task(rq_curr_locked(rq)))
+		if (is_idle_task(rq->curr))
 			smp_send_reschedule(cpu);
 		/* Else CPU is not idle, do nothing here: */
 		rq_unlock_irqrestore(rq, &rf);
@@ -2733,7 +2733,7 @@ static inline void walt_try_to_wake_up(struct task_struct *p)
 	rq_lock_irqsave(rq, &rf);
 	old_load = task_load(p);
 	wallclock = sched_ktime_clock();
-	update_task_ravg(rq_curr_locked(rq), rq, TASK_UPDATE, wallclock, 0);
+	update_task_ravg(rq->curr, rq, TASK_UPDATE, wallclock, 0);
 	update_task_ravg(p, rq, TASK_WAKE, wallclock, 0);
 	note_task_waking(p, wallclock);
 	rq_unlock_irqrestore(rq, &rf);
@@ -2936,7 +2936,7 @@ static void try_to_wake_up_local(struct task_struct *p, struct rq_flags *rf)
 	if (!task_on_rq_queued(p)) {
 		u64 wallclock = sched_ktime_clock();
 
-		update_task_ravg(rq_curr_locked(rq), rq, TASK_UPDATE, wallclock, 0);
+		update_task_ravg(rq->curr, rq, TASK_UPDATE, wallclock, 0);
 		update_task_ravg(p, rq, TASK_WAKE, wallclock, 0);
 
 		if (p->in_iowait) {
@@ -3944,7 +3944,7 @@ void scheduler_tick(void)
 {
 	int cpu = smp_processor_id();
 	struct rq *rq = cpu_rq(cpu);
-	struct task_struct *curr = current;
+	struct task_struct *curr = rq->curr;
 	struct rq_flags rf;
 	u64 wallclock;
 	bool early_notif;
@@ -3959,7 +3959,7 @@ void scheduler_tick(void)
 	old_load = task_load(curr);
 	set_window_start(rq);
 	wallclock = sched_ktime_clock();
-	update_task_ravg(rq_curr_locked(rq), rq, TASK_UPDATE, wallclock, 0);
+	update_task_ravg(rq->curr, rq, TASK_UPDATE, wallclock, 0);
 	update_rq_clock(rq);
 	curr->sched_class->task_tick(rq, curr, 0);
 	cpu_load_update_active(rq);
@@ -4057,7 +4057,7 @@ static void sched_tick_remote(struct work_struct *work)
 		goto out_requeue;
 
 	rq_lock_irq(rq, &rf);
-	curr = rq_curr_locked(rq);
+	curr = rq->curr;
 	if (is_idle_task(curr) || cpu_is_offline(cpu))
 		goto out_unlock;
 
@@ -4372,7 +4372,7 @@ static void __sched notrace __schedule(bool preempt)
 
 	cpu = smp_processor_id();
 	rq = cpu_rq(cpu);
-	prev = current;
+	prev = rq->curr;
 
 	schedule_debug(prev);
 
@@ -8844,7 +8844,7 @@ void sched_exit(struct task_struct *p)
 
 	/* rq->curr == p */
 	wallclock = sched_ktime_clock();
-	update_task_ravg(rq_curr_locked(rq), rq, TASK_UPDATE, wallclock, 0);
+	update_task_ravg(rq->curr, rq, TASK_UPDATE, wallclock, 0);
 	dequeue_task(rq, p, 0);
 	/*
 	 * task's contribution is already removed from the
