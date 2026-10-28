@@ -118,7 +118,7 @@ struct ib_uverbs_event_queue {
 	spinlock_t				lock;
 	int					is_closed;
 	wait_queue_head_t			poll_wait;
-	struct fasync_struct		       *async_queue;
+	struct fasync_struct		       __rcu *async_queue;
 	struct list_head			event_list;
 };
 

@@ -61,7 +61,7 @@ struct usb_yurex {
 	struct kref		kref;
 	struct mutex		io_mutex;
 	unsigned long		disconnected:1;
-	struct fasync_struct	*async_queue;
+	struct fasync_struct	__rcu *async_queue;
 	wait_queue_head_t	waitq;
 
 	spinlock_t		lock;

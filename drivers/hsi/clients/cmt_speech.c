@@ -57,7 +57,7 @@ struct cs_char {
 	unsigned long		mmap_base;
 	unsigned long		mmap_size;
 	spinlock_t		lock;
-	struct fasync_struct	*async_queue;
+	struct fasync_struct	__rcu *async_queue;
 	wait_queue_head_t	wait;
 	/* hsi channel ids */
 	int                     channel_id_cmd;

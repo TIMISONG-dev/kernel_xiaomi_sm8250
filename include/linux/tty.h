@@ -325,7 +325,7 @@ struct tty_struct {
 	int flow_change;
 
 	struct tty_struct *link;
-	struct fasync_struct *fasync;
+	struct fasync_struct __rcu *fasync;
 	wait_queue_head_t write_wait;
 	wait_queue_head_t read_wait;
 	struct work_struct hangup_work;

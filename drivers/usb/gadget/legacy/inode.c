@@ -119,7 +119,7 @@ struct dev_data {
 	enum ep0_state			state;		/* P: lock */
 	struct usb_gadgetfs_event	event [N_EVENT];
 	unsigned			ev_next;
-	struct fasync_struct		*fasync;
+	struct fasync_struct		__rcu *fasync;
 	u8				current_config;
 
 	/* drivers reading ep0 MUST handle control requests (SETUP)
