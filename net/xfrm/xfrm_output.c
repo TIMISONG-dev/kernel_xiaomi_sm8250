@@ -291,10 +291,10 @@ void xfrm_local_error(struct sk_buff *skb, int mtu)
 	else
 		return;
 
-	afinfo = xfrm_state_get_afinfo(proto);
-	if (afinfo) {
+	rcu_read_lock();
+	afinfo = xfrm_state_afinfo_get_rcu(proto);
+	if (afinfo)
 		afinfo->local_error(skb, mtu);
-		rcu_read_unlock();
-	}
+	rcu_read_unlock();
 }
 EXPORT_SYMBOL_GPL(xfrm_local_error);
