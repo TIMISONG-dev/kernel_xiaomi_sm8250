@@ -316,6 +316,8 @@ void bam_pipe_halt(void *base, u32 pipe, bool halt);
  * Return: virtual memory pointer
  */
 void *spsi_get_mem_ptr(phys_addr_t phys_addr);
+int spsi_get_iomem_ptr(phys_addr_t phys_addr, const void *base, u32 size,
+		       void __iomem **io_base);
 
 /**
  * sps_mem_alloc_io() - Allocate I/O (pipe) memory
