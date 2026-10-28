@@ -2542,7 +2542,7 @@ void __d_lookup_done(struct dentry *dentry)
 }
 EXPORT_SYMBOL(__d_lookup_done);
 
-/* inode->i_lock held if inode is non-NULL */
+/* Caller retains inode->i_lock if inode is non-NULL. */
 
 static inline void __d_add(struct dentry *dentry, struct inode *inode)
 {
@@ -2566,8 +2566,6 @@ static inline void __d_add(struct dentry *dentry, struct inode *inode)
 	if (dir)
 		end_dir_add(dir, n);
 	spin_unlock(&dentry->d_lock);
-	if (inode)
-		spin_unlock(&inode->i_lock);
 }
 
 /**
@@ -2584,8 +2582,11 @@ void d_add(struct dentry *entry, struct inode *inode)
 	if (inode) {
 		security_d_instantiate(entry, inode);
 		spin_lock(&inode->i_lock);
+		__d_add(entry, inode);
+		spin_unlock(&inode->i_lock);
+	} else {
+		__d_add(entry, NULL);
 	}
-	__d_add(entry, inode);
 }
 EXPORT_SYMBOL(d_add);
 
@@ -2910,8 +2911,10 @@ struct dentry *d_splice_alias(struct inode *inode, struct dentry *dentry)
 
 	BUG_ON(!d_unhashed(dentry));
 
-	if (!inode)
-		goto out;
+	if (!inode) {
+		__d_add(dentry, NULL);
+		return NULL;
+	}
 
 	security_d_instantiate(dentry, inode);
 	spin_lock(&inode->i_lock);
@@ -2948,8 +2951,8 @@ struct dentry *d_splice_alias(struct inode *inode, struct dentry *dentry)
 			return new;
 		}
 	}
-out:
 	__d_add(dentry, inode);
+	spin_unlock(&inode->i_lock);
 	return NULL;
 }
 EXPORT_SYMBOL(d_splice_alias);
