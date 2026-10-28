@@ -1216,7 +1216,8 @@ no_thread_group:
 
 		write_lock_irq(&tasklist_lock);
 		spin_lock(&oldsighand->siglock);
-		rcu_assign_pointer(tsk->sighand, newsighand);
+		/* Publish initialized actions to the sighand snapshot reader. */
+		smp_store_release(&tsk->sighand, newsighand);
 		spin_unlock(&oldsighand->siglock);
 		write_unlock_irq(&tasklist_lock);
 
