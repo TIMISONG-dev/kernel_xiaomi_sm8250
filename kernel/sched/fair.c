@@ -914,7 +914,7 @@ static void update_curr(struct cfs_rq *cfs_rq)
 
 static void update_curr_fair(struct rq *rq)
 {
-	update_curr(cfs_rq_of(&rq_curr_locked(rq)->se));
+	update_curr(cfs_rq_of(&rq->curr->se));
 }
 
 static inline void
@@ -2390,7 +2390,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
 	}
 
 	rcu_read_lock();
-	tsk = rcu_dereference(cpu_rq(cpu)->curr);
+	tsk = READ_ONCE(cpu_rq(cpu)->curr);
 
 	if (!cpupid_match_pid(tsk, cpupid))
 		goto no_join;
@@ -4900,7 +4900,7 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
 	}
 
 	/* Determine whether we need to wake up potentially idle CPU: */
-	if (rq_curr_locked(rq) == rq->idle && rq->cfs.nr_running)
+	if (rq->curr == rq->idle && rq->cfs.nr_running)
 		resched_curr(rq);
 }
 
@@ -5445,7 +5445,7 @@ static void hrtick_start_fair(struct rq *rq, struct task_struct *p)
  */
 static void hrtick_update(struct rq *rq)
 {
-	struct task_struct *curr = rq_curr_locked(rq);
+	struct task_struct *curr = rq->curr;
 
 	if (!hrtick_enabled(rq) || curr->sched_class != &fair_sched_class)
 		return;
@@ -7078,7 +7078,7 @@ static void find_best_target(struct sched_domain *sd, cpumask_t *cpus,
 				most_spare_cap_cpu = i;
 			}
 
-			if (per_task_boost(rcu_dereference(cpu_rq(i)->curr)) ==
+			if (per_task_boost(cpu_rq(i)->curr) ==
 					TASK_BOOST_STRICT_MAX)
 				continue;
 			/*
@@ -7798,7 +7798,7 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu,
 		goto eas_not_ready;
 
 	is_rtg = task_in_related_thread_group(p);
-	curr_is_rtg = task_in_related_thread_group(rcu_dereference_sched(cpu_rq(cpu)->curr));
+	curr_is_rtg = task_in_related_thread_group(cpu_rq(cpu)->curr);
 
 	fbt_env.fastpath = 0;
 	fbt_env.need_idle = need_idle;
@@ -8191,7 +8191,7 @@ static void set_skip_buddy(struct sched_entity *se)
  */
 static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
 {
-	struct task_struct *curr = rq_curr_locked(rq);
+	struct task_struct *curr = rq->curr;
 	struct sched_entity *se = &curr->se, *pse = &p->se;
 	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
 	int scale = cfs_rq->nr_running >= sched_nr_latency;
@@ -8435,7 +8435,7 @@ static void put_prev_task_fair(struct rq *rq, struct task_struct *prev)
  */
 static void yield_task_fair(struct rq *rq)
 {
-	struct task_struct *curr = rq_curr_locked(rq);
+	struct task_struct *curr = rq->curr;
 	struct cfs_rq *cfs_rq = task_cfs_rq(curr);
 	struct sched_entity *se = &curr->se;
 
@@ -9211,7 +9211,7 @@ static void update_blocked_averages(int cpu)
 			done = false;
 	}
 
-	curr_class = rq_curr_locked(rq)->sched_class;
+	curr_class = rq->curr->sched_class;
 	update_rt_rq_load_avg(rq_clock_pelt(rq), rq, curr_class == &rt_sched_class);
 	update_dl_rq_load_avg(rq_clock_pelt(rq), rq, curr_class == &dl_sched_class);
 	update_irq_load_avg(rq, 0);
@@ -9285,7 +9285,7 @@ static inline void update_blocked_averages(int cpu)
 	update_rq_clock(rq);
 	update_cfs_rq_load_avg(cfs_rq_clock_pelt(cfs_rq), cfs_rq);
 
-	curr_class = rq_curr_locked(rq)->sched_class;
+	curr_class = rq->curr->sched_class;
 	update_rt_rq_load_avg(rq_clock_pelt(rq), rq, curr_class == &rt_sched_class);
 	update_dl_rq_load_avg(rq_clock_pelt(rq), rq, curr_class == &dl_sched_class);
 	update_irq_load_avg(rq, 0);
@@ -10563,7 +10563,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
 		if (env->sd->flags & SD_ASYM_CPUCAPACITY &&
 		    capacity_of(env->dst_cpu) < capacity &&
 		    (rq->nr_running == 1 ||
-			 (rq->nr_running == 2 && task_util(rcu_dereference(rq->curr)) <
+			 (rq->nr_running == 2 && task_util(rq->curr) <
 			  sched_small_task_threshold)))
 			continue;
 
@@ -10931,8 +10931,8 @@ no_move:
 			 * moved to this_cpu:
 			 */
 			if (!cpumask_test_cpu(this_cpu,
-						&rq_curr_locked(busiest)->cpus_allowed)
-				|| !can_migrate_boosted_task(rq_curr_locked(busiest),
+						&busiest->curr->cpus_allowed)
+				|| !can_migrate_boosted_task(busiest->curr,
 						cpu_of(busiest), this_cpu)) {
 				raw_spin_unlock_irqrestore(&busiest->lock,
 							    flags);
@@ -12325,7 +12325,7 @@ static void switched_to_fair(struct rq *rq, struct task_struct *p)
  */
 static void set_curr_task_fair(struct rq *rq)
 {
-	struct sched_entity *se = &rq_curr_locked(rq)->se;
+	struct sched_entity *se = &rq->curr->se;
 
 	for_each_sched_entity(se) {
 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
@@ -13038,8 +13038,8 @@ void check_for_migration(struct rq *rq, struct task_struct *p)
 	int ret;
 
 	if (rq->misfit_task_load) {
-		if (p->state != TASK_RUNNING ||
-		    p->nr_cpus_allowed == 1)
+		if (rq->curr->state != TASK_RUNNING ||
+		    rq->curr->nr_cpus_allowed == 1)
 			return;
 
 		if (task_will_be_throttled(p))
