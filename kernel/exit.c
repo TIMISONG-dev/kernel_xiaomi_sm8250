@@ -144,8 +144,8 @@ static void __exit_signal(struct task_struct *tsk)
 	struct tty_struct *tty;
 	u64 utime, stime;
 
-	sighand = rcu_dereference_check(tsk->sighand,
-					lockdep_tasklist_lock_is_held());
+	lockdep_assert_held(&tasklist_lock);
+	sighand = READ_ONCE(tsk->sighand);
 	spin_lock(&sighand->siglock);
 
 #ifdef CONFIG_POSIX_TIMERS
@@ -209,7 +209,7 @@ static void __exit_signal(struct task_struct *tsk)
 	 * doing sigqueue_free() if we have SIGQUEUE_PREALLOC signals.
 	 */
 	flush_sigqueue(&tsk->pending);
-	tsk->sighand = NULL;
+	WRITE_ONCE(tsk->sighand, NULL);
 	spin_unlock(&sighand->siglock);
 
 	__cleanup_sighand(sighand);
