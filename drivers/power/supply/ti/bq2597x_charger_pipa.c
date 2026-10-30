@@ -2395,7 +2395,7 @@ static int bq2597x_check_vbus_error_status(struct bq2597x *bq)
 
 	ret = bq2597x_read_byte(bq, BQ2597X_REG_0A, &stat);
 	if (!ret) {
-		bq_info("BQ2597X_REG_0A:0x%02x\n", stat);
+		dev_dbg(bq->dev, "BQ2597X_REG_0A:0x%02x\n", stat);
 		if (stat & VBUS_ERROR_LOW_MASK)
 			return VBUS_ERROR_LOW;
 		else if (stat & VBUS_ERROR_HIGH_MASK)
