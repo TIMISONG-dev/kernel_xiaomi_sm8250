@@ -1694,8 +1694,10 @@ static int kgsl_iommu_start(struct kgsl_mmu *mmu)
 
 	if (mmu->defaultpagetable != NULL && !mmu->globalpt_mapped) {
 		status = kgsl_iommu_map_globals(mmu->defaultpagetable);
-		if (status)
+		if (status) {
+			kgsl_iommu_disable_clk(mmu);
 			return status;
+		}
 
 		mmu->globalpt_mapped = true;
 	}
