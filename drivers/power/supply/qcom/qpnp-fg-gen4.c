@@ -209,6 +209,7 @@
 #define FIRST_LOG_CURRENT_v2_OFFSET	0
 
 #define DEFAULT_FFC_TERM_CURRENT	1000
+#define FG_GEN4_MAX_REPL_TEMP_ZONES	4
 static struct fg_irq_info fg_irqs[FG_GEN4_IRQ_MAX];
 
 /* DT parameters for FG device */
@@ -232,6 +233,8 @@ struct fg_dt_props {
 	const char *replacement_battery_type;
 	int	replacement_capacity_max_mah;
 	int	replacement_cl_max_inc;
+	const char *replacement_temp_zones[FG_GEN4_MAX_REPL_TEMP_ZONES];
+	int	replacement_temp_zone_count;
 	int	*dec_rate_seq;
 	int	dec_rate_len;
 	int	cutoff_volt_mv;
@@ -355,6 +358,8 @@ struct fg_gen4_chip {
 	bool			soc_scale_mode;
 	bool			fastcharge_mode_enabled;
 	bool			replacement_profile_fallback;
+	struct thermal_zone_device *replacement_tz[FG_GEN4_MAX_REPL_TEMP_ZONES];
+	int			replacement_temp_notified;
 	int			cl_max_cap_inc_normal;
 	int			profile_max_voltage_uv;
 	int                     hw_country;
@@ -924,6 +929,51 @@ static int fg_gen4_get_battery_temp(struct fg_dev *fg, int *val)
 	return 0;
 }
 
+#define REPL_BOARD_TEMP_MIN_DECIDEGC	(-400)
+#define REPL_BOARD_TEMP_MAX_DECIDEGC	1200
+
+/*
+ * Unidentified replacement packs may not carry a thermistor matching the
+ * shared profile, so their reading cannot be trusted to show heating.
+ * Report at least the hottest valid board thermistor near the battery.
+ * Identified packs and the FG's internal algorithms keep the pack reading.
+ */
+static int fg_gen4_get_reported_batt_temp(struct fg_dev *fg, int *val)
+{
+	struct fg_gen4_chip *chip = container_of(fg, struct fg_gen4_chip, fg);
+	struct thermal_zone_device *tz;
+	int i, rc, board_temp;
+
+	rc = fg_gen4_get_battery_temp(fg, val);
+	if (rc < 0 || fg->fake_temp != -EINVAL ||
+	    !READ_ONCE(chip->replacement_profile_fallback))
+		return rc;
+
+	for (i = 0; i < chip->dt.replacement_temp_zone_count; i++) {
+		tz = READ_ONCE(chip->replacement_tz[i]);
+		if (!tz) {
+			tz = thermal_zone_get_zone_by_name(
+					chip->dt.replacement_temp_zones[i]);
+			/* The ADC thermal zones may register after the FG. */
+			if (IS_ERR(tz))
+				continue;
+			WRITE_ONCE(chip->replacement_tz[i], tz);
+		}
+
+		if (thermal_zone_get_temp(tz, &board_temp))
+			continue;
+
+		board_temp /= 100;
+		if (board_temp < REPL_BOARD_TEMP_MIN_DECIDEGC ||
+		    board_temp > REPL_BOARD_TEMP_MAX_DECIDEGC)
+			continue;
+
+		*val = max(*val, board_temp);
+	}
+
+	return 0;
+}
+
 static int fg_gen4_tz_get_temp(void *data, int *temperature)
 {
 	struct fg_dev *fg = (struct fg_dev *)data;
@@ -932,7 +982,7 @@ static int fg_gen4_tz_get_temp(void *data, int *temperature)
 	if (!temperature)
 		return -EINVAL;
 
-	rc = fg_gen4_get_battery_temp(fg, &temp);
+	rc = fg_gen4_get_reported_batt_temp(fg, &temp);
 	if (rc < 0)
 		return rc;
 
@@ -5478,7 +5528,7 @@ static int fg_psy_get_property(struct power_supply *psy,
 		rc = fg_get_sram_prop(fg, FG_SRAM_IBAT_FLT, &pval->intval);
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
-		rc = fg_gen4_get_battery_temp(fg, &pval->intval);
+		rc = fg_gen4_get_reported_batt_temp(fg, &pval->intval);
 		break;
 	case POWER_SUPPLY_PROP_RESISTANCE:
 		rc = fg_get_battery_resistance(fg, &pval->intval);
@@ -6890,7 +6940,7 @@ static int fg_gen4_parse_cl_params_dt(struct fg_gen4_chip *chip)
 	struct fg_dev *fg = &chip->fg;
 	struct device_node *node = fg->dev->of_node;
 	u32 temp;
-	int rc;
+	int i, rc;
 
 	chip->cl->dt.max_start_soc = DEFAULT_CL_START_SOC;
 	of_property_read_u32(node, "qcom,cl-start-capacity",
@@ -6932,6 +6982,24 @@ static int fg_gen4_parse_cl_params_dt(struct fg_gen4_chip *chip)
 	/* Old DTs retain their legacy fallback and normal learning policy. */
 	if (!chip->dt.replacement_battery_type)
 		chip->dt.replacement_capacity_learning = false;
+
+	if (chip->dt.replacement_battery_type &&
+	    of_find_property(node, "qcom,replacement-batt-temp-zones", NULL)) {
+		rc = of_property_read_string_array(node,
+				"qcom,replacement-batt-temp-zones",
+				chip->dt.replacement_temp_zones,
+				FG_GEN4_MAX_REPL_TEMP_ZONES);
+		if (rc <= 0)
+			return -EINVAL;
+		chip->dt.replacement_temp_zone_count = rc;
+
+		/* These zones report this driver's own value. */
+		for (i = 0; i < rc; i++) {
+			if (!strcmp(chip->dt.replacement_temp_zones[i], "bms") ||
+			    !strcmp(chip->dt.replacement_temp_zones[i], "battery"))
+				return -EINVAL;
+		}
+	}
 
 	chip->dt.replacement_capacity_max_mah = DEFAULT_REPL_CAP_MAX_MAH;
 	chip->dt.replacement_cl_max_inc = DEFAULT_REPL_CL_MAX_INC_DECIPERC;
@@ -7576,9 +7644,20 @@ static void soc_monitor_work(struct work_struct *work)
 	if (rc < 0)
 		pr_err("failed to get battery capacity, rc=%d\n", rc);
 
-	rc = fg_gen4_get_battery_temp(fg, &fg->param.batt_temp);
+	rc = fg_gen4_get_reported_batt_temp(fg, &fg->param.batt_temp);
 	if (rc < 0)
 		pr_err("failed to get battery temperature, rc=%d\n", rc);
+
+	/*
+	 * Board-led changes do not raise the FG delta-temperature interrupt;
+	 * let JEITA observe them once they move by at least 1 degC.
+	 */
+	if (!rc && READ_ONCE(chip->replacement_profile_fallback) &&
+	    chip->dt.replacement_temp_zone_count && fg->batt_psy &&
+	    abs(fg->param.batt_temp - chip->replacement_temp_notified) >= 10) {
+		chip->replacement_temp_notified = fg->param.batt_temp;
+		power_supply_changed(fg->batt_psy);
+	}
 
 	if (chip->dt.cutoff_voltage_adjust_enable) {
 		if (fg->param.batt_temp < LOW_DISCHARGE_TEMP_TRH ) {
