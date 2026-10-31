@@ -126,6 +126,8 @@ static DEFINE_PER_CPU(struct cpu_pmu, cpu_pmu_evs) = {
 	.sfd.lock = __RAW_SPIN_LOCK_UNLOCKED(cpu_pmu_evs.sfd.lock)
 };
 
+static DEFINE_PER_CPU(bool, fie_cpu_ready);
+
 static DEFINE_PER_CPU_READ_MOSTLY(bool, cpu_has_amu);
 static DEFINE_PER_CPU_READ_MOSTLY(bool, cpu_has_amu_const);
 static DEFINE_PER_CPU_READ_MOSTLY(u32, cpu_max_freq);
@@ -212,10 +214,10 @@ static void release_perf_events(int cpu)
 	int i;
 
 	for (i = 0; i < PMU_EVT_MAX; i++) {
-		if (IS_ERR(cpev->pev[i]))
-			break;
-
+		if (IS_ERR_OR_NULL(cpev->pev[i]))
+			continue;
 		perf_event_release_kernel(cpev->pev[i]);
+		cpev->pev[i] = NULL;
 	}
 }
 
@@ -232,20 +234,23 @@ static int create_perf_events(int cpu)
 		 */
 		.config1 = 0x1
 	};
-	int i;
+	int i, ret;
 
 	for (i = 0; i < PMU_EVT_MAX; i++) {
 		attr.config = pmu_evt_id[i];
 		cpev->pev[i] = create_pev(&attr, cpu);
-		if (WARN_ON(IS_ERR(cpev->pev[i])))
+		if (IS_ERR(cpev->pev[i])) {
+			ret = PTR_ERR(cpev->pev[i]);
+			cpev->pev[i] = NULL;
 			goto release_pevs;
+		}
 	}
 
 	return 0;
 
 release_pevs:
 	release_perf_events(cpu);
-	return PTR_ERR(cpev->pev[i]);
+	return ret;
 }
 
 /*
@@ -561,6 +566,9 @@ static void update_cpu_hw_throttle(void)
 	if (htd->const_cyc < cpu_min_sample_cntpct)
 		goto reset_stats;
 
+	if (!htd->cpu_cyc)
+		goto reset_stats;
+
 	/* Calculate the measured frequency */
 	max_freq = per_cpu(cpu_max_freq, cpu);
 	ns = cntpct_to_ns(htd->const_cyc);
@@ -708,7 +716,7 @@ static void update_freq_scale(int cpu, struct rq *rq, bool local_cpu)
 	 * the system timer doesn't.
 	 */
 	if (rq->cpu == cpu) {
-		if (sfd->const_cyc >= cpu_min_sample_cntpct) {
+		if (sfd->const_cyc >= cpu_min_sample_cntpct && sfd->cpu_cyc) {
 			u64 max_freq = per_cpu(cpu_max_freq, cpu);
 			u64 freq, ns = cntpct_to_ns(sfd->const_cyc);
 
@@ -756,7 +764,9 @@ void fie_update_rq_clock(struct rq *rq)
 		return;
 
 	/* Don't race with CPU hotplug for this CPU or the runqueue's CPU */
-	if (unlikely(!cpu_active(cpu) || !cpu_active(rq->cpu)))
+	if (unlikely(!cpu_active(cpu) || !cpu_active(rq->cpu) ||
+		     !READ_ONCE(per_cpu(fie_cpu_ready, cpu)) ||
+		     !READ_ONCE(per_cpu(fie_cpu_ready, rq->cpu))))
 		return;
 
 	/*
@@ -793,6 +803,9 @@ void fie_tick_entry(void)
 	if (!static_branch_unlikely(&fie_ready))
 		return;
 
+	if (!READ_ONCE(per_cpu(fie_cpu_ready, raw_smp_processor_id())))
+		return;
+
 	update_cpu_hw_throttle();
 }
 
@@ -808,7 +821,7 @@ static void fie_cpu_idle(int cpu, bool idle)
 		return;
 
 	/* Don't race with CPU hotplug */
-	if (unlikely(!cpu_active(cpu)))
+	if (unlikely(!cpu_active(cpu) || !READ_ONCE(per_cpu(fie_cpu_ready, cpu))))
 		return;
 
 	set_cpu_hw_throttle_idle(cpu, idle);
@@ -875,11 +888,14 @@ static int fie_cpuhp_up(unsigned int cpu)
 #endif
 	per_cpu(cpu_has_amu, cpu) = has_amu;
 	per_cpu(cpu_has_amu_const, cpu) = has_amu;
+	per_cpu(fie_cpu_ready, cpu) = false;
 
 	if (!has_amu) {
 		ret = create_perf_events(cpu);
-		if (ret)
-			return ret;
+		if (ret) {
+			pr_warn_ratelimited("FIE: CPU%u: perf events failed (%d), FIE off on this CPU\n", cpu, ret);
+			return 0;
+		}
 	}
 
 	/* Initialize the pointers to the saved CPU stats */
@@ -903,13 +919,18 @@ static int fie_cpuhp_up(unsigned int cpu)
 
 	/* Clear the hardware throttle idle flag for this CPU */
 	set_cpu_hw_throttle_idle(cpu, false);
+	WRITE_ONCE(per_cpu(fie_cpu_ready, cpu), true);
 	return 0;
 }
 
 static int fie_cpuhp_down(unsigned int cpu)
 {
-	topology_clear_scale_freq_source(SCALE_FREQ_SOURCE_ARCH,
-					 cpumask_of(cpu));
+	bool was_ready = per_cpu(fie_cpu_ready, cpu);
+
+	WRITE_ONCE(per_cpu(fie_cpu_ready, cpu), false);
+	topology_clear_scale_freq_source(SCALE_FREQ_SOURCE_ARCH, cpumask_of(cpu));
+	if (!was_ready)
+		return 0;
 	if (!per_cpu(cpu_has_amu, cpu))
 		release_perf_events(cpu);
 
