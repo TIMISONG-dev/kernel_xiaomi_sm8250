@@ -567,6 +567,9 @@ static void update_cpu_hw_throttle(void)
 	if (htd->const_cyc < cpu_min_sample_cntpct)
 		goto reset_stats;
 
+	if (!htd->cpu_cyc)
+		goto reset_stats;
+
 	/* Calculate the measured frequency */
 	max_freq = per_cpu(cpu_max_freq, cpu);
 	ns = cntpct_to_ns(htd->const_cyc);
@@ -714,7 +717,7 @@ static void update_freq_scale(int cpu, struct rq *rq, bool local_cpu)
 	 * the system timer doesn't.
 	 */
 	if (rq->cpu == cpu) {
-		if (sfd->const_cyc >= cpu_min_sample_cntpct) {
+		if (sfd->const_cyc >= cpu_min_sample_cntpct && sfd->cpu_cyc) {
 			u64 max_freq = per_cpu(cpu_max_freq, cpu);
 			u64 freq, ns = cntpct_to_ns(sfd->const_cyc);
 
