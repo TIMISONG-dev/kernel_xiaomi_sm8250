@@ -629,6 +629,11 @@ this file is for attribution only of alioth
 	qcom,replacement-battery-type = "K11A_custom";
 	qcom,replacement-capacity-max-mah = <5300>;
 	qcom,replacement-cl-max-increment = <20>;
+	/*
+	 * Non-stock packs may not match the profile thermistor. Report at
+	 * least the board thermistors beside the battery and charger.
+	 */
+	qcom,replacement-batt-temp-zones = "quiet_therm", "charger_therm0";
 	qcom,soc_decimal_rate = <
 		0  38
 		10 35
