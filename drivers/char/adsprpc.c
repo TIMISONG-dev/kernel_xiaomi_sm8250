@@ -3229,9 +3229,9 @@ static int fastrpc_mmap_on_dsp(struct fastrpc_file *fl, uint32_t flags,
 	ioctl.crc = NULL;
 	VERIFY(err, 0 == (err = fastrpc_internal_invoke(fl,
 		FASTRPC_MODE_PARALLEL, 1, &ioctl)));
-	*raddr = (uintptr_t)routargs.vaddrout;
 	if (err)
 		goto bail;
+	*raddr = (uintptr_t)routargs.vaddrout;
 	if (flags == ADSP_MMAP_REMOTE_HEAP_ADDR) {
 		VERIFY(err, cid >= ADSP_DOMAIN_ID && cid < NUM_CHANNELS);
 		if (err) {
@@ -3248,15 +3248,17 @@ static int fastrpc_mmap_on_dsp(struct fastrpc_file *fl, uint32_t flags,
 				me->channel[cid].rhvm.vmperm,
 				me->channel[cid].rhvm.vmcount);
 		if (err) {
+			int unmap_err;
+
 			pr_err("adsprpc: %s: %s: rh hyp assign failed with %d for phys 0x%llx, size %zd\n",
 					__func__, current->comm,
 					err, phys, size);
-			err = fastrpc_unmap_on_dsp(fl,
-				*raddr, phys, size, flags);
-			if (err) {
+			unmap_err = fastrpc_unmap_on_dsp(fl, *raddr,
+							 phys, size, flags);
+			if (unmap_err) {
 				pr_err("adsprpc: %s: %s: failed to unmap %d for phys 0x%llx, size %zd\n",
 					__func__, current->comm,
-					err, phys, size);
+					unmap_err, phys, size);
 			}
 			goto bail;
 		}
@@ -3290,7 +3292,6 @@ static int fastrpc_munmap_on_dsp_rh(struct fastrpc_file *fl, uint64_t phys,
 	if (flags == ADSP_MMAP_HEAP_ADDR) {
 		struct fastrpc_ioctl_invoke_crc ioctl;
 		remote_arg_t ra[2];
-		int err = 0;
 		struct {
 			uint8_t skey;
 		} routargs;
@@ -3352,8 +3353,8 @@ static int fastrpc_munmap_on_dsp(struct fastrpc_file *fl, uintptr_t raddr,
 		goto bail;
 	if (flags == ADSP_MMAP_HEAP_ADDR ||
 				flags == ADSP_MMAP_REMOTE_HEAP_ADDR) {
-		VERIFY(err, !fastrpc_munmap_on_dsp_rh(fl, phys, size,
-						flags, 0));
+		VERIFY(err, !(err = fastrpc_munmap_on_dsp_rh(fl, phys, size,
+							     flags, 0)));
 		if (err)
 			goto bail;
 	}
