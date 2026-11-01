@@ -1449,6 +1449,8 @@ static struct request *__get_request(struct request_list *rl, unsigned int op,
 	rq->rq_flags = rq_flags;
 	if (flags & BLK_MQ_REQ_PREEMPT)
 		rq->rq_flags |= RQF_PREEMPT;
+	if (flags & BLK_MQ_REQ_PM)
+		rq->rq_flags |= RQF_PM;
 
 	/* init elvpriv */
 	if (rq_flags & RQF_ELVPRIV) {
