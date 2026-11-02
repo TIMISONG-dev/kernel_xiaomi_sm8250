@@ -648,10 +648,12 @@ static void *fast_smmu_alloc(struct device *dev, size_t size,
 	*handle = DMA_ERROR_CODE;
 	size = ALIGN(size, SZ_4K);
 
-	if (atomic_pool && !gfpflags_allow_blocking(gfp))
+	if (!gfpflags_allow_blocking(gfp)) {
+		if (!atomic_pool)
+			return NULL;
 		return fast_smmu_alloc_atomic(mapping, size, gfp, attrs, handle,
 					      is_coherent);
-	else if (attrs & DMA_ATTR_FORCE_CONTIGUOUS)
+	} else if (attrs & DMA_ATTR_FORCE_CONTIGUOUS)
 		return __fast_smmu_alloc_contiguous(dev, size, handle, gfp,
 						    attrs);
 
