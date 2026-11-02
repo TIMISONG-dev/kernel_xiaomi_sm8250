@@ -224,7 +224,6 @@ static void ch101_set_freq(struct ch101_data *data, int freq)
 	data->period = ns_to_ktime((NSEC_PER_SEC / freq));
 }
 
-extern int is_sensor_connected(int ind);
 
 static int ch101_read_raw(struct iio_dev *indio_dev,
 		struct iio_chan_spec const *chan, int *val, int *val2,
@@ -321,7 +320,6 @@ static int ch101_read_raw(struct iio_dev *indio_dev,
 	}
 }
 
-void set_output_samples(int ind, int val);
 
 static int ch101_write_raw(struct iio_dev *indio_dev,
 		const struct iio_chan_spec *chan, int val, int val2, long mask)
@@ -495,6 +493,8 @@ static int ch101_push_to_buffer(void *input_data)
 		pbuf += sizeof(u64);
 		ret = iio_push_to_buffers_with_timestamp(indio_dev, buf,
 						starting_ts);
+		if (ret)
+			dev_err_ratelimited(dev, "Failed to push sample: %d\n", ret);
 
 		pr_info(TAG "push tobuffer=%d, size=%d\n", i,
 			(int)(pbuf-buf));
@@ -1128,10 +1128,16 @@ int ch101_core_probe(struct i2c_client *client, struct regmap *regmap,
 	dev_info(dev, "%s: data->period: %d\n", __func__, data->period);
 
 	{
-	static struct task_struct *thread_st;
+	struct task_struct *thread_st;
 
 	thread_st = kthread_run(control_thread_fn, data,
 		"CH101 Control Thread");
+	if (IS_ERR(thread_st)) {
+		ret = PTR_ERR(thread_st);
+		iio_device_unregister(indio_dev);
+		iio_triggered_buffer_cleanup(indio_dev);
+		goto error_dmp_sysfs;
+	}
 	}
 
 	dev_info(dev, "%s: End\n", __func__);

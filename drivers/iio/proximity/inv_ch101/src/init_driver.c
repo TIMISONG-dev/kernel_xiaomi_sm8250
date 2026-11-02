@@ -122,7 +122,7 @@ void set_chirp_buffer(struct ch101_buffer *buffer)
 	_ch101_buffer = buffer;
 }
 
-struct ch101_buffer *get_chirp_buffer(void)
+static struct ch101_buffer *get_chirp_buffer(void)
 {
 	return _ch101_buffer;
 }
@@ -307,6 +307,9 @@ static struct ch_group_t *init_group(void)
 			}
 		}
 	}
+
+	if (chirp_error)
+		pr_err("Chirp device initialization failed: %u\n", chirp_error);
 
 	return grp_ptr;
 }
@@ -761,7 +764,7 @@ void config_driver(void)
 	set_ch101_pitch_catch_config();
 }
 
-void set_complete(void)
+static void set_complete(void)
 {
 	struct ch101_client *data = get_chirp_data();
 

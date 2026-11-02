@@ -35,15 +35,10 @@ void set_chirp_gpios(struct ch101_client *client)
 	printf("%s: data: %p\n", __func__, _ch101_client);
 }
 
-struct ch101_client *get_chirp_gpios(void)
-{
-	return _ch101_client;
-}
-
-struct gpio_desc *os_get_pin_desc(ioport_pin_t pin)
+static struct gpio_desc *os_get_pin_desc(ioport_pin_t pin)
 {
 	if (!_ch101_client)
-		return 0;
+		return NULL;
 	if (pin == CHIRP_RST)
 		return _ch101_client->gpios.gpiod_rst;
 	if (pin == CHIRP_RST_PS)
@@ -61,14 +56,14 @@ struct gpio_desc *os_get_pin_desc(ioport_pin_t pin)
 	if (pin == CHIRP1_INT_2)
 		return _ch101_client->bus[1].gpiod_int[2];
 	if (pin >= CHIRP0_PROG_0 && pin <= CHIRP2_PROG_2)
-		return 0;
+		return NULL;
 
 	printf("%s: pin: %d undefined\n", __func__, (u32)pin);
 
-	return 0;
+	return NULL;
 }
 
-u32 os_get_pin_prog(ioport_pin_t pin)
+static u32 os_get_pin_prog(ioport_pin_t pin)
 {
 	if (!_ch101_client)
 		return 0;
@@ -90,7 +85,7 @@ u32 os_get_pin_prog(ioport_pin_t pin)
 	return 0;
 }
 
-void prog_set_dir(ioport_pin_t pin, enum ioport_direction dir)
+static void prog_set_dir(ioport_pin_t pin, enum ioport_direction dir)
 {
 	struct ch101_client *data = get_chirp_data();
 
@@ -98,7 +93,7 @@ void prog_set_dir(ioport_pin_t pin, enum ioport_direction dir)
 		data->cbk->set_pin_dir(pin, dir);
 }
 
-void prog_set_level(ioport_pin_t pin, bool level)
+static void prog_set_level(ioport_pin_t pin, bool level)
 {
 	struct ch101_client *data = get_chirp_data();
 
@@ -250,7 +245,7 @@ void os_delay_ms(const uint16_t ms)
 	msleep(ms);
 }
 
-u64 os_timestamp_ns(void)
+static u64 os_timestamp_ns(void)
 {
 	struct timespec ts;
 

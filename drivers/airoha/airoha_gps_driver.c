@@ -209,7 +209,7 @@ static int xiaomi_uart_probe(struct platform_device *pdev)
 	cdev_init(gps_dev, &gps_cdev_ops);
 	cdev_add(gps_dev, gps_dev_number, 1);
 	gps_class = class_create(THIS_MODULE, AIROHA_GPS_DEVICE_NAME);
-	device_create(gps_class, NULL, gps_dev_number, 0,
+	device_create(gps_class, NULL, gps_dev_number, NULL,
 		      AIROHA_GPS_DEVICE_NAME);
 
 	pctrl = devm_pinctrl_get(&pdev->dev);
