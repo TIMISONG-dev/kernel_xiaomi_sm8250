@@ -567,7 +567,7 @@ static ssize_t restrict_cur_store(struct class *c, struct class_attribute *attr,
 			qcom_batt_class);
 	unsigned long val;
 
-	if (kstrtoul(ubuf, 10, &val))
+	if (kstrtoul(ubuf, 10, &val) || val > INT_MAX)
 		return -EINVAL;
 
 	chip->restricted_current = val;
