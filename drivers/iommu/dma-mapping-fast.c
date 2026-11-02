@@ -537,8 +537,10 @@ out_free_iova:
 	__fast_smmu_free_iova(mapping, dma_addr, size);
 	spin_unlock_irqrestore(&mapping->lock, flags);
 out_free_page:
-	coherent ? __free_pages(page, get_order(size)) :
-		   __free_from_pool(addr, size);
+	if (coherent)
+		__free_pages(page, get_order(size));
+	else
+		__free_from_pool(addr, size);
 	return NULL;
 }
 
@@ -646,10 +648,12 @@ static void *fast_smmu_alloc(struct device *dev, size_t size,
 	*handle = DMA_ERROR_CODE;
 	size = ALIGN(size, SZ_4K);
 
-	if (atomic_pool && !gfpflags_allow_blocking(gfp))
+	if (!gfpflags_allow_blocking(gfp)) {
+		if (!atomic_pool)
+			return NULL;
 		return fast_smmu_alloc_atomic(mapping, size, gfp, attrs, handle,
 					      is_coherent);
-	else if (attrs & DMA_ATTR_FORCE_CONTIGUOUS)
+	} else if (attrs & DMA_ATTR_FORCE_CONTIGUOUS)
 		return __fast_smmu_alloc_contiguous(dev, size, handle, gfp,
 						    attrs);
 
