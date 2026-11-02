@@ -1254,6 +1254,11 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 #ifdef CONFIG_US_PROXIMITY
 	} else if (data->opcode == MI_ULTRASOUND_OPCODE) {
 		if (NULL != data->payload) {
+			if (data->payload_size < 4 * sizeof(uint32_t)) {
+				pr_err("%s: MIUS payload too short: %d\n",
+				       __func__, data->payload_size);
+				return -EINVAL;
+			}
 			printk(KERN_DEBUG "[MIUS] mi ultrasound afe afe cb");
 			mius_process_apr_payload(data->payload);
 		} else
@@ -1266,6 +1271,11 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 			AFE_CMD_RSP_REMOTE_LPASS_CORE_HW_VOTE_REQUEST) {
 		uint32_t *payload = data->payload;
 
+		if (!payload || data->payload_size < sizeof(*payload)) {
+			pr_err("%s: Invalid LPASS vote response size %d\n",
+			       __func__, data->payload_size);
+			return -EINVAL;
+		}
 		pr_debug("%s: AFE_CMD_RSP_REMOTE_LPASS_CORE_HW_VOTE_REQUEST handle %d\n",
 			__func__, payload[0]);
 		if (data->token < AFE_LPASS_CORE_HW_VOTE_MAX)
