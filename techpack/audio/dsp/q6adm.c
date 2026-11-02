@@ -2255,7 +2255,8 @@ static int send_adm_cal_block(int port_id, int copp_idx,
 	mem_hdr.mem_map_handle = cal_block->map_data.q6map_handle;
 	payload_size = cal_block->cal_data.size;
 
-	adm_set_pp_params(port_id, copp_idx, &mem_hdr, NULL, payload_size);
+	result = adm_set_pp_params(port_id, copp_idx, &mem_hdr, NULL,
+				   payload_size);
 
 done:
 	return result;
