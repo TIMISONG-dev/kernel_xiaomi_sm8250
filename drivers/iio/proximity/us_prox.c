@@ -19,6 +19,7 @@
 #include <linux/errno.h>
 #include <linux/types.h>
 #include <linux/mutex.h>
+#include <linux/spinlock.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/delay.h>
@@ -36,6 +37,7 @@
 #define US_PROX_IIO_NAME "distance"
 
 static struct us_prox_data *g_us_prox;
+static DEFINE_SPINLOCK(us_prox_lock);
 
 struct us_prox_data {
 	struct platform_device *pdev;
@@ -123,7 +125,8 @@ exit_free_trigger:
 
 int us_afe_callback(int data)
 {
-	int ret;
+	unsigned long flags;
+	int ret = 0;
 	struct us_prox_el_data el_data;
 	struct timespec ts;
 
@@ -136,13 +139,14 @@ int us_afe_callback(int data)
 	else
 		el_data.data1 = 5;
 
-	if (g_us_prox) {
+	spin_lock_irqsave(&us_prox_lock, flags);
+	if (g_us_prox)
 		ret = iio_push_to_buffers(g_us_prox->prox_idev,
 					  (unsigned char *)&el_data);
-		if (ret < 0)
-			pr_err("%s: failed to push us prox data to buffer, err=%d\n",
-			       __func__, ret);
-	}
+	spin_unlock_irqrestore(&us_prox_lock, flags);
+	if (ret < 0)
+		pr_err("%s: failed to push us prox data to buffer, err=%d\n",
+		       __func__, ret);
 
 	return 0;
 }
@@ -252,6 +256,7 @@ static int us_proximity_teardown(struct us_prox_data *data)
 
 static int us_prox_probe(struct platform_device *pdev)
 {
+	unsigned long flags;
 	int ret = 0;
 	struct us_prox_data *us_prox;
 
@@ -264,14 +269,18 @@ static int us_prox_probe(struct platform_device *pdev)
 	us_prox->pdev = pdev;
 	dev_set_drvdata(&pdev->dev, us_prox);
 
-	g_us_prox = us_prox;
-
 	mutex_init(&us_prox->mutex);
 	ret = us_proximity_iio_setup(us_prox);
 	if (ret < 0) {
 		pr_err("%s: iio setup failed ret = %d\n", __func__, ret);
+		dev_set_drvdata(&pdev->dev, NULL);
+		kfree(us_prox);
 		return ret;
 	}
+
+	spin_lock_irqsave(&us_prox_lock, flags);
+	g_us_prox = us_prox;
+	spin_unlock_irqrestore(&us_prox_lock, flags);
 
 	pr_info("%s: end\n", __func__);
 	return ret;
@@ -279,6 +288,7 @@ static int us_prox_probe(struct platform_device *pdev)
 
 static int us_prox_remove(struct platform_device *pdev)
 {
+	unsigned long flags;
 	struct us_prox_data *us_prox;
 
 	us_prox = dev_get_drvdata(&pdev->dev);
@@ -286,6 +296,9 @@ static int us_prox_remove(struct platform_device *pdev)
 	dev_set_drvdata(&pdev->dev, NULL);
 
 	if (us_prox) {
+		spin_lock_irqsave(&us_prox_lock, flags);
+		g_us_prox = NULL;
+		spin_unlock_irqrestore(&us_prox_lock, flags);
 		us_proximity_teardown(us_prox);
 		kfree(us_prox);
 	}
