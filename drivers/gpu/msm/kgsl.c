@@ -5663,6 +5663,7 @@ static int __init kgsl_core_init(void)
 		&kgsl_driver.worker, "kgsl_worker_thread");
 
 	if (IS_ERR(kgsl_driver.worker_thread)) {
+		result = PTR_ERR(kgsl_driver.worker_thread);
 		pr_err("kgsl: unable to start kgsl thread\n");
 		goto err;
 	}
