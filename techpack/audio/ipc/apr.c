@@ -612,8 +612,8 @@ void apr_cb_func(void *buf, int len, void *priv)
 		return;
 	}
 
-	if (hdr->pkt_size < APR_HDR_SIZE) {
-		pr_err("APR: Wrong paket size\n");
+	if (hdr->pkt_size < APR_HDR_SIZE || hdr->pkt_size > len) {
+		pr_err("APR: Wrong packet size\n");
 		return;
 	}
 
