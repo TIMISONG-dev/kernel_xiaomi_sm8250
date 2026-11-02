@@ -67,7 +67,7 @@ oled_wp_info_setup(char *str)
 }
 __setup("androidboot.oled_wp=", oled_wp_info_setup);
 
-static int dsi_display_set_disp_param(struct drm_connector *connector,
+int dsi_display_set_disp_param(struct drm_connector *connector,
 			u32 param_type)
 {
 	struct dsi_display *display = NULL;
