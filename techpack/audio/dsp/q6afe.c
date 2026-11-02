@@ -1722,8 +1722,11 @@ static int q6afe_set_params_v2(u16 port_id, int index,
 	uint32_t size = sizeof(struct afe_port_cmd_set_param_v2);
 	int rc = 0;
 
-	if (packed_param_data != NULL)
+	if (packed_param_data) {
+		if (packed_data_size > U16_MAX - sizeof(*set_param))
+			return -EINVAL;
 		size += packed_data_size;
+	}
 	set_param = kzalloc(size, GFP_KERNEL);
 	if (set_param == NULL)
 		return -ENOMEM;
@@ -1771,8 +1774,11 @@ static int q6afe_set_params_v3(u16 port_id, int index,
 	uint32_t size = sizeof(struct afe_port_cmd_set_param_v3);
 	int rc = 0;
 
-	if (packed_param_data != NULL)
+	if (packed_param_data) {
+		if (packed_data_size > U16_MAX - sizeof(*set_param))
+			return -EINVAL;
 		size += packed_data_size;
+	}
 	set_param = kzalloc(size, GFP_KERNEL);
 	if (set_param == NULL)
 		return -ENOMEM;
@@ -1843,8 +1849,14 @@ static int q6afe_pack_and_set_param_in_band(u16 port_id, int index,
 					    u8 *param_data)
 {
 	u8 *packed_param_data = NULL;
-	int packed_data_size = sizeof(union param_hdrs) + param_hdr.param_size;
+	u32 packed_data_size = sizeof(union param_hdrs);
 	int ret;
+
+	if (param_data) {
+		if (param_hdr.param_size > U16_MAX)
+			return -EINVAL;
+		packed_data_size += param_hdr.param_size;
+	}
 
 	packed_param_data = kzalloc(packed_data_size, GFP_KERNEL);
 	if (packed_param_data == NULL)

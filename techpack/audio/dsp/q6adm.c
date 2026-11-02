@@ -1060,8 +1060,11 @@ int adm_set_pp_params(int port_id, int copp_idx,
 
 	/* Only add params_size in inband case */
 	size = sizeof(struct adm_cmd_set_pp_params);
-	if (param_data != NULL)
+	if (param_data) {
+		if (param_size > U16_MAX - sizeof(*adm_set_params))
+			return -EINVAL;
 		size += param_size;
+	}
 	adm_set_params = kzalloc(size, GFP_KERNEL);
 	if (!adm_set_params)
 		return -ENOMEM;
@@ -1119,7 +1122,13 @@ int adm_pack_and_set_one_pp_param(int port_id, int copp_idx,
 	u32 total_size = 0;
 	int ret = 0;
 
-	total_size = sizeof(union param_hdrs) + param_hdr.param_size;
+	total_size = sizeof(union param_hdrs);
+	if (param_data) {
+		if (param_hdr.param_size > U16_MAX)
+			return -EINVAL;
+		total_size += param_hdr.param_size;
+	}
+
 	packed_data = kzalloc(total_size, GFP_KERNEL);
 	if (!packed_data)
 		return -ENOMEM;

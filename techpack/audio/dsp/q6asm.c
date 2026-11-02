@@ -2924,8 +2924,11 @@ int q6asm_set_pp_params(struct audio_client *ac,
 
 	pkt_size = sizeof(struct asm_stream_cmd_set_pp_params);
 	/* Add param size to packet size when sending in-band only */
-	if (param_data != NULL)
+	if (param_data) {
+		if (param_size > U16_MAX - sizeof(*asm_set_param))
+			return -EINVAL;
 		pkt_size += param_size;
+	}
 	asm_set_param = kzalloc(pkt_size, GFP_KERNEL);
 	if (!asm_set_param)
 		return -ENOMEM;
@@ -3016,13 +3019,19 @@ int q6asm_pack_and_set_pp_param_in_band(struct audio_client *ac,
 					u8 *param_data)
 {
 	u8 *packed_data = NULL;
-	u32 packed_size = sizeof(union param_hdrs) + param_hdr.param_size;
+	u32 packed_size = sizeof(union param_hdrs);
 	int ret = 0;
 
         if (ac == NULL) {
                 pr_err("%s: Audio Client is NULL\n", __func__);
                 return -EINVAL;
         }
+
+	if (param_data) {
+		if (param_hdr.param_size > U16_MAX)
+			return -EINVAL;
+		packed_size += param_hdr.param_size;
+	}
 
 	packed_data = kzalloc(packed_size, GFP_KERNEL);
 	if (packed_data == NULL)
