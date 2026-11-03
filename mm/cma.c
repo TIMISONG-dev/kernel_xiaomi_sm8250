@@ -571,14 +571,10 @@ struct page *cma_alloc(struct cma *cma, size_t count, unsigned int align,
 
 	pr_debug("%s(): returned %p\n", __func__, page);
 out:
-	if (page) {
+	if (page)
 		count_vm_event(CMA_ALLOC_SUCCESS);
-		cma_sysfs_account_success_pages(cma, count);
-	} else {
+	else
 		count_vm_event(CMA_ALLOC_FAIL);
-		if (cma)
-			cma_sysfs_account_fail_pages(cma, count);
-	}
 
 	return page;
 }
