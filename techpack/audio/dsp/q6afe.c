@@ -1401,6 +1401,11 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 			}
 		} else if (data->opcode ==
 				AFE_SERVICE_CMDRSP_SHARED_MEM_MAP_REGIONS) {
+			if (data->payload_size < sizeof(*payload)) {
+				pr_err("%s: Invalid memory map response size %d\n",
+				       __func__, data->payload_size);
+				return -EINVAL;
+			}
 			pr_debug("%s: mmap_handle: 0x%x, cal index %d\n",
 				 __func__, payload[0],
 				 atomic_read(&this_afe.mem_map_cal_index));
