@@ -5,7 +5,6 @@
  */
 
 #include "dm.h"
-#include "dm-linear.h"
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/blkdev.h>
