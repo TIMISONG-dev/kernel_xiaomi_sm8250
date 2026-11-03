@@ -1681,6 +1681,11 @@ static int32_t q6asm_srvc_dispatch(struct apr_client_data *data,
 	}
 
 	if (data->opcode == APR_BASIC_RSP_RESULT) {
+		if (data->payload_size < 2 * sizeof(*payload)) {
+			pr_err("%s: Invalid memory response size %d\n",
+			       __func__, data->payload_size);
+			return -EINVAL;
+		}
 		switch (payload[0]) {
 		case ASM_CMD_SHARED_MEM_MAP_REGIONS:
 		case ASM_CMD_SHARED_MEM_UNMAP_REGIONS:
@@ -1722,6 +1727,11 @@ static int32_t q6asm_srvc_dispatch(struct apr_client_data *data,
 
 	switch (data->opcode) {
 	case ASM_CMDRSP_SHARED_MEM_MAP_REGIONS:{
+		if (data->payload_size < sizeof(*payload)) {
+			pr_err("%s: Invalid memory map response size %d\n",
+			       __func__, data->payload_size);
+			return -EINVAL;
+		}
 		pr_debug("%s:PL#0[0x%x] dir=0x%x s_id=0x%x\n",
 		       __func__, payload[0], dir, asm_token._token.session_id);
 		spin_lock_irqsave(&port->dsp_lock, dsp_flags);
