@@ -306,6 +306,7 @@ static bool bolero_is_valid_codec_dev(struct device *dev)
  *
  * @dev: bolero device ptr.
  *
+ * @adc_n: Analog microphone ADC number
  */
 void bolero_clear_amic_tx_hold(struct device *dev, u16 adc_n)
 {
@@ -1376,6 +1377,7 @@ static int bolero_probe(struct platform_device *pdev)
 	mutex_init(&priv->io_lock);
 	mutex_init(&priv->clk_lock);
 	mutex_init(&priv->vote_lock);
+	BLOCKING_INIT_NOTIFIER_HEAD(&priv->notifier);
 	INIT_WORK(&priv->bolero_add_child_devices_work,
 		  bolero_add_child_devices);
 

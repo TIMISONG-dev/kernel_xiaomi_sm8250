@@ -1,7 +1,10 @@
 /**
  * Mi
+ * @a: First integer operand
+ * @b: Second integer operand
  */
 
+#include <linux/us_prox.h>
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/jiffies.h>
@@ -54,8 +57,15 @@ static int afe_set_parameter(int port,
 	u16 port_id = 0;
 	int index = 0;
 	u8 *packed_param_data = NULL;
-	int packed_data_size = sizeof(union param_hdrs) + length;
+	int packed_data_size;
+	size_t wire_header_size = q6common_is_instance_id_supported() ?
+		sizeof(struct afe_port_cmd_set_param_v3) + sizeof(struct param_hdr_v3) :
+		sizeof(struct afe_port_cmd_set_param_v2) + sizeof(struct param_hdr_v1);
 	int ret = 0;
+
+	if (length > U16_MAX - wire_header_size)
+		return -EINVAL;
+	packed_data_size = sizeof(union param_hdrs) + length;
 
 	pr_debug("[MIUS]: inside %s\n", __func__);
 
@@ -358,7 +368,7 @@ static int32_t process_sensorhub_msg(uint32_t *payload, uint32_t payload_size)
 
 #endif
 
-extern int us_afe_callback(int data);
+
 static int ups_event;
 
 int32_t mius_process_apr_payload(uint32_t *payload)

@@ -17,6 +17,7 @@
 
 #include "msm-pcm-q6-v2.h"
 #include "msm-pcm-routing-v2.h"
+#include "platform_init.h"
 
 #define DRV_NAME "msm-pcm-dtmf-v2"
 
@@ -25,10 +26,6 @@
 enum {
 	DTMF_IN_RX,
 	DTMF_IN_TX,
-};
-
-enum format {
-	FORMAT_S16_LE = 2
 };
 
 struct dtmf_det_info {
@@ -459,9 +456,9 @@ static int msm_pcm_prepare(struct snd_pcm_substream *substream)
 
 		msm_pcm_capture_prepare(substream);
 
-		if (runtime->format != FORMAT_S16_LE) {
-			pr_err("format:%u doesn't match %d\n",
-			       (uint32_t)runtime->format, FORMAT_S16_LE);
+		if (runtime->format != SNDRV_PCM_FORMAT_S16_LE) {
+			pr_err("format %s does not match S16_LE\n",
+			       snd_pcm_format_name(runtime->format));
 			mutex_unlock(&prtd->lock);
 			return -EINVAL;
 		}

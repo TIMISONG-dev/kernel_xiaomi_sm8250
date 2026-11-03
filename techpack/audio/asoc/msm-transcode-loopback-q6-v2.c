@@ -32,6 +32,7 @@
 
 #include "msm-pcm-routing-v2.h"
 #include "msm-qti-pp-config.h"
+#include "platform_init.h"
 
 #define DRV_NAME "msm-transcode-loopback-v2"
 
@@ -110,7 +111,6 @@ static void loopback_event_handler(uint32_t opcode,
 			(struct msm_transcode_loopback *)priv;
 	struct snd_soc_pcm_runtime *rtd;
 	struct snd_compr_stream *cstream;
-	struct audio_client *ac;
 	int stream_id;
 	int ret;
 
@@ -120,7 +120,6 @@ static void loopback_event_handler(uint32_t opcode,
 	}
 
 	cstream = trans->sink.cstream;
-	ac = trans->audio_client;
 
 	/*
 	 * Token for rest of the compressed commands use to set
@@ -431,6 +430,9 @@ static int msm_transcode_loopback_set_params(struct snd_compr_stream *cstream,
 	struct snd_soc_component *component;
 	struct trans_loopback_pdata *pdata;
 	uint32_t bit_width = 16;
+	/* PCM codec.format carries the numeric ALSA format in this ABI. */
+	snd_pcm_format_t pcm_format =
+		(__force snd_pcm_format_t)codec_param->codec.format;
 	int ret = 0;
 	enum apr_subsys_state subsys_state;
 
@@ -450,12 +452,14 @@ static int msm_transcode_loopback_set_params(struct snd_compr_stream *cstream,
 	rtd = snd_pcm_substream_chip(cstream);
 	if (!rtd) {
 		pr_err("%s: rtd is NULL\n", __func__);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto exit;
 	}
 	component = snd_soc_rtdcom_lookup(rtd, DRV_NAME);
 	if (!component) {
 		pr_err("%s: component is NULL\n", __func__);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto exit;
 	}
 	pdata = snd_soc_component_get_drvdata(component);
 
@@ -463,7 +467,7 @@ static int msm_transcode_loopback_set_params(struct snd_compr_stream *cstream,
 		if (codec_param->codec.id == SND_AUDIOCODEC_PCM) {
 			trans->sink.codec_format =
 				FORMAT_LINEAR_PCM;
-			switch (codec_param->codec.format) {
+			switch (pcm_format) {
 			case SNDRV_PCM_FORMAT_S32_LE:
 				bit_width = 32;
 				break;

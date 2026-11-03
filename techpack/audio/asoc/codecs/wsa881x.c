@@ -587,31 +587,9 @@ static void wsa881x_regcache_sync(struct wsa881x_priv *wsa881x)
 	mutex_unlock(&wsa881x->res_lock);
 }
 
-static const struct reg_sequence wsa881x_pre_pmu_pa[] = {
-	{WSA881X_SPKR_DRV_GAIN, 0x41, 0},
-	{WSA881X_SPKR_MISC_CTL1, 0x01, 0},
-	{WSA881X_ADC_EN_DET_TEST_I, 0x01, 0},
-	{WSA881X_ADC_EN_MODU_V, 0x02, 0},
-	{WSA881X_ADC_EN_DET_TEST_V, 0x10, 0},
-	{WSA881X_SPKR_PWRSTG_DBG, 0xA0, 0},
-};
-
 static const struct reg_sequence wsa881x_pre_pmu_pa_2_0[] = {
 	{WSA881X_SPKR_DRV_GAIN, 0x41, 0},
 	{WSA881X_SPKR_MISC_CTL1, 0x87, 0},
-};
-
-static const struct reg_sequence wsa881x_post_pmu_pa[] = {
-	{WSA881X_SPKR_PWRSTG_DBG, 0x00, 0},
-	{WSA881X_ADC_EN_DET_TEST_V, 0x00, 0},
-	{WSA881X_ADC_EN_MODU_V, 0x00, 0},
-	{WSA881X_ADC_EN_DET_TEST_I, 0x00, 0},
-};
-
-static const struct reg_sequence wsa881x_vi_txfe_en[] = {
-	{WSA881X_SPKR_PROT_FE_VSENSE_VCM, 0x85, 0},
-	{WSA881X_SPKR_PROT_ATEST2, 0x0A, 0},
-	{WSA881X_SPKR_PROT_FE_GAIN, 0xCF, 0},
 };
 
 static const struct reg_sequence wsa881x_vi_txfe_en_2_0[] = {
@@ -1505,7 +1483,7 @@ static int wsa881x_swr_probe(struct swr_device *pdev)
 
 	if (!wsa881x->debugfs_dent) {
 		wsa881x->debugfs_dent = debugfs_create_dir(
-				dev_name(&pdev->dev), 0);
+				dev_name(&pdev->dev), NULL);
 		if (!IS_ERR(wsa881x->debugfs_dent)) {
 			wsa881x->debugfs_peek =
 				debugfs_create_file("swrslave_peek",

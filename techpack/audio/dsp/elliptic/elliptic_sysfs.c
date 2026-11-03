@@ -16,8 +16,6 @@
 static int kobject_create_and_add_failed;
 static int sysfs_create_group_failed;
 
-extern struct elliptic_system_configuration_parameters_cache
-	elliptic_system_configuration_cache;
 
 static ssize_t calibration_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count) {
@@ -503,30 +501,22 @@ static ssize_t cache_show(char *buf, int pretty)
 static ssize_t opmode_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	int length;
-	ssize_t result;
 
 	struct elliptic_system_configuration_parameters_cache *cache =
 				&elliptic_system_configuration_cache;
 
-	length += snprintf(buf + length, PAGE_SIZE - 1, "%d\n",
-							cache->operation_mode);
-	result = (ssize_t)length;
-	return result;
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
+			   cache->operation_mode);
 }
 
 static ssize_t opmode_flags_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	int length;
-	ssize_t result;
 	struct elliptic_system_configuration_parameters_cache *cache =
 				&elliptic_system_configuration_cache;
 
-	length += snprintf(buf + length, PAGE_SIZE - 1, "%d\n",
-							cache->operation_mode_flags);
-	result = (ssize_t)length;
-	return result;
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
+			   cache->operation_mode_flags);
 }
 
 static ssize_t driver_version_show(char *buf)

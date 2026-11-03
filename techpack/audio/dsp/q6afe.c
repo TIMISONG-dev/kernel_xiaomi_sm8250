@@ -43,6 +43,7 @@
 
 #ifdef AUDIO_FORCE_RESTART_ADSP
 #include <soc/qcom/subsystem_restart.h>
+#include "q6_init.h"
 #define ADSP_ERR_LIMITED_COUNT   (3)
 #define ADSP_TO_LIMITED_COUNT   (10) //TIMEOUT
 static int err_count = 0;
@@ -382,7 +383,8 @@ static char clk_src_name[CLK_SRC_MAX][CLK_SRC_NAME_MAX];
 
 static int pcm_afe_instance[2];
 static int proxy_afe_instance[2];
-bool afe_close_done[2] = {true, true};
+static bool afe_close_done[2] = {true, true};
+
 #define SIZEOF_CFG_CMD(y) \
 		(sizeof(struct apr_hdr) + sizeof(u16) + (sizeof(struct y)))
 static bool q6afe_is_afe_lsm_port(int port_id);
@@ -530,6 +532,8 @@ static int remap_cal_data(struct cal_block_data *cal_block, int cal_index);
  * @private_data - external mclk callback specific data
  *
  * Returns 0 in case of success and -EINVAL for failure
+ * @fn: External master-clock control callback
+ * @private_data: Context passed to the master-clock callback
  */
 int afe_register_ext_mclk_cb(afe_enable_mclk_and_get_info_cb_func fn,
 				void *private_data)
@@ -1250,6 +1254,11 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 #ifdef CONFIG_US_PROXIMITY
 	} else if (data->opcode == MI_ULTRASOUND_OPCODE) {
 		if (NULL != data->payload) {
+			if (data->payload_size < 4 * sizeof(uint32_t)) {
+				pr_err("%s: MIUS payload too short: %d\n",
+				       __func__, data->payload_size);
+				return -EINVAL;
+			}
 			printk(KERN_DEBUG "[MIUS] mi ultrasound afe afe cb");
 			mius_process_apr_payload(data->payload);
 		} else
@@ -1262,6 +1271,11 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 			AFE_CMD_RSP_REMOTE_LPASS_CORE_HW_VOTE_REQUEST) {
 		uint32_t *payload = data->payload;
 
+		if (!payload || data->payload_size < sizeof(*payload)) {
+			pr_err("%s: Invalid LPASS vote response size %d\n",
+			       __func__, data->payload_size);
+			return -EINVAL;
+		}
 		pr_debug("%s: AFE_CMD_RSP_REMOTE_LPASS_CORE_HW_VOTE_REQUEST handle %d\n",
 			__func__, payload[0]);
 		if (data->token < AFE_LPASS_CORE_HW_VOTE_MAX)
@@ -1387,6 +1401,11 @@ static int32_t afe_callback(struct apr_client_data *data, void *priv)
 			}
 		} else if (data->opcode ==
 				AFE_SERVICE_CMDRSP_SHARED_MEM_MAP_REGIONS) {
+			if (data->payload_size < sizeof(*payload)) {
+				pr_err("%s: Invalid memory map response size %d\n",
+				       __func__, data->payload_size);
+				return -EINVAL;
+			}
 			pr_debug("%s: mmap_handle: 0x%x, cal index %d\n",
 				 __func__, payload[0],
 				 atomic_read(&this_afe.mem_map_cal_index));
@@ -1527,125 +1546,6 @@ int afe_get_port_type(u16 port_id)
 }
 EXPORT_SYMBOL(afe_get_port_type);
 
-int afe_sizeof_cfg_cmd(u16 port_id)
-{
-	int ret_size;
-
-	switch (port_id) {
-	case PRIMARY_I2S_RX:
-	case PRIMARY_I2S_TX:
-	case SECONDARY_I2S_RX:
-	case SECONDARY_I2S_TX:
-	case MI2S_RX:
-	case MI2S_TX:
-	case AFE_PORT_ID_PRIMARY_MI2S_RX:
-	case AFE_PORT_ID_PRIMARY_MI2S_TX:
-	case AFE_PORT_ID_QUATERNARY_MI2S_RX:
-	case AFE_PORT_ID_QUATERNARY_MI2S_TX:
-	case AFE_PORT_ID_QUINARY_MI2S_RX:
-	case AFE_PORT_ID_QUINARY_MI2S_TX:
-	case AFE_PORT_ID_SENARY_MI2S_RX:
-	case AFE_PORT_ID_SENARY_MI2S_TX:
-		ret_size = SIZEOF_CFG_CMD(afe_param_id_i2s_cfg);
-		break;
-	case AFE_PORT_ID_PRIMARY_META_MI2S_RX:
-	case AFE_PORT_ID_SECONDARY_META_MI2S_RX:
-		ret_size = SIZEOF_CFG_CMD(afe_param_id_meta_i2s_cfg);
-		break;
-	case HDMI_RX:
-	case HDMI_RX_MS:
-	case DISPLAY_PORT_RX:
-		ret_size =
-		SIZEOF_CFG_CMD(afe_param_id_hdmi_multi_chan_audio_cfg);
-		break;
-	case AFE_PORT_ID_PRIMARY_SPDIF_RX:
-	case AFE_PORT_ID_PRIMARY_SPDIF_TX:
-	case AFE_PORT_ID_SECONDARY_SPDIF_RX:
-	case AFE_PORT_ID_SECONDARY_SPDIF_TX:
-		ret_size =
-		SIZEOF_CFG_CMD(afe_param_id_spdif_cfg_v2);
-		break;
-	case SLIMBUS_0_RX:
-	case SLIMBUS_0_TX:
-	case SLIMBUS_1_RX:
-	case SLIMBUS_1_TX:
-	case SLIMBUS_2_RX:
-	case SLIMBUS_2_TX:
-	case SLIMBUS_3_RX:
-	case SLIMBUS_3_TX:
-	case SLIMBUS_4_RX:
-	case SLIMBUS_4_TX:
-	case SLIMBUS_5_RX:
-	case SLIMBUS_5_TX:
-	case SLIMBUS_6_RX:
-	case SLIMBUS_6_TX:
-	case SLIMBUS_7_RX:
-	case SLIMBUS_7_TX:
-	case SLIMBUS_8_RX:
-	case SLIMBUS_8_TX:
-	case SLIMBUS_9_RX:
-	case SLIMBUS_9_TX:
-		ret_size = SIZEOF_CFG_CMD(afe_param_id_slimbus_cfg);
-		break;
-	case VOICE_PLAYBACK_TX:
-	case VOICE2_PLAYBACK_TX:
-	case VOICE_RECORD_RX:
-	case VOICE_RECORD_TX:
-		ret_size = SIZEOF_CFG_CMD(afe_param_id_pseudo_port_cfg);
-		break;
-	case RT_PROXY_PORT_001_RX:
-	case RT_PROXY_PORT_001_TX:
-	case RT_PROXY_PORT_002_RX:
-	case RT_PROXY_PORT_002_TX:
-		ret_size = SIZEOF_CFG_CMD(afe_param_id_rt_proxy_port_cfg);
-		break;
-	case AFE_PORT_ID_USB_RX:
-	case AFE_PORT_ID_USB_TX:
-		ret_size = SIZEOF_CFG_CMD(afe_param_id_usb_audio_cfg);
-		break;
-	case AFE_PORT_ID_WSA_CODEC_DMA_RX_0:
-	case AFE_PORT_ID_WSA_CODEC_DMA_TX_0:
-	case AFE_PORT_ID_WSA_CODEC_DMA_RX_1:
-	case AFE_PORT_ID_WSA_CODEC_DMA_TX_1:
-	case AFE_PORT_ID_WSA_CODEC_DMA_TX_2:
-	case AFE_PORT_ID_VA_CODEC_DMA_TX_0:
-	case AFE_PORT_ID_VA_CODEC_DMA_TX_1:
-	case AFE_PORT_ID_VA_CODEC_DMA_TX_2:
-	case AFE_PORT_ID_RX_CODEC_DMA_RX_0:
-	case AFE_PORT_ID_TX_CODEC_DMA_TX_0:
-	case AFE_PORT_ID_RX_CODEC_DMA_RX_1:
-	case AFE_PORT_ID_TX_CODEC_DMA_TX_1:
-	case AFE_PORT_ID_RX_CODEC_DMA_RX_2:
-	case AFE_PORT_ID_TX_CODEC_DMA_TX_2:
-	case AFE_PORT_ID_RX_CODEC_DMA_RX_3:
-	case AFE_PORT_ID_TX_CODEC_DMA_TX_3:
-	case AFE_PORT_ID_RX_CODEC_DMA_RX_4:
-	case AFE_PORT_ID_TX_CODEC_DMA_TX_4:
-	case AFE_PORT_ID_RX_CODEC_DMA_RX_5:
-	case AFE_PORT_ID_TX_CODEC_DMA_TX_5:
-	case AFE_PORT_ID_RX_CODEC_DMA_RX_6:
-	case AFE_PORT_ID_RX_CODEC_DMA_RX_7:
-		ret_size = SIZEOF_CFG_CMD(afe_param_id_cdc_dma_cfg_t);
-		break;
-	case AFE_PORT_ID_PRIMARY_PCM_RX:
-	case AFE_PORT_ID_PRIMARY_PCM_TX:
-	case AFE_PORT_ID_SECONDARY_PCM_RX:
-	case AFE_PORT_ID_SECONDARY_PCM_TX:
-	case AFE_PORT_ID_TERTIARY_PCM_RX:
-	case AFE_PORT_ID_TERTIARY_PCM_TX:
-	case AFE_PORT_ID_QUATERNARY_PCM_RX:
-	case AFE_PORT_ID_QUATERNARY_PCM_TX:
-	case AFE_PORT_ID_QUINARY_PCM_RX:
-	case AFE_PORT_ID_QUINARY_PCM_TX:
-	case AFE_PORT_ID_SENARY_PCM_RX:
-	case AFE_PORT_ID_SENARY_PCM_TX:
-	default:
-		pr_debug("%s: default case 0x%x\n", __func__, port_id);
-		ret_size = SIZEOF_CFG_CMD(afe_param_id_pcm_cfg);
-		break;
-	}
-	return ret_size;
-}
 
 /**
  * afe_q6_interface_prepare -
@@ -1823,7 +1723,7 @@ int afe_apr_send_pkt_crus(void *data, int index, int set)
 	if (set)
 		return afe_apr_send_pkt(data, &this_afe.wait[index]);
 	else /* get */
-		return afe_apr_send_pkt(data, 0);
+		return afe_apr_send_pkt(data, NULL);
 }
 
 EXPORT_SYMBOL(afe_apr_send_pkt_crus);
@@ -1837,8 +1737,11 @@ static int q6afe_set_params_v2(u16 port_id, int index,
 	uint32_t size = sizeof(struct afe_port_cmd_set_param_v2);
 	int rc = 0;
 
-	if (packed_param_data != NULL)
+	if (packed_param_data) {
+		if (packed_data_size > U16_MAX - sizeof(*set_param))
+			return -EINVAL;
 		size += packed_data_size;
+	}
 	set_param = kzalloc(size, GFP_KERNEL);
 	if (set_param == NULL)
 		return -ENOMEM;
@@ -1886,8 +1789,11 @@ static int q6afe_set_params_v3(u16 port_id, int index,
 	uint32_t size = sizeof(struct afe_port_cmd_set_param_v3);
 	int rc = 0;
 
-	if (packed_param_data != NULL)
+	if (packed_param_data) {
+		if (packed_data_size > U16_MAX - sizeof(*set_param))
+			return -EINVAL;
 		size += packed_data_size;
+	}
 	set_param = kzalloc(size, GFP_KERNEL);
 	if (set_param == NULL)
 		return -ENOMEM;
@@ -1958,8 +1864,14 @@ static int q6afe_pack_and_set_param_in_band(u16 port_id, int index,
 					    u8 *param_data)
 {
 	u8 *packed_param_data = NULL;
-	int packed_data_size = sizeof(union param_hdrs) + param_hdr.param_size;
+	u32 packed_data_size = sizeof(union param_hdrs);
 	int ret;
+
+	if (param_data) {
+		if (param_hdr.param_size > U16_MAX)
+			return -EINVAL;
+		packed_data_size += param_hdr.param_size;
+	}
 
 	packed_param_data = kzalloc(packed_data_size, GFP_KERNEL);
 	if (packed_param_data == NULL)
@@ -3855,7 +3767,7 @@ done:
 	return ret;
 }
 
-void afe_send_cal(u16 port_id)
+static void afe_send_cal(u16 port_id)
 {
 	int ret;
 
@@ -4162,7 +4074,7 @@ static int afe_send_bank_selection_clip(
 		__func__, ret);
 	return ret;
 }
-int afe_send_aanc_version(
+static int afe_send_aanc_version(
 	struct afe_param_id_cdc_aanc_version *version_cfg)
 {
 	struct param_hdr_v3 param_hdr;
@@ -4649,7 +4561,7 @@ int afe_send_slot_mapping_cfg(
 	return ret;
 }
 
-int afe_send_slot_mapping_cfg_v2(
+static int afe_send_slot_mapping_cfg_v2(
 	struct afe_param_id_slot_mapping_cfg_v2 *slot_mapping_cfg,
 	u16 port_id)
 {
@@ -4935,7 +4847,7 @@ void afe_set_routing_callback(routing_cb cb)
 }
 EXPORT_SYMBOL(afe_set_routing_callback);
 
-int afe_port_send_usb_dev_param(u16 port_id, union afe_port_config *afe_config)
+static int afe_port_send_usb_dev_param(u16 port_id, union afe_port_config *afe_config)
 {
 	struct afe_param_id_usb_audio_dev_params usb_dev;
 	struct afe_param_id_usb_audio_dev_lpcm_fmt lpcm_fmt;
@@ -6192,6 +6104,7 @@ EXPORT_SYMBOL(afe_port_start);
  * @dec_cfg: AFE dec configuration information to set up decoder
  *
  * Returns 0 on success or error value on port start failure.
+ * @afe_in_bit_width: AFE input sample width in bits
  */
 int afe_port_start_v2(u16 port_id, union afe_port_config *afe_config,
 		      u32 rate, u16 afe_in_channels, u16 afe_in_bit_width,
@@ -6230,6 +6143,7 @@ EXPORT_SYMBOL(afe_port_start_v2);
  * @ttp_cfg: TTP generator configuration to enable TTP in AFE
  *
  * Returns 0 on success or error value on port start failure.
+ * @afe_in_bit_width: AFE input sample width in bits
  */
 int afe_port_start_v3(u16 port_id, union afe_port_config *afe_config,
 		      u32 rate, u16 afe_in_channels, u16 afe_in_bit_width,
@@ -10025,7 +9939,7 @@ done:
 	return ret;
 }
 
-int afe_get_sp_v4_rx_tmax_xmax_logging_data(
+static int afe_get_sp_v4_rx_tmax_xmax_logging_data(
 		struct afe_sp_rx_tmax_xmax_logging_param *xt_logging,
 		u16 port_id)
 {
@@ -10079,7 +9993,7 @@ done:
  *       command to get excursion logging data from DSP
  *
  * @xt_logging: excursion logging params
- * @port: AFE port ID
+ * @port_id: AFE port ID
  *
  * Returns 0 on success or error on failure
  */
@@ -10445,7 +10359,7 @@ static int get_cal_type_index(int32_t cal_type)
 	return ret;
 }
 
-int afe_alloc_cal(int32_t cal_type, size_t data_size,
+static int afe_alloc_cal(int32_t cal_type, size_t data_size,
 						void *data)
 {
 	int				ret = 0;
@@ -12056,7 +11970,9 @@ static bool q6afe_is_afe_lsm_port(int port_id)
  *            Update LSM AFE port
  * idx: LSM port index
  * lsm_port: LSM port id
-*/
+ * @idx: LSM port array index
+ * @lsm_port: AFE port assigned to the LSM session
+ */
 void afe_set_lsm_afe_port_id(int idx, int lsm_port)
 {
 	if (idx < 0 || idx >= MAX_LSM_SESSIONS) {

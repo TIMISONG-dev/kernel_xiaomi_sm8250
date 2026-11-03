@@ -20,6 +20,7 @@
 #include <dsp/q6core.h>
 #include "msm-dai-q6-v2.h"
 #include <asoc/core.h>
+#include "platform_init.h"
 #ifdef TFA_ADSP_SUPPORTED
 #if defined(CONFIG_MACH_XIAOMI_MUNCH)
 #include "codecs/tfa9874/inc/tfa_platform_interface_definition.h"
@@ -235,9 +236,9 @@ struct msm_dai_q6_dai_data {
 	u32 bitwidth;
 	u32 cal_mode;
 	u32 afe_rx_in_channels;
-	u16 afe_rx_in_bitformat;
+	snd_pcm_format_t afe_rx_in_bitformat;
 	u32 afe_tx_out_channels;
-	u16 afe_tx_out_bitformat;
+	snd_pcm_format_t afe_tx_out_bitformat;
 	struct afe_enc_config enc_config;
 	struct afe_dec_config dec_config;
 	struct afe_ttp_config ttp_config;
@@ -469,7 +470,7 @@ static int msm_dai_q6_get_tdm_clk_ref(u16 id)
 	}
 }
 
-int msm_dai_q6_get_group_idx(u16 id)
+static int msm_dai_q6_get_group_idx(u16 id)
 {
 	switch (id) {
 	case AFE_GROUP_DEVICE_ID_PRIMARY_TDM_RX:
@@ -596,7 +597,7 @@ int msm_dai_q6_get_group_idx(u16 id)
 	}
 }
 
-int msm_dai_q6_get_port_idx(u16 id)
+static int msm_dai_q6_get_port_idx(u16 id)
 {
 	switch (id) {
 	case AFE_PORT_ID_PRIMARY_TDM_RX:
@@ -4486,7 +4487,7 @@ static int msm_auxpcm_dev_probe(struct platform_device *pdev)
 	uint32_t val = 0;
 	const char *intf_name;
 	int rc = 0, i = 0, len = 0;
-	const uint32_t *slot_mapping_array = NULL;
+	const __be32 *slot_mapping_array = NULL;
 	u32 array_length = 0;
 
 	dai_data = kzalloc(sizeof(struct msm_dai_q6_auxpcm_dai_data),
@@ -7255,7 +7256,7 @@ static const struct snd_soc_component_driver msm_dai_q6_component = {
 
 static int msm_dai_q6_dev_probe(struct platform_device *pdev)
 {
-	int rc, id, i, len;
+	int rc, id, i;
 	const char *q6_dev_id = "qcom,msm-dai-q6-dev-id";
 	char stream_name[80];
 
@@ -7304,7 +7305,6 @@ static int msm_dai_q6_dev_probe(struct platform_device *pdev)
 		goto register_slim_playback;
 register_slim_playback:
 		rc = -ENODEV;
-		len = strnlen(stream_name, 80);
 		for (i = 0; i < ARRAY_SIZE(msm_dai_q6_slimbus_rx_dai); i++) {
 			if (msm_dai_q6_slimbus_rx_dai[i].playback.stream_name &&
 				!strcmp(stream_name,
@@ -7352,7 +7352,6 @@ register_slim_playback:
 		goto register_slim_capture;
 register_slim_capture:
 		rc = -ENODEV;
-		len = strnlen(stream_name, 80);
 		for (i = 0; i < ARRAY_SIZE(msm_dai_q6_slimbus_tx_dai); i++) {
 			if (msm_dai_q6_slimbus_tx_dai[i].capture.stream_name &&
 				!strcmp(stream_name,
@@ -7409,7 +7408,6 @@ register_slim_capture:
 		strlcpy(stream_name, "AFE-PROXY RX", 80);
 register_afe_playback:
 		rc = -ENODEV;
-		len = strnlen(stream_name, 80);
 		for (i = 0; i < ARRAY_SIZE(msm_dai_q6_afe_rx_dai); i++) {
 			if (msm_dai_q6_afe_rx_dai[i].playback.stream_name &&
 			    !strcmp(stream_name,
@@ -7431,7 +7429,6 @@ register_afe_playback:
 		strlcpy(stream_name, "AFE Capture", 80);
 register_afe_capture:
 		rc = -ENODEV;
-		len = strnlen(stream_name, 80);
 		for (i = 0; i < ARRAY_SIZE(msm_dai_q6_afe_tx_dai); i++) {
 			if (msm_dai_q6_afe_tx_dai[i].capture.stream_name &&
 				!strcmp(stream_name,
@@ -7453,7 +7450,6 @@ register_afe_capture:
 		strlcpy(stream_name, "Voice2 Farend Playback", 80);
 register_voice_playback:
 		rc = -ENODEV;
-		len = strnlen(stream_name, 80);
 		for (i = 0; i < ARRAY_SIZE(msm_dai_q6_voc_playback_dai); i++) {
 			if (msm_dai_q6_voc_playback_dai[i].playback.stream_name
 			    && !strcmp(stream_name,
@@ -7475,7 +7471,6 @@ register_voice_playback:
 		strlcpy(stream_name, "Voice Uplink Capture", 80);
 register_uplink_capture:
 		rc = -ENODEV;
-		len = strnlen(stream_name, 80);
 		for (i = 0; i < ARRAY_SIZE(msm_dai_q6_incall_record_dai); i++) {
 			if (msm_dai_q6_incall_record_dai[i].capture.stream_name
 			    && !strcmp(stream_name,
@@ -7765,7 +7760,7 @@ static int msm_dai_q6_tdm_set_clk_param(u32 group_id,
 static int msm_dai_tdm_q6_probe(struct platform_device *pdev)
 {
 	int rc = 0;
-	const uint32_t *port_id_array = NULL;
+	const __be32 *port_id_array = NULL;
 	uint32_t array_length = 0;
 	int i = 0;
 	int group_idx = 0;

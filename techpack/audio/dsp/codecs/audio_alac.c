@@ -6,6 +6,7 @@
 #include <linux/msm_audio_alac.h>
 #include <linux/compat.h>
 #include "audio_utils_aio.h"
+#include "audio_native.h"
 
 static struct miscdevice audio_alac_misc;
 static struct ws_mgr audio_alac_ws_mgr;
@@ -122,7 +123,7 @@ static long audio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	}
 	case AUDIO_GET_ALAC_CONFIG: {
-		if (copy_to_user((void *)arg, audio->codec_cfg,
+		if (copy_to_user((void __user *)arg, audio->codec_cfg,
 			sizeof(struct msm_audio_alac_config))) {
 			pr_err("%s:copy_to_user for AUDIO_GET_ALAC_CONFIG failed\n",
 				__func__);
@@ -132,7 +133,7 @@ static long audio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	}
 	case AUDIO_SET_ALAC_CONFIG: {
-		if (copy_from_user(audio->codec_cfg, (void *)arg,
+		if (copy_from_user(audio->codec_cfg, (void __user *)arg,
 			sizeof(struct msm_audio_alac_config))) {
 			pr_err("%s:copy_from_user for AUDIO_SET_ALAC_CONFIG failed\n",
 				__func__);
@@ -206,7 +207,7 @@ static long audio_compat_ioctl(struct file *file, unsigned int cmd,
 		alac_config_32.sampleRate = alac_config->sampleRate;
 		alac_config_32.channelLayout = alac_config->channelLayout;
 
-		if (copy_to_user((void *)arg, &alac_config_32,
+		if (copy_to_user((void __user *)arg, &alac_config_32,
 			sizeof(alac_config_32))) {
 			pr_err("%s: copy_to_user for GET_ALAC_CONFIG_32 failed\n",
 				 __func__);
@@ -219,7 +220,7 @@ static long audio_compat_ioctl(struct file *file, unsigned int cmd,
 		struct msm_audio_alac_config *alac_config;
 		struct msm_audio_alac_config_32 alac_config_32;
 
-		if (copy_from_user(&alac_config_32, (void *)arg,
+		if (copy_from_user(&alac_config_32, (void __user *)arg,
 			sizeof(alac_config_32))) {
 			pr_err("%s: copy_from_user for SET_ALAC_CONFIG_32 failed\n"
 				, __func__);

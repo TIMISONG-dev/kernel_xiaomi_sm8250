@@ -12,6 +12,7 @@
 #include <dsp/msm_audio_ion.h>
 #include <dsp/audio_calibration.h>
 #include <dsp/audio_cal_utils.h>
+#include "q6_init.h"
 
 struct audio_cal_client_info {
 	struct list_head		list;
@@ -409,7 +410,7 @@ static long audio_cal_shared_ioctl(struct file *file, unsigned int cmd,
 		goto done;
 	}
 
-	if (copy_from_user(&size, (void *)arg, sizeof(size))) {
+	if (copy_from_user(&size, (void __user *)arg, sizeof(size))) {
 		pr_err("%s: Could not copy size value from user\n", __func__);
 		ret = -EFAULT;
 		goto done;
@@ -426,7 +427,7 @@ static long audio_cal_shared_ioctl(struct file *file, unsigned int cmd,
 	if (data == NULL) {
 		ret = -ENOMEM;
 		goto done;
-	} else if (copy_from_user(data, (void *)arg, size)) {
+	} else if (copy_from_user(data, (void __user *)arg, size)) {
 		pr_err("%s: Could not copy data from user\n",
 			__func__);
 		ret = -EFAULT;
@@ -579,7 +580,7 @@ static const struct file_operations audio_cal_fops = {
 #endif
 };
 
-struct miscdevice audio_cal_misc = {
+static struct miscdevice audio_cal_misc = {
 	.minor	= MISC_DYNAMIC_MINOR,
 	.name	= "msm_audio_cal",
 	.fops	= &audio_cal_fops,

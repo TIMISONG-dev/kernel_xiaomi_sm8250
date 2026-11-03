@@ -21,6 +21,7 @@
 #include <dsp/q6common.h>
 #include <ipc/apr.h>
 #include "adsp_err.h"
+#include "q6_init.h"
 
 #define TIMEOUT_MS 1000
 
@@ -684,7 +685,7 @@ EXPORT_SYMBOL(adm_programable_channel_mixer);
  * @copp_idx: copp index of ADM copp
  * @session_id: session id to be updated
  * @params: params pointer
- * @param_length: length of params
+ * @params_length: length of params
  *
  * Returns 0 on success or error on failure
  */
@@ -882,13 +883,21 @@ int crus_adm_set_params(int port_id, int copp_idx, uint32_t module_id,
 {
 	struct param_hdr_v3 param_hdr;
 	int port_idx;
-	int rc  = 0;
+	int rc = -EINVAL;
+	size_t param_header_size = q6common_is_instance_id_supported() ?
+				   sizeof(struct param_hdr_v3) :
+				   sizeof(struct param_hdr_v1);
 
-	pr_info("[CSPL] %s: config: port_idx %d copp_idx  %d module 0x%d, len=%d\n",
-			__func__, port_idx, copp_idx,module_id, params_length);
+
+	if (params_length > U16_MAX - sizeof(struct adm_cmd_set_pp_params) -
+			    param_header_size)
+		return -EINVAL;
 
 	port_id = q6audio_convert_virtual_to_portid(port_id);
 	port_idx = adm_validate_and_get_port_index(port_id);
+
+	pr_info("[CSPL] %s: config: port_idx %d copp_idx %d module 0x%x, len=%u\n",
+			__func__, port_idx, copp_idx, module_id, params_length);
 
 	if (port_idx < 0) {
 		pr_err("[CSPL] %s: Invalid port_id %#x\n", __func__, port_id);
@@ -921,7 +930,7 @@ int crus_adm_set_params(int port_id, int copp_idx, uint32_t module_id,
 		       __func__, rc);
 
 fail_cmd:
-	return 0;
+	return rc;
 }
 EXPORT_SYMBOL(crus_adm_set_params);
 
@@ -935,6 +944,11 @@ int crus_adm_get_params(int port_id, int copp_idx, uint32_t module_id,
 	pr_info("[CSPL] %s: Enter, port_id %d, copp_idx %d, len= %d\n",
 		__func__, port_id, copp_idx, params_length);
 
+	if (params_length > U16_MAX - sizeof(struct apr_hdr) - sizeof(u32) -
+			    (q6common_is_instance_id_supported() ?
+			     sizeof(struct param_hdr_v3) : sizeof(struct param_hdr_v1)))
+		return -EINVAL;
+
 	memset(&param_hdr, 0, sizeof(param_hdr));
 	param_hdr.module_id = module_id;
 	param_hdr.instance_id = INSTANCE_ID_0;
@@ -945,7 +959,6 @@ int crus_adm_get_params(int port_id, int copp_idx, uint32_t module_id,
 				params);
 	if (ret) {
 		pr_err("%s: get parameters failed ret:%d\n", __func__, ret);
-		ret = -EINVAL;
 		goto done;
 	}
 
@@ -1047,8 +1060,11 @@ int adm_set_pp_params(int port_id, int copp_idx,
 
 	/* Only add params_size in inband case */
 	size = sizeof(struct adm_cmd_set_pp_params);
-	if (param_data != NULL)
+	if (param_data) {
+		if (param_size > U16_MAX - sizeof(*adm_set_params))
+			return -EINVAL;
 		size += param_size;
+	}
 	adm_set_params = kzalloc(size, GFP_KERNEL);
 	if (!adm_set_params)
 		return -ENOMEM;
@@ -1106,7 +1122,13 @@ int adm_pack_and_set_one_pp_param(int port_id, int copp_idx,
 	u32 total_size = 0;
 	int ret = 0;
 
-	total_size = sizeof(union param_hdrs) + param_hdr.param_size;
+	total_size = sizeof(union param_hdrs);
+	if (param_data) {
+		if (param_hdr.param_size > U16_MAX)
+			return -EINVAL;
+		total_size += param_hdr.param_size;
+	}
+
 	packed_data = kzalloc(total_size, GFP_KERNEL);
 	if (!packed_data)
 		return -ENOMEM;
@@ -2242,7 +2264,8 @@ static int send_adm_cal_block(int port_id, int copp_idx,
 	mem_hdr.mem_map_handle = cal_block->map_data.q6map_handle;
 	payload_size = cal_block->cal_data.size;
 
-	adm_set_pp_params(port_id, copp_idx, &mem_hdr, NULL, payload_size);
+	result = adm_set_pp_params(port_id, copp_idx, &mem_hdr, NULL,
+				   payload_size);
 
 done:
 	return result;
@@ -2417,6 +2440,9 @@ static void send_adm_cal_type(int cal_index, int path, int port_id,
 	ret = adm_remap_and_send_cal_block(cal_index, port_id, copp_idx,
 		cal_block, perf_mode, app_type, acdb_id, sample_rate);
 
+	if (ret < 0)
+		goto unlock;
+
 	cal_utils_mark_cal_used(cal_block);
 unlock:
 	mutex_unlock(&this_adm.cal_data[cal_index]->lock);
@@ -2548,7 +2574,7 @@ fail_cmd:
 }
 EXPORT_SYMBOL(adm_connect_afe_port);
 
-int adm_arrange_mch_map(struct adm_cmd_device_open_v5 *open, int path,
+static int adm_arrange_mch_map(struct adm_cmd_device_open_v5 *open, int path,
 			 int channel_mode, int port_idx)
 {
 	int rc = 0, idx;
@@ -2637,7 +2663,7 @@ inval_ch_mod:
 	return rc;
 }
 
-int adm_arrange_mch_ep2_map(struct adm_cmd_device_open_v6 *open_v6,
+static int adm_arrange_mch_ep2_map(struct adm_cmd_device_open_v6 *open_v6,
 			 int channel_mode)
 {
 	int rc = 0;
@@ -3108,6 +3134,7 @@ exit:
  * @session_type: type of session
  *
  * Returns 0 on success or error on failure
+ * @passthr_mode: DSP compressed-audio passthrough mode
  */
 int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 	     int perf_mode, uint16_t bit_width, int app_type, int acdb_id,
@@ -3828,6 +3855,7 @@ EXPORT_SYMBOL(adm_matrix_map);
  * adm_ec_ref_rx_id -
  *        Update EC ref port ID
  *
+ * @port_id: AFE port identifier
  */
 void adm_ec_ref_rx_id(int port_id)
 {
@@ -3840,6 +3868,7 @@ EXPORT_SYMBOL(adm_ec_ref_rx_id);
  * adm_num_ec_ref_rx_chans -
  *        Update EC ref number of channels
  *
+ * @num_chans: Number of echo-reference channels
  */
 void adm_num_ec_ref_rx_chans(int num_chans)
 {
@@ -3853,6 +3882,7 @@ EXPORT_SYMBOL(adm_num_ec_ref_rx_chans);
  * adm_num_ec_rx_ref_chans_downmixed -
  *        Update EC ref num of channels(downmixed) to be fed to EC algo
  *
+ * @num_chans: Number of echo-reference channels
  */
 void adm_num_ec_ref_rx_chans_downmixed(int num_chans)
 {
@@ -3899,6 +3929,7 @@ EXPORT_SYMBOL(adm_ec_ref_chmixer_weights);
  * adm_ec_ref_rx_bit_width -
  *        Update EC ref bit_width
  *
+ * @bit_width: Echo-reference sample width in bits
  */
 void adm_ec_ref_rx_bit_width(int bit_width)
 {
@@ -3912,6 +3943,7 @@ EXPORT_SYMBOL(adm_ec_ref_rx_bit_width);
  * adm_ec_ref_rx_sampling_rate -
  *        Update EC ref sample rate
  *
+ * @sampling_rate: Echo-reference sample rate in Hz
  */
 void adm_ec_ref_rx_sampling_rate(int sampling_rate)
 {
@@ -3928,6 +3960,7 @@ EXPORT_SYMBOL(adm_ec_ref_rx_sampling_rate);
  *      running in native mode for channel
  *      configuration for this device session.
  *
+ * @mode: Native audio mode flags
  */
 void adm_set_native_mode(int mode)
 {
@@ -4122,7 +4155,7 @@ int adm_close(int port_id, int perf_mode, int copp_idx)
 }
 EXPORT_SYMBOL(adm_close);
 
-int send_rtac_audvol_cal(void)
+static int send_rtac_audvol_cal(void)
 {
 	int ret = 0;
 	int ret2 = 0;
@@ -4773,7 +4806,7 @@ EXPORT_SYMBOL(adm_set_ffecns_effect);
  * adm_set_ffecns_freeze_event -
  *      command to set event for ffecns module
  *
- * @event: send ffecns freeze event true or false
+ * @ffecns_freeze_event: send ffecns freeze event true or false
  *
  * Returns 0 on success or error on failure
  */
@@ -5234,6 +5267,10 @@ EXPORT_SYMBOL(adm_send_compressed_device_latency);
  * copp_idx - Passed value, copp_idx for which channels swap is wanted
  * sample_rate - Passed value, sample rate used by app type config
  * spk_swap  - Passed value, spk_swap for check if swap flag is set
+ * @copp_idx: COPP instance index
+ * @port_id: AFE port identifier
+ * @sample_rate: Playback sample rate in Hz
+ * @spk_swap: Speaker channel swap configuration
  */
 int adm_swap_speaker_channels(int port_id, int copp_idx,
 			int sample_rate, bool spk_swap)

@@ -18,6 +18,7 @@
 #include <linux/msm_audio_amrwbplus.h>
 #include <linux/compat.h>
 #include "audio_utils_aio.h"
+#include "audio_native.h"
 
 static struct miscdevice audio_amrwbplus_misc;
 static struct ws_mgr audio_amrwbplus_ws_mgr;
@@ -131,7 +132,7 @@ static long audio_ioctl(struct file *file, unsigned int cmd,
 	}
 	case AUDIO_GET_AMRWBPLUS_CONFIG_V2: {
 		if ((audio) && (arg) && (audio->codec_cfg)) {
-			if (copy_to_user((void *)arg, audio->codec_cfg,
+			if (copy_to_user((void __user *)arg, audio->codec_cfg,
 				sizeof(struct msm_audio_amrwbplus_config_v2))) {
 				rc = -EFAULT;
 				pr_err("%s: copy_to_user for AUDIO_GET_AMRWBPLUS_CONFIG_V2 failed\n",
@@ -148,7 +149,7 @@ static long audio_ioctl(struct file *file, unsigned int cmd,
 	}
 	case AUDIO_SET_AMRWBPLUS_CONFIG_V2: {
 		if ((audio) && (arg) && (audio->codec_cfg)) {
-			if (copy_from_user(audio->codec_cfg, (void *)arg,
+			if (copy_from_user(audio->codec_cfg, (void __user *)arg,
 				sizeof(struct msm_audio_amrwbplus_config_v2))) {
 				rc = -EFAULT;
 				pr_err("%s: copy_from_user for AUDIO_SET_AMRWBPLUS_CONFIG_V2 failed\n",
@@ -229,7 +230,7 @@ static long audio_compat_ioctl(struct file *file, unsigned int cmd,
 			amrwbplus_config_32.amr_lsf_idx =
 					amrwbplus_config->amr_lsf_idx;
 
-			if (copy_to_user((void *)arg, &amrwbplus_config_32,
+			if (copy_to_user((void __user *)arg, &amrwbplus_config_32,
 				sizeof(amrwbplus_config_32))) {
 				rc = -EFAULT;
 				pr_err("%s: copy_to_user for AUDIO_GET_AMRWBPLUS_CONFIG_V2_32 failed\n"
@@ -248,7 +249,7 @@ static long audio_compat_ioctl(struct file *file, unsigned int cmd,
 			struct msm_audio_amrwbplus_config_v2_32
 							amrwbplus_config_32;
 
-			if (copy_from_user(&amrwbplus_config_32, (void *)arg,
+			if (copy_from_user(&amrwbplus_config_32, (void __user *)arg,
 			sizeof(struct msm_audio_amrwbplus_config_v2_32))) {
 				rc = -EFAULT;
 				pr_err("%s: copy_from_user for AUDIO_SET_AMRWBPLUS_CONFIG_V2_32 failed\n"

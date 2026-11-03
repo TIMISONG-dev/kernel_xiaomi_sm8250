@@ -21,6 +21,7 @@
 #include <dsp/q6voice.h>
 
 #include "msm-pcm-voice-v2.h"
+#include "platform_init.h"
 
 #define DRV_NAME "msm-pcm-voice-v2"
 
@@ -348,7 +349,7 @@ static int msm_pcm_ioctl(struct snd_pcm_substream *substream,
 
 	switch (cmd) {
 	case SNDRV_VOICE_IOCTL_LCH:
-		if (copy_from_user(&lch_mode, (void *)arg,
+		if (copy_from_user(&lch_mode, (void __user *)arg,
 				   sizeof(enum voice_lch_mode))) {
 			pr_err("%s: Copy from user failed, size %zd\n",
 				__func__, sizeof(enum voice_lch_mode));

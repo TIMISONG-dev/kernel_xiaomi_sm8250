@@ -46,6 +46,7 @@
 
 #ifdef AUDIO_FORCE_RESTART_ADSP
 #include <soc/qcom/subsystem_restart.h>
+#include "q6_init.h"
 #define ADSP_ERR_LIMITED_COUNT   (3)
 static int err_count = 0;
 #endif
@@ -562,7 +563,7 @@ static void config_debug_fs_init(void)
 }
 #endif
 
-int q6asm_mmap_apr_dereg(void)
+static int q6asm_mmap_apr_dereg(void)
 {
 	int c;
 
@@ -781,25 +782,7 @@ done:
 	return result;
 }
 
-int q6asm_unmap_cal_data(int cal_type, struct cal_block_data *cal_block)
-{
-	int ret = 0;
-
-	if ((cal_block->map_data.map_size > 0) &&
-		(cal_block->map_data.q6map_handle != 0)) {
-
-		ret = q6asm_unmap_cal_memory(cal_type, cal_block);
-		if (ret < 0) {
-			pr_err("%s: unmap did not work! size = %zd ret %d\n",
-				__func__, cal_block->map_data.map_size, ret);
-			goto done;
-		}
-	}
-done:
-	return ret;
-}
-
-int send_asm_custom_topology(struct audio_client *ac)
+static int send_asm_custom_topology(struct audio_client *ac)
 {
 	struct cal_block_data		*cal_block = NULL;
 	struct cmd_set_topologies	asm_top;
@@ -1011,7 +994,7 @@ done:
 	return result;
 }
 
-int q6asm_audio_client_buf_free(unsigned int dir,
+static int q6asm_audio_client_buf_free(unsigned int dir,
 			struct audio_client *ac)
 {
 	struct audio_port_data *port;
@@ -1672,28 +1655,140 @@ fail:
 }
 EXPORT_SYMBOL(q6asm_audio_client_buf_alloc_contiguous);
 
+/* The caller retains any active session lock across client dispatch. */
+static int32_t q6asm_srvc_dispatch(struct apr_client_data *data,
+				 struct audio_client *ac,
+				 union asm_token_struct asm_token, u32 dir)
+{
+	u32 *payload = data->payload;
+	unsigned long dsp_flags;
+	struct audio_port_data *port;
+
+	if (data->payload_size >= 2 * sizeof(uint32_t)) {
+		pr_debug("%s:ptr0[0x%x]ptr1[0x%x]opcode[0x%x] token[0x%x]payload_s[%d] src[%d] dest[%d]sid[%d]dir[%d]\n",
+			__func__, payload[0], payload[1], data->opcode,
+			data->token, data->payload_size, data->src_port,
+			data->dest_port, asm_token._token.session_id, dir);
+		pr_debug("%s:Payload = [0x%x] status[0x%x]\n",
+			__func__, payload[0], payload[1]);
+	} else if (data->payload_size == sizeof(uint32_t)) {
+		pr_debug("%s:ptr0[0x%x]opcode[0x%x] token[0x%x]payload_s[%d] src[%d] dest[%d]sid[%d]dir[%d]\n",
+			__func__, payload[0], data->opcode,
+			data->token, data->payload_size, data->src_port,
+			data->dest_port, asm_token._token.session_id, dir);
+		pr_debug("%s:Payload = [0x%x]\n",
+			__func__, payload[0]);
+	}
+
+	if (data->opcode == APR_BASIC_RSP_RESULT) {
+		if (data->payload_size < 2 * sizeof(*payload)) {
+			pr_err("%s: Invalid memory response size %d\n",
+			       __func__, data->payload_size);
+			return -EINVAL;
+		}
+		switch (payload[0]) {
+		case ASM_CMD_SHARED_MEM_MAP_REGIONS:
+		case ASM_CMD_SHARED_MEM_UNMAP_REGIONS:
+		case ASM_CMD_ADD_TOPOLOGIES:
+			if (data->payload_size >= 2 * sizeof(uint32_t) && payload[1] != 0) {
+				pr_err("%s: cmd = 0x%x returned error = 0x%x sid:%d\n",
+				       __func__, payload[0], payload[1],
+				       asm_token._token.session_id);
+				if (payload[0] ==
+				    ASM_CMD_SHARED_MEM_UNMAP_REGIONS)
+					atomic_set(&ac->unmap_cb_success, 0);
+
+				atomic_set(&ac->mem_state, payload[1]);
+				wake_up(&ac->mem_wait);
+			} else {
+				if (payload[0] ==
+				    ASM_CMD_SHARED_MEM_UNMAP_REGIONS)
+					atomic_set(&ac->unmap_cb_success, 1);
+			}
+
+			if (atomic_cmpxchg(&ac->mem_state, -1, 0) == -1)
+				wake_up(&ac->mem_wait);
+			if (data->payload_size >= 2 * sizeof(uint32_t))
+				dev_vdbg(ac->dev, "%s: Payload = [0x%x] status[0x%x]\n",
+					__func__, payload[0], payload[1]);
+			else
+				dev_vdbg(ac->dev, "%s: Payload size of %d is less than expected.\n",
+					__func__, data->payload_size);
+			break;
+		default:
+			pr_debug("%s: command[0x%x] not expecting rsp\n",
+						__func__, payload[0]);
+			break;
+		}
+		return 0;
+	}
+
+	port = &ac->port[dir];
+
+	switch (data->opcode) {
+	case ASM_CMDRSP_SHARED_MEM_MAP_REGIONS:{
+		if (data->payload_size < sizeof(*payload)) {
+			pr_err("%s: Invalid memory map response size %d\n",
+			       __func__, data->payload_size);
+			return -EINVAL;
+		}
+		pr_debug("%s:PL#0[0x%x] dir=0x%x s_id=0x%x\n",
+		       __func__, payload[0], dir, asm_token._token.session_id);
+		spin_lock_irqsave(&port->dsp_lock, dsp_flags);
+		if (atomic_cmpxchg(&ac->mem_state, -1, 0) == -1) {
+			ac->port[dir].tmp_hdl = payload[0];
+			wake_up(&ac->mem_wait);
+		}
+		spin_unlock_irqrestore(&port->dsp_lock, dsp_flags);
+		break;
+	}
+	case ASM_CMD_SHARED_MEM_UNMAP_REGIONS:{
+		if (data->payload_size >= 2 * sizeof(uint32_t))
+			pr_debug("%s: PL#0[0x%x]PL#1 [0x%x]\n",
+						__func__, payload[0], payload[1]);
+		else
+			pr_debug("%s: Payload size of %d is less than expected.\n",
+				__func__, data->payload_size);
+
+		spin_lock_irqsave(&port->dsp_lock, dsp_flags);
+		if (atomic_cmpxchg(&ac->mem_state, -1, 0) == -1)
+			wake_up(&ac->mem_wait);
+		spin_unlock_irqrestore(&port->dsp_lock, dsp_flags);
+
+		break;
+	}
+	default:
+		if (data->payload_size >= 2 * sizeof(uint32_t))
+			pr_debug("%s: command[0x%x]success [0x%x]\n",
+				__func__, payload[0], payload[1]);
+		else
+			pr_debug("%s: Payload size of %d is less than expected.\n",
+				__func__, data->payload_size);
+	}
+	if (ac->cb)
+		ac->cb(data->opcode, data->token,
+			data->payload, ac->priv);
+
+	return 0;
+}
+
 static int32_t q6asm_srvc_callback(struct apr_client_data *data, void *priv)
 {
-	uint32_t dir = 0;
 	uint32_t i = IN;
-	uint32_t *payload;
-	unsigned long dsp_flags = 0;
 	unsigned long flags = 0;
 	struct asm_buffer_node *buf_node = NULL;
 	struct list_head *ptr, *next;
 	union asm_token_struct asm_token;
 
 	struct audio_client *ac = NULL;
-	struct audio_port_data *port;
 
 	int session_id;
+	u32 dir;
 
 	if (!data) {
 		pr_err("%s: Invalid CB\n", __func__);
 		return 0;
 	}
-
-	payload = data->payload;
 
 	if (data->opcode == RESET_EVENTS) {
 		pr_debug("%s: Reset event is received: %d %d apr[%pK]\n",
@@ -1731,124 +1826,21 @@ static int32_t q6asm_srvc_callback(struct apr_client_data *data, void *priv)
 	asm_token.token = data->token;
 	session_id = asm_token._token.session_id;
 
-	if ((session_id > 0 && session_id <= ASM_ACTIVE_STREAMS_ALLOWED))
-		spin_lock_irqsave(&(session[session_id].session_lock), flags);
-
-	ac = q6asm_get_audio_client(session_id);
 	dir = q6asm_get_flag_from_token(&asm_token, ASM_DIRECTION_OFFSET);
-
-	if (!ac) {
-		pr_debug("%s: session[%d] already freed\n",
-			 __func__, session_id);
-		if ((session_id > 0 &&
-			session_id <= ASM_ACTIVE_STREAMS_ALLOWED))
-			spin_unlock_irqrestore(
-				&(session[session_id].session_lock), flags);
+	if (session_id == ASM_CONTROL_SESSION)
+		return q6asm_srvc_dispatch(data, &common_client, asm_token, dir);
+	if (session_id <= 0 || session_id > ASM_ACTIVE_STREAMS_ALLOWED) {
+		q6asm_get_audio_client(session_id);
 		return 0;
 	}
 
-	if (data->payload_size >= 2 * sizeof(uint32_t)) {
-		pr_debug("%s:ptr0[0x%x]ptr1[0x%x]opcode[0x%x] token[0x%x]payload_s[%d] src[%d] dest[%d]sid[%d]dir[%d]\n",
-			__func__, payload[0], payload[1], data->opcode,
-			data->token, data->payload_size, data->src_port,
-			data->dest_port, asm_token._token.session_id, dir);
-		pr_debug("%s:Payload = [0x%x] status[0x%x]\n",
-			__func__, payload[0], payload[1]);
-	} else if (data->payload_size == sizeof(uint32_t)) {
-		pr_debug("%s:ptr0[0x%x]opcode[0x%x] token[0x%x]payload_s[%d] src[%d] dest[%d]sid[%d]dir[%d]\n",
-			__func__, payload[0], data->opcode,
-			data->token, data->payload_size, data->src_port,
-			data->dest_port, asm_token._token.session_id, dir);
-		pr_debug("%s:Payload = [0x%x]\n",
-			__func__, payload[0]);
-	}
-
-	if (data->opcode == APR_BASIC_RSP_RESULT) {
-		switch (payload[0]) {
-		case ASM_CMD_SHARED_MEM_MAP_REGIONS:
-		case ASM_CMD_SHARED_MEM_UNMAP_REGIONS:
-		case ASM_CMD_ADD_TOPOLOGIES:
-			if (data->payload_size >= 2 * sizeof(uint32_t) && payload[1] != 0) {
-				pr_err("%s: cmd = 0x%x returned error = 0x%x sid:%d\n",
-				       __func__, payload[0], payload[1],
-				       asm_token._token.session_id);
-				if (payload[0] ==
-				    ASM_CMD_SHARED_MEM_UNMAP_REGIONS)
-					atomic_set(&ac->unmap_cb_success, 0);
-
-				atomic_set(&ac->mem_state, payload[1]);
-				wake_up(&ac->mem_wait);
-			} else {
-				if (payload[0] ==
-				    ASM_CMD_SHARED_MEM_UNMAP_REGIONS)
-					atomic_set(&ac->unmap_cb_success, 1);
-			}
-
-			if (atomic_cmpxchg(&ac->mem_state, -1, 0) == -1)
-				wake_up(&ac->mem_wait);
-			if (data->payload_size >= 2 * sizeof(uint32_t))
-				dev_vdbg(ac->dev, "%s: Payload = [0x%x] status[0x%x]\n",
-					__func__, payload[0], payload[1]);
-			else
-				dev_vdbg(ac->dev, "%s: Payload size of %d is less than expected.\n",
-					__func__, data->payload_size);
-			break;
-		default:
-			pr_debug("%s: command[0x%x] not expecting rsp\n",
-						__func__, payload[0]);
-			break;
-		}
-		if ((session_id > 0 &&
-			session_id <= ASM_ACTIVE_STREAMS_ALLOWED))
-			spin_unlock_irqrestore(
-				&(session[session_id].session_lock), flags);
-		return 0;
-	}
-
-	port = &ac->port[dir];
-
-	switch (data->opcode) {
-	case ASM_CMDRSP_SHARED_MEM_MAP_REGIONS:{
-		pr_debug("%s:PL#0[0x%x] dir=0x%x s_id=0x%x\n",
-		       __func__, payload[0], dir, asm_token._token.session_id);
-		spin_lock_irqsave(&port->dsp_lock, dsp_flags);
-		if (atomic_cmpxchg(&ac->mem_state, -1, 0) == -1) {
-			ac->port[dir].tmp_hdl = payload[0];
-			wake_up(&ac->mem_wait);
-		}
-		spin_unlock_irqrestore(&port->dsp_lock, dsp_flags);
-		break;
-	}
-	case ASM_CMD_SHARED_MEM_UNMAP_REGIONS:{
-		if (data->payload_size >= 2 * sizeof(uint32_t))
-			pr_debug("%s: PL#0[0x%x]PL#1 [0x%x]\n",
-						__func__, payload[0], payload[1]);
-		else
-			pr_debug("%s: Payload size of %d is less than expected.\n",
-				__func__, data->payload_size);
-
-		spin_lock_irqsave(&port->dsp_lock, dsp_flags);
-		if (atomic_cmpxchg(&ac->mem_state, -1, 0) == -1)
-			wake_up(&ac->mem_wait);
-		spin_unlock_irqrestore(&port->dsp_lock, dsp_flags);
-
-		break;
-	}
-	default:
-		if (data->payload_size >= 2 * sizeof(uint32_t))
-			pr_debug("%s: command[0x%x]success [0x%x]\n",
-				__func__, payload[0], payload[1]);
-		else
-			pr_debug("%s: Payload size of %d is less than expected.\n",
-				__func__, data->payload_size);
-	}
-	if (ac->cb)
-		ac->cb(data->opcode, data->token,
-			data->payload, ac->priv);
-	if ((session_id > 0 && session_id <= ASM_ACTIVE_STREAMS_ALLOWED))
-		spin_unlock_irqrestore(
-			&(session[session_id].session_lock), flags);
-
+	spin_lock_irqsave(&session[session_id].session_lock, flags);
+	ac = q6asm_get_audio_client(session_id);
+	if (ac)
+		q6asm_srvc_dispatch(data, ac, asm_token, dir);
+	else
+		pr_debug("%s: session[%d] already freed\n", __func__, session_id);
+	spin_unlock_irqrestore(&session[session_id].session_lock, flags);
 	return 0;
 }
 
@@ -1955,7 +1947,9 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 	asm_token.token = data->token;
 	if (q6asm_get_flag_from_token(&asm_token, ASM_CMD_NO_WAIT_OFFSET)) {
 		pr_debug("%s: No wait command opcode[0x%x] cmd_opcode:%x\n",
-			 __func__, data->opcode, payload ? payload[0] : 0);
+			 __func__, data->opcode,
+			 payload && data->payload_size >= sizeof(*payload) ?
+			 payload[0] : 0);
 		wakeup_flag = 0;
 	}
 
@@ -2248,6 +2242,13 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 	}
 	case ASM_STREAM_CMDRSP_GET_PP_PARAMS_V2:
 	case ASM_STREAM_CMDRSP_GET_PP_PARAMS_V3:
+		if (data->payload_size < sizeof(uint32_t)) {
+			dev_err(ac->dev, "%s: short get-params status reply: %u\n",
+				__func__, data->payload_size);
+			spin_unlock_irqrestore(&session[session_id].session_lock,
+					       flags);
+			return -EINVAL;
+		}
 		pr_debug("%s: ASM_STREAM_CMDRSP_GET_PP_PARAMS session %d opcode 0x%x token 0x%x src %d dest %d\n",
 			__func__, ac->session, data->opcode, data->token,
 			data->src_port, data->dest_port);
@@ -2510,6 +2511,13 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 		wake_up(&ac->cmd_wait);
 		break;
 	case ASM_SESSION_CMDRSP_GET_PATH_DELAY_V2:
+		if (data->payload_size < sizeof(uint32_t)) {
+			dev_err(ac->dev, "%s: short path-delay status reply: %u\n",
+				__func__, data->payload_size);
+			spin_unlock_irqrestore(&session[session_id].session_lock,
+					       flags);
+			return -EINVAL;
+		}
 		if (data->payload_size >= 3 * sizeof(uint32_t))
 			pr_debug("%s: ASM_SESSION_CMDRSP_GET_PATH_DELAY_V2 session %d status 0x%x msw %u lsw %u\n",
 					__func__, ac->session, payload[0], payload[2],
@@ -2617,7 +2625,6 @@ int q6asm_cpu_buf_release(int dir, struct audio_client *ac)
 {
 	struct audio_port_data *port;
 	int ret = 0;
-	int idx;
 
 	if (!ac || ((dir != IN) && (dir != OUT))) {
 		pr_err("%s: ac %pK dir %d\n", __func__, ac, dir);
@@ -2628,7 +2635,6 @@ int q6asm_cpu_buf_release(int dir, struct audio_client *ac)
 	if (ac->io_mode & SYNC_IO_MODE) {
 		port = &ac->port[dir];
 		mutex_lock(&port->lock);
-		idx = port->cpu_buf;
 		if (port->cpu_buf == 0) {
 			port->cpu_buf = port->max_buf_cnt - 1;
 		} else if (port->cpu_buf < port->max_buf_cnt) {
@@ -2928,8 +2934,11 @@ int q6asm_set_pp_params(struct audio_client *ac,
 
 	pkt_size = sizeof(struct asm_stream_cmd_set_pp_params);
 	/* Add param size to packet size when sending in-band only */
-	if (param_data != NULL)
+	if (param_data) {
+		if (param_size > U16_MAX - sizeof(*asm_set_param))
+			return -EINVAL;
 		pkt_size += param_size;
+	}
 	asm_set_param = kzalloc(pkt_size, GFP_KERNEL);
 	if (!asm_set_param)
 		return -ENOMEM;
@@ -3020,13 +3029,19 @@ int q6asm_pack_and_set_pp_param_in_band(struct audio_client *ac,
 					u8 *param_data)
 {
 	u8 *packed_data = NULL;
-	u32 packed_size = sizeof(union param_hdrs) + param_hdr.param_size;
+	u32 packed_size = sizeof(union param_hdrs);
 	int ret = 0;
 
         if (ac == NULL) {
                 pr_err("%s: Audio Client is NULL\n", __func__);
                 return -EINVAL;
         }
+
+	if (param_data) {
+		if (param_hdr.param_size > U16_MAX)
+			return -EINVAL;
+		packed_size += param_hdr.param_size;
+	}
 
 	packed_data = kzalloc(packed_size, GFP_KERNEL);
 	if (packed_data == NULL)
@@ -5000,7 +5015,7 @@ EXPORT_SYMBOL(q6asm_enc_cfg_blk_g711);
  *       command to set encdec channel map
  *
  * @ac: Audio client handle
- * @channels: number of channels
+ * @num_channels: number of channels
  *
  * Returns 0 on success or error on failure
  */
@@ -6056,7 +6071,7 @@ EXPORT_SYMBOL(q6asm_cfg_aac_sel_mix_coef);
  * @frames_per_buf: Number of frames per buffer
  * @min_rate: Minimum Enc rate
  * @max_rate: Maximum Enc rate
- * reduced_rate_level: Reduced rate level
+ * @reduced_rate_level: Reduced rate level
  * @rate_modulation_cmd: rate modulation command
  *
  * Returns 0 on success or error on failure
@@ -7654,7 +7669,6 @@ EXPORT_SYMBOL(q6asm_media_format_block_wmapro);
  *
  * @ac: Audio client handle
  * @cfg: amrwbplus config
- * @stream_id: stream ID info
  *
  * Returns 0 on success or error on failure
  */
@@ -8270,7 +8284,6 @@ int q6asm_memory_map(struct audio_client *ac, phys_addr_t buf_add, int dir,
 {
 	struct avs_cmd_shared_mem_map_regions *mmap_regions = NULL;
 	struct avs_shared_map_region_payload  *mregions = NULL;
-	struct audio_port_data *port = NULL;
 	void	*mmap_region_cmd = NULL;
 	void	*payload = NULL;
 	struct asm_buffer_node *buffer_node = NULL;
@@ -8313,7 +8326,6 @@ int q6asm_memory_map(struct audio_client *ac, phys_addr_t buf_add, int dir,
 	mregions = (struct avs_shared_map_region_payload *)payload;
 
 	ac->port[dir].tmp_hdl = 0;
-	port = &ac->port[dir];
 	pr_debug("%s: buf_add 0x%pK, bufsz: %d\n", __func__,
 		&buf_add, bufsz);
 	mregions->shm_addr_lsw = lower_32_bits(buf_add);
@@ -9528,8 +9540,6 @@ int q6asm_async_write(struct audio_client *ac,
 	struct asm_data_cmd_write_v2 write;
 	struct asm_buffer_node *buf_node = NULL;
 	struct list_head *ptr, *next;
-	struct audio_buffer        *ab;
-	struct audio_port_data     *port;
 	phys_addr_t lbuf_phys_addr;
 	u32 liomode;
 	u32 io_compressed;
@@ -9546,8 +9556,6 @@ int q6asm_async_write(struct audio_client *ac,
 
 	q6asm_stream_add_hdr_async(
 			ac, &write.hdr, sizeof(write), TRUE, ac->stream_id);
-	port = &ac->port[IN];
-	ab = &port->buf[port->dsp_buf];
 
 	/* Pass session id as token for AIO scheme */
 	write.hdr.token = param->uid;
@@ -10721,7 +10729,7 @@ int q6asm_stream_cmd_nowait(struct audio_client *ac, int cmd,
 }
 EXPORT_SYMBOL(q6asm_stream_cmd_nowait);
 
-int __q6asm_send_meta_data(struct audio_client *ac, uint32_t stream_id,
+static int __q6asm_send_meta_data(struct audio_client *ac, uint32_t stream_id,
 			  uint32_t initial_samples, uint32_t trailing_samples)
 {
 	struct asm_data_cmd_remove_silence silence;

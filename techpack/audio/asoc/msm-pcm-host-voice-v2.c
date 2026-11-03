@@ -20,6 +20,7 @@
 #include <asm/dma.h>
 #include <dsp/msm_audio_ion.h>
 #include <dsp/q6voice.h>
+#include "platform_init.h"
 
 #define DRV_NAME "msm-pcm-host-voice-v2"
 
@@ -451,19 +452,19 @@ static void hpcm_free_allocated_mem(struct hpcm_drv *prtd)
 		msm_audio_ion_free(sess->tp_mem_table.dma_buf);
 		sess->tp_mem_table.dma_buf = NULL;
 		sess->sess_paddr = 0;
-		sess->sess_kvaddr = 0;
+		sess->sess_kvaddr = NULL;
 
 		txtp->capture_dai_data.vocpcm_ion_buffer.paddr = 0;
-		txtp->capture_dai_data.vocpcm_ion_buffer.kvaddr = 0;
+		txtp->capture_dai_data.vocpcm_ion_buffer.kvaddr = NULL;
 
 		txtp->playback_dai_data.vocpcm_ion_buffer.paddr = 0;
-		txtp->playback_dai_data.vocpcm_ion_buffer.kvaddr = 0;
+		txtp->playback_dai_data.vocpcm_ion_buffer.kvaddr = NULL;
 
 		rxtp->capture_dai_data.vocpcm_ion_buffer.paddr = 0;
-		rxtp->capture_dai_data.vocpcm_ion_buffer.kvaddr = 0;
+		rxtp->capture_dai_data.vocpcm_ion_buffer.kvaddr = NULL;
 
 		rxtp->playback_dai_data.vocpcm_ion_buffer.paddr = 0;
-		rxtp->playback_dai_data.vocpcm_ion_buffer.kvaddr = 0;
+		rxtp->playback_dai_data.vocpcm_ion_buffer.kvaddr = NULL;
 	} else {
 		pr_debug("%s, paddr = 0, nothing to free\n", __func__);
 	}
@@ -527,7 +528,7 @@ static int hpcm_allocate_shared_memory(struct hpcm_drv *prtd)
 		pr_err("%s: msm_audio_ion_alloc error, rc = %d\n",
 			__func__, result);
 		sess->sess_paddr = 0;
-		sess->sess_kvaddr = 0;
+		sess->sess_kvaddr = NULL;
 		ret = -ENOMEM;
 		goto done;
 	}
@@ -546,7 +547,7 @@ static int hpcm_allocate_shared_memory(struct hpcm_drv *prtd)
 		msm_audio_ion_free(sess->dma_buf);
 		sess->dma_buf = NULL;
 		sess->sess_paddr = 0;
-		sess->sess_kvaddr = 0;
+		sess->sess_kvaddr = NULL;
 		ret = -ENOMEM;
 		goto done;
 	}
@@ -666,6 +667,10 @@ static void hpcm_copy_playback_data_from_queue(struct dai_data *dai_data,
 		if (*len > HPCM_MAX_VOC_PKT_SIZE) {
 			pr_err("%s: Playback data len %d overflow\n",
 					__func__, *len);
+			list_add_tail(&buf_node->list, &dai_data->free_queue);
+			*len = 0;
+			spin_unlock_irqrestore(&dai_data->dsp_lock, dsp_flags);
+			wake_up(&dai_data->queue_wait);
 			return;
 		}
 		memcpy((u8 *)dai_data->vocpcm_ion_buffer.kvaddr,
@@ -724,7 +729,7 @@ static void hpcm_copy_capture_data_to_queue(struct dai_data *dai_data,
 	wake_up(&dai_data->queue_wait);
 }
 
-void hpcm_notify_evt_processing(uint8_t *data, char *session,
+static void hpcm_notify_evt_processing(uint8_t *data, char *session,
 				void *private_data)
 {
 	struct hpcm_drv *prtd = (struct hpcm_drv *)private_data;
@@ -1014,8 +1019,6 @@ static int msm_pcm_close(struct snd_pcm_substream *substream)
 	struct hpcm_drv *prtd;
 	unsigned long dsp_flags;
 	struct dai_data *dai_data = NULL;
-	struct tap_point *tp = NULL;
-	struct tappnt_mxr_data *tmd = NULL;
 	char *sess_name = NULL;
 
 	if (substream == NULL) {
@@ -1039,9 +1042,7 @@ static int msm_pcm_close(struct snd_pcm_substream *substream)
 	wake_up(&dai_data->queue_wait);
 	mutex_lock(&prtd->lock);
 
-	tmd = hpcm_get_tappnt_mixer_data(substream->pcm->id, prtd);
-
-	tp = hpcm_get_tappoint_data(substream->pcm->id, prtd);
+	hpcm_get_tappoint_data(substream->pcm->id, prtd);
 	/* Send stop command */
 	voc_send_cvp_stop_vocpcm(voc_get_session_id(sess_name));
 	/* Memory unmap/free takes place only when called the first time */

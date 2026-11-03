@@ -6,6 +6,7 @@
 #include <linux/msm_audio_g711_dec.h>
 #include <linux/compat.h>
 #include "audio_utils_aio.h"
+#include "audio_native.h"
 
 static struct miscdevice audio_g711alaw_misc;
 static struct ws_mgr audio_g711_ws_mgr;
@@ -107,7 +108,7 @@ static long audio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	}
 	case AUDIO_GET_G711_DEC_CONFIG: {
-		if (copy_to_user((void *)arg, audio->codec_cfg,
+		if (copy_to_user((void __user *)arg, audio->codec_cfg,
 			sizeof(struct msm_audio_g711_dec_config))) {
 			pr_err("%s: copy_to_user for AUDIO_GET_G711_DEC_CONFIG failed\n",
 				__func__);
@@ -116,7 +117,7 @@ static long audio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	}
 	case AUDIO_SET_G711_DEC_CONFIG: {
-		if (copy_from_user(audio->codec_cfg, (void *)arg,
+		if (copy_from_user(audio->codec_cfg, (void __user *)arg,
 			sizeof(struct msm_audio_g711_dec_config))) {
 			pr_err("%s: copy_from_user for AUDIO_SET_G711_DEC_CONFIG failed\n",
 				__func__);
@@ -168,7 +169,7 @@ static long audio_compat_ioctl(struct file *file, unsigned int cmd,
 			(struct msm_audio_g711_dec_config *)audio->codec_cfg;
 		g711_dec_config_32.sample_rate = g711_dec_config->sample_rate;
 
-		if (copy_to_user((void *)arg, &g711_dec_config_32,
+		if (copy_to_user((void __user *)arg, &g711_dec_config_32,
 			sizeof(g711_dec_config_32))) {
 			pr_err("%s: copy_to_user for AUDIO_GET_G711_DEC_CONFIG_32 failed\n",
 				 __func__);
@@ -182,7 +183,7 @@ static long audio_compat_ioctl(struct file *file, unsigned int cmd,
 
 		memset(&g711_dec_config_32, 0, sizeof(g711_dec_config_32));
 
-		if (copy_from_user(&g711_dec_config_32, (void *)arg,
+		if (copy_from_user(&g711_dec_config_32, (void __user *)arg,
 			sizeof(g711_dec_config_32))) {
 			pr_err("%s: copy_from_user for AUDIO_SET_G711_DEC_CONFIG_32 failed\n",
 				__func__);

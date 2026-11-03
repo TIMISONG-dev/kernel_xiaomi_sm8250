@@ -23,6 +23,7 @@
 #include <soc/snd_event.h>
 #include <ipc/apr.h>
 #include "adsp_err.h"
+#include "q6_init.h"
 
 #define TIMEOUT_MS 1000
 /*
@@ -508,7 +509,7 @@ static int32_t aprv2_core_fn_q(struct apr_client_data *data, void *priv)
 	return 0;
 }
 
-void ocm_core_open(void)
+static void ocm_core_open(void)
 {
 	if (q6core_lcl.core_handle_q == NULL)
 		q6core_lcl.core_handle_q = apr_register("ADSP", "CORE",
@@ -518,7 +519,7 @@ void ocm_core_open(void)
 		pr_err_ratelimited("%s: Unable to register CORE\n", __func__);
 }
 
-struct cal_block_data *cal_utils_get_cal_block_by_key(
+static struct cal_block_data *cal_utils_get_cal_block_by_key(
 		struct cal_type_data *cal_type, uint32_t key)
 {
 	struct list_head                *ptr, *next;
@@ -756,6 +757,9 @@ EXPORT_SYMBOL(q6core_get_avcs_api_version_per_service);
  * @build_branch_version - pointer to build branch version
  *
  * Returns 0 on success and error on failure
+ * @build_branch_version: Receives the AVCS/AVS branch build version
+ * @build_major_version: Receives the AVCS/AVS major build version
+ * @build_minor_version: Receives the AVCS/AVS minor build version
  */
 int q6core_get_avcs_avs_build_version_info(
 	uint32_t *build_major_version, uint32_t *build_minor_version,
