@@ -47,6 +47,9 @@ $(warning Detected assembler with broken .inst; disassembly will be unreliable)
 endif
 
 KBUILD_CFLAGS	+= -mgeneral-regs-only
+ifeq ($(CONFIG_ARM64_TUNE_SM8250), y)
+KBUILD_CFLAGS	+= -march=armv8.2-a -mtune=cortex-a77
+endif
 KBUILD_CFLAGS	+= $(compat_vdso) $(cc_has_k_constraint)
 KBUILD_CFLAGS	+= -fno-asynchronous-unwind-tables
 KBUILD_CFLAGS	+= $(call cc-disable-warning, psabi)
