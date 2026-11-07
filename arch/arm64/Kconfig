@@ -1359,6 +1359,13 @@ config SETEND_EMULATION
 	  If unsure, say Y
 endif
 
+config ARM64_TUNE_SM8250
+	bool "Tune code generation for SM8250 (Cortex-A77 + Cortex-A55)"
+	default n
+	help
+	  Build C code with -march=armv8.2-a -mtune=cortex-a77. The result
+	  only runs on ARMv8.2 CPUs, which every SM8250 core is.
+
 config ARM64_SW_TTBR0_PAN
 	bool "Emulate Privileged Access Never using TTBR0_EL1 switching"
 	help
