@@ -427,8 +427,9 @@ int pstore_mkfile(struct dentry *root, struct pstore_record *record)
 
 #ifdef CONFIG_PSTORE_LAST_KMSG
 	if (record->type == PSTORE_TYPE_CONSOLE) {
-		console_buffer = private->record->buf;
-		console_bufsize = size;
+		kfree(console_buffer);
+		console_buffer = kmemdup(private->record->buf, size, GFP_KERNEL);
+		console_bufsize = console_buffer ? size : 0;
 	}
 #endif
 
@@ -544,6 +545,12 @@ out:
 
 void __exit pstore_exit_fs(void)
 {
+#ifdef CONFIG_PSTORE_LAST_KMSG
+	remove_proc_entry("last_kmsg", NULL);
+	kfree(console_buffer);
+	console_buffer = NULL;
+	console_bufsize = 0;
+#endif
 	unregister_filesystem(&pstore_fs_type);
 	sysfs_remove_mount_point(fs_kobj, "pstore");
 }
