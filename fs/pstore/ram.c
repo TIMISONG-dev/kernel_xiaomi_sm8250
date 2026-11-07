@@ -990,14 +990,25 @@ static int __init ramoops_memreserve(char *p)
 	size = memparse(p, &p) & PAGE_MASK;
 	ramoops_data.mem_size = size;
 	ramoops_data.mem_address = 0xB0000000;
-	ramoops_data.console_size = size / 2;
-	ramoops_data.pmsg_size = size / 2;
+	if (size >= 0x400000) {
+		ramoops_data.record_size = 0x80000;	/* 512KB per dump */
+		ramoops_data.console_size = 0x100000;	/* 1MB console */
+		ramoops_data.pmsg_size = 0x200000;	/* 2MB pmsg */
+	} else if (size >= 0x200000) {
+		ramoops_data.record_size = 0x40000;	/* 256KB */
+		ramoops_data.console_size = 0x40000;	/* 256KB */
+		ramoops_data.pmsg_size = size - 0x80000;
+	} else {
+		ramoops_data.record_size = size / 4;
+		ramoops_data.console_size = size / 4;
+		ramoops_data.pmsg_size = size / 2;
+	}
 	ramoops_data.dump_oops = 1;
 
 	pr_info("msm_reserve_ramoops_memory addr=%llx,size=%lx\n",
 		ramoops_data.mem_address, ramoops_data.mem_size);
-	pr_info("msm_reserve_ramoops_memory record_size=%lx,ftrace_size=%lx\n",
-		ramoops_data.record_size, ramoops_data.ftrace_size);
+	pr_info("msm_reserve_ramoops_memory record_size=%lx,console_size=%lx,pmsg_size=%lx\n",
+		ramoops_data.record_size, ramoops_data.console_size, ramoops_data.pmsg_size);
 
 	memblock_reserve(ramoops_data.mem_address, ramoops_data.mem_size);
 
