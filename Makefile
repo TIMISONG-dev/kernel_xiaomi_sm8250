@@ -892,8 +892,9 @@ lto-clang-flags	:= -flto
 endif
 lto-clang-flags += -fvisibility=default $(call cc-option, -fsplit-lto-unit)
 
-# Limit inlining across translation units to reduce binary size
-LD_FLAGS_LTO_CLANG := -mllvm -import-instr-limit=5
+# Limit inlining across translation units; LLVM's default (100) bloats the
+# image, 5 leaves most of ThinLTO's cross-module inlining unused.
+LD_FLAGS_LTO_CLANG := -mllvm -import-instr-limit=20
 
 KBUILD_LDFLAGS += $(LD_FLAGS_LTO_CLANG)
 KBUILD_LDFLAGS_MODULE += $(LD_FLAGS_LTO_CLANG)
