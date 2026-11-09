@@ -420,6 +420,11 @@ static int init_events_group(void)
 
 static void nr_notify_userspace(struct work_struct *work)
 {
+	struct kobject *k = READ_ONCE(notify_kobj);
+
+	if (!k)
+		return;
+
 	sysfs_notify(notify_kobj, NULL, "aggr_top_load");
 	sysfs_notify(notify_kobj, NULL, "aggr_big_nr");
 	sysfs_notify(notify_kobj, NULL, "top_load_cluster");
@@ -470,6 +475,9 @@ static int set_core_ctl_register(const char *buf, const struct kernel_param *kp)
 {
 	int ret;
 	bool old_val = core_ctl_register;
+
+	if (!READ_ONCE(notify_kobj))
+		return -ENODEV;
 
 	ret = param_set_bool(buf, kp);
 	if (ret < 0)
