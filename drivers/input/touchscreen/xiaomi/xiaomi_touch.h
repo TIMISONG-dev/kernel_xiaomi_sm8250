@@ -124,6 +124,7 @@ enum MODE_TYPE {
 	Touch_Power_Status = 19,
 	Touch_Pen_ENABLE = 20,
 	Touch_Mode_NUM = 21,
+	Touch_Fw_Switch = 22,
 };
 
 struct xiaomi_touch_interface {
