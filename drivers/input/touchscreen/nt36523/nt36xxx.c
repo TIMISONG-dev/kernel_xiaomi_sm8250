@@ -2420,6 +2420,10 @@ static int nvt_set_cur_value(int nvt_mode, int nvt_value)
 		disable_pen_input_device(!ts->pen_input_dev_enable);
 		release_pen_event();
 		return 0;
+	} else if (nvt_mode == Touch_Fw_Switch && ts && nvt_value >= 0) {
+		NVT_LOG("%s pen fw switch ", nvt_value ? "ENABLE" : "DISABLE");
+		nvt_switch_pen_firmware(!!nvt_value);
+		return 0;
 	}
 
 	if (nvt_value >
