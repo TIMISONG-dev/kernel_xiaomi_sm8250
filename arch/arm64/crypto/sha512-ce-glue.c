@@ -30,16 +30,22 @@ asmlinkage void sha512_ce_transform(struct sha512_state *sst, u8 const *src,
 
 asmlinkage void sha512_block_data_order(u64 *digest, u8 const *src, int blocks);
 
+static void __sha512_block_data_order(struct sha512_state *sst, u8 const *src,
+				      int blocks)
+{
+	return sha512_block_data_order(sst->state, src, blocks);
+}
+
 static int sha512_ce_update(struct shash_desc *desc, const u8 *data,
 			    unsigned int len)
 {
 	if (!may_use_simd())
 		return sha512_base_do_update(desc, data, len,
-				(sha512_block_fn *)sha512_block_data_order);
+				__sha512_block_data_order);
 
 	kernel_neon_begin();
 	sha512_base_do_update(desc, data, len,
-			      (sha512_block_fn *)sha512_ce_transform);
+			      sha512_ce_transform);
 	kernel_neon_end();
 
 	return 0;
@@ -51,16 +57,16 @@ static int sha512_ce_finup(struct shash_desc *desc, const u8 *data,
 	if (!may_use_simd()) {
 		if (len)
 			sha512_base_do_update(desc, data, len,
-				(sha512_block_fn *)sha512_block_data_order);
+				__sha512_block_data_order);
 		sha512_base_do_finalize(desc,
-				(sha512_block_fn *)sha512_block_data_order);
+				__sha512_block_data_order);
 		return sha512_base_finish(desc, out);
 	}
 
 	kernel_neon_begin();
 	sha512_base_do_update(desc, data, len,
-			      (sha512_block_fn *)sha512_ce_transform);
-	sha512_base_do_finalize(desc, (sha512_block_fn *)sha512_ce_transform);
+			      sha512_ce_transform);
+	sha512_base_do_finalize(desc, sha512_ce_transform);
 	kernel_neon_end();
 	return sha512_base_finish(desc, out);
 }
@@ -69,12 +75,12 @@ static int sha512_ce_final(struct shash_desc *desc, u8 *out)
 {
 	if (!may_use_simd()) {
 		sha512_base_do_finalize(desc,
-				(sha512_block_fn *)sha512_block_data_order);
+				__sha512_block_data_order);
 		return sha512_base_finish(desc, out);
 	}
 
 	kernel_neon_begin();
-	sha512_base_do_finalize(desc, (sha512_block_fn *)sha512_ce_transform);
+	sha512_base_do_finalize(desc, sha512_ce_transform);
 	kernel_neon_end();
 	return sha512_base_finish(desc, out);
 }
