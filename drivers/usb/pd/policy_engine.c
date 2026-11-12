@@ -17,6 +17,7 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/workqueue.h>
+#include <linux/wait.h>
 #include <linux/extcon-provider.h>
 #include <linux/usb/typec.h>
 #include <linux/usb/usbpd.h>
@@ -400,6 +401,11 @@ struct usbpd {
 	struct delayed_work	pps_monitor_work;
 	struct hrtimer		timer;
 	bool			sm_queued;
+	/* Serialize teardown with every queue/rearm and exported user. */
+	spinlock_t		queue_lock;
+	bool			stopping;
+	unsigned int		active_users;
+	wait_queue_head_t	users_wait;
 
 	struct extcon_dev	*extcon;
 
@@ -431,7 +437,6 @@ struct usbpd {
 	struct power_supply	*bat_psy;
 	struct power_supply	*bms_psy;
 	struct power_supply	*wireless_psy;
-	struct power_supply	*cp_psy;
 	struct power_supply	*ps_psy;
 	struct notifier_block	psy_nb;
 
@@ -534,6 +539,65 @@ struct usbpd {
 	bool			request_reject;
 };
 
+/* Callers hold a device reference; removal waits before releasing resources. */
+static bool usbpd_get_active(struct usbpd *pd)
+{
+	unsigned long flags;
+	bool active;
+
+	spin_lock_irqsave(&pd->queue_lock, flags);
+	active = !pd->stopping;
+	if (active)
+		pd->active_users++;
+	spin_unlock_irqrestore(&pd->queue_lock, flags);
+	return active;
+}
+
+static void usbpd_put_active(struct usbpd *pd)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&pd->queue_lock, flags);
+	if (!--pd->active_users)
+		wake_up(&pd->users_wait);
+	spin_unlock_irqrestore(&pd->queue_lock, flags);
+}
+
+static bool usbpd_users_idle(struct usbpd *pd)
+{
+	unsigned long flags;
+	bool idle;
+
+	spin_lock_irqsave(&pd->queue_lock, flags);
+	idle = !pd->active_users;
+	spin_unlock_irqrestore(&pd->queue_lock, flags);
+	return idle;
+}
+
+static bool usbpd_queue_work(struct usbpd *pd, struct workqueue_struct *wq,
+			     struct work_struct *work)
+{
+	unsigned long flags;
+	bool queued = false;
+
+	spin_lock_irqsave(&pd->queue_lock, flags);
+	if (!pd->stopping)
+		queued = queue_work(wq, work);
+	spin_unlock_irqrestore(&pd->queue_lock, flags);
+	return queued;
+}
+
+static void usbpd_schedule_delayed_work(struct usbpd *pd,
+					struct delayed_work *work, unsigned long delay)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&pd->queue_lock, flags);
+	if (!pd->stopping)
+		schedule_delayed_work(work, delay);
+	spin_unlock_irqrestore(&pd->queue_lock, flags);
+}
+
 static LIST_HEAD(_usbpd);	/* useful for debugging */
 
 static const unsigned int usbpd_extcon_cable[] = {
@@ -558,7 +622,7 @@ static void reset_vdm_state(struct usbpd *pd);
 
 static const struct usbpd_state_handler state_handlers[];
 
-enum plug_orientation usbpd_get_plug_orientation(struct usbpd *pd)
+static enum plug_orientation __usbpd_get_plug_orientation(struct usbpd *pd)
 {
 	int ret;
 	union power_supply_propval val;
@@ -569,6 +633,18 @@ enum plug_orientation usbpd_get_plug_orientation(struct usbpd *pd)
 		return ORIENTATION_NONE;
 
 	return val.intval;
+}
+
+enum plug_orientation usbpd_get_plug_orientation(struct usbpd *pd)
+{
+	int ret;
+
+	if (!usbpd_get_active(pd))
+		return ORIENTATION_NONE;
+
+	ret = __usbpd_get_plug_orientation(pd);
+	usbpd_put_active(pd);
+	return ret;
 }
 EXPORT_SYMBOL(usbpd_get_plug_orientation);
 
@@ -687,7 +763,7 @@ static void start_usb_peripheral_work(struct work_struct *w)
 
 static void usbpd_disable_cp(struct usbpd *pd)
 {
-	queue_work(pd->wq, &pd->disable_active_work);
+	usbpd_queue_work(pd, pd->wq, &pd->disable_active_work);
 }
 
 static void usbpd_disable_active_work(struct work_struct *w)
@@ -703,25 +779,17 @@ static void usbpd_disable_active_work(struct work_struct *w)
 	}
 }
 
-/**
- * usbpd_release_ss_lane() - Release SS lanes for a client
- * @pd: USBPD handler
- * @hdlr: Client handler
- *
- * This must not be called from atomic context.
- *
- * Return: Zero on success, otherwise a negative error code
- */
-static int usbpd_release_ss_lane(struct usbpd *pd,
-				struct usbpd_svid_handler *hdlr)
+static int __usbpd_release_ss_lane(struct usbpd *pd,
+				   struct usbpd_svid_handler *hdlr)
 {
 	int ret = 0;
-	enum plug_orientation cc = usbpd_get_plug_orientation(pd);
+	enum plug_orientation cc;
 	union power_supply_propval pval;
 
 	if (!hdlr || !pd)
 		return -EINVAL;
 
+	cc = usbpd_get_plug_orientation(pd);
 	usbpd_dbg(&pd->dev, "hdlr:%pK svid:%d", hdlr, hdlr->svid);
 	/*
 	 * If USB SS lanes are already used by one client, and other client is
@@ -767,6 +835,31 @@ static int usbpd_release_ss_lane(struct usbpd *pd,
 	}
 
 err_exit:
+	return ret;
+}
+
+/**
+ * usbpd_release_ss_lane() - Release SS lanes for a client
+ * @pd: USBPD handler
+ * @hdlr: Client handler
+ *
+ * This must not be called from atomic context.
+ *
+ * Return: Zero on success, otherwise a negative error code
+ */
+static int usbpd_release_ss_lane(struct usbpd *pd,
+				 struct usbpd_svid_handler *hdlr)
+{
+	int ret;
+
+	if (!pd || !hdlr)
+		return -EINVAL;
+
+	if (!usbpd_get_active(pd))
+		return -ESHUTDOWN;
+
+	ret = __usbpd_release_ss_lane(pd, hdlr);
+	usbpd_put_active(pd);
 	return ret;
 }
 
@@ -1098,7 +1191,7 @@ static int pd_eval_src_caps(struct usbpd *pd)
 	power_supply_set_property(pd->usb_psy,
 			POWER_SUPPLY_PROP_PD_USB_SUSPEND_SUPPORTED, &val);
 
-	schedule_work(&pd->pdo_work);
+	usbpd_queue_work(pd, system_wq, &pd->pdo_work);
 	/* First time connecting to a PD source and it supports USB data */
 	if (pd->peer_usb_comm && pd->current_dr == DR_UFP && !pd->pd_connected)
 		start_usb_peripheral(pd);
@@ -1141,6 +1234,12 @@ static void pd_send_hard_reset(struct usbpd *pd)
 
 static void kick_sm(struct usbpd *pd, int ms)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&pd->queue_lock, flags);
+	if (pd->stopping)
+		goto out;
+
 	pm_stay_awake(&pd->dev);
 	pd->sm_queued = true;
 
@@ -1151,6 +1250,8 @@ static void kick_sm(struct usbpd *pd, int ms)
 		usbpd_dbg(&pd->dev, "queue state work\n");
 		queue_work(pd->wq, &pd->sm_work);
 	}
+out:
+	spin_unlock_irqrestore(&pd->queue_lock, flags);
 }
 
 static void phy_sig_received(struct usbpd *pd, enum pd_sig_type sig)
@@ -1309,9 +1410,11 @@ static struct rx_msg *pd_ext_msg_received(struct usbpd *pd, u16 header, u8 *buf,
 		req->msg_type = PD_MSG_HDR_TYPE(header);
 		req->chunk_num = chunk_num + 1;
 		req->sop = sop;
-		queue_work(pd->wq, &req->w);
+		if (usbpd_queue_work(pd, pd->wq, &req->w))
+			return NULL;
 
-		return NULL;
+		kfree(req);
+		goto queue_rx;
 	}
 
 queue_rx:
@@ -1429,7 +1532,7 @@ static enum hrtimer_restart pd_timeout(struct hrtimer *timer)
 {
 	struct usbpd *pd = container_of(timer, struct usbpd, timer);
 
-	queue_work(pd->wq, &pd->sm_work);
+	usbpd_queue_work(pd, pd->wq, &pd->sm_work);
 
 	return HRTIMER_NORESTART;
 }
@@ -1508,7 +1611,7 @@ static void start_src_ams(struct usbpd *pd, bool ams)
 		kick_sm(pd, SINK_TX_TIME);
 }
 
-int usbpd_register_svid(struct usbpd *pd, struct usbpd_svid_handler *hdlr)
+static int __usbpd_register_svid(struct usbpd *pd, struct usbpd_svid_handler *hdlr)
 {
 	if (find_svid_handler(pd, hdlr->svid)) {
 		usbpd_err(&pd->dev, "SVID 0x%04x already registered\n",
@@ -1547,6 +1650,18 @@ int usbpd_register_svid(struct usbpd *pd, struct usbpd_svid_handler *hdlr)
 
 	return 0;
 }
+
+int usbpd_register_svid(struct usbpd *pd, struct usbpd_svid_handler *hdlr)
+{
+	int ret;
+
+	if (!usbpd_get_active(pd))
+		return -ESHUTDOWN;
+
+	ret = __usbpd_register_svid(pd, hdlr);
+	usbpd_put_active(pd);
+	return ret;
+}
 EXPORT_SYMBOL(usbpd_register_svid);
 
 void usbpd_unregister_svid(struct usbpd *pd, struct usbpd_svid_handler *hdlr)
@@ -1560,7 +1675,7 @@ void usbpd_unregister_svid(struct usbpd *pd, struct usbpd_svid_handler *hdlr)
 }
 EXPORT_SYMBOL(usbpd_unregister_svid);
 
-int usbpd_send_vdm(struct usbpd *pd, u32 vdm_hdr, const u32 *vdos, int num_vdos)
+static int __usbpd_send_vdm(struct usbpd *pd, u32 vdm_hdr, const u32 *vdos, int num_vdos)
 {
 	struct vdm_tx *vdm_tx;
 
@@ -1590,6 +1705,18 @@ int usbpd_send_vdm(struct usbpd *pd, u32 vdm_hdr, const u32 *vdos, int num_vdos)
 		kick_sm(pd, 2);
 
 	return 0;
+}
+
+int usbpd_send_vdm(struct usbpd *pd, u32 vdm_hdr, const u32 *vdos, int num_vdos)
+{
+	int ret;
+
+	if (!usbpd_get_active(pd))
+		return -ESHUTDOWN;
+
+	ret = __usbpd_send_vdm(pd, vdm_hdr, vdos, num_vdos);
+	usbpd_put_active(pd);
+	return ret;
 }
 EXPORT_SYMBOL(usbpd_send_vdm);
 
@@ -4133,7 +4260,7 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 			usbpd_dbg(&pd->dev, "typec mode:%d type:%d\n",
 				typec_mode, val.intval);
 			pd->typec_mode = typec_mode;
-			queue_work(pd->wq, &pd->start_periph_work);
+			usbpd_queue_work(pd, pd->wq, &pd->start_periph_work);
 		}
 
 		return 0;
@@ -4222,7 +4349,7 @@ static int usbpd_do_swap(struct usbpd *pd, bool dr_swap,
 	return 0;
 }
 
-static int usbpd_typec_dr_set(const struct typec_capability *cap,
+static int __usbpd_typec_dr_set(const struct typec_capability *cap,
 				enum typec_data_role role)
 {
 	struct usbpd *pd = container_of(cap, struct usbpd, typec_caps);
@@ -4260,7 +4387,21 @@ static int usbpd_typec_dr_set(const struct typec_capability *cap,
 	return 0;
 }
 
-static int usbpd_typec_pr_set(const struct typec_capability *cap,
+static int usbpd_typec_dr_set(const struct typec_capability *cap,
+			      enum typec_data_role role)
+{
+	struct usbpd *pd = container_of(cap, struct usbpd, typec_caps);
+	int ret;
+
+	if (!usbpd_get_active(pd))
+		return -ESHUTDOWN;
+
+	ret = __usbpd_typec_dr_set(cap, role);
+	usbpd_put_active(pd);
+	return ret;
+}
+
+static int __usbpd_typec_pr_set(const struct typec_capability *cap,
 				enum typec_role role)
 {
 	struct usbpd *pd = container_of(cap, struct usbpd, typec_caps);
@@ -4297,8 +4438,22 @@ static int usbpd_typec_pr_set(const struct typec_capability *cap,
 	return 0;
 }
 
-static int usbpd_typec_port_type_set(const struct typec_capability *cap,
-				enum typec_port_type type)
+static int usbpd_typec_pr_set(const struct typec_capability *cap,
+			      enum typec_role role)
+{
+	struct usbpd *pd = container_of(cap, struct usbpd, typec_caps);
+	int ret;
+
+	if (!usbpd_get_active(pd))
+		return -ESHUTDOWN;
+
+	ret = __usbpd_typec_pr_set(cap, role);
+	usbpd_put_active(pd);
+	return ret;
+}
+
+static int __usbpd_typec_port_type_set(const struct typec_capability *cap,
+				       enum typec_port_type type)
 {
 	struct usbpd *pd = container_of(cap, struct usbpd, typec_caps);
 	union power_supply_propval value;
@@ -4347,6 +4502,20 @@ reset_drp:
 		POWER_SUPPLY_PROP_TYPEC_POWER_ROLE, &value);
 
 	return -ETIMEDOUT;
+}
+
+static int usbpd_typec_port_type_set(const struct typec_capability *cap,
+				     enum typec_port_type type)
+{
+	struct usbpd *pd = container_of(cap, struct usbpd, typec_caps);
+	int ret;
+
+	if (!usbpd_get_active(pd))
+		return -ESHUTDOWN;
+
+	ret = __usbpd_typec_port_type_set(cap, type);
+	usbpd_put_active(pd);
+	return ret;
 }
 
 static int usbpd_uevent(struct device *dev, struct kobj_uevent_env *env)
@@ -4950,7 +5119,7 @@ static ssize_t usbpd_verifed_store(struct device *dev,
 
 	if (!pd->verifed && !pd->pps_found && !pd->fix_pdo_5v
 			&& (!IS_ENABLED(CONFIG_MACH_XIAOMI_DAGU) || !pd->has_dp))
-		schedule_delayed_work(&pd->fixed_pdo_work, 5 * HZ);
+		usbpd_schedule_delayed_work(pd, &pd->fixed_pdo_work, 5 * HZ);
 
 	return size;
 }
@@ -5426,7 +5595,7 @@ invalid_payload:
 		  cmd, num_vdos);
 }
 
-int usbpd_get_pps_status(struct usbpd *pd, u32 *pps_status)
+static int __usbpd_get_pps_status(struct usbpd *pd, u32 *pps_status)
 {
 	int ret;
 
@@ -5441,9 +5610,21 @@ int usbpd_get_pps_status(struct usbpd *pd, u32 *pps_status)
 
 	return ret;
 }
+
+int usbpd_get_pps_status(struct usbpd *pd, u32 *pps_status)
+{
+	int ret;
+
+	if (!usbpd_get_active(pd))
+		return -ESHUTDOWN;
+
+	ret = __usbpd_get_pps_status(pd, pps_status);
+	usbpd_put_active(pd);
+	return ret;
+}
 EXPORT_SYMBOL(usbpd_get_pps_status);
 
-int usbpd_fetch_pdo(struct usbpd *pd, struct usbpd_pdo *pdos)
+static int __usbpd_fetch_pdo(struct usbpd *pd, struct usbpd_pdo *pdos)
 {
 	int ret = 0;
 	int pdo;
@@ -5497,9 +5678,24 @@ out:
 	mutex_unlock(&pd->swap_lock);
 	return ret;
 }
+
+int usbpd_fetch_pdo(struct usbpd *pd, struct usbpd_pdo *pdos)
+{
+	int ret;
+
+	if (!pd || !pdos)
+		return -EINVAL;
+
+	if (!usbpd_get_active(pd))
+		return -ESHUTDOWN;
+
+	ret = __usbpd_fetch_pdo(pd, pdos);
+	usbpd_put_active(pd);
+	return ret;
+}
 EXPORT_SYMBOL(usbpd_fetch_pdo);
 
-int usbpd_select_pdo(struct usbpd *pd, int pdo, int uv, int ua)
+static int __usbpd_select_pdo(struct usbpd *pd, int pdo, int uv, int ua)
 {
 	int ret;
 
@@ -5535,7 +5731,7 @@ int usbpd_select_pdo(struct usbpd *pd, int pdo, int uv, int ua)
 	} else {
 		pd->force_update = false;
 		cancel_delayed_work(&pd->src_check_work);
-		schedule_delayed_work(&pd->src_check_work, 5 * HZ);
+		usbpd_schedule_delayed_work(pd, &pd->src_check_work, 5 * HZ);
 	}
 
 	ret = pd_select_pdo_for_bq(pd, pdo, uv, ua);
@@ -5577,6 +5773,18 @@ out:
 	mutex_unlock(&pd->swap_lock);
 	return ret;
 }
+
+int usbpd_select_pdo(struct usbpd *pd, int pdo, int uv, int ua)
+{
+	int ret;
+
+	if (!usbpd_get_active(pd))
+		return -ESHUTDOWN;
+
+	ret = __usbpd_select_pdo(pd, pdo, uv, ua);
+	usbpd_put_active(pd);
+	return ret;
+}
 EXPORT_SYMBOL(usbpd_select_pdo);
 
 int usbpd_get_current_state(struct usbpd *pd){
@@ -5608,13 +5816,14 @@ static void usbpd_pps_monitor_workfunc(struct work_struct *w)
 {
 	struct usbpd *pd = container_of(w, struct usbpd, pps_monitor_work.work);
 	union power_supply_propval val = {0};
+	struct power_supply *cp_psy;
 	int rc, isns = 0, interval;
 	bool cp_dis, passthrough_dis;
 	static int check;
 	u64 elapsed_us;
 
-	pd->cp_psy = power_supply_get_by_name("charge_pump_master");
-	if (!pd->cp_psy) {
+	cp_psy = power_supply_get_by_name("charge_pump_master");
+	if (!cp_psy) {
 		usbpd_dbg(&pd->dev, "Could not get cp psy\n");
 		return;
 	}
@@ -5627,14 +5836,14 @@ static void usbpd_pps_monitor_workfunc(struct work_struct *w)
 		interval = PPS_MONITOR_LOOP_TIME;
 		goto end;
 	}
-	rc = power_supply_get_property(pd->cp_psy,
-				POWER_SUPPLY_PROP_CP_ISNS, &val);
+	rc = power_supply_get_property(cp_psy,
+				       POWER_SUPPLY_PROP_CP_ISNS, &val);
 	if (!rc) {
 		isns = val.intval / 1000;
 	}
 
-	rc = power_supply_get_property(pd->cp_psy,
-				POWER_SUPPLY_PROP_CP_ISNS_SLAVE, &val);
+	rc = power_supply_get_property(cp_psy,
+				       POWER_SUPPLY_PROP_CP_ISNS_SLAVE, &val);
 	if (!rc) {
 		isns += val.intval / 1000;
 	}
@@ -5677,7 +5886,8 @@ end:
 	else
 		interval = PPS_MONITOR_LOOP_TIME;
 
-	schedule_delayed_work(&pd->pps_monitor_work, msecs_to_jiffies(interval));
+	usbpd_schedule_delayed_work(pd, &pd->pps_monitor_work, msecs_to_jiffies(interval));
+	power_supply_put(cp_psy);
 }
 
 static void usbpd_fixed_pdo_workfunc(struct work_struct *w)
@@ -5853,7 +6063,8 @@ static void usbpd_pdo_workfunc(struct work_struct *w)
 
 		if (pd->pps_found) {
 			pd->monitor_entry_time = ktime_get();
-			schedule_delayed_work(&pd->pps_monitor_work, msecs_to_jiffies(PPS_DANGEROUS_LOOP_TIME));
+			usbpd_schedule_delayed_work(pd, &pd->pps_monitor_work,
+						    msecs_to_jiffies(PPS_DANGEROUS_LOOP_TIME));
 		}
 	}
 
@@ -5864,10 +6075,25 @@ static void usbpd_pdo_workfunc(struct work_struct *w)
 			POWER_SUPPLY_PROP_PD_ACTIVE, &val);
 }
 
+static void usbpd_put_power_supplies(struct usbpd *pd)
+{
+	if (pd->usb_psy)
+		power_supply_put(pd->usb_psy);
+	if (pd->bat_psy)
+		power_supply_put(pd->bat_psy);
+	if (pd->bms_psy)
+		power_supply_put(pd->bms_psy);
+	if (pd->wireless_psy)
+		power_supply_put(pd->wireless_psy);
+	if (pd->ps_psy)
+		power_supply_put(pd->ps_psy);
+}
+
 static void usbpd_release(struct device *dev)
 {
 	struct usbpd *pd = container_of(dev, struct usbpd, dev);
 
+	device_init_wakeup(dev, false);
 	kfree(pd);
 }
 
@@ -5886,6 +6112,7 @@ static int num_pd_instances;
 struct usbpd *usbpd_create(struct device *parent)
 {
 	int ret;
+	unsigned long flags;
 	struct usbpd *pd;
 	union power_supply_propval val = {0};
 	struct usbpd_svid_handler svid_handler = {
@@ -5914,14 +6141,10 @@ struct usbpd *usbpd_create(struct device *parent)
 	if (ret)
 		goto free_pd;
 
-	ret = device_add(&pd->dev);
-	if (ret)
-		goto free_pd;
-
 	pd->wq = alloc_ordered_workqueue("usbpd_wq", WQ_FREEZABLE | WQ_HIGHPRI);
 	if (!pd->wq) {
 		ret = -ENOMEM;
-		goto del_pd;
+		goto free_pd;
 	}
 	INIT_WORK(&pd->sm_work, usbpd_sm);
 	INIT_WORK(&pd->start_periph_work, start_usb_peripheral_work);
@@ -5934,6 +6157,14 @@ struct usbpd *usbpd_create(struct device *parent)
 	pd->timer.function = pd_timeout;
 	mutex_init(&pd->swap_lock);
 	mutex_init(&pd->svid_handler_lock);
+	spin_lock_init(&pd->queue_lock);
+	pd->stopping = true;
+	init_waitqueue_head(&pd->users_wait);
+	spin_lock_init(&pd->rx_lock);
+	INIT_LIST_HEAD(&pd->rx_q);
+	INIT_LIST_HEAD(&pd->svid_handlers);
+	init_completion(&pd->is_ready);
+	init_completion(&pd->tx_chunk_request);
 
 	pd->usb_psy = power_supply_get_by_name("usb");
 	if (!pd->usb_psy) {
@@ -6076,6 +6307,7 @@ struct usbpd *usbpd_create(struct device *parent)
 		pd->typec_port = typec_register_port(parent, &pd->typec_caps);
 		if (IS_ERR(pd->typec_port)) {
 			usbpd_err(&pd->dev, "could not register typec port\n");
+			ret = PTR_ERR(pd->typec_port);
 			goto put_psy;
 		}
 	}
@@ -6084,17 +6316,19 @@ struct usbpd *usbpd_create(struct device *parent)
 	pd->current_dr = DR_NONE;
 	list_add_tail(&pd->instance, &_usbpd);
 
-	spin_lock_init(&pd->rx_lock);
-	INIT_LIST_HEAD(&pd->rx_q);
-	INIT_LIST_HEAD(&pd->svid_handlers);
-	init_completion(&pd->is_ready);
-	init_completion(&pd->tx_chunk_request);
+	ret = device_add(&pd->dev);
+	if (ret)
+		goto del_inst;
 
 	pd->psy_nb.notifier_call = psy_changed;
 	ret = power_supply_reg_notifier(&pd->psy_nb);
 	if (ret)
-		goto del_inst;
+		goto del_pd;
 
+	/* All callback prerequisites and interfaces are now ready. */
+	spin_lock_irqsave(&pd->queue_lock, flags);
+	pd->stopping = false;
+	spin_unlock_irqrestore(&pd->queue_lock, flags);
 	pd->svid_handler = svid_handler;
 	ret = usbpd_register_svid(pd, &pd->svid_handler);
 	if (ret) {
@@ -6106,14 +6340,15 @@ struct usbpd *usbpd_create(struct device *parent)
 
 	return pd;
 
-del_inst:
-	list_del(&pd->instance);
-put_psy:
-	power_supply_put(pd->usb_psy);
-destroy_wq:
-	destroy_workqueue(pd->wq);
 del_pd:
 	device_del(&pd->dev);
+del_inst:
+	list_del(&pd->instance);
+	typec_unregister_port(pd->typec_port);
+put_psy:
+	usbpd_put_power_supplies(pd);
+destroy_wq:
+	destroy_workqueue(pd->wq);
 free_pd:
 	num_pd_instances--;
 	put_device(&pd->dev);
@@ -6127,20 +6362,45 @@ EXPORT_SYMBOL(usbpd_create);
  */
 void usbpd_destroy(struct usbpd *pd)
 {
+	unsigned long flags;
+
 	if (!pd)
 		return;
 
+	/* Stop every producer before canceling system work or the timer. */
+	spin_lock_irqsave(&pd->queue_lock, flags);
+	pd->stopping = true;
+	spin_unlock_irqrestore(&pd->queue_lock, flags);
 	list_del(&pd->instance);
 	power_supply_unreg_notifier(&pd->psy_nb);
-	power_supply_put(pd->usb_psy);
-	if (pd->bat_psy)
-		power_supply_put(pd->bat_psy);
-	if (pd->bms_psy)
-		power_supply_put(pd->bms_psy);
-	if (pd->wireless_psy)
-		power_supply_put(pd->wireless_psy);
+	device_del(&pd->dev);
+	wait_event(pd->users_wait, usbpd_users_idle(pd));
+
+	hrtimer_cancel(&pd->timer);
+	cancel_work_sync(&pd->pdo_work);
+	cancel_delayed_work_sync(&pd->src_check_work);
+	cancel_delayed_work_sync(&pd->fixed_pdo_work);
+	cancel_delayed_work_sync(&pd->pps_monitor_work);
 	destroy_workqueue(pd->wq);
-	device_unregister(&pd->dev);
+
+	/* No worker can reopen the PHY; close synchronizes its RX callbacks. */
+	if (pd->pd_phy_opened) {
+		pd_phy_close();
+		pd->pd_phy_opened = false;
+	}
+	phy_shutdown(pd);
+	reset_vdm_state(pd);
+	rx_msg_cleanup(pd);
+	kfree(pd->rx_ext_msg);
+	if (pd->current_dr == DR_UFP)
+		stop_usb_peripheral(pd);
+	else if (pd->current_dr == DR_DFP)
+		stop_usb_host(pd);
+	typec_unregister_partner(pd->partner);
+	typec_unregister_port(pd->typec_port);
+	usbpd_put_power_supplies(pd);
+	pm_relax(&pd->dev);
+	put_device(&pd->dev);
 }
 EXPORT_SYMBOL(usbpd_destroy);
 
