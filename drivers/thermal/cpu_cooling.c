@@ -162,30 +162,6 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
 	return NOTIFY_OK;
 }
 
-void cpu_limits_set_level(unsigned int cpu, unsigned int max_freq)
-{
-	struct cpufreq_cooling_device *cpufreq_cdev;
-	struct thermal_cooling_device *cdev;
-	unsigned int cdev_cpu;
-	unsigned int level;
-
-	list_for_each_entry(cpufreq_cdev, &cpufreq_cdev_list, node) {
-		sscanf(cpufreq_cdev->cdev->type, "thermal-cpufreq-%d", &cdev_cpu);
-		if (cdev_cpu == cpu) {
-			for (level = 0; level <= cpufreq_cdev->max_level; level++) {
-				int target_freq = cpufreq_cdev->em->table[level].frequency;
-				if (max_freq <= target_freq) {
-					cdev = cpufreq_cdev->cdev;
-					if (cdev)
-						cdev->ops->set_cur_state(cdev, cpufreq_cdev->max_level - level);
-					break;
-				}
-			}
-			break;
-		}
-	}
-}
-
 #ifdef CONFIG_ENERGY_MODEL
 /**
  * get_level: Find the level for a particular frequency
@@ -366,6 +342,46 @@ static unsigned int get_state_freq(struct cpufreq_cooling_device *cpufreq_cdev,
 		idx = state;
 
 	return policy->freq_table[idx].frequency;
+}
+
+void cpu_limits_set_level(unsigned int cpu, unsigned int max_freq)
+{
+	struct cpufreq_cooling_device *cpufreq_cdev;
+	bool update_policy = false;
+	unsigned int level, policy_cpu = cpu;
+
+	get_online_cpus();
+	mutex_lock(&cooling_list_lock);
+	list_for_each_entry(cpufreq_cdev, &cpufreq_cdev_list, node) {
+		if (cpufreq_cdev->id != cpu)
+			continue;
+
+		policy_cpu = cpufreq_cdev->policy->cpu;
+		if (!cpumask_test_cpu(policy_cpu, cpufreq_cdev->policy->cpus))
+			break;
+
+		for (level = 0; level <= cpufreq_cdev->max_level; level++) {
+			unsigned long state = cpufreq_cdev->max_level - level;
+			unsigned int target_freq =
+				get_state_freq(cpufreq_cdev, state);
+
+			if (max_freq <= target_freq) {
+				if (cpufreq_cdev->cpufreq_state != state) {
+					cpufreq_cdev->cpufreq_state = state;
+					cpufreq_cdev->clipped_freq = target_freq;
+					update_policy = true;
+				}
+				break;
+			}
+		}
+		break;
+	}
+	mutex_unlock(&cooling_list_lock);
+
+	/* The policy notifier takes cooling_list_lock itself. */
+	if (update_policy)
+		cpufreq_update_policy(policy_cpu);
+	put_online_cpus();
 }
 
 /**

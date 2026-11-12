@@ -64,16 +64,17 @@ struct screen_monitor {
 	int screen_state; /* 1: on; 0:off */
 };
 
-struct screen_monitor sm;
+static struct screen_monitor sm;
 #endif
 
 static struct device thermal_message_dev;
 static atomic_t switch_mode = ATOMIC_INIT(-1);
 static atomic_t temp_state = ATOMIC_INIT(0);
+static DEFINE_MUTEX(thermal_message_lock);
 static char boost_buf[128];
-const char *board_sensor;
+static const char *board_sensor;
 static char board_sensor_temp[128];
-const char *ambient_sensor;
+static const char *ambient_sensor;
 static char ambient_sensor_temp[128];
 
 /*
@@ -1729,9 +1730,14 @@ static ssize_t
 thermal_sconfig_store(struct device *dev,
 				      struct device_attribute *attr, const char *buf, size_t len)
 {
-	int val = -1;
+	int val;
+	int ret;
 
-	val = simple_strtol(buf, NULL, 10);
+	ret = kstrtoint(buf, 10, &val);
+	if (ret)
+		return ret;
+	if (val < 0)
+		return -EINVAL;
 
 	atomic_set(&switch_mode, val);
 
@@ -1743,17 +1749,29 @@ static DEVICE_ATTR(sconfig, 0664,
 
 static ssize_t
 thermal_boost_show(struct device *dev,
-				      struct device_attribute *attr, char *buf)
+		struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, boost_buf);
+	ssize_t ret;
+
+	mutex_lock(&thermal_message_lock);
+	ret = scnprintf(buf, PAGE_SIZE, "%s", boost_buf);
+	mutex_unlock(&thermal_message_lock);
+
+	return ret;
 }
 
 static ssize_t
 thermal_boost_store(struct device *dev,
-				      struct device_attribute *attr, const char *buf, size_t len)
+		struct device_attribute *attr, const char *buf, size_t len)
 {
-	int ret;
-	ret = snprintf(boost_buf, sizeof(boost_buf), buf);
+	size_t count = min(len, sizeof(boost_buf) - 1);
+
+	/* Userspace text is data, never a printf format string. */
+	mutex_lock(&thermal_message_lock);
+	memcpy(boost_buf, buf, count);
+	boost_buf[count] = '\0';
+	mutex_unlock(&thermal_message_lock);
+
 	return len;
 }
 
@@ -1827,14 +1845,26 @@ static ssize_t
 thermal_board_sensor_temp_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, board_sensor_temp);
+	ssize_t ret;
+
+	mutex_lock(&thermal_message_lock);
+	ret = scnprintf(buf, PAGE_SIZE, "%s", board_sensor_temp);
+	mutex_unlock(&thermal_message_lock);
+
+	return ret;
 }
 
 static ssize_t
 thermal_board_sensor_temp_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t len)
 {
-	snprintf(board_sensor_temp, sizeof(board_sensor_temp), buf);
+	size_t count = min(len, sizeof(board_sensor_temp) - 1);
+
+	/* Userspace text is data, never a printf format string. */
+	mutex_lock(&thermal_message_lock);
+	memcpy(board_sensor_temp, buf, count);
+	board_sensor_temp[count] = '\0';
+	mutex_unlock(&thermal_message_lock);
 
 	return len;
 }
@@ -1859,14 +1889,26 @@ static ssize_t
 thermal_ambient_sensor_temp_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, ambient_sensor_temp);
+	ssize_t ret;
+
+	mutex_lock(&thermal_message_lock);
+	ret = scnprintf(buf, PAGE_SIZE, "%s", ambient_sensor_temp);
+	mutex_unlock(&thermal_message_lock);
+
+	return ret;
 }
 
 static ssize_t
 thermal_ambient_sensor_temp_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t len)
 {
-	snprintf(ambient_sensor_temp, sizeof(ambient_sensor_temp), buf);
+	size_t count = min(len, sizeof(ambient_sensor_temp) - 1);
+
+	/* Userspace text is data, never a printf format string. */
+	mutex_lock(&thermal_message_lock);
+	memcpy(ambient_sensor_temp, buf, count);
+	ambient_sensor_temp[count] = '\0';
+	mutex_unlock(&thermal_message_lock);
 
 	return len;
 }
