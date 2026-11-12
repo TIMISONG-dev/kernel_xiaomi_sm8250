@@ -1365,13 +1365,13 @@ static bool __cam_req_mgr_check_peer_req_is_applied(
 	sync_link = link->sync_link;
 
 	if (!sync_link)
-		applied &= true;
+		goto end;
 
 	in_q = sync_link->req.in_q;
 	if (!in_q) {
 		CAM_DBG(CAM_CRM, "Link hdl %x in_q is NULL",
 			sync_link->link_hdl);
-		applied &= true;
+		goto end;
 	}
 
 	sync_slot_idx = __cam_req_mgr_find_slot_for_req(
@@ -1382,7 +1382,7 @@ static bool __cam_req_mgr_check_peer_req_is_applied(
 		CAM_DBG(CAM_CRM,
 			"Can't find req:%lld from peer link, idx:%d",
 			req_id, sync_slot_idx);
-		applied &= true;
+		goto end;
 	}
 
 	sync_slot = &in_q->slot[sync_slot_idx];
