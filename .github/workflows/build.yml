@@ -1,0 +1,121 @@
+name: Build MagicTime FinaSU (Alioth-MIUI)
+
+on:
+  workflow_dispatch:
+
+env:
+  KERNEL_SOURCE: https://github.com/rahulkarnawal615-coder/kernel_xiaomi_sm8250
+  KERNEL_BRANCH: magictime-miui
+  DEFCONFIG: vendor/alioth_defconfig
+  ANYKERNEL3_URL: https://github.com/osm0sis/AnyKernel3
+  ANYKERNEL3_BRANCH: master
+  CLANG_URL: https://github.com/kdrag0n/proton-clang/archive/master.tar.gz
+
+jobs:
+  build:
+    name: Build Kernel
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Setup Build Environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler python3
+
+    - name: Download Proton-Clang Toolchain
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/clang
+        curl -L $CLANG_URL | tar -xz -C $GITHUB_WORKSPACE/clang --strip-components=1
+        echo "PATH=$GITHUB_WORKSPACE/clang/bin:$PATH" >> $GITHUB_ENV
+
+    - name: Clone Kernel Source
+      run: |
+        git clone --depth=1 -b $KERNEL_BRANCH $KERNEL_SOURCE $GITHUB_WORKSPACE/kernel_workspace
+
+    - name: Integrate FinaSU & Apply SUSFS Patches
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace
+        
+        # 1. Purana KernelSU delete karein aur FinaSU ko uski jagah clone karein
+        rm -rf fs/KernelSU
+        git clone https://github.com/LyraVoid/FinaSU.git fs/KernelSU
+        
+        # 2. Inject FinaSU into kernel build system
+        echo "Injecting Kconfig and Makefile hooks for FinaSU..."
+        grep -q "KernelSU" fs/Kconfig || sed -i '/source "fs\/quota\/Kconfig"/a source "fs/KernelSU/Kconfig"' fs/Kconfig
+        grep -q "KernelSU" fs/Makefile || sed -i '/obj-$(CONFIG_QUOTA)/a obj-y += KernelSU\/' fs/Makefile
+        
+        # 3. Clone SUSFS4KSU patches (GitLab link)
+        cd $GITHUB_WORKSPACE
+        git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git
+        
+        # 4. Apply SUSFS kernel patches for 4.19 (Auto-detect patch file)
+        cd $GITHUB_WORKSPACE/kernel_workspace
+        PATCH_FILE=$(ls $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/ | grep -E "50_add_susfs_in_kernel-4.14.*\.patch")
+        cp $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/$PATCH_FILE ./
+        cp $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/fs/susfs.c ./fs/
+        cp $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/include/linux/susfs.h ./include/linux/
+        cp $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/include/linux/susfs_def.h ./include/linux/
+        
+        # Patching core kernel files
+        patch -p1 < $PATCH_FILE || echo "Some patches failed or already applied, check logs."
+
+    - name: Update Defconfig for FinaSU and SUSFS
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace
+        
+        # Add required flags to your defconfig
+        echo "CONFIG_KSU=y" >> arch/arm64/configs/$DEFCONFIG
+        echo "CONFIG_KSU_SUSFS=y" >> arch/arm64/configs/$DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> arch/arm64/configs/$DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> arch/arm64/configs/$DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> arch/arm64/configs/$DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> arch/arm64/configs/$DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> arch/arm64/configs/$DEFCONFIG
+        echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> arch/arm64/configs/$DEFCONFIG
+
+    - name: Compile Kernel
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace
+        export ARCH=arm64
+        export SUBARCH=arm64
+        export CROSS_COMPILE=$GITHUB_WORKSPACE/clang/bin/aarch64-linux-gnu-
+        export CROSS_COMPILE_ARM32=$GITHUB_WORKSPACE/clang/bin/arm-linux-gnueabi-
+        
+        make O=out $DEFCONFIG
+        make -j$(nproc --all) O=out \
+             CC=clang \
+             AR=llvm-ar \
+             NM=llvm-nm \
+             OBJCOPY=llvm-objcopy \
+             OBJDUMP=llvm-objdump \
+             STRIP=llvm-strip \
+             LD=ld.lld \
+             Image.gz-dtb dtbo.img
+
+    - name: Package AnyKernel3
+      run: |
+        git clone --depth=1 -b $ANYKERNEL3_BRANCH $ANYKERNEL3_URL AnyKernel3
+        cd AnyKernel3
+        
+        rm -rf AnyKernel3/patch AnyKernel3/ramdisk
+        
+        # Copy compiled images
+        cp $GITHUB_WORKSPACE/kernel_workspace/out/arch/arm64/boot/Image.gz-dtb ./
+        cp $GITHUB_WORKSPACE/kernel_workspace/out/arch/arm64/boot/dtbo.img ./
+        
+        # Modify anykernel.sh for alioth
+        sed -i 's/kernel.string=.*/kernel.string=MagicTime-FinaSU-Alioth/' anykernel.sh
+        sed -i 's/device.name1=.*/device.name1=alioth/' anykernel.sh
+        sed -i 's/device.name2=.*/device.name2=aliothin/' anykernel.sh
+        sed -i 's/block=.*/block=\/dev\/block\/bootdevice\/by-name\/boot/' anykernel.sh
+        sed -i 's/is_slot_device=.*/is_slot_device=1/' anykernel.sh
+        
+        zip -r9 ../MagicTime-FinaSU-Alioth-MIUI.zip *
+
+    - name: Upload Kernel Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MagicTime-FinaSU-Alioth-MIUI
+        path: MagicTime-FinaSU-Alioth-MIUI.zip
+        
