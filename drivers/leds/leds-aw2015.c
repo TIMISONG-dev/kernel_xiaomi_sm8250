@@ -794,6 +794,7 @@ static int aw2015_led_parse_child_node(struct aw2015_led *led_array,
 		if (!pdata) {
 			dev_err(&led->client->dev,
 				"Failed to allocate memory\n");
+			rc = -ENOMEM;
 			goto free_err;
 		}
 		pdata->led = led_array;
@@ -906,15 +907,18 @@ free_class:
 	cancel_work_sync(&led_array[parsed_leds].brightness_work);
 	devm_kfree(&led->client->dev, led_array[parsed_leds].pdata);
 	led_array[parsed_leds].pdata = NULL;
+	of_node_put(temp);
 	return rc;
 
 free_pdata:
 	aw2015_led_err_handle(led_array, parsed_leds);
 	devm_kfree(&led->client->dev, led_array[parsed_leds].pdata);
+	of_node_put(temp);
 	return rc;
 
 free_err:
 	aw2015_led_err_handle(led_array, parsed_leds);
+	of_node_put(temp);
 	return rc;
 }
 
