@@ -420,6 +420,13 @@ static void backlight_cdev_register(struct device *parent,
 	}
 }
 
+static void backlight_cdev_unregister(struct backlight_device *bd)
+{
+	if (!IS_ERR_OR_NULL(bd->cdev))
+		thermal_cooling_device_unregister(bd->cdev);
+	bd->cdev = NULL;
+}
+
 /**
  * backlight_device_register - create and register a new object of
  *   backlight_device class.
@@ -582,6 +589,8 @@ void backlight_device_unregister(struct backlight_device *bd)
 
 	blocking_notifier_call_chain(&backlight_notifier,
 				     BACKLIGHT_UNREGISTERED, bd);
+
+	backlight_cdev_unregister(bd);
 
 	mutex_lock(&bd->ops_lock);
 	bd->ops = NULL;
