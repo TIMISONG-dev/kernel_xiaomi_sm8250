@@ -486,10 +486,9 @@ static int qpnp_flash_led_safety_tmr_config(struct qpnp_flash_led *led)
 static int qpnp_flash_led_strobe_config(struct qpnp_flash_led *led)
 {
 	int i, rc, addr_offset;
-	u8 val = 0, mask, strobe_mask = 0, strobe_ctrl;
+	u8 mask, strobe_mask = 0, strobe_ctrl;
 
 	for (i = 0; i < led->num_fnodes; i++) {
-		val |= 0x1 << led->fnode[i].id;
 
 		if (led->fnode[i].strobe_sel == HW_STROBE) {
 			if (led->fnode[i].id == LED3)
@@ -3211,16 +3210,16 @@ static int qpnp_flash_led_probe(struct platform_device *pdev)
 		if (!strcmp("switch", temp_string)) {
 			rc = qpnp_flash_led_parse_and_register_switch(led,
 					&led->snode[j], temp);
+			if (rc < 0) {
+				pr_err("Unable to parse and register switch node, rc=%d\n",
+				       rc);
+				goto error_switch_register;
+			}
 			snode = &led->snode[j];
 			if (!strcmp("led:switch_0", snode->cdev.name)) {
 				g_switch_0 = snode;
 			} else if (!strcmp("led:switch_1", snode->cdev.name)) {
 				g_switch_1 = snode;
-			}
-			if (rc < 0) {
-				pr_err("Unable to parse and register switch node, rc=%d\n",
-					rc);
-				goto error_switch_register;
 			}
 			j++;
 		}
