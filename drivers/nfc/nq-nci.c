@@ -1367,7 +1367,13 @@ reset_enable_gpio:
 		goto err_nfcc_hw_check;
 	}
 
-	reset_ntf_len = 2 + nci_reset_ntf[2]; /*payload + len*/
+	/* The trailing chip information must lie in the received payload. */
+	if (ret < NCI_HEADER_LEN ||
+	    (u8)nci_reset_ntf[2] < 4 ||
+	    (u8)nci_reset_ntf[2] > ret - NCI_HEADER_LEN)
+		goto err_nfcc_hw_check;
+
+	reset_ntf_len = 2 + (u8)nci_reset_ntf[2]; /*payload + len*/
 	if (reset_ntf_len > PAYLOAD_HEADER_LENGTH) {
 		nqx_dev->nqx_info.info.chip_type =
 				nci_reset_ntf[reset_ntf_len - 3];
