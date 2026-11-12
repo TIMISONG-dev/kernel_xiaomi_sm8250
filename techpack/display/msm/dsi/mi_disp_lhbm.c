@@ -30,13 +30,19 @@ static int mi_disp_fod_thread_create(struct disp_lhbm *dl_ptr, int disp_id)
 	dt_ptr->thread = kthread_run(kthread_worker_fn,
 			&dt_ptr->worker, "disp_fod:%d", disp_id);
 
-	ret = sched_setscheduler(dt_ptr->thread, SCHED_FIFO, &param);
-	if (ret)
-		pr_err("%s display thread priority update failed: %d\n", LHBM_TAG, ret);
-
 	if (IS_ERR(dt_ptr->thread)) {
+		ret = PTR_ERR(dt_ptr->thread);
 		pr_err("%s failed to create disp_feature kthread\n", LHBM_TAG);
 		dt_ptr->thread = NULL;
+		return ret;
+	}
+
+	ret = sched_setscheduler(dt_ptr->thread, SCHED_FIFO, &param);
+	if (ret) {
+		pr_err("%s display thread priority update failed: %d\n", LHBM_TAG, ret);
+		kthread_stop(dt_ptr->thread);
+		dt_ptr->thread = NULL;
+		return ret;
 	}
 	pr_info("%s create disp_fod:%d kthread success\n", LHBM_TAG, disp_id);
 
