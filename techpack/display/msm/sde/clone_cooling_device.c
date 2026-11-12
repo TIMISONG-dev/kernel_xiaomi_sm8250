@@ -117,12 +117,11 @@ static int backlight_clone_cdev_register(struct sde_clone_cdev *cdev_clone,
 	cdev_clone->cdev = thermal_of_cooling_device_register(parent->of_node,
 				bl_node_name, cdev_clone, &bd_cdev_clone_ops);
 
-	if (!&(cdev_clone->cdev)) {
+	if (IS_ERR(cdev_clone->cdev)) {
 		pr_err("Cooling device register failed\n");
-		return -EINVAL;
+		return PTR_ERR(cdev_clone->cdev);
 	}
-	else
-		display_clone_count++;
+	display_clone_count++;
 
 	return 0;
 }
