@@ -240,7 +240,7 @@ int __init cma_init_reserved_mem(phys_addr_t base, phys_addr_t size,
 	cma = &cma_areas[cma_area_count];
 
 	if (name)
-		snprintf(cma->name, CMA_MAX_NAME, name);
+		snprintf(cma->name, CMA_MAX_NAME, "%s", name);
 	else
 		snprintf(cma->name, CMA_MAX_NAME,  "cma%d\n", cma_area_count);
 
