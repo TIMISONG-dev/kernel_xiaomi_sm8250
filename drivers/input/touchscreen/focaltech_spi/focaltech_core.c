@@ -476,7 +476,6 @@ static int fts_input_report_key(struct fts_ts_data *data, int index)
 static int fts_input_report_b(struct fts_ts_data *data)
 {
 	int i = 0;
-	int uppoint = 0;
 	int touchs = 0;
 	bool va_reported = false;
 	u32 max_touch_num = data->pdata->max_touch_number;
@@ -518,7 +517,6 @@ static int fts_input_report_b(struct fts_ts_data *data)
 				FTS_DEBUG("[B]P%d DOWN!", events[i].id);
 			}
 		} else {
-			uppoint++;
 			input_mt_report_slot_state(data->input_dev,
 						   MT_TOOL_FINGER, false);
 			data->touchs &= ~BIT(events[i].id);
@@ -1404,7 +1402,7 @@ static int drm_notifier_callback(struct notifier_block *self,
 	}
 
 	blank = *(int *)(evdata->data);
-	FTS_INFO("DRM event:%lu, blank:%d", event, blank);
+	FTS_DEBUG("DRM event:%lu, blank:%d", event, blank);
 
 	if (blank == MI_DRM_BLANK_UNBLANK) {
 		queue_work(fts_data->ts_workqueue, &fts_data->resume_work);
@@ -1554,6 +1552,8 @@ static void fts_power_supply_work(struct work_struct *work)
 {
 	struct fts_ts_data *ts_data =
 		container_of(work, struct fts_ts_data, power_supply_work);
+	struct power_supply *usb;
+	union power_supply_propval val;
 	bool charger_mode;
 	int ret;
 
@@ -1567,9 +1567,20 @@ static void fts_power_supply_work(struct work_struct *work)
 #endif
 	pm_stay_awake(ts_data->dev);
 	mutex_lock(&ts_data->power_supply_lock);
-	charger_mode = !!power_supply_is_system_supplied();
+	charger_mode = power_supply_is_system_supplied() > 0;
+	if (!charger_mode) {
+		/* Qualcomm marks USB as device-scoped, so the system helper skips it. */
+		usb = power_supply_get_by_name("usb");
+		if (usb) {
+			ret = power_supply_get_property(usb,
+							POWER_SUPPLY_PROP_PRESENT, &val);
+			power_supply_put(usb);
+			if (ret < 0)
+				goto unlock;
+			charger_mode = !!val.intval;
+		}
+	}
 	if (charger_mode != ts_data->charger_mode) {
-		ts_data->charger_mode = charger_mode;
 		FTS_INFO("%s %d\n", __func__, charger_mode);
 		if (charger_mode) {
 			FTS_INFO("%s USB is exist\n", __func__);
@@ -1585,7 +1596,10 @@ static void fts_power_supply_work(struct work_struct *work)
 					"set power supply not exist fail, ret=%d",
 					ret);
 		}
+		if (ret >= 0)
+			ts_data->charger_mode = charger_mode;
 	}
+unlock:
 	mutex_unlock(&ts_data->power_supply_lock);
 	pm_relax(ts_data->dev);
 }
@@ -1795,6 +1809,16 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
 {
 	FTS_FUNC_ENTER();
 
+	power_supply_unreg_notifier(&ts_data->power_supply_notifier);
+#if defined(CONFIG_DRM)
+	if (mi_drm_unregister_client(&ts_data->fb_notif))
+		FTS_ERROR("[DRM]Error occurred while unregistering fb_notifier.\n");
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
+	unregister_early_suspend(&ts_data->early_suspend);
+#endif
+	if (ts_data->ts_workqueue)
+		cancel_work_sync(&ts_data->resume_work);
+
 #if FTS_POINT_REPORT_CHECK_EN
 	fts_point_report_check_exit(ts_data);
 #endif
@@ -1815,24 +1839,15 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
 #endif
 
 	fts_gesture_exit(ts_data);
-	fts_bus_exit(ts_data);
 
 	free_irq(ts_data->irq, ts_data);
-	input_unregister_device(ts_data->input_dev);
-
-	power_supply_unreg_notifier(&ts_data->power_supply_notifier);
-	mutex_destroy(&ts_data->power_supply_lock);
 
 	if (ts_data->ts_workqueue)
 		destroy_workqueue(ts_data->ts_workqueue);
 
-#if defined(CONFIG_DRM)
-	if (mi_drm_unregister_client(&ts_data->fb_notif))
-		FTS_ERROR(
-			"[DRM]Error occurred while unregistering fb_notifier.\n");
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	unregister_early_suspend(&ts_data->early_suspend);
-#endif
+	mutex_destroy(&ts_data->power_supply_lock);
+	fts_bus_exit(ts_data);
+	input_unregister_device(ts_data->input_dev);
 
 	if (gpio_is_valid(ts_data->pdata->reset_gpio))
 		gpio_free(ts_data->pdata->reset_gpio);
@@ -2401,14 +2416,15 @@ static int fts_set_cur_value(int mode, int value)
 
 static int fts_reset_mode(int mode)
 {
+	if (mode < 0 || mode >= Touch_Mode_NUM)
+		return -EINVAL;
+
 	if (mode == Touch_Game_Mode) {
 		fts_restore_normal_mode();
 		fts_data->gamemode_enabled = false;
 		fts_data->is_expert_mode = false;
-	} else if (mode < Touch_Mode_NUM) {
-		fts_restore_mode_value(mode, GET_DEF_VALUE);
 	} else {
-		FTS_ERROR("mode:%d don't support");
+		fts_restore_mode_value(mode, GET_DEF_VALUE);
 	}
 
 	FTS_INFO("mode:%d reset", mode);
@@ -2427,7 +2443,7 @@ static int fts_get_mode_value(int mode, int value_type)
 		FTS_INFO("mode:%d, value_type:%d, value:%d", mode, value_type,
 			 value);
 	} else {
-		FTS_ERROR("mode:%d don't support");
+		FTS_ERROR("mode:%d don't support", mode);
 	}
 
 	return value;
