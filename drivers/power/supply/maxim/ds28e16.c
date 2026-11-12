@@ -1196,12 +1196,6 @@ static int verify_psy_register(struct ds28e16_data *ds)
 	return 0;
 }
 
-
-static void verify_psy_unregister(struct ds28e16_data *ds)
-{
-	power_supply_unregister(ds->verify_psy);
-}
-
 // parse dts
 static int ds28e16_parse_dt(struct device *dev,
 				struct ds28e16_data *pdata)
@@ -1683,7 +1677,6 @@ static int ds28e16_probe(struct platform_device *pdev)
 	ds28e16_data->pdev = pdev;
 	platform_set_drvdata(pdev, ds28e16_data);
 	INIT_DELAYED_WORK(&ds28e16_data->battery_verify_work, battery_verify);
-	schedule_delayed_work(&ds28e16_data->battery_verify_work, msecs_to_jiffies(0));
 	retval = verify_psy_register(ds28e16_data);
 	if (retval) {
 		ds_err("Failed to verify_psy_register, err:%d\n", retval);
@@ -1696,14 +1689,15 @@ static int ds28e16_probe(struct platform_device *pdev)
 		goto ds28e16_create_group_err;
 	}
 
+	schedule_delayed_work(&ds28e16_data->battery_verify_work,
+			      msecs_to_jiffies(0));
+
 	return 0;
 
 ds28e16_create_group_err:
-	//sysfs_remove_groups(&ds28e16_data->dev->kobj, &(&ds_attr_group));
 ds28e16_psy_register_err:
 	dev_set_drvdata(ds28e16_data->dev, NULL);
 ds28e16_parse_dt_err:
-	kfree(ds28e16_data);
 	return retval;
 }
 
@@ -1711,8 +1705,9 @@ static int ds28e16_remove(struct platform_device *pdev)
 {
 	struct ds28e16_data *ds28e16_data = platform_get_drvdata(pdev);
 
-	verify_psy_unregister(ds28e16_data);
-	kfree(ds28e16_data);
+	sysfs_remove_group(&pdev->dev.kobj, &ds_attr_group);
+	cancel_delayed_work_sync(&ds28e16_data->battery_verify_work);
+	platform_set_drvdata(pdev, NULL);
 	return 0;
 }
 
