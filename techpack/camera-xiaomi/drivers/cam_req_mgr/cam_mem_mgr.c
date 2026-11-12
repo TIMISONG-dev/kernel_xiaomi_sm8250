@@ -10,6 +10,7 @@
 #include <linux/slab.h>
 #include <linux/ion_kernel.h>
 #include <linux/dma-buf.h>
+#include <linux/syscalls.h>
 
 #include "cam_req_mgr_util.h"
 #include "cam_mem_mgr.h"
@@ -690,10 +691,8 @@ map_kernel_fail:
 map_hw_fail:
 	cam_mem_put_slot(idx);
 slot_fail:
+	ksys_close(fd);
 	dma_buf_put(dmabuf);
-	// xiaomi add
-	fput(dmabuf->file);
-	put_unused_fd(fd);
 	return rc;
 }
 

@@ -266,6 +266,10 @@ static int cam_jpeg_insert_cdm_change_base(
 	uintptr_t iova_addr;
 	uint32_t *ch_base_iova_addr;
 	size_t ch_base_len;
+	size_t offset =
+		config_args->hw_update_entries[CAM_JPEG_CHBASE].offset;
+	/* One DWORD change-base command followed by two padding DWORDs. */
+	const size_t required_len = 3 * sizeof(uint32_t);
 
 	rc = cam_mem_get_cpu_buf(
 		config_args->hw_update_entries[CAM_JPEG_CHBASE].handle,
@@ -276,8 +280,8 @@ static int cam_jpeg_insert_cdm_change_base(
 		return rc;
 	}
 
-	if (config_args->hw_update_entries[CAM_JPEG_CHBASE].offset >=
-		ch_base_len) {
+	if (offset % sizeof(uint32_t) || ch_base_len < required_len ||
+	    offset > ch_base_len - required_len) {
 		CAM_ERR(CAM_JPEG, "Not enough buf");
 		return -EINVAL;
 	}
@@ -517,7 +521,6 @@ static int cam_jpeg_mgr_config_hw(void *hw_mgr_priv, void *config_hw_args)
 	struct cam_hw_config_args *config_args = config_hw_args;
 	struct cam_jpeg_hw_ctx_data *ctx_data = NULL;
 	uintptr_t request_id = 0;
-	struct cam_hw_update_entry *hw_update_entries;
 	struct crm_workq_task *task;
 	struct cam_jpeg_process_frame_work_data_t *task_data;
 	struct cam_jpeg_hw_cfg_req *p_cfg_req = NULL;
@@ -558,7 +561,6 @@ static int cam_jpeg_mgr_config_hw(void *hw_mgr_priv, void *config_hw_args)
 
 	request_id = (uintptr_t)config_args->priv;
 	p_cfg_req->req_id = request_id;
-	hw_update_entries = config_args->hw_update_entries;
 	CAM_DBG(CAM_JPEG, "ctx_data = %pK req_id = %lld %zd",
 		ctx_data, request_id, (uintptr_t)config_args->priv);
 	task = cam_req_mgr_workq_get_task(g_jpeg_hw_mgr.work_process_frame);
@@ -756,13 +758,21 @@ static int cam_jpeg_mgr_prepare_hw_update(void *hw_mgr_priv,
 
 	for (i = 0, j = 0, k = 0; i < packet->num_io_configs; i++) {
 		if (io_cfg_ptr[i].direction == CAM_BUF_INPUT) {
+			if (j >= prepare_args->max_in_map_entries) {
+				CAM_ERR(CAM_JPEG, "Too many input fence mappings");
+				return -EINVAL;
+			}
 			prepare_args->in_map_entries[j].resource_handle =
 				io_cfg_ptr[i].resource_type;
 			prepare_args->in_map_entries[j++].sync_id =
 				io_cfg_ptr[i].fence;
 			prepare_args->num_in_map_entries++;
 		} else {
-			prepare_args->in_map_entries[k].resource_handle =
+			if (k >= prepare_args->max_out_map_entries) {
+				CAM_ERR(CAM_JPEG, "Too many output fence mappings");
+				return -EINVAL;
+			}
+			prepare_args->out_map_entries[k].resource_handle =
 				io_cfg_ptr[i].resource_type;
 			prepare_args->out_map_entries[k++].sync_id =
 				io_cfg_ptr[i].fence;
@@ -1116,7 +1126,6 @@ static int cam_jpeg_mgr_acquire_hw(void *hw_mgr_priv, void *acquire_hw_args)
 	struct cam_jpeg_acquire_dev_info jpeg_dev_acquire_info;
 	struct cam_cdm_acquire_data cdm_acquire;
 	uint32_t dev_type;
-	uint32_t size = 0;
 
 	if ((!hw_mgr_priv) || (!acquire_hw_args)) {
 		CAM_ERR(CAM_JPEG, "Invalid params: %pK %pK", hw_mgr_priv,
@@ -1201,7 +1210,6 @@ static int cam_jpeg_mgr_acquire_hw(void *hw_mgr_priv, void *acquire_hw_args)
 		hw_mgr->cdm_info[dev_type][0].ref_cnt++;
 	}
 
-	size =
 	hw_mgr->cdm_info[dev_type][0].cdm_ops->cdm_required_size_changebase();
 
 	if (hw_mgr->cdm_info[dev_type][0].ref_cnt == 1)

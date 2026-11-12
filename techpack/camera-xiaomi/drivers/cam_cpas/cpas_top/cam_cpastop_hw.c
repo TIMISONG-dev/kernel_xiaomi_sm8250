@@ -23,7 +23,7 @@
 #include "cpastop_v175_130.h"
 #include "cpastop_v480_100.h"
 
-struct cam_camnoc_info *camnoc_info;
+static struct cam_camnoc_info *camnoc_info;
 
 #define CAMNOC_SLAVE_MAX_ERR_CODE 7
 static const char * const camnoc_salve_err_code[] = {
@@ -633,7 +633,7 @@ static int cam_cpastop_init_hw_version(struct cam_hw_info *cpas_hw,
 		break;
 	}
 
-	return 0;
+	return rc;
 }
 
 int cam_cpastop_get_internal_ops(struct cam_cpas_internal_ops *internal_ops)

@@ -44,7 +44,7 @@ struct firmware_alloc_info {
 	dma_addr_t fw_dma_hdl;
 };
 
-struct firmware_alloc_info icp_fw;
+static struct firmware_alloc_info icp_fw;
 
 struct cam_smmu_work_payload {
 	int idx;
@@ -337,8 +337,8 @@ static void cam_smmu_dump_cb_info(int idx)
 			&iommu_cb_set.cb_info[idx].smmu_buf_list, list) {
 			i++;
 			CAM_ERR(CAM_SMMU,
-				"%u. ion_fd=%d start=0x%x end=0x%x len=%u region=%d",
-				i, mapping->ion_fd, (void *)mapping->paddr,
+				"%u. ion_fd=%d start=0x%llx end=0x%llx len=%u region=%d",
+				i, mapping->ion_fd, (uint64_t)mapping->paddr,
 				((uint64_t)mapping->paddr +
 				(uint64_t)mapping->len),
 				(unsigned int)mapping->len,
@@ -432,7 +432,7 @@ end:
 	if (closest_mapping) {
 		buf_handle = GET_MEM_HANDLE(idx, closest_mapping->ion_fd);
 		CAM_INFO(CAM_SMMU,
-			"Closest map fd %d 0x%lx %llu 0x%lx-0x%lx buf=%pK mem %0x",
+			"Closest map fd %d 0x%lx %lu 0x%lx-0x%lx buf=%pK mem %0x",
 			closest_mapping->ion_fd, current_addr,
 			closest_mapping->len,
 			(unsigned long)closest_mapping->paddr,
@@ -646,7 +646,7 @@ static enum dma_data_direction cam_smmu_translate_dir(
 	return DMA_NONE;
 }
 
-void cam_smmu_reset_iommu_table(enum cam_smmu_init_dir ops)
+static void cam_smmu_reset_iommu_table(enum cam_smmu_init_dir ops)
 {
 	unsigned int i;
 	int j = 0;
@@ -694,7 +694,10 @@ static int cam_smmu_check_handle_unique(int hdl)
 }
 
 /**
- *  use low 2 bytes for handle cookie
+ * cam_smmu_create_iommu_handle() - Combine a context-bank index and cookie
+ * @idx: Context-bank index used to construct the handle
+ *
+ * Return: Handle with the random cookie in its low bytes.
  */
 static int cam_smmu_create_iommu_handle(int idx)
 {
@@ -1284,7 +1287,7 @@ int cam_smmu_dealloc_firmware(int32_t smmu_hdl)
 		icp_fw.fw_kva,
 		icp_fw.fw_dma_hdl);
 
-	icp_fw.fw_kva = 0;
+	icp_fw.fw_kva = NULL;
 	icp_fw.fw_dma_hdl = 0;
 
 	iommu_cb_set.cb_info[idx].is_fw_allocated = false;
@@ -3557,7 +3560,7 @@ static int cam_smmu_get_memory_regions_info(struct device_node *of_node,
 			(cb->discard_iova_len !=
 			cb->io_info.discard_iova_len)) {
 			CAM_ERR(CAM_SMMU,
-				"Mismatch Discard region specified, [0x%x 0x%x] [0x%x 0x%x]",
+				"Mismatch Discard region specified, [0x%llx 0x%lx] [0x%llx 0x%lx]",
 				cb->discard_iova_start,
 				cb->discard_iova_len,
 				cb->io_info.discard_iova_start,
@@ -3572,7 +3575,7 @@ static int cam_smmu_get_memory_regions_info(struct device_node *of_node,
 			(cb->discard_iova_start + cb->discard_iova_len >=
 			cb->io_info.iova_start + cb->io_info.iova_len)) {
 				CAM_ERR(CAM_SMMU,
-				"[%s] : Incorrect Discard region specified [0x%x 0x%x] in [0x%x 0x%x]",
+				"[%s] : Incorrect Discard region specified [0x%llx 0x%llx] in [0x%llx 0x%llx]",
 				cb->name,
 				cb->discard_iova_start,
 				cb->discard_iova_start + cb->discard_iova_len,
@@ -3583,7 +3586,7 @@ static int cam_smmu_get_memory_regions_info(struct device_node *of_node,
 			}
 
 			CAM_INFO(CAM_SMMU,
-				"[%s] : Discard region specified [0x%x 0x%x] in [0x%x 0x%x]",
+				"[%s] : Discard region specified [0x%llx 0x%llx] in [0x%llx 0x%llx]",
 				cb->name,
 				cb->discard_iova_start,
 				cb->discard_iova_start + cb->discard_iova_len,

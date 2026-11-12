@@ -13,7 +13,7 @@
 #include "cam_debug_util.h"
 
 static struct cam_hw_intf *cam_custom_hw_sub_mod_list
-	[CAM_CUSTOM_SUB_MOD_MAX_INSTANCES] = {0, 0};
+	[CAM_CUSTOM_SUB_MOD_MAX_INSTANCES] = { NULL };
 
 static char cam_custom_hw_sub_mod_name[8];
 
@@ -36,10 +36,10 @@ int cam_custom_hw_sub_mod_init(struct cam_hw_intf **custom_hw, uint32_t hw_idx)
 		*custom_hw = NULL;
 		rc = -ENODEV;
 	}
-	return 0;
+	return rc;
 }
 
-int cam_custom_hw_sub_mod_probe(struct platform_device *pdev)
+static int cam_custom_hw_sub_mod_probe(struct platform_device *pdev)
 {
 	struct cam_hw_info                  *hw = NULL;
 	struct cam_hw_intf                  *hw_intf = NULL;

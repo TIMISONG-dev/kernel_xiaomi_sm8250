@@ -62,7 +62,7 @@ int32_t delete_request(struct i2c_settings_array *i2c_array)
 	return rc;
 }
 
-int32_t cam_sensor_handle_delay(
+static int32_t cam_sensor_handle_delay(
 	uint32_t **cmd_buf,
 	uint16_t generic_op_code,
 	struct i2c_settings_array *i2c_reg_settings,
@@ -102,7 +102,7 @@ int32_t cam_sensor_handle_delay(
 	return rc;
 }
 
-int32_t cam_sensor_handle_poll(
+static int32_t cam_sensor_handle_poll(
 	uint32_t **cmd_buf,
 	struct i2c_settings_array *i2c_reg_settings,
 	uint32_t *byte_cnt, int32_t *offset,
@@ -142,7 +142,7 @@ int32_t cam_sensor_handle_poll(
 	return rc;
 }
 
-int32_t cam_sensor_handle_random_write(
+static int32_t cam_sensor_handle_random_write(
 	struct cam_cmd_i2c_random_wr *cam_cmd_i2c_random_wr,
 	struct i2c_settings_array *i2c_reg_settings,
 	uint32_t *cmd_length_in_bytes, int32_t *offset,
@@ -269,15 +269,14 @@ static int cam_sensor_handle_slave_info(
 }
 
 /**
- * Name : cam_sensor_i2c_command_parser
- * Description : Parse CSL CCI packet and apply register settings
- * Parameters :  s_ctrl  input/output    sub_device
- *              arg     input           cam_control
- * Description :
- * Handle multiple I2C RD/WR and WAIT cmd formats in one command
- * buffer, for example, a command buffer of m x RND_WR + 1 x HW_
- * WAIT + n x RND_WR with num_cmd_buf = 1. Do not exepect RD/WR
- * with different cmd_type and op_code in one command buffer.
+ * cam_sensor_i2c_command_parser() - Parse sensor I2C command buffers
+ * @io_master: I/O master used for sensor transfers
+ * @i2c_reg_settings: Parsed I2C settings grouped by operation
+ * @cmd_desc: Command buffer descriptors
+ * @num_cmd_buffers: Number of command buffer descriptors
+ *
+ * Handle I2C read, write and wait operations in each command buffer.
+ * Read/write operations within a buffer must use the same command and opcode.
  */
 int cam_sensor_i2c_command_parser(
 	struct camera_io_master *io_master,
@@ -1462,7 +1461,7 @@ int cam_sensor_bob_pwm_mode_switch(struct cam_hw_soc_info *soc_info,
 	return rc;
 }
 
-int msm_cam_sensor_handle_reg_gpio(int seq_type,
+static int msm_cam_sensor_handle_reg_gpio(int seq_type,
 	struct msm_camera_gpio_num_info *gpio_num_info, int val)
 {
 	int gpio_offset = -1;

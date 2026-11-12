@@ -46,7 +46,7 @@ static int cam_spi_txfr_read(struct spi_device *spi, char *txbuf,
  * cam_set_addr() - helper function to set transfer address
  * @addr:	device address
  * @addr_len:	the addr field length of an instruction
- * @type:	type (i.e. byte-length) of @addr
+ * @addr_type:	type (i.e. byte-length) of @addr
  * @str:	shifted address output, must be zeroed when passed in
  *
  * This helper function sets @str based on the addr field length of an
@@ -83,8 +83,9 @@ static void cam_set_addr(uint32_t addr, uint8_t addr_len,
  * @addr:       device addr following the inst
  * @data:       output byte array (could be NULL)
  * @num_byte:   size of @data
- * @tx, rx:     optional transfer buffer.  It must be at least header
- *              + @num_byte long.
+ * @addr_type: Address width for this transfer
+ * @tx: Optional transmit buffer, at least header plus num_byte bytes
+ * @rx: Optional receive buffer, at least header plus num_byte bytes
  *
  * This is the core function for SPI transaction, except for writes.  It first
  * checks address type, then allocates required memory for tx/rx buffers.
@@ -386,6 +387,7 @@ static int32_t cam_spi_write_enable(struct camera_io_master *client,
  * @data: data to write
  * @len: size of data
  * @tx: tx buffer, size >= header + len
+ * @addr_type: Address width for the programmed transfer
  *
  * This function performs SPI write, and has no boundary check.  Writing range
  * should not cross page boundary, or data will be corrupted.  Transaction is
@@ -547,8 +549,6 @@ int cam_spi_write_table(struct camera_io_master *client,
 	int i;
 	int rc = -EFAULT;
 	struct cam_sensor_i2c_reg_array *reg_setting;
-	uint16_t client_addr_type;
-	enum camera_sensor_i2c_type addr_type;
 
 	if (!client || !write_setting)
 		return rc;
@@ -560,8 +560,6 @@ int cam_spi_write_table(struct camera_io_master *client,
 		return rc;
 
 	reg_setting = write_setting->reg_setting;
-	client_addr_type = write_setting->addr_type;
-	addr_type = write_setting->addr_type;
 	for (i = 0; i < write_setting->size; i++) {
 		CAM_DBG(CAM_SENSOR, "addr %x data %x",
 			reg_setting->reg_addr, reg_setting->reg_data);
@@ -578,7 +576,6 @@ int cam_spi_write_table(struct camera_io_master *client,
 			usleep_range(write_setting->delay * 1000,
 			(write_setting->delay
 			* 1000) + 1000);
-	addr_type = client_addr_type;
 	return rc;
 }
 
