@@ -1009,6 +1009,7 @@ static int gf_probe(struct platform_device *pdev)
 	return status;
 
 error_wakelock:
+	status = -ENOMEM;
 	pr_debug("create fp wakelock failed.\n");
 
 #ifdef AP_CONTROL_CLK
@@ -1017,6 +1018,7 @@ gfspi_probe_clk_enable_failed:
 gfspi_probe_clk_init_failed:
 #endif
 	input_unregister_device(gf_dev->input);
+	gf_dev->input = NULL;
 error_input:
 
 	if (gf_dev->input != NULL) {
@@ -1060,9 +1062,9 @@ static int gf_remove(struct platform_device *pdev)
 
 	if (gf_dev->input != NULL) {
 		input_unregister_device(gf_dev->input);
+		gf_dev->input = NULL;
 	}
 
-	input_free_device(gf_dev->input);
 	/* prevent new opens */
 	mutex_lock(&device_list_lock);
 	list_del(&gf_dev->device_entry);
