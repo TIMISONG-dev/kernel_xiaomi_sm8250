@@ -25,6 +25,7 @@
 #include <linux/wait.h>
 #include <linux/err.h>
 #include <linux/interrupt.h>
+#include <linux/limits.h>
 
 #include <linux/seq_file.h>
 #include <linux/debugfs.h>
@@ -42,6 +43,7 @@
 #include <linux/usb/composite.h>
 
 #include "configfs.h"
+#include "f_mtp.h"
 
 #define NUM_PAGES	10 /* # of pages for ipc logging */
 
@@ -93,13 +95,13 @@
 
 #define MAX_ITERATION		100
 
-unsigned int mtp_rx_req_len = MTP_RX_BUFFER_INIT_SIZE;
+static unsigned int mtp_rx_req_len = MTP_RX_BUFFER_INIT_SIZE;
 module_param(mtp_rx_req_len, uint, 0644);
 
-unsigned int mtp_tx_req_len = MTP_TX_BUFFER_INIT_SIZE;
+static unsigned int mtp_tx_req_len = MTP_TX_BUFFER_INIT_SIZE;
 module_param(mtp_tx_req_len, uint, 0644);
 
-unsigned int mtp_tx_reqs = MTP_TX_REQ_MAX;
+static unsigned int mtp_tx_reqs = MTP_TX_REQ_MAX;
 module_param(mtp_tx_reqs, uint, 0644);
 
 static const char mtp_shortname[] = DRIVER_NAME "_usb";
@@ -333,7 +335,7 @@ static u8 mtp_os_string[] = {
 /* Microsoft Extended Configuration Descriptor Header Section */
 struct mtp_ext_config_desc_header {
 	__le32	dwLength;
-	__u16	bcdVersion;
+	__le16	bcdVersion;
 	__le16	wIndex;
 	__u8	bCount;
 	__u8	reserved[7];
@@ -460,7 +462,7 @@ static struct usb_request
 
 	spin_lock_irqsave(&dev->lock, flags);
 	if (list_empty(head)) {
-		req = 0;
+		req = NULL;
 	} else {
 		req = list_first_entry(head, struct usb_request, list);
 		list_del(&req->list);
@@ -715,7 +717,7 @@ static ssize_t mtp_write(struct file *fp, const char __user *buf,
 	size_t count, loff_t *pos)
 {
 	struct mtp_dev *dev = fp->private_data;
-	struct usb_request *req = 0;
+	struct usb_request *req = NULL;
 	ssize_t r = count;
 	unsigned xfer;
 	int sendZLP = 0;
@@ -755,7 +757,7 @@ static ssize_t mtp_write(struct file *fp, const char __user *buf,
 		}
 
 		/* get an idle tx request to use */
-		req = 0;
+		req = NULL;
 		ret = wait_event_interruptible(dev->write_wq,
 			((req = mtp_req_get(dev, &dev->tx_idle))
 				|| dev->state != STATE_BUSY));
@@ -787,7 +789,7 @@ static ssize_t mtp_write(struct file *fp, const char __user *buf,
 		count -= xfer;
 
 		/* zero this so we don't try to free it on error exit */
-		req = 0;
+		req = NULL;
 	}
 
 	if (req)
@@ -809,7 +811,7 @@ static void send_file_work(struct work_struct *data)
 {
 	struct mtp_dev *dev = container_of(data, struct mtp_dev,
 						send_file_work);
-	struct usb_request *req = 0;
+	struct usb_request *req = NULL;
 	struct mtp_data_header *header;
 	struct file *filp;
 	loff_t offset;
@@ -834,6 +836,10 @@ static void send_file_work(struct work_struct *data)
 
 	if (dev->xfer_send_header) {
 		hdr_size = sizeof(struct mtp_data_header);
+		if (count > S64_MAX - hdr_size) {
+			dev->xfer_result = -EINVAL;
+			return;
+		}
 		count += hdr_size;
 	} else {
 		hdr_size = 0;
@@ -851,7 +857,7 @@ static void send_file_work(struct work_struct *data)
 			sendZLP = 0;
 
 		/* get an idle tx request to use */
-		req = 0;
+		req = NULL;
 		ret = wait_event_interruptible(dev->write_wq,
 			(req = mtp_req_get(dev, &dev->tx_idle))
 			|| dev->state != STATE_BUSY);
@@ -878,16 +884,16 @@ static void send_file_work(struct work_struct *data)
                          * set file size with header according to
                          * MTP Specification v1.0
                          */
-			header->length = (count > MTP_MAX_FILE_SIZE) ?
-				MTP_MAX_FILE_SIZE : __cpu_to_le32(count);
+			header->length = cpu_to_le32(count > MTP_MAX_FILE_SIZE ?
+						    MTP_MAX_FILE_SIZE : count);
 			header->type = __cpu_to_le16(2); /* data packet */
 			header->command = __cpu_to_le16(dev->xfer_command);
 			header->transaction_id =
 					__cpu_to_le32(dev->xfer_transaction_id);
 		}
 		start_time = ktime_get();
-		ret = vfs_read(filp, req->buf + hdr_size, xfer - hdr_size,
-								&offset);
+		ret = kernel_read(filp, req->buf + hdr_size,
+				  xfer - hdr_size, &offset);
 		if (ret < 0) {
 			r = ret;
 			break;
@@ -913,7 +919,7 @@ static void send_file_work(struct work_struct *data)
 		count -= xfer;
 
 		/* zero this so we don't try to free it on error exit */
-		req = 0;
+		req = NULL;
 	}
 
 	if (req)
@@ -980,8 +986,8 @@ static void receive_file_work(struct work_struct *data)
 		if (write_req) {
 			mtp_log("rx %pK %d\n", write_req, write_req->actual);
 			start_time = ktime_get();
-			ret = vfs_write(filp, write_req->buf, write_req->actual,
-				&offset);
+			ret = kernel_write(filp, write_req->buf,
+					   write_req->actual, &offset);
 			mtp_log("vfs_write %d\n", ret);
 			if (ret != write_req->actual) {
 				r = -EIO;
@@ -1052,11 +1058,11 @@ static int mtp_send_event(struct mtp_dev *dev, struct mtp_event *event)
 {
 	struct usb_request *req = NULL;
 	int ret;
-	int length = event->length;
+	size_t length = event->length;
 
 	mtp_log("(%zu)\n", event->length);
 
-	if (length < 0 || length > INTR_BUFFER_SIZE)
+	if (length > INTR_BUFFER_SIZE)
 		return -EINVAL;
 	if (dev->state == STATE_OFFLINE)
 		return -ENODEV;
@@ -1067,7 +1073,7 @@ static int mtp_send_event(struct mtp_dev *dev, struct mtp_event *event)
 	if (!req)
 		return -ETIME;
 
-	if (copy_from_user(req->buf, (void __user *)event->data, length)) {
+	if (copy_from_user(req->buf, event->data, length)) {
 		mtp_req_put(dev, &dev->intr_idle, req);
 		return -EFAULT;
 	}
@@ -1255,11 +1261,11 @@ static long compat_mtp_ioctl(struct file *fp, unsigned int code,
 		if (copy_from_user(&cevent, (void __user *)value,
 			sizeof(cevent))) {
 			ret = -EFAULT;
-			goto fail;
+		} else {
+			event.length = cevent.length;
+			event.data = compat_ptr(cevent.data);
+			ret = mtp_send_event(dev, &event);
 		}
-		event.length = cevent.length;
-		event.data = compat_ptr(cevent.data);
-		ret = mtp_send_event(dev, &event);
 		mtp_unlock(&dev->ioctl_excl);
 	}
 fail:
@@ -1636,25 +1642,21 @@ static ssize_t debug_mtp_reset_stats(struct file *file, const char __user *buf,
 				 size_t count, loff_t *ppos)
 {
 	int clear_stats;
+	int ret;
 	unsigned long flags;
 	struct mtp_dev *dev = _mtp_dev;
 
-	if (buf == NULL) {
-		pr_err("[%s] EINVAL\n", __func__);
-		goto done;
-	}
-
-	if (kstrtoint(buf, 0, &clear_stats) || clear_stats != 0) {
-		pr_err("Wrong value. To clear stats, enter value as 0.\n");
-		goto done;
-	}
+	ret = kstrtoint_from_user(buf, count, 0, &clear_stats);
+	if (ret)
+		return ret;
+	if (clear_stats != 0)
+		return -EINVAL;
 
 	spin_lock_irqsave(&dev->lock, flags);
 	memset(&dev->perf[0], 0, MAX_ITERATION * sizeof(dev->perf[0]));
 	dev->dbg_read_index = 0;
 	dev->dbg_write_index = 0;
 	spin_unlock_irqrestore(&dev->lock, flags);
-done:
 	return count;
 }
 
@@ -1669,17 +1671,17 @@ static const struct file_operations debug_mtp_ops = {
 	.write = debug_mtp_reset_stats,
 };
 
-struct dentry *dent_mtp;
+static struct dentry *dent_mtp;
 static void mtp_debugfs_init(void)
 {
 	struct dentry *dent_mtp_status;
 
-	dent_mtp = debugfs_create_dir("usb_mtp", 0);
+	dent_mtp = debugfs_create_dir("usb_mtp", NULL);
 	if (!dent_mtp || IS_ERR(dent_mtp))
 		return;
 
 	dent_mtp_status = debugfs_create_file("status", 0644,
-					dent_mtp, 0, &debug_mtp_ops);
+					dent_mtp, NULL, &debug_mtp_ops);
 	if (!dent_mtp_status || IS_ERR(dent_mtp_status)) {
 		debugfs_remove(dent_mtp);
 		dent_mtp = NULL;

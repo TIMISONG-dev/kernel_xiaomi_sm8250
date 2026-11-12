@@ -22,9 +22,7 @@
 #include <linux/power_supply.h>
 
 #ifdef CONFIG_USB_CONFIGFS_F_ACC
-extern int acc_ctrlrequest_composite(struct usb_composite_dev *cdev,
-				const struct usb_ctrlrequest *ctrl);
-void acc_disconnect(void);
+#include <linux/usb/f_accessory.h>
 #endif
 
 static struct class *android_class;
@@ -1459,8 +1457,9 @@ static int smblib_cancel_recheck(void)
 	}
 
 	pval.intval = 0;
-	rc = power_supply_set_property(usb_psy, POWER_SUPPLY_PROP_TYPE_RECHECK,
-				       &pval);
+	rc = power_supply_set_property(usb_psy,
+				POWER_SUPPLY_PROP_TYPE_RECHECK, &pval);
+	power_supply_put(usb_psy);
 
 	return rc;
 }

@@ -2037,14 +2037,14 @@ static void dwc3_gadget_wakeup_work(struct work_struct *w)
 	dwc = container_of(w, struct dwc3, wakeup_work);
 
 	ret = pm_runtime_get_sync(dwc->dev);
-	if (ret) {
+	if (ret < 0) {
 		/* pm_runtime_get_sync returns -EACCES error between
 		 * late_suspend and early_resume, wait for system resume to
 		 * finish and queue work again
 		 */
 		dev_dbg(dwc->dev, "PM runtime get sync failed, ret %d\n", ret);
+		pm_runtime_put_noidle(dwc->dev);
 		if (ret == -EACCES) {
-			pm_runtime_put_noidle(dwc->dev);
 			if (retry_count == DWC3_PM_RESUME_RETRIES) {
 				retry_count = 0;
 				dev_err(dwc->dev, "pm_runtime_get_sync timed out\n");
@@ -2055,6 +2055,8 @@ static void dwc3_gadget_wakeup_work(struct work_struct *w)
 			schedule_work(&dwc->wakeup_work);
 			return;
 		}
+		retry_count = 0;
+		return;
 	}
 	retry_count = 0;
 	dbg_event(0xFF, "Gdgwake gsyn",
@@ -2382,7 +2384,11 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on, int suspend)
 	do {
 		reg = dwc3_readl(dwc->regs, DWC3_DSTS);
 		reg &= DWC3_DSTS_DEVCTRLHLT;
-	} while (--timeout && !(!is_on ^ !reg));
+		if (!is_on ^ !reg)
+			break;
+		/* Give hardware time to change state; do not count MMIO reads as time. */
+		udelay(1);
+	} while (--timeout);
 
 	if (saved_config) {
 		reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0));

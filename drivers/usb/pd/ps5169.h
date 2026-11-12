@@ -20,7 +20,6 @@ struct ps5169_info {
 	struct pinctrl_state        *ps5169_gpio_active;
 	struct pinctrl_state        *ps5169_gpio_suspend;
 	struct power_supply         *ps_psy;
-	struct power_supply_desc    ps_psy_desc;
 	unsigned int                enable_gpio;
 	unsigned int                ps_enable;
 	unsigned int                pre_ps_enable;

@@ -168,7 +168,7 @@ static const char *const state_names[] = {
 	[DRD_STATE_HOST] = "host",
 };
 
-const char *dwc3_drd_state_string(enum dwc3_drd_state state)
+static const char *dwc3_drd_state_string(enum dwc3_drd_state state)
 {
 	if (state < 0 || state >= ARRAY_SIZE(state_names))
 		return "UNKNOWN";
@@ -3819,7 +3819,7 @@ static void usb_reset_work(struct work_struct *w)
 	}
 
 	p = strstr((char *) mdwc->dev->kobj.name, usb1_port);
-	if (p != 0) {
+	if (p) {
 		dev_dbg(mdwc->dev, "%s: reset a800000.ssusb host!\n", __func__);
 		ret = dwc3_otg_start_host(mdwc, 0);
 		dev_dbg(mdwc->dev, "turn off dwc3_otg_start_host\n");

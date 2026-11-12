@@ -1666,8 +1666,10 @@ int ncm_ctrlrequest(struct usb_composite_dev *cdev,
 
 	if (ctrl->bRequestType == 0x40 && ctrl->bRequest == 0xF0
 			&& _ncm_setup_desc) {
-		_ncm_setup_desc->minor = (uint8_t)(ctrl->wValue >> 8);
-		_ncm_setup_desc->major = (uint8_t)(ctrl->wValue & 0xFF);
+		u16 version = le16_to_cpu(ctrl->wValue);
+
+		_ncm_setup_desc->minor = version >> 8;
+		_ncm_setup_desc->major = version & 0xff;
 		schedule_work(&_ncm_setup_desc->work);
 		value = 0;
 	}
