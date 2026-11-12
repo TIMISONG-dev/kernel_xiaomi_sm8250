@@ -1809,6 +1809,16 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
 {
 	FTS_FUNC_ENTER();
 
+	power_supply_unreg_notifier(&ts_data->power_supply_notifier);
+#if defined(CONFIG_DRM)
+	if (mi_drm_unregister_client(&ts_data->fb_notif))
+		FTS_ERROR("[DRM]Error occurred while unregistering fb_notifier.\n");
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
+	unregister_early_suspend(&ts_data->early_suspend);
+#endif
+	if (ts_data->ts_workqueue)
+		cancel_work_sync(&ts_data->resume_work);
+
 #if FTS_POINT_REPORT_CHECK_EN
 	fts_point_report_check_exit(ts_data);
 #endif
@@ -1829,24 +1839,15 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
 #endif
 
 	fts_gesture_exit(ts_data);
-	fts_bus_exit(ts_data);
 
 	free_irq(ts_data->irq, ts_data);
-	input_unregister_device(ts_data->input_dev);
-
-	power_supply_unreg_notifier(&ts_data->power_supply_notifier);
-	mutex_destroy(&ts_data->power_supply_lock);
 
 	if (ts_data->ts_workqueue)
 		destroy_workqueue(ts_data->ts_workqueue);
 
-#if defined(CONFIG_DRM)
-	if (mi_drm_unregister_client(&ts_data->fb_notif))
-		FTS_ERROR(
-			"[DRM]Error occurred while unregistering fb_notifier.\n");
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	unregister_early_suspend(&ts_data->early_suspend);
-#endif
+	mutex_destroy(&ts_data->power_supply_lock);
+	fts_bus_exit(ts_data);
+	input_unregister_device(ts_data->input_dev);
 
 	if (gpio_is_valid(ts_data->pdata->reset_gpio))
 		gpio_free(ts_data->pdata->reset_gpio);
