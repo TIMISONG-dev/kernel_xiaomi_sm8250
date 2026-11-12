@@ -1459,6 +1459,7 @@ static int smblib_cancel_recheck(void)
 	pval.intval = 0;
 	rc = power_supply_set_property(usb_psy, POWER_SUPPLY_PROP_TYPE_RECHECK,
 				       &pval);
+	power_supply_put(usb_psy);
 
 	return rc;
 }
