@@ -1494,11 +1494,13 @@ static const char *adreno_get_gpu_model(struct kgsl_device *device)
 {
 	struct device_node *node;
 	static char gpu_model[32];
+	static DEFINE_MUTEX(gpu_model_lock);
 	const char *model;
 	int ret;
 
+	mutex_lock(&gpu_model_lock);
 	if (strlen(gpu_model))
-		return gpu_model;
+		goto out;
 
 	node = adreno_get_gpu_model_node(device->pdev);
 	if (!node)
@@ -1516,6 +1518,8 @@ static const char *adreno_get_gpu_model(struct kgsl_device *device)
 			ADRENO_CHIPID_MINOR(ADRENO_DEVICE(device)->chipid),
 			ADRENO_CHIPID_PATCH(ADRENO_DEVICE(device)->chipid) + 1);
 
+out:
+	mutex_unlock(&gpu_model_lock);
 	return gpu_model;
 }
 
