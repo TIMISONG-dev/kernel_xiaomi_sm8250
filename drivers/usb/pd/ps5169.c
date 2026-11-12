@@ -21,6 +21,11 @@
 
 #define PS5169_DRIVER_NAME	"ps5169"
 
+/*
+ * Match callbacks to a published supply, not drv_data from a failed probe.
+ * Serialize all such users and global configuration calls with removal.
+ */
+static DEFINE_MUTEX(ps5169_lock);
 static struct ps5169_info *g_info;
 
 static const struct regmap_config ps5169_regmap_config = {
@@ -229,9 +234,13 @@ static void ps5169_enable_work(struct work_struct *work)
 
 	int ret;
 
+	mutex_lock(&ps5169_lock);
+	if (!info->present_flag)
+		goto out;
+
 	if (info->ps_enable == info->pre_ps_enable) {
 		pr_err("%s: enable same (%d), return.\n", __func__, info->ps_enable);
-		return;
+		goto out;
 	} else {
 		info->ps_enable = info->pre_ps_enable;
 		pr_err("%s: enable: %d.\n", __func__, info->ps_enable);
@@ -241,7 +250,7 @@ static void ps5169_enable_work(struct work_struct *work)
 		ret = pinctrl_select_state(info->ps5169_pinctrl, info->ps5169_gpio_active);
 		if (ret < 0) {
 			pr_err("%s: fail to select pinctrl active rc=%d\n", __func__, ret);
-			return;
+			goto out;
 		}
 		pr_info("%s: select gpio_active.\n", __func__);
 		msleep(50);
@@ -251,18 +260,21 @@ static void ps5169_enable_work(struct work_struct *work)
 		ret = pinctrl_select_state(info->ps5169_pinctrl, info->ps5169_gpio_suspend);
 		if (ret < 0) {
 			pr_err("%s: fail to select pinctrl suspend rc=%d\n", __func__, ret);
-			return;
+			goto out;
 		}
 		pr_info("%s: select gpio_suspend.\n", __func__);
 	}
+out:
+	mutex_unlock(&ps5169_lock);
 }
 
 void ps5169_cfg_usb(void)
 {
 	int ret = 0;
 
+	mutex_lock(&ps5169_lock);
 	if (!ps5169_present_check(g_info))
-		return;
+		goto out;
 
 	msleep(50);
 
@@ -275,6 +287,8 @@ void ps5169_cfg_usb(void)
 		pr_err("%s: crc err.\n", __func__);
 
 	ps5169_get_chipcfg_and_modeselection(g_info);
+out:
+	mutex_unlock(&ps5169_lock);
 }
 
 static void ps5169_config_flip(struct ps5169_info *info, int flip)
@@ -569,7 +583,15 @@ static int ps5169_get_prop(struct power_supply *psy,
 		enum power_supply_property psp,
 		union power_supply_propval *val)
 {
-	struct ps5169_info *info = power_supply_get_drvdata(psy);
+	struct ps5169_info *info;
+	int ret;
+
+	mutex_lock(&ps5169_lock);
+	info = g_info;
+	if (!info || info->ps_psy != psy) {
+		ret = -ENODEV;
+		goto out;
+	}
 	val->intval = 0;
 
 	switch (psp) {
@@ -602,18 +624,29 @@ static int ps5169_get_prop(struct power_supply *psy,
 		break;
 	default:
 		pr_debug("get prop %d is not supported in ps5169\n", psp);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto out;
 	}
 
-	return val->intval < 0 ? val->intval : 0;
+	ret = val->intval < 0 ? val->intval : 0;
+out:
+	mutex_unlock(&ps5169_lock);
+	return ret;
 }
 
 static int ps5169_set_prop(struct power_supply *psy,
 		enum power_supply_property psp,
 		const union power_supply_propval *val)
 {
-	struct ps5169_info *info = power_supply_get_drvdata(psy);
+	struct ps5169_info *info;
 	int rc = 0;
+
+	mutex_lock(&ps5169_lock);
+	info = g_info;
+	if (!info || info->ps_psy != psy) {
+		rc = -ENODEV;
+		goto out;
+	}
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_PS_EN:
@@ -661,6 +694,8 @@ static int ps5169_set_prop(struct power_supply *psy,
 		break;
 	}
 
+out:
+	mutex_unlock(&ps5169_lock);
 	return rc;
 }
 
@@ -702,11 +737,9 @@ static int ps5169_init_psy(struct ps5169_info *info)
 {
 	struct power_supply_config ps_cfg = {};
 
-	info->ps_psy_desc = ps_psy_desc;
-	ps_cfg.drv_data = info;
 	ps_cfg.of_node = info->dev->of_node;
 	info->ps_psy = devm_power_supply_register(info->dev,
-			&info->ps_psy_desc,
+			&ps_psy_desc,
 			&ps_cfg);
 	if (IS_ERR(info->ps_psy)) {
 		pr_err("Couldn't register ps5169 power supply.\n");
@@ -736,22 +769,22 @@ static int ps5169_gpio_init(struct ps5169_info *info)
 	int ret;
 
 	info->ps5169_pinctrl = devm_pinctrl_get(info->dev);
-	if (IS_ERR_OR_NULL(info->ps5169_pinctrl)) {
+	if (IS_ERR(info->ps5169_pinctrl)) {
 		pr_err("%s: No pinctrl config specified\n", __func__);
-		ret = PTR_ERR(info->dev);
+		ret = PTR_ERR(info->ps5169_pinctrl);
 		return ret;
 	}
 
 	info->ps5169_gpio_active =
 		pinctrl_lookup_state(info->ps5169_pinctrl, "ps5169_active");
-	if (IS_ERR_OR_NULL(info->ps5169_gpio_active)) {
+	if (IS_ERR(info->ps5169_gpio_active)) {
 		pr_err("%s: No active config specified\n", __func__);
 		ret = PTR_ERR(info->ps5169_gpio_active);
 		return ret;
 	}
 	info->ps5169_gpio_suspend =
 		pinctrl_lookup_state(info->ps5169_pinctrl, "ps5169_suspend");
-	if (IS_ERR_OR_NULL(info->ps5169_gpio_suspend)) {
+	if (IS_ERR(info->ps5169_gpio_suspend)) {
 		pr_err("%s: No suspend config specified\n", __func__);
 		ret = PTR_ERR(info->ps5169_gpio_suspend);
 		return ret;
@@ -779,6 +812,7 @@ static int ps5169_probe(struct i2c_client *client,
 		return -ENOMEM;
 
 	mutex_init(&info->i2c_lock);
+	INIT_DELAYED_WORK(&info->ps_en_work, ps5169_enable_work);
 	info->name = PS5169_DRIVER_NAME;
 	info->client  = client;
 	info->dev = &client->dev;
@@ -787,12 +821,12 @@ static int ps5169_probe(struct i2c_client *client,
 	info->ps_enable = 0;
 	info->flip = 0;
 	i2c_set_clientdata(client, info);
-	g_info = info;
 
 	info->regmap = devm_regmap_init_i2c(client, &ps5169_regmap_config);
 	if (IS_ERR(info->regmap)) {
 		pr_err("%s: failed to initialize regmap\n", __func__);
-		return PTR_ERR(info->regmap);
+		ret = PTR_ERR(info->regmap);
+		goto cleanup;
 	}
 
 	ret = ps5169_parse_dt(info);
@@ -807,19 +841,14 @@ static int ps5169_probe(struct i2c_client *client,
 		goto cleanup;
 	}
 
-	ret = ps5169_init_psy(info);
-	if (ret < 0) {
-		pr_err("%s: psy init error [%d]\n", __func__, ret);
-		goto cleanup;
-	}	
-
 	ret = ps5169_get_chipid_revision(info);
 	if (ret < 0) {
 		if (retry_count < 3) {
 			pr_err("%s: chipid i2c err, probe retry count:%d.\n",
 					__func__, retry_count);
 			retry_count++;
-			return -EPROBE_DEFER;
+			ret = -EPROBE_DEFER;
+			goto cleanup;
 		} else {
 			pr_err("%s: chipid i2c err, retry count max, no find ps5169.\n", __func__);
 			goto cleanup;
@@ -829,13 +858,23 @@ static int ps5169_probe(struct i2c_client *client,
 	ps5169_set_config(info);
 	pr_info("%s: set cfg.\n", __func__);
 
-	INIT_DELAYED_WORK(&info->ps_en_work, ps5169_enable_work);
+	/* Registration can invoke callbacks; all their state must be ready. */
+	ret = ps5169_init_psy(info);
+	if (ret < 0) {
+		pr_err("%s: psy init error [%d]\n", __func__, ret);
+		goto cleanup;
+	}
+
+	mutex_lock(&ps5169_lock);
+	g_info = info;
+	mutex_unlock(&ps5169_lock);
 
 	pr_info("%s: success probe!\n", __func__);
 
 	return 0;
 
 cleanup:
+	cancel_delayed_work_sync(&info->ps_en_work);
 	i2c_set_clientdata(client, NULL);
 	return ret;
 }
@@ -844,9 +883,14 @@ static int ps5169_remove(struct i2c_client *client)
 {
 	struct ps5169_info *info = i2c_get_clientdata(client);
 	pr_err("%s: driver remove\n", __func__);
+	/* Withdraw both entry points before draining work or freeing devres. */
+	mutex_lock(&ps5169_lock);
+	if (g_info == info)
+		g_info = NULL;
 	info->present_flag = false;
+	mutex_unlock(&ps5169_lock);
+
 	cancel_delayed_work_sync(&info->ps_en_work);
-	gpio_free(info->enable_gpio);
 	i2c_set_clientdata(client, NULL);
 	return 0;
 }
