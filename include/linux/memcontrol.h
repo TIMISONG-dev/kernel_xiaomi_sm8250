@@ -164,7 +164,7 @@ struct mem_cgroup_threshold_ary {
 
 struct mem_cgroup_thresholds {
 	/* Primary thresholds array */
-	struct mem_cgroup_threshold_ary *primary;
+	struct mem_cgroup_threshold_ary __rcu *primary;
 	/*
 	 * Spare threshold array.
 	 * This is needed to make mem_cgroup_unregister_event() "never fail".

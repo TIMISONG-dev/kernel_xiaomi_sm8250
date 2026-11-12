@@ -223,8 +223,8 @@ struct vm_area_struct;
 #ifdef CONFIG_LOCKDEP
 #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
 #else
-#define __GFP_BITS_MASK (((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1)) & \
-				~0x800000u)
+#define __GFP_BITS_MASK ((__force gfp_t)(((1 << __GFP_BITS_SHIFT) - 1) & \
+				~0x800000u))
 #endif
 
 /**

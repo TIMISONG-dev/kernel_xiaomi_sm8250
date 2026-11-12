@@ -10,6 +10,7 @@
 
 struct proc_dir_entry;
 struct seq_file;
+void arch_report_meminfo(struct seq_file *m);
 struct seq_operations;
 
 #ifdef CONFIG_PROC_FS

@@ -31,6 +31,11 @@ early_param("early_ioremap_debug", early_ioremap_debug_setup);
 
 static int after_paging_init __initdata;
 
+/* Architectures may override the default early mapping protections. */
+pgprot_t __init early_memremap_pgprot_adjust(resource_size_t phys_addr,
+						    unsigned long size,
+						    pgprot_t prot);
+
 pgprot_t __init __weak early_memremap_pgprot_adjust(resource_size_t phys_addr,
 						    unsigned long size,
 						    pgprot_t prot)

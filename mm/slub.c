@@ -6002,8 +6002,8 @@ static int alloc_trace_locations(struct seq_file *seq, struct kmem_cache *s,
 		struct location *l = &t.loc[i];
 
 		seq_printf(seq,
-		"alloc_list: call_site=%pS count=%zu object_size=%zu slab_size=%zu slab_name=%s\n",
-			l->addr, l->count, s->object_size, s->size, s->name);
+		"alloc_list: call_site=%pS count=%lu object_size=%u slab_size=%u slab_name=%s\n",
+			(void *)l->addr, l->count, s->object_size, s->size, s->name);
 	}
 
 	free_loc_track(&t);

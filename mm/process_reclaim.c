@@ -73,7 +73,7 @@ struct selected_task {
 	short oom_score_adj;
 };
 
-int selected_cmp(const void *a, const void *b)
+static int selected_cmp(const void *a, const void *b)
 {
 	const struct selected_task *x = a;
 	const struct selected_task *y = b;
