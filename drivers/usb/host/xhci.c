@@ -4004,6 +4004,9 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
 	if (!command)
 		return 0;
 
+	/* Let command-ring recovery own timeout completion and cleanup. */
+	command->timeout_ms = 3000;
+
 	spin_lock_irqsave(&xhci->lock, flags);
 	ret = xhci_queue_slot_control(xhci, command, TRB_ENABLE_SLOT, 0);
 	if (ret) {
@@ -4015,10 +4018,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
 	xhci_ring_cmd_db(xhci);
 	spin_unlock_irqrestore(&xhci->lock, flags);
 
-	if(!wait_for_completion_timeout(command->completion, msecs_to_jiffies(3000))){
-		xhci_err(xhci, "Error while wait for cmd completion callback:timeout\n");
-		return 0;
-	}
+	wait_for_completion(command->completion);
 	slot_id = command->slot_id;
 
 	if (!slot_id || command->status != COMP_SUCCESS) {
