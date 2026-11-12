@@ -821,7 +821,7 @@ static int nfc_close(struct inode *inode, struct file *filp)
  *
  * Return: -ENOIOCTLCMD if arg is not supported, 0 in any other case
  */
-int nfc_ioctl_power_states(struct file *filp, unsigned long arg)
+static int nfc_ioctl_power_states(struct file *filp, unsigned long arg)
 {
 	int r = 0;
 	struct nqx_dev *nqx_dev = filp->private_data;
@@ -977,7 +977,7 @@ static long nfc_compat_ioctl(struct file *pfile, unsigned int cmd,
  *
  * Return: the value of variable core_reset_ntf
  */
-int nfc_ioctl_core_reset_ntf(struct file *filp)
+static int nfc_ioctl_core_reset_ntf(struct file *filp)
 {
 	struct nqx_dev *nqx_dev = filp->private_data;
 
@@ -993,7 +993,7 @@ int nfc_ioctl_core_reset_ntf(struct file *filp)
  *
  * Check the NQ Chipset and firmware version details
  */
-unsigned int nfc_ioctl_nfcc_info(struct file *filp, unsigned long arg)
+static unsigned int nfc_ioctl_nfcc_info(struct file *filp, unsigned long arg)
 {
 	unsigned int r = 0;
 	struct nqx_dev *nqx_dev = filp->private_data;
@@ -1367,7 +1367,13 @@ reset_enable_gpio:
 		goto err_nfcc_hw_check;
 	}
 
-	reset_ntf_len = 2 + nci_reset_ntf[2]; /*payload + len*/
+	/* The trailing chip information must lie in the received payload. */
+	if (ret < NCI_HEADER_LEN ||
+	    (u8)nci_reset_ntf[2] < 4 ||
+	    (u8)nci_reset_ntf[2] > ret - NCI_HEADER_LEN)
+		goto err_nfcc_hw_check;
+
+	reset_ntf_len = 2 + (u8)nci_reset_ntf[2]; /*payload + len*/
 	if (reset_ntf_len > PAYLOAD_HEADER_LENGTH) {
 		nqx_dev->nqx_info.info.chip_type =
 				nci_reset_ntf[reset_ntf_len - 3];
