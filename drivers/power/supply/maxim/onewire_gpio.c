@@ -72,6 +72,7 @@ static int onewire_major;
 
 static int onewire_gpio_detected;
 static struct onewire_gpio_data *g_onewire_data;
+static DEFINE_RAW_SPINLOCK(onewire_lock);
 
 void Delay_us(unsigned int T)
 {
@@ -90,7 +91,9 @@ unsigned char ow_reset(void)
 	unsigned char presence = 0xFF;
 	unsigned long flags;
 
-	raw_spin_lock_irqsave(&g_onewire_data->lock, flags);
+	raw_spin_lock_irqsave(&onewire_lock, flags);
+	if (!g_onewire_data)
+		goto out;
 
 	ONE_WIRE_CONFIG_OUT;
 	ONE_WIRE_OUT_LOW;
@@ -101,7 +104,8 @@ unsigned char ow_reset(void)
 	presence = (unsigned char)readl_relaxed(g_onewire_data->gpio_in_out_reg) & 0x01; // Read
 	Delay_us(50);
 
-	raw_spin_unlock_irqrestore(&g_onewire_data->lock, flags);
+out:
+	raw_spin_unlock_irqrestore(&onewire_lock, flags);
 	return presence;
 }
 EXPORT_SYMBOL(ow_reset);
@@ -140,13 +144,18 @@ unsigned char read_byte(void)
 	unsigned char value = 0;
 	unsigned long flags;
 
-	raw_spin_lock_irqsave(&g_onewire_data->lock, flags);
+	raw_spin_lock_irqsave(&onewire_lock, flags);
+	if (!g_onewire_data) {
+		value = 0xff;
+		goto out;
+	}
 	for (i = 0; i < 8; i++) {
 		if (read_bit())
 			value |= 0x01 << i;// reads byte in, one byte at a time and then shifts it left
 	}
 
-	raw_spin_unlock_irqrestore(&g_onewire_data->lock, flags);
+out:
+	raw_spin_unlock_irqrestore(&onewire_lock, flags);
 	return value;
 }
 EXPORT_SYMBOL(read_byte);
@@ -157,7 +166,9 @@ void write_byte(char val)
 	unsigned char temp;
 	unsigned long flags;
 
-	raw_spin_lock_irqsave(&g_onewire_data->lock, flags);
+	raw_spin_lock_irqsave(&onewire_lock, flags);
+	if (!g_onewire_data)
+		goto out;
 	ONE_WIRE_CONFIG_OUT;
 	// writes byte, one bit at a time
 	for (i = 0; i < 8; i++) {
@@ -165,7 +176,8 @@ void write_byte(char val)
 		temp &= 0x01; // copy that bit to temp
 		write_bit(temp); // write bit in temp into
 	}
-	raw_spin_unlock_irqrestore(&g_onewire_data->lock, flags);
+out:
+	raw_spin_unlock_irqrestore(&onewire_lock, flags);
 }
 EXPORT_SYMBOL(write_byte);
 
@@ -223,7 +235,7 @@ static int onewire_gpio_pinctrl_init(struct onewire_gpio_data *onewire_data)
 	if (IS_ERR_OR_NULL(onewire_data->ow_gpio_pinctrl)) {
 		retval = PTR_ERR(onewire_data->ow_gpio_pinctrl);
 		ow_err("Target does not use pinctrl %d\n", retval);
-		goto ow_gpio_err_pinctrl_get;
+		return retval;
 	}
 
 	onewire_data->pinctrl_state_active
@@ -246,8 +258,6 @@ static int onewire_gpio_pinctrl_init(struct onewire_gpio_data *onewire_data)
 
 	return 0;
 
-ow_gpio_err_pinctrl_get:
-	devm_pinctrl_put(onewire_data->ow_gpio_pinctrl);
 ow_gpio_err_pinctrl_lookup:
 	onewire_data->ow_gpio_pinctrl = NULL;
 
@@ -387,6 +397,7 @@ static int onewire_gpio_probe(struct platform_device *pdev)
 	int retval = 0;
 	struct onewire_gpio_data *onewire_data;
 	struct kobject *p;
+	unsigned long flags;
 
 	ow_log("onewire probe entry");
 
@@ -416,11 +427,8 @@ static int onewire_gpio_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	g_onewire_data = onewire_data;
 	onewire_data->pdev = pdev;
 	platform_set_drvdata(pdev, onewire_data);
-
-	raw_spin_lock_init(&g_onewire_data->lock);
 
 	// pinctrl init
 	retval = onewire_gpio_pinctrl_init(onewire_data);
@@ -457,13 +465,24 @@ static int onewire_gpio_probe(struct platform_device *pdev)
 	onewire_data->gpio_cfg66_reg = devm_ioremap(&pdev->dev,
 					(uint32_t)onewire_data->onewire_gpio_cfg_addr, 0x4);
 
+	if (!onewire_data->gpio_in_out_reg ||
+	    !onewire_data->gpio_cfg66_reg) {
+		retval = -ENOMEM;
+		goto onewire_interface_dev_create_err;
+	}
+
 	// create device node
 	onewire_data->dev = device_create(onewire_class,
 		pdev->dev.parent->parent, onewire_major, onewire_data, "onewirectrl");
 	if (IS_ERR(onewire_data->dev)) {
 		ow_err("Failed to create interface device\n");
+		retval = PTR_ERR(onewire_data->dev);
 		goto onewire_interface_dev_create_err;
 	}
+
+	raw_spin_lock_irqsave(&onewire_lock, flags);
+	g_onewire_data = onewire_data;
+	raw_spin_unlock_irqrestore(&onewire_lock, flags);
 
 	p = &onewire_data->dev->kobj;
 
@@ -483,29 +502,36 @@ static int onewire_gpio_probe(struct platform_device *pdev)
 
 	return 0;
 onewire_syfs_create_link_err:
-	if (gpio_is_valid(onewire_data->ow_gpio))
-		sysfs_remove_file(&pdev->dev.kobj, &dev_attr_ow_gpio.attr);
+	sysfs_remove_file(&onewire_data->dev->kobj, &dev_attr_ow_gpio.attr);
 onewire_sysfs_ow_gpio_err:
 	device_destroy(onewire_class, onewire_major);
+	raw_spin_lock_irqsave(&onewire_lock, flags);
+	g_onewire_data = NULL;
+	raw_spin_unlock_irqrestore(&onewire_lock, flags);
 onewire_interface_dev_create_err:
 	if (gpio_is_valid(onewire_data->ow_gpio))
 		gpio_free(onewire_data->ow_gpio);
 onewire_ow_gpio_err:
 onewire_pinctrl_err:
 onewire_parse_dt_err:
-	kfree(onewire_data);
+	platform_set_drvdata(pdev, NULL);
 	return retval;
 }
 
 static int onewire_gpio_remove(struct platform_device *pdev)
 {
 	struct onewire_gpio_data *onewire_data = platform_get_drvdata(pdev);
+	unsigned long flags;
 
-	if (gpio_is_valid(onewire_data->ow_gpio)) {
-		sysfs_remove_file(&pdev->dev.kobj, &dev_attr_ow_gpio.attr);
+	sysfs_remove_link(&onewire_data->dev->kobj, "pltdev");
+	sysfs_remove_file(&onewire_data->dev->kobj, &dev_attr_ow_gpio.attr);
+	device_destroy(onewire_class, onewire_major);
+	raw_spin_lock_irqsave(&onewire_lock, flags);
+	g_onewire_data = NULL;
+	raw_spin_unlock_irqrestore(&onewire_lock, flags);
+	if (gpio_is_valid(onewire_data->ow_gpio))
 		gpio_free(onewire_data->ow_gpio);
-	}
-	kfree(onewire_data);
+	platform_set_drvdata(pdev, NULL);
 
 	return 0;
 }
@@ -568,7 +594,10 @@ static int __init onewire_gpio_init(void)
 		goto class_unreg;
 	}
 
-	return platform_driver_register(&onewire_gpio_driver);
+	retval = platform_driver_register(&onewire_gpio_driver);
+	if (!retval)
+		return 0;
+	unregister_chrdev(onewire_major, "onewirectrl");
 
 class_unreg:
 	class_destroy(onewire_class);
