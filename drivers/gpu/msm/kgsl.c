@@ -5531,6 +5531,12 @@ _flush_mem_workqueue(struct work_struct *work)
 
 static void kgsl_core_exit(void)
 {
+	if (!IS_ERR_OR_NULL(kgsl_driver.worker_thread)) {
+		kthread_flush_worker(&kgsl_driver.worker);
+		kthread_stop(kgsl_driver.worker_thread);
+		kgsl_driver.worker_thread = NULL;
+	}
+
 	if (kgsl_driver.workqueue) {
 		destroy_workqueue(kgsl_driver.workqueue);
 		kgsl_driver.workqueue = NULL;
@@ -5662,6 +5668,7 @@ static int __init kgsl_core_init(void)
 		&kgsl_driver.worker, "kgsl_worker_thread");
 
 	if (IS_ERR(kgsl_driver.worker_thread)) {
+		result = PTR_ERR(kgsl_driver.worker_thread);
 		pr_err("kgsl: unable to start kgsl thread\n");
 		goto err;
 	}
