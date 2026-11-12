@@ -19,7 +19,7 @@
 static struct cam_req_mgr_core_device *g_crm_core_dev;
 static struct cam_req_mgr_core_link g_links[MAXIMUM_LINKS_PER_SESSION];
 
-void cam_req_mgr_core_link_reset(struct cam_req_mgr_core_link *link)
+static void cam_req_mgr_core_link_reset(struct cam_req_mgr_core_link *link)
 {
 	link->link_hdl = 0;
 	link->num_devs = 0;
@@ -2145,38 +2145,6 @@ static void __cam_req_mgr_unreserve_link(
 /* Workqueue context processing section */
 
 /**
- * cam_req_mgr_process_send_req()
- *
- * Description: This runs in workque thread context. Call core funcs to send
- *         apply request id to drivers.
- * @priv : link information.
- * @data : contains information about frame_id, link etc.
- *
- * Return: 0 on success.
- */
-int cam_req_mgr_process_send_req(void *priv, void *data)
-{
-	int                                 rc = 0;
-	struct cam_req_mgr_core_link        *link = NULL;
-	struct cam_req_mgr_send_request     *send_req = NULL;
-	struct cam_req_mgr_req_queue        *in_q = NULL;
-	struct cam_req_mgr_connected_device *dev;
-
-	if (!data || !priv) {
-		CAM_ERR(CAM_CRM, "input args NULL %pK %pK", data, priv);
-		rc = -EINVAL;
-		goto end;
-	}
-	link = (struct cam_req_mgr_core_link *)priv;
-	send_req = (struct cam_req_mgr_send_request *)data;
-	in_q = send_req->in_q;
-
-	rc = __cam_req_mgr_send_req(link, in_q, CAM_TRIGGER_POINT_SOF, &dev);
-end:
-	return rc;
-}
-
-/**
  * cam_req_mgr_process_flush_req()
  *
  * Description: This runs in workque thread context. Call core funcs to check
@@ -2186,7 +2154,7 @@ end:
  *
  * Return: 0 on success.
  */
-int cam_req_mgr_process_flush_req(void *priv, void *data)
+static int cam_req_mgr_process_flush_req(void *priv, void *data)
 {
 	int                                  rc = 0, i = 0, idx = -1;
 	struct cam_req_mgr_flush_info       *flush_info = NULL;
@@ -2270,7 +2238,7 @@ end:
  *
  * Return: 0 on success.
  */
-int cam_req_mgr_process_sched_req(void *priv, void *data)
+static int cam_req_mgr_process_sched_req(void *priv, void *data)
 {
 	int                               rc = 0;
 	struct cam_req_mgr_sched_request *sched_req = NULL;
@@ -2353,7 +2321,7 @@ end:
  *
  * Return: 0 on success.
  */
-int cam_req_mgr_process_add_req(void *priv, void *data)
+static int cam_req_mgr_process_add_req(void *priv, void *data)
 {
 	int                                  rc = 0, i = 0, idx;
 	struct cam_req_mgr_add_request      *add_req = NULL;
@@ -2457,7 +2425,7 @@ end:
  *
  * Return: 0 on success.
  */
-int cam_req_mgr_process_error(void *priv, void *data)
+static int cam_req_mgr_process_error(void *priv, void *data)
 {
 	int                                  rc = 0, idx = -1, i;
 	struct cam_req_mgr_error_notify     *err_info = NULL;
@@ -2555,7 +2523,7 @@ end:
  *
  * Return: 0 on success.
  */
-int cam_req_mgr_process_stop(void *priv, void *data)
+static int cam_req_mgr_process_stop(void *priv, void *data)
 {
 	int                                  rc = 0;
 	struct cam_req_mgr_core_link        *link = NULL;
