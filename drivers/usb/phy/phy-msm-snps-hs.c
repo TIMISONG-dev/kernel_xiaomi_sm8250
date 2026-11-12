@@ -948,8 +948,6 @@ static int msm_hsphy_remove(struct platform_device *pdev)
 	msm_hsphy_enable_clocks(phy, false);
 	msm_hsphy_enable_power(phy, false);
 
-	kfree(phy);
-
 	return 0;
 }
 
