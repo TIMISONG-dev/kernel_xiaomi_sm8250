@@ -1086,6 +1086,7 @@ static int dsi_ctrl_enable_supplies(struct dsi_ctrl *dsi_ctrl, bool enable)
 	if (enable) {
 		rc = pm_runtime_get_sync(dsi_ctrl->drm_dev->dev);
 		if (rc < 0) {
+			pm_runtime_put_noidle(dsi_ctrl->drm_dev->dev);
 			DSI_CTRL_ERR(dsi_ctrl,
 				"Power resource enable failed, rc=%d\n", rc);
 			goto error;
@@ -2049,48 +2050,6 @@ static int dsi_ctrl_buffer_deinit(struct dsi_ctrl *dsi_ctrl)
 	}
 
 	return 0;
-}
-
-int dsi_ctrl_buffer_init(struct dsi_ctrl *dsi_ctrl)
-{
-	int rc = 0;
-	u64 iova = 0;
-	struct msm_gem_address_space *aspace = NULL;
-
-	aspace = dsi_ctrl_get_aspace(dsi_ctrl, MSM_SMMU_DOMAIN_UNSECURE);
-	if (!aspace) {
-		DSI_CTRL_ERR(dsi_ctrl, "failed to get address space\n");
-		return -ENOMEM;
-	}
-
-	dsi_ctrl->tx_cmd_buf = msm_gem_new(dsi_ctrl->drm_dev,
-					   SZ_4K,
-					   MSM_BO_UNCACHED);
-
-	if (IS_ERR(dsi_ctrl->tx_cmd_buf)) {
-		rc = PTR_ERR(dsi_ctrl->tx_cmd_buf);
-		DSI_CTRL_ERR(dsi_ctrl, "failed to allocate gem, rc=%d\n", rc);
-		dsi_ctrl->tx_cmd_buf = NULL;
-		goto error;
-	}
-
-	dsi_ctrl->cmd_buffer_size = SZ_4K;
-
-	rc = msm_gem_get_iova(dsi_ctrl->tx_cmd_buf, aspace, &iova);
-	if (rc) {
-		DSI_CTRL_ERR(dsi_ctrl, "failed to get iova, rc=%d\n", rc);
-		(void)dsi_ctrl_buffer_deinit(dsi_ctrl);
-		goto error;
-	}
-
-	if (iova & 0x07) {
-		DSI_CTRL_ERR(dsi_ctrl, "Tx command buffer is not 8 byte aligned\n");
-		rc = -ENOTSUPP;
-		(void)dsi_ctrl_buffer_deinit(dsi_ctrl);
-		goto error;
-	}
-error:
-	return rc;
 }
 
 static int dsi_enable_io_clamp(struct dsi_ctrl *dsi_ctrl,
@@ -3366,7 +3325,9 @@ error:
 
 /**
  * dsi_ctrl_update_host_config() - update dsi host configuration
- * @dsi_ctrl:          DSI controller handle.
+ * @ctrl: DSI controller hardware object
+ * @mode: Display mode configuration
+ * @clk_handle: Clock manager client handle
  * @config:            DSI host configuration.
  * @flags:             dsi_mode_flags modifying the behavior
  *
@@ -3429,7 +3390,7 @@ error:
 /**
  * dsi_ctrl_validate_timing() - validate a video timing configuration
  * @dsi_ctrl:       DSI controller handle.
- * @timing:         Pointer to timing data.
+ * @mode:         Pointer to timing data.
  *
  * Driver will validate if the timing configuration is supported on the
  * controller hardware.
@@ -3999,6 +3960,7 @@ error:
 
 /**
  * dsi_ctrl_set_clamp_state() - set clamp state for DSI phy
+ * @ulps_enabled: Whether the PHY is in ultra-low-power state
  * @dsi_ctrl:             DSI controller handle.
  * @enable:               enable/disable clamping.
  *
@@ -4188,7 +4150,7 @@ void dsi_ctrl_irq_update(struct dsi_ctrl *dsi_ctrl, bool enable)
 /**
  * dsi_ctrl_wait4dynamic_refresh_done() - Poll for dynamci refresh
  *				done interrupt.
- * @dsi_ctrl:              DSI controller handle.
+ * @ctrl:              DSI controller handle.
  */
 int dsi_ctrl_wait4dynamic_refresh_done(struct dsi_ctrl *ctrl)
 {

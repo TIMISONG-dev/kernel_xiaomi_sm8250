@@ -831,7 +831,7 @@ static struct sde_reg_dma_buffer *alloc_reg_dma_buf_v1(u32 size)
 	int rc = 0;
 
 	if (!size || SIZE_DWORD(size) > MAX_DWORDS_SZ) {
-		DRM_ERROR("invalid buffer size %d, max %d\n",
+		DRM_ERROR("invalid buffer size %lu, max %lu\n",
 				SIZE_DWORD(size), MAX_DWORDS_SZ);
 		return ERR_PTR(-EINVAL);
 	}
@@ -909,7 +909,7 @@ static int dealloc_reg_dma_v1(struct sde_reg_dma_buffer *dma_buf)
 	}
 
 	if (dma_buf->buf) {
-		msm_gem_put_iova(dma_buf->buf, 0);
+		msm_gem_put_iova(dma_buf->buf, NULL);
 		msm_gem_address_space_unregister_cb(dma_buf->aspace,
 				sde_reg_dma_aspace_cb_locked, dma_buf);
 		mutex_lock(&reg_dma->drm_dev->struct_mutex);

@@ -91,7 +91,7 @@ static const char * const iommu_ports[] = {
 #define SDE_KMS_PM_QOS_CPU_DMA_LATENCY 300
 
 /**
- * sdecustom - enable certain driver customizations for sde clients
+ * DOC: sdecustom - sdecustom - enable certain driver customizations for sde clients
  *	Enabling this modifies the standard DRM behavior slightly and assumes
  *	that the clients have specific knowledge about the modifications that
  *	are involved, so don't enable this unless you know what you're doing.
@@ -274,7 +274,7 @@ static int _sde_kms_secure_ctrl_xin_clients(struct sde_kms *sde_kms,
 /**
  * _sde_kms_scm_call - makes secure channel call to switch the VMIDs
  * @sde_kms: Pointer to sde_kms struct
- * @vimd: switch the stage 2 translation to this VMID
+ * @vmid: switch the stage 2 translation to this VMID
  */
 static int _sde_kms_scm_call(struct sde_kms *sde_kms, int vmid)
 {
@@ -471,6 +471,7 @@ static int _sde_kms_sui_misr_ctrl(struct sde_kms *sde_kms,
 		ret = pm_runtime_get_sync(sde_kms->dev->dev);
 		if (ret < 0) {
 			SDE_ERROR("failed to enable resource, ret:%d\n", ret);
+			pm_runtime_put_noidle(sde_kms->dev->dev);
 			return ret;
 		}
 
@@ -495,8 +496,8 @@ static int _sde_kms_sui_misr_ctrl(struct sde_kms *sde_kms,
 static int _sde_kms_secure_ctrl(struct sde_kms *sde_kms, struct drm_crtc *crtc,
 		bool post_commit)
 {
-	struct sde_kms_smmu_state_data *smmu_state = &sde_kms->smmu_state;
-	int old_smmu_state = smmu_state->state;
+	struct sde_kms_smmu_state_data *smmu_state;
+	int old_smmu_state;
 	int ret = 0;
 	u32 vmid;
 
@@ -504,6 +505,9 @@ static int _sde_kms_secure_ctrl(struct sde_kms *sde_kms, struct drm_crtc *crtc,
 		SDE_ERROR("invalid argument(s)\n");
 		return -EINVAL;
 	}
+
+	smmu_state = &sde_kms->smmu_state;
+	old_smmu_state = smmu_state->state;
 
 	SDE_EVT32(DRMID(crtc), smmu_state->state, smmu_state->transition_type,
 			post_commit, smmu_state->sui_misr_state,
@@ -518,7 +522,7 @@ static int _sde_kms_secure_ctrl(struct sde_kms *sde_kms, struct drm_crtc *crtc,
 	if (smmu_state->sui_misr_state == SUI_MISR_ENABLE_REQ) {
 		ret = _sde_kms_sui_misr_ctrl(sde_kms, crtc, true);
 		if (ret) {
-			smmu_state->sui_misr_state == NONE;
+			smmu_state->sui_misr_state = NONE;
 			goto end;
 		}
 	}
@@ -714,7 +718,7 @@ no_ops:
 	return 0;
 }
 
-static void _sde_clear_boot_config(struct sde_boot_config *boot_cfg)
+static void _sde_clear_boot_config(struct sde_boot_config __iomem *boot_cfg)
 {
 	if (!boot_cfg)
 		return;
@@ -732,7 +736,7 @@ static int _sde_kms_release_splash_buffer(struct sde_kms *sde_kms,
 {
 	unsigned long pfn_start, pfn_end, pfn_idx;
 	int ret = 0;
-	struct sde_boot_config *boot_cfg = sde_kms->imem;
+	struct sde_boot_config __iomem *boot_cfg = sde_kms->imem;
 
 	if (!mem_addr || !splash_buffer_size) {
 		SDE_ERROR("invalid params\n");
@@ -1167,8 +1171,10 @@ static void sde_kms_complete_commit(struct msm_kms *kms,
 		return;
 	priv = sde_kms->dev->dev_private;
 
-	if (sde_kms_power_resource_is_enabled(sde_kms->dev) < 0) {
+	if (!sde_kms_power_resource_is_enabled(sde_kms->dev)) {
 		SDE_ERROR("power resource is not enabled\n");
+		/* prepare_commit retains its PM reference until completion. */
+		pm_runtime_put_noidle(sde_kms->dev->dev);
 		return;
 	}
 
@@ -1575,7 +1581,7 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
 
 		connector = sde_connector_init(dev,
 				encoder,
-				0,
+				NULL,
 				display,
 				&wb_ops,
 				DRM_CONNECTOR_POLL_HPD,
@@ -3362,7 +3368,9 @@ static int sde_kms_pd_enable(struct generic_pm_domain *genpd)
 	SDE_DEBUG("\n");
 
 	rc = pm_runtime_get_sync(sde_kms->dev->dev);
-	if (rc > 0)
+	if (rc < 0)
+		pm_runtime_put_noidle(sde_kms->dev->dev);
+	else if (rc > 0)
 		rc = 0;
 
 	SDE_EVT32(rc, genpd->device_count);
@@ -3851,6 +3859,7 @@ static int sde_kms_hw_init(struct msm_kms *kms)
 
 	rc = pm_runtime_get_sync(sde_kms->dev->dev);
 	if (rc < 0) {
+		pm_runtime_put_noidle(sde_kms->dev->dev);
 		SDE_ERROR("resource enable failed: %d\n", rc);
 		goto error;
 	}
@@ -3914,15 +3923,12 @@ end:
 
 struct msm_kms *sde_kms_init(struct drm_device *dev)
 {
-	struct msm_drm_private *priv;
 	struct sde_kms *sde_kms;
 
 	if (!dev || !dev->dev_private) {
 		SDE_ERROR("drm device node invalid\n");
 		return ERR_PTR(-EINVAL);
 	}
-
-	priv = dev->dev_private;
 
 	sde_kms = kzalloc(sizeof(*sde_kms), GFP_KERNEL);
 	if (!sde_kms) {
@@ -3993,4 +3999,3 @@ void sde_kms_trigger_early_wakeup(struct sde_kms *sde_kms,
 		sde_power_scale_reg_bus(&priv->phandle, VOTE_INDEX_HIGH, false);
 	SDE_ATRACE_END("sde_kms_trigger_early_wakeup");
 }
-

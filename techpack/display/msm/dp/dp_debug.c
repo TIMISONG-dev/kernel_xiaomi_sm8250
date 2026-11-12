@@ -178,7 +178,7 @@ static ssize_t dp_debug_write_dpcd(struct file *file,
 	size_t size = 0, dpcd_buf_index = 0;
 	ssize_t rc = count;
 	char offset_ch[5];
-	u32 offset, data_len;
+	u32 offset;
 	const u32 dp_receiver_cap_size = 16;
 
 	if (!debug)
@@ -225,7 +225,6 @@ static ssize_t dp_debug_write_dpcd(struct file *file,
 		goto bail;
 
 	dpcd_size = size / char_to_nib;
-	data_len = dpcd_size;
 	buf_t = buf + 4;
 
 	dpcd_buf_index = offset;
@@ -1358,11 +1357,8 @@ static int dp_debug_print_hdr_params_to_buf(struct drm_connector *connector,
 {
 	int rc;
 	u32 i, len = 0, max_size = size;
-	struct sde_connector *c_conn;
 	struct sde_connector_state *c_state;
 	struct drm_msm_ext_hdr_metadata *hdr;
-
-	c_conn = to_sde_connector(connector);
 	c_state = to_sde_connector_state(connector->state);
 
 	hdr = &c_state->hdr_meta;
@@ -1629,13 +1625,13 @@ static void dp_debug_set_sim_mode(struct dp_debug_private *debug, bool sim)
 		debug->aux->set_sim_mode(debug->aux, false, NULL, NULL);
 		debug->dp_debug.sim_mode = false;
 
-		debug->panel->set_edid(debug->panel, 0, 0);
+		debug->panel->set_edid(debug->panel, NULL, 0);
 		if (debug->edid) {
 			devm_kfree(debug->dev, debug->edid);
 			debug->edid = NULL;
 		}
 
-		debug->panel->set_dpcd(debug->panel, 0);
+		debug->panel->set_dpcd(debug->panel, NULL);
 		if (debug->dpcd) {
 			devm_kfree(debug->dev, debug->dpcd);
 			debug->dpcd = NULL;
@@ -2203,7 +2199,7 @@ error:
 	return rc;
 }
 
-u8 *dp_debug_get_edid(struct dp_debug *dp_debug)
+static u8 *dp_debug_get_edid(struct dp_debug *dp_debug)
 {
 	struct dp_debug_private *debug;
 

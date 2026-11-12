@@ -43,7 +43,7 @@ signed long sde_sync_wait(void *fnc, long timeout_ms)
 					timeline_str, TIMELINE_VAL_LENGTH);
 
 		SDE_ERROR(
-			"fence driver name:%s timeline name:%s seqno:0x%x timeline:%s signaled:0x%x\n",
+			"fence driver name:%s timeline name:%s seqno:0x%llx timeline:%s signaled:0x%x\n",
 			fence->ops->get_driver_name(fence),
 			fence->ops->get_timeline_name(fence),
 			fence->seqno, timeline_str,
@@ -76,7 +76,8 @@ uint32_t sde_sync_get_name_prefix(void *fence)
 
 /**
  * struct sde_fence - release/retire fence structure
- * @fence: base fence structure
+ * @ctx: Fence timeline/context
+ * @base: base fence structure
  * @name: name of each fence- it is fence timeline + commit_count
  * @fence_list: list to associated this fence on timeline/context
  * @fd: fd attached to this fence - debugging purpose.
@@ -132,7 +133,7 @@ static bool sde_fence_signaled(struct dma_fence *fence)
 	bool status;
 
 	status = (int)((fence->seqno - f->ctx->done_count) <= 0);
-	SDE_DEBUG("status:%d fence seq:%d and timeline:%d\n",
+	SDE_DEBUG("status:%d fence seq:%llu and timeline:%d\n",
 			status, fence->seqno, f->ctx->done_count);
 	return status;
 }
@@ -153,7 +154,7 @@ static void sde_fence_value_str(struct dma_fence *fence, char *str, int size)
 	if (!fence || !str)
 		return;
 
-	snprintf(str, size, "%d", fence->seqno);
+	snprintf(str, size, "%llu", fence->seqno);
 }
 
 static void sde_fence_timeline_value_str(struct dma_fence *fence, char *str,
@@ -181,7 +182,7 @@ static struct dma_fence_ops sde_fence_ops = {
 /**
  * _sde_fence_create_fd - create fence object and return an fd for it
  * This function is NOT thread-safe.
- * @timeline: Timeline to associate with fence
+ * @fence_ctx: Timeline to associate with fence
  * @val: Timeline value at which to signal the fence
  * Return: File descriptor on success, or error code on error
  */
@@ -435,7 +436,7 @@ void sde_fence_list_dump(struct dma_fence *fence, struct seq_file **s)
 		fence->ops->timeline_value_str(fence,
 		timeline_str, TIMELINE_VAL_LENGTH);
 
-	seq_printf(*s, "fence name:%s timeline name:%s seqno:0x%x timeline:%s signaled:0x%x\n",
+	seq_printf(*s, "fence name:%s timeline name:%s seqno:0x%llx timeline:%s signaled:0x%x\n",
 		fence->ops->get_driver_name(fence),
 		fence->ops->get_timeline_name(fence),
 		fence->seqno, timeline_str,

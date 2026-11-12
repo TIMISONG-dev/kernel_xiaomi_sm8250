@@ -191,9 +191,13 @@ struct tu_algo_data {
 };
 
 /**
- * Mapper function which outputs colorimetry and dynamic range
- * to be used for a given colorspace value when the vsc sdp
- * packets are used to change the colorimetry.
+ * get_sdp_colorimetry_range - Map colorspace to SDP colorimetry and range
+ * @panel: DisplayPort panel state
+ * @colorspace: DRM colorspace requested for the stream
+ * @colorimetry: Output SDP colorimetry value
+ * @dynamic_range: Output SDP dynamic range value
+ *
+ * Select values for VSC SDP packets that change the stream colorimetry.
  */
 static void get_sdp_colorimetry_range(struct dp_panel_private *panel,
 	u32 colorspace, u32 *colorimetry, u32 *dynamic_range)
@@ -239,10 +243,12 @@ static void get_sdp_colorimetry_range(struct dp_panel_private *panel,
 }
 
 /**
- * Mapper function which outputs colorimetry to be used for a
- * given colorspace value when misc field of MSA is used to
- * change the colorimetry. Currently only RGB formats have been
- * added. This API will be extended to YUV once its supported on DP.
+ * get_misc_colorimetry_val - Map colorspace to the MSA colorimetry value
+ * @panel: DisplayPort panel state
+ * @colorspace: DRM colorspace requested for the stream
+ *
+ * Select the MSA misc field used to change colorimetry. Only RGB formats
+ * are currently supported; YUV mapping requires a later extension.
  */
 static u8 get_misc_colorimetry_val(struct dp_panel_private *panel,
 	u32 colorspace)
@@ -284,21 +290,15 @@ static u8 get_misc_colorimetry_val(struct dp_panel_private *panel,
 
 static int _tu_param_compare(s64 a, s64 b)
 {
-	u32 a_int, a_frac, a_sign;
-	u32 b_int, b_frac, b_sign;
+	u32 a_sign;
+	u32 b_sign;
 	s64 a_temp, b_temp, minus_1;
 
 	if (a == b)
 		return 0;
 
 	minus_1 = drm_fixp_from_fraction(-1, 1);
-
-	a_int = (a >> 32) & 0x7FFFFFFF;
-	a_frac = a & 0xFFFFFFFF;
 	a_sign = (a >> 32) & 0x80000000 ? 1 : 0;
-
-	b_int = (b >> 32) & 0x7FFFFFFF;
-	b_frac = b & 0xFFFFFFFF;
 	b_sign = (b >> 32) & 0x80000000 ? 1 : 0;
 
 	if (a_sign > b_sign)
@@ -332,7 +332,6 @@ static void dp_panel_update_tu_timings(struct dp_tu_calc_input *in,
 	s64 pclk_dsc_fp;
 	s64 dwidth_dsc_fp;
 	s64 hbp_dsc_fp;
-	s64 overhead_dsc;
 
 	int tot_num_eoc_symbols = 0;
 	int tot_num_hor_bytes   = 0;
@@ -405,7 +404,6 @@ static void dp_panel_update_tu_timings(struct dp_tu_calc_input *in,
 	dwidth_dsc_bytes = (tot_num_hor_bytes +
 				tot_num_eoc_symbols +
 				(eoc_bytes == 0 ? 0 : tot_num_dummy_bytes));
-	overhead_dsc     = dwidth_dsc_bytes / tot_num_hor_bytes;
 
 	dwidth_dsc_fp = drm_fixp_from_fraction(dwidth_dsc_bytes, 3);
 
@@ -1132,7 +1130,7 @@ struct dp_dsc_dto_data {
 	u32 dto_denominator;
 };
 
-struct dp_dsc_dto_data dto_tbl[] = {
+static struct dp_dsc_dto_data dto_tbl[] = {
 	{MSM_DISPLAY_COMPRESSION_RATIO_2_TO_1, 24, 1, 2},
 	{MSM_DISPLAY_COMPRESSION_RATIO_2_TO_1, 30, 5, 8},
 	{MSM_DISPLAY_COMPRESSION_RATIO_3_TO_1, 24, 1, 3},
@@ -1388,7 +1386,7 @@ static void dp_panel_dsc_pclk_param_calc(struct dp_panel *dp_panel,
 		struct dp_display_mode *dp_mode)
 {
 	int slice_per_pkt, slice_per_intf, intf_width;
-	int bytes_in_slice, total_bytes_per_intf;
+	int bytes_in_slice;
 	int comp_ratio;
 	s64 temp1_fp, temp2_fp;
 	s64 numerator_fp, denominator_fp;
@@ -1407,7 +1405,6 @@ static void dp_panel_dsc_pclk_param_calc(struct dp_panel *dp_panel,
 		slice_per_pkt = 1;
 
 	bytes_in_slice = DIV_ROUND_UP(dsc->slice_width * dsc->bpp, 8);
-	total_bytes_per_intf = bytes_in_slice * slice_per_intf;
 
 	dsc->bytes_in_slice = bytes_in_slice;
 	dsc->bytes_per_pkt = bytes_in_slice * slice_per_pkt;
@@ -1628,7 +1625,7 @@ struct dp_dsc_slice_caps_bit_map {
 	u32 bit_index;
 };
 
-const struct dp_dsc_slices_per_line slice_per_line_tbl[] = {
+static const struct dp_dsc_slices_per_line slice_per_line_tbl[] = {
 	{0,     340,    1   },
 	{340,   680,    2   },
 	{680,   1360,   4   },
@@ -1639,7 +1636,7 @@ const struct dp_dsc_slices_per_line slice_per_line_tbl[] = {
 	{8000,  9600,   24  }
 };
 
-const struct dp_dsc_peak_throughput peak_throughput_mode_0_tbl[] = {
+static const struct dp_dsc_peak_throughput peak_throughput_mode_0_tbl[] = {
 	{0, 0},
 	{1, 340},
 	{2, 400},
@@ -1657,7 +1654,7 @@ const struct dp_dsc_peak_throughput peak_throughput_mode_0_tbl[] = {
 	{14, 1000},
 };
 
-const struct dp_dsc_slice_caps_bit_map slice_caps_bit_map_tbl[] = {
+static const struct dp_dsc_slice_caps_bit_map slice_caps_bit_map_tbl[] = {
 	{1, 0},
 	{2, 1},
 	{4, 3},
@@ -2487,14 +2484,12 @@ end:
 static u32 _dp_panel_calc_be_in_lane(struct dp_panel *dp_panel)
 {
 	struct dp_panel_info *pinfo;
-	struct msm_compression_info *comp_info;
 	u32 dsc_htot_byte_cnt, mod_result;
 	u32 numerator, denominator;
 	s64 temp_fp;
 	u32 be_in_lane = 10;
 
 	pinfo = &dp_panel->pinfo;
-	comp_info = &pinfo->comp_info;
 
 	if (!dp_panel->mst_state)
 		return be_in_lane;
@@ -2620,7 +2615,6 @@ static int dp_panel_init_panel_info(struct dp_panel *dp_panel)
 {
 	int rc = 0;
 	struct dp_panel_private *panel;
-	struct dp_panel_info *pinfo;
 
 	if (!dp_panel) {
 		DP_ERR("invalid input\n");
@@ -2629,7 +2623,6 @@ static int dp_panel_init_panel_info(struct dp_panel *dp_panel)
 	}
 
 	panel = container_of(dp_panel, struct dp_panel_private, dp_panel);
-	pinfo = &dp_panel->pinfo;
 
 	drm_dp_dpcd_writeb(panel->aux->drm_aux, DP_SET_POWER, DP_SET_POWER_D3);
 	/* 200us propagation time for the power down to take effect */

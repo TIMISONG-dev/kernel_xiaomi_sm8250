@@ -1,13 +1,13 @@
 #include "mi_disp_lhbm.h"
 
-struct disp_lhbm *g_disp_lhbm = NULL;
+static struct disp_lhbm *g_disp_lhbm;
 static atomic_t fod_work_status = ATOMIC_INIT(FOD_WORK_INIT);
 static atomic_t touch_current_status = ATOMIC_INIT(-1);
 static atomic_t touch_last_status = ATOMIC_INIT(-1);
 
 extern void sde_crtc_fod_ui_ready(struct dsi_display *display, int type, int value);
 
-int mi_get_disp_id(struct dsi_display *display)
+static int mi_get_disp_id(struct dsi_display *display)
 {
 	if (!strncmp(display->display_type, "primary", 7))
 		return MI_DISP_PRIMARY;
@@ -30,13 +30,19 @@ static int mi_disp_fod_thread_create(struct disp_lhbm *dl_ptr, int disp_id)
 	dt_ptr->thread = kthread_run(kthread_worker_fn,
 			&dt_ptr->worker, "disp_fod:%d", disp_id);
 
-	ret = sched_setscheduler(dt_ptr->thread, SCHED_FIFO, &param);
-	if (ret)
-		pr_err("%s display thread priority update failed: %d\n", LHBM_TAG, ret);
-
 	if (IS_ERR(dt_ptr->thread)) {
+		ret = PTR_ERR(dt_ptr->thread);
 		pr_err("%s failed to create disp_feature kthread\n", LHBM_TAG);
 		dt_ptr->thread = NULL;
+		return ret;
+	}
+
+	ret = sched_setscheduler(dt_ptr->thread, SCHED_FIFO, &param);
+	if (ret) {
+		pr_err("%s display thread priority update failed: %d\n", LHBM_TAG, ret);
+		kthread_stop(dt_ptr->thread);
+		dt_ptr->thread = NULL;
+		return ret;
 	}
 	pr_info("%s create disp_fod:%d kthread success\n", LHBM_TAG, disp_id);
 

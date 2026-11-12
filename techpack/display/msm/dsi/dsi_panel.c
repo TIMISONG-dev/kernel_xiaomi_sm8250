@@ -104,15 +104,12 @@ static char dsi_dsc_rc_range_max_qp_1_1_scr1[][15] = {
 static char dsi_dsc_rc_range_bpg_offset[] = {2, 0, 0, -2, -4, -6, -8, -8,
 		-8, -10, -10, -12, -12, -12, -12};
 
-int dsi_dsc_create_pps_buf_cmd(struct msm_display_dsc_info *dsc, char *buf,
-				int pps_id)
+static int dsi_dsc_create_pps_buf_cmd(struct msm_display_dsc_info *dsc, char *buf,
+				      int pps_id)
 {
 	char *bp;
 	char data;
 	int i, bpp;
-	char *dbgbp;
-
-	dbgbp = buf;
 	bp = buf;
 	/* First 7 bytes are cmd header */
 	*bp++ = 0x0A;
@@ -763,17 +760,16 @@ int dsi_panel_update_backlight(struct dsi_panel *panel,
 {
 	int rc = 0;
 	struct mipi_dsi_device *dsi;
-	struct dsi_panel_mi_cfg *mi_cfg = &panel->mi_cfg;
+	struct dsi_panel_mi_cfg *mi_cfg;
 	static int use_count = 10;
-	struct dsi_backlight_config *bl;
 
 	if (!panel || (bl_lvl > 0xffff)) {
 		DSI_ERR("invalid params\n");
 		return -EINVAL;
 	}
 
+	mi_cfg = &panel->mi_cfg;
 	dsi = &panel->mipi_device;
-	bl = &panel->bl_config;
 
 	if (panel->bl_config.bl_inverted_dbv)
 		bl_lvl = (((bl_lvl & 0xff) << 8) | (bl_lvl >> 8));
@@ -851,7 +847,7 @@ static int dsi_panel_update_pwm_backlight(struct dsi_panel *panel,
 
 	rc = pwm_config(bl->pwm_bl, duty, period_ns);
 	if (rc) {
-		DSI_ERR("[%s] failed to change pwm config, rc=\n", panel->name,
+		DSI_ERR("[%s] failed to change pwm config, rc=%d\n", panel->name,
 			rc);
 		goto error;
 	}
@@ -865,7 +861,7 @@ static int dsi_panel_update_pwm_backlight(struct dsi_panel *panel,
 	if (!bl->pwm_enabled) {
 		rc = pwm_enable(bl->pwm_bl);
 		if (rc) {
-			DSI_ERR("[%s] failed to enable pwm, rc=\n", panel->name,
+			DSI_ERR("[%s] failed to enable pwm, rc=%d\n", panel->name,
 				rc);
 			goto error;
 		}
@@ -877,7 +873,7 @@ error:
 	return rc;
 }
 
-bool dc_skip_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
+static bool dc_skip_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 {
 	struct dsi_panel_mi_cfg *mi_cfg = &panel->mi_cfg;
 /* 1. dc enable is 1;
@@ -942,7 +938,6 @@ int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status)
 int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 {
 	int rc = 0;
-	int bl_dc_min = panel->bl_config.bl_min_level * 2;
 	struct dsi_backlight_config *bl = &panel->bl_config;
 	struct dsi_backlight_config *bl_slaver = &panel->bl_slaver_config;
 	struct dsi_panel_mi_cfg *mi_cfg = &panel->mi_cfg;
@@ -950,8 +945,8 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 	if (panel->host_config.ext_bridge_mode)
 		return 0;
 
-        if (bl_lvl > 0)
-                bl_lvl = ea_panel_calc_backlight(bl_lvl < bl_dc_min ? bl_dc_min : bl_lvl);
+	if (!strcmp(panel->type, "primary"))
+		bl_lvl = ea_panel_calc_backlight(bl_lvl);
 
 	DSI_INFO("backlight type:%d lvl:%d\n", bl->type, bl_lvl);
 
@@ -1189,11 +1184,9 @@ static int dsi_panel_parse_timing(struct dsi_mode_info *mode,
 	int rc = 0;
 	u64 tmp64 = 0;
 	struct dsi_display_mode *display_mode;
-	struct dsi_display_mode_priv_info *priv_info;
 
 	display_mode = container_of(mode, struct dsi_display_mode, timing);
 
-	priv_info = display_mode->priv_info;
 
 	rc = utils->read_u64(utils->data,
 			"qcom,mdss-dsi-panel-clockrate", &tmp64);
@@ -2136,7 +2129,8 @@ static int dsi_panel_parse_phy_props(struct dsi_panel *panel)
 error:
 	return rc;
 }
-const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
+
+static const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-pre-on-command",
 	"qcom,mdss-dsi-on-command",
 	"qcom,mdss-dsi-post-panel-on-command",
@@ -2269,7 +2263,7 @@ const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
 	/* xiaomi add end */
 };
 
-const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
+static const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-pre-on-command-state",
 	"qcom,mdss-dsi-on-command-state",
 	"qcom,mdss-dsi-post-on-command-state",
@@ -2900,17 +2894,17 @@ static int dsi_panel_parse_fod_dim_lut(struct dsi_panel *panel,
 
 	len = utils->count_u32_elems(utils->data, "mi,mdss-dsi-dimlayer-brightness-alpha-lut");
 	if (len <= 0 || len % BRIGHTNESS_ALPHA_PAIR_LEN) {
+		rc = -EINVAL;
 		pr_err("[%s] invalid number of elements, rc=%d\n",
 				panel->name, rc);
-		rc = -EINVAL;
 		goto count_fail;
 	}
 
 	array = kcalloc(len, sizeof(u32), GFP_KERNEL);
 	if (!array) {
+		rc = -ENOMEM;
 		pr_err("[%s] failed to allocate memory, rc=%d\n",
 				panel->name, rc);
-		rc = -ENOMEM;
 		goto alloc_array_fail;
 	}
 
@@ -3104,7 +3098,7 @@ void dsi_dsc_pclk_param_calc(struct msm_display_dsc_info *dsc, int intf_width)
 }
 
 
-int dsi_dsc_populate_static_param(struct msm_display_dsc_info *dsc)
+static int dsi_dsc_populate_static_param(struct msm_display_dsc_info *dsc)
 {
 	int bpp, bpc;
 	int mux_words_size;
@@ -4151,45 +4145,6 @@ void dsi_panel_put(struct dsi_panel *panel)
 	kfree(panel);
 }
 
-static struct dsi_panel * set_panel;
-static ssize_t mdss_fb_set_ea_enable(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t len)
-{
-	u32 ea_enable;
-
-	if (sscanf(buf, "%d", &ea_enable) != 1) {
-		DSI_ERR("sccanf buf error!\n");
-		return len;
-	}
-
-	ea_panel_mode_ctrl(set_panel, ea_enable != 0);
-
-	return len;
-}
-
-static ssize_t mdss_fb_get_ea_enable(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	int ret;
-	bool ea_enable = ea_panel_is_enabled();
-
-	ret = scnprintf(buf, PAGE_SIZE, "%d\n", ea_enable ? 1 : 0);
-
-	return ret;
-}
-
-static DEVICE_ATTR(msm_fb_ea_enable, S_IRUGO | S_IWUSR,
-	mdss_fb_get_ea_enable, mdss_fb_set_ea_enable);
-
-static struct attribute *mdss_fb_attrs[] = {
-	&dev_attr_msm_fb_ea_enable.attr,
-	NULL,
-};
-
-static struct attribute_group mdss_fb_attr_group = {
-	.attrs = mdss_fb_attrs,
-};
-
 int dsi_panel_drv_init(struct dsi_panel *panel,
 		       struct mipi_dsi_host *host)
 {
@@ -4243,11 +4198,6 @@ int dsi_panel_drv_init(struct dsi_panel *panel,
 			       panel->name, rc);
 		goto error_gpio_release;
 	}
-
-	rc = sysfs_create_group(&(panel->parent->kobj), &mdss_fb_attr_group);
-	if (rc)
-		pr_err("sysfs group creation failed, rc=%d\n", rc);
-	set_panel = panel;
 
 	goto exit;
 
@@ -4979,7 +4929,7 @@ static int dsi_panel_roi_prepare_dcs_cmds(struct dsi_panel_cmd_set *set,
 	set->cmds[0].msg.tx_len = ROI_CMD_LEN;
 	set->cmds[0].msg.tx_buf = caset;
 	set->cmds[0].msg.rx_len = 0;
-	set->cmds[0].msg.rx_buf = 0;
+	set->cmds[0].msg.rx_buf = NULL;
 	set->cmds[0].msg.wait_ms = 0;
 	set->cmds[0].last_command = 0;
 	set->cmds[0].post_wait_ms = 0;
@@ -4991,7 +4941,7 @@ static int dsi_panel_roi_prepare_dcs_cmds(struct dsi_panel_cmd_set *set,
 	set->cmds[1].msg.tx_len = ROI_CMD_LEN;
 	set->cmds[1].msg.tx_buf = paset;
 	set->cmds[1].msg.rx_len = 0;
-	set->cmds[1].msg.rx_buf = 0;
+	set->cmds[1].msg.rx_buf = NULL;
 	set->cmds[1].msg.wait_ms = 0;
 	set->cmds[1].last_command = 1;
 	set->cmds[1].post_wait_ms = 0;
@@ -5262,9 +5212,6 @@ int dsi_panel_enable(struct dsi_panel *panel)
 		return -EINVAL;
 	}
 
-	if (panel->hbm_mode)
-		dsi_panel_apply_hbm_mode(panel);
-
 	mutex_lock(&panel->panel_lock);
 
 	mi_cfg = &panel->mi_cfg;
@@ -5322,6 +5269,8 @@ int dsi_panel_enable(struct dsi_panel *panel)
 	mutex_unlock(&panel->panel_lock);
 	display_utc_time_marker("DSI_CMD_SET_ON");
 
+	if (!rc && panel->panel_initialized && panel->hbm_mode)
+		rc = dsi_panel_apply_hbm_mode(panel);
 	return rc;
 }
 
@@ -5603,23 +5552,10 @@ error:
 
 int dsi_panel_apply_hbm_mode(struct dsi_panel *panel)
 {
-	static const enum dsi_cmd_set_type type_map[] = {
-		DSI_CMD_SET_MI_HBM_OFF,
-		DSI_CMD_SET_MI_HBM_ON
-	};
+	if (!panel)
+		return -EINVAL;
 
-	enum dsi_cmd_set_type type;
-	int rc;
-
-	if (panel->hbm_mode >= 0 &&
-		panel->hbm_mode < ARRAY_SIZE(type_map))
-		type = type_map[panel->hbm_mode];
-	else
-		type = type_map[0];
-
-	mutex_lock(&panel->panel_lock);
-	rc = dsi_panel_tx_cmd_set(panel, type);
-	mutex_unlock(&panel->panel_lock);
-
-	return rc;
+	/* Keep thermal limits, FOD arbitration and Xiaomi HBM state together. */
+	return dsi_panel_set_disp_param(panel, panel->hbm_mode ?
+			DISPPARAM_HBM_ON : DISPPARAM_HBM_OFF);
 }

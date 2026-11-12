@@ -60,7 +60,7 @@ static int sde_mdp_pipe_qos_lut(struct sde_mdp_pipe *pipe)
 }
 
 /**
- * @sde_mdp_pipe_nrt_vbif_setup -
+ * sde_mdp_pipe_nrt_vbif_setup -
  * @mdata: pointer to global driver data.
  * @pipe: pointer to a pipe
  *
@@ -150,7 +150,7 @@ int sde_mdp_pipe_destroy(struct sde_mdp_pipe *pipe)
 	return 0;
 }
 
-void sde_mdp_pipe_position_update(struct sde_mdp_pipe *pipe,
+static void sde_mdp_pipe_position_update(struct sde_mdp_pipe *pipe,
 		struct sde_rect *src, struct sde_rect *dst)
 {
 	u32 src_size, src_xy, dst_size, dst_xy;

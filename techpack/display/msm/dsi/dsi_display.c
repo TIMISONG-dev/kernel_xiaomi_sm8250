@@ -12,9 +12,11 @@
 #include "msm_drv.h"
 #include "sde_connector.h"
 #include "msm_mmu.h"
+#include "exposure_adjustment.h"
 #include "dsi_display.h"
 #include "dsi_panel.h"
 #include "dsi_panel_mi.h"
+#include "dsi_mi_feature.h"
 #include "dsi_ctrl.h"
 #include "dsi_ctrl_hw.h"
 #include "dsi_drm.h"
@@ -35,7 +37,7 @@
 #define DSI_CLOCK_BITRATE_RADIX 10
 #define MAX_TE_SOURCE_ID  2
 
-DEFINE_MUTEX(dsi_display_clk_mutex);
+static DEFINE_MUTEX(dsi_display_clk_mutex);
 
 extern int mi_disp_lhbm_attach_primary_dsi_display(struct dsi_display *display);
 
@@ -52,7 +54,7 @@ static const struct of_device_id dsi_display_dt_match[] = {
 	{}
 };
 
-struct dsi_display *primary_display;
+static struct dsi_display *primary_display;
 
 static void dsi_display_mask_ctrl_error_interrupts(struct dsi_display *display,
 			u32 mask, bool enable)
@@ -1643,9 +1645,6 @@ static ssize_t debugfs_read_esd_check_mode(struct file *file,
 	if (!display)
 		return -ENODEV;
 
-	if (*ppos)
-		return 0;
-
 	if (!display->panel) {
 		DSI_ERR("invalid panel data\n");
 		return -EINVAL;
@@ -1662,27 +1661,26 @@ static ssize_t debugfs_read_esd_check_mode(struct file *file,
 		goto error;
 	}
 
-	len = min_t(size_t, user_len, ESD_MODE_STRING_MAX_LEN - 1);
 	if (!esd_config->esd_enabled) {
-		rc = snprintf(buf, len, "ESD feature not enabled");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "ESD feature not enabled");
 		goto output_mode;
 	}
 
 	switch (esd_config->status_mode) {
 	case ESD_MODE_REG_READ:
-		rc = snprintf(buf, len, "reg_read");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "reg_read");
 		break;
 	case ESD_MODE_PANEL_TE:
-		rc = snprintf(buf, len, "te_signal_check");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "te_signal_check");
 		break;
 	case ESD_MODE_SW_SIM_FAILURE:
-		rc = snprintf(buf, len, "esd_sw_sim_failure");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "esd_sw_sim_failure");
 		break;
 	case ESD_MODE_SW_SIM_SUCCESS:
-		rc = snprintf(buf, len, "esd_sw_sim_success");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "esd_sw_sim_success");
 		break;
 	default:
-		rc = snprintf(buf, len, "invalid");
+		rc = scnprintf(buf, ESD_MODE_STRING_MAX_LEN, "invalid");
 		break;
 	}
 
@@ -1692,16 +1690,12 @@ output_mode:
 		goto error;
 	}
 
-	if (copy_to_user(user_buf, buf, len)) {
-		rc = -EFAULT;
-		goto error;
-	}
-
-	*ppos += len;
+	len = rc;
+	rc = simple_read_from_buffer(user_buf, user_len, ppos, buf, len);
 
 error:
 	kfree(buf);
-	return len;
+	return rc;
 }
 
 static ssize_t debugfs_update_cmd_scheduling_params(struct file *file,
@@ -2062,7 +2056,7 @@ static int dsi_display_is_ulps_req_valid(struct dsi_display *display,
 
 /**
  * dsi_display_set_ulps() - set ULPS state for DSI lanes.
- * @dsi_display:         DSI display handle.
+ * @display:         DSI display handle.
  * @enable:           enable/disable ULPS.
  *
  * ULPS can be enabled/disabled after DSI host engine is turned on.
@@ -2148,7 +2142,7 @@ static int dsi_display_set_ulps(struct dsi_display *display, bool enable)
 
 /**
  * dsi_display_set_clamp() - set clamp state for DSI IO.
- * @dsi_display:         DSI display handle.
+ * @display:         DSI display handle.
  * @enable:           enable/disable clamping.
  *
  * Return: error code.
@@ -2212,8 +2206,8 @@ static int dsi_display_set_clamp(struct dsi_display *display, bool enable)
 }
 
 /**
- * dsi_display_setup_ctrl() - setup DSI controller.
- * @dsi_display:         DSI display handle.
+ * dsi_display_ctrl_setup() - setup DSI controller.
+ * @display:         DSI display handle.
  *
  * Return: error code.
  */
@@ -2254,7 +2248,7 @@ static int dsi_display_phy_enable(struct dsi_display *display);
 
 /**
  * dsi_display_phy_idle_on() - enable DSI PHY while coming out of idle screen.
- * @dsi_display:         DSI display handle.
+ * @display:         DSI display handle.
  * @mmss_clamp:          True if clamp is enabled.
  *
  * Return: error code.
@@ -2301,7 +2295,7 @@ static int dsi_display_phy_idle_on(struct dsi_display *display,
 
 /**
  * dsi_display_phy_idle_off() - disable DSI PHY while going to idle screen.
- * @dsi_display:         DSI display handle.
+ * @display:         DSI display handle.
  *
  * Return: error code.
  */
@@ -4301,7 +4295,7 @@ static bool dsi_display_is_seamless_dfps_possible(
 	return true;
 }
 
-void dsi_display_update_byte_intf_div(struct dsi_display *display)
+static void dsi_display_update_byte_intf_div(struct dsi_display *display)
 {
 	struct dsi_host_common_cfg *config;
 	struct dsi_display_ctrl *m_ctrl;
@@ -4853,7 +4847,6 @@ static int dsi_display_get_dfps_timing(struct dsi_display *display,
 	struct dsi_dfps_capabilities dfps_caps;
 	struct dsi_display_mode per_ctrl_mode;
 	struct dsi_mode_info *timing;
-	struct dsi_ctrl *m_ctrl;
 
 	int rc = 0;
 
@@ -4861,7 +4854,6 @@ static int dsi_display_get_dfps_timing(struct dsi_display *display,
 		DSI_ERR("Invalid params\n");
 		return -EINVAL;
 	}
-	m_ctrl = display->ctrl[display->clk_master_idx].ctrl;
 
 	dsi_panel_get_dfps_caps(display->panel, &dfps_caps);
 	if (!dfps_caps.dfps_support) {
@@ -5229,6 +5221,7 @@ int dsi_display_cont_splash_config(void *dsi_display)
 
 	rc = pm_runtime_get_sync(display->drm_dev->dev);
 	if (rc < 0) {
+		pm_runtime_put_noidle(display->drm_dev->dev);
 		DSI_ERR("failed to vote gdsc for continuous splash, rc=%d\n",
 							rc);
 		return rc;
@@ -5459,64 +5452,150 @@ static ssize_t sysfs_hbm_read(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	struct dsi_display *display = dev_get_drvdata(dev);
-	if (!display->panel)
-		return 0;
+
+	if (!display || !display->panel)
+		return -ENODEV;
 
 	return scnprintf(buf, PAGE_SIZE, "%d\n", display->panel->hbm_mode);
 }
 
 static ssize_t sysfs_hbm_write(struct device *dev,
-	    struct device_attribute *attr, const char *buf, size_t count)
+		struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct dsi_display *display = dev_get_drvdata(dev);
-	int ret, hbm_mode;
-        int bl_lvl_before_hbm = display->panel->bl_config.bl_level;
+	int ret, clk_ret, hbm_mode;
+	u32 bl_level;
 
-	if (!display->panel)
-		return -EINVAL;
+	if (!display || !display->panel)
+		return -ENODEV;
 
 	ret = kstrtoint(buf, 10, &hbm_mode);
-	if (ret) {
-		pr_err("kstrtoint failed. ret=%d\n", ret);
+	if (ret)
 		return ret;
-	}
+	if (hbm_mode < 0 || hbm_mode > 1)
+		return -EINVAL;
 
 	mutex_lock(&display->display_lock);
-
+	bl_level = display->panel->bl_config.bl_level;
 	display->panel->hbm_mode = hbm_mode;
 	if (!dsi_panel_initialized(display->panel))
-		goto error;
+		goto unlock;
 
 	ret = dsi_display_clk_ctrl(display->dsi_clk_handle,
 			DSI_CORE_CLK, DSI_CLK_ON);
-	if (ret) {
-		pr_err("[%s] failed to enable DSI core clocks, rc=%d\n",
-		       display->name, ret);
-		goto error;
-	}
+	if (ret)
+		goto unlock;
 
 	ret = dsi_panel_apply_hbm_mode(display->panel);
-	if (ret)
-		pr_err("unable to set hbm mode\n");
+	/* Some panels encode a fixed brightness in their HBM-off command. */
+	if (!ret && !hbm_mode && !display->panel->mi_cfg.fod_hbm_enabled)
+		ret = dsi_panel_set_backlight(display->panel, bl_level);
 
-	if (hbm_mode == 0) {
-		/* hbm off cmd sets brightness to an
-		 * arbitrary value; setting it to the right value needs to be done
-		 * separately */
-		dsi_panel_set_backlight(display->panel,bl_lvl_before_hbm);
-	}
+	clk_ret = dsi_display_clk_ctrl(display->dsi_clk_handle,
+			DSI_CORE_CLK, DSI_CLK_OFF);
+	if (!ret)
+		ret = clk_ret;
+unlock:
+	mutex_unlock(&display->display_lock);
+	return ret ? ret : count;
+}
+
+static ssize_t thermal_hbm_disabled_show(struct device *dev,
+					 struct device_attribute *attr, char *buf)
+{
+	struct dsi_display *display = dev_get_drvdata(dev);
+
+	if (!display || !display->panel)
+		return -ENODEV;
+
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
+			READ_ONCE(display->panel->mi_cfg.thermal_hbm_disabled));
+}
+
+static ssize_t thermal_hbm_disabled_store(struct device *dev,
+					  struct device_attribute *attr,
+					  const char *buf, size_t count)
+{
+	struct dsi_display *display = dev_get_drvdata(dev);
+	int disabled, ret, clk_ret;
+	u32 param;
+
+	if (!display || !display->panel)
+		return -ENODEV;
+	if (strcmp(display->panel->type, "primary"))
+		return -EOPNOTSUPP;
+
+	ret = kstrtoint(buf, 10, &disabled);
+	if (ret)
+		return ret;
+	if (disabled < 0 || disabled > 1)
+		return -EINVAL;
+
+	mutex_lock(&display->display_lock);
+	ret = dsi_panel_set_disp_param(display->panel, disabled ?
+			DISPPARAM_SET_THERMAL_HBM_DISABLE :
+			DISPPARAM_CLEAR_THERMAL_HBM_DISABLE);
+	if (ret || !dsi_panel_initialized(display->panel))
+		goto unlock;
 
 	ret = dsi_display_clk_ctrl(display->dsi_clk_handle,
-			DSI_CORE_CLK, DSI_CLK_OFF);
-	if (ret) {
-		pr_err("[%s] failed to disable DSI core clocks, rc=%d\n",
-		       display->name, ret);
-		goto error;
+				   DSI_CORE_CLK, DSI_CLK_ON);
+	if (ret)
+		goto unlock;
+
+	/* Preserve the stock thermal HBM behavior and requested HBM state. */
+	if (display->panel->mi_cfg.hbm_enabled) {
+		param = (disabled ? DISPPARAM_HBM_OFF : DISPPARAM_HBM_ON) |
+			DISPPARAM_THERMAL_SET;
+		ret = dsi_panel_set_disp_param(display->panel, param);
+		if (!ret && display->panel->mi_cfg.hbm_brightness &&
+		    !display->panel->mi_cfg.fod_hbm_enabled)
+			ret = dsi_panel_update_backlight(display->panel, disabled ?
+					2047 : display->panel->mi_cfg.last_bl_level);
 	}
-error:
+
+	clk_ret = dsi_display_clk_ctrl(display->dsi_clk_handle,
+				       DSI_CORE_CLK, DSI_CLK_OFF);
+	if (!ret)
+		ret = clk_ret;
+unlock:
 	mutex_unlock(&display->display_lock);
-	return ret == 0 ? count : ret;
+	if (ret)
+		return ret;
+	return count;
 }
+
+static DEVICE_ATTR_RW(thermal_hbm_disabled);
+
+static ssize_t mdss_fb_set_ea_enable(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct dsi_display *display = dev_get_drvdata(dev);
+	bool enable;
+	int ret;
+
+	if (!display || !display->panel)
+		return -ENODEV;
+	if (strcmp(display->panel->type, "primary"))
+		return -EOPNOTSUPP;
+	ret = kstrtobool(buf, &enable);
+	if (ret)
+		return ret;
+
+	mutex_lock(&display->display_lock);
+	ea_panel_mode_ctrl(display->panel, enable);
+	mutex_unlock(&display->display_lock);
+	return count;
+}
+
+static ssize_t mdss_fb_get_ea_enable(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", ea_panel_is_enabled());
+}
+
+static DEVICE_ATTR(msm_fb_ea_enable, 0644,
+		mdss_fb_get_ea_enable, mdss_fb_set_ea_enable);
 
 static DEVICE_ATTR(hbm, 0644,
 			sysfs_hbm_read,
@@ -5546,6 +5625,8 @@ static DEVICE_ATTR(fod_ui, 0444,
 static struct attribute *display_fs_attrs[] = {
 	&dev_attr_fod_ui.attr,
 	&dev_attr_hbm.attr,
+	&dev_attr_thermal_hbm_disabled.attr,
+	&dev_attr_msm_fb_ea_enable.attr,
 	NULL,
 };
 
@@ -6059,7 +6140,7 @@ end:
 
 int dsi_display_dev_remove(struct platform_device *pdev)
 {
-	int rc = 0i, i = 0;
+	int rc = 0, i = 0;
 	struct dsi_display *display;
 	struct dsi_display_ctrl *ctrl;
 
@@ -6731,7 +6812,7 @@ int dsi_display_get_mode_count(struct dsi_display *display,
 	return 0;
 }
 
-void dsi_display_adjust_mode_timing(struct dsi_display *display,
+static void dsi_display_adjust_mode_timing(struct dsi_display *display,
 			struct dsi_display_mode *dsi_mode,
 			int lanes, int bpp)
 {
@@ -6885,7 +6966,6 @@ int dsi_display_get_modes(struct dsi_display *display,
 	bool is_split_link, is_cmd_mode;
 	u32 num_dfps_rates, timing_mode_count, display_mode_count;
 	u32 sublinks_count, mode_idx, array_idx = 0;
-	struct dsi_dyn_clk_caps *dyn_clk_caps;
 	int i, start, end, rc = -EINVAL;
 
 	if (!display || !out_modes) {
@@ -6916,8 +6996,6 @@ int dsi_display_get_modes(struct dsi_display *display,
 				display->name);
 		goto error;
 	}
-
-	dyn_clk_caps = &(display->panel->dyn_clk_caps);
 
 	timing_mode_count = display->panel->num_timing_nodes;
 

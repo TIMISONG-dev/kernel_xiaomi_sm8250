@@ -238,6 +238,7 @@ void sde_plane_setup_src_split_order(struct drm_plane *plane,
 
 /**
  * _sde_plane_set_qos_lut - set danger, safe and creq LUT of the given plane
+ * @plane: DRM plane to configure or validate
  * @crtc:		Pointer to drm crtc to find refresh rate on mode
  * @fb:			Pointer to framebuffer associated with the given plane
  */
@@ -398,7 +399,8 @@ void sde_plane_set_revalidate(struct drm_plane *plane, bool enable)
 	psde->revalidate = enable;
 }
 
-int sde_plane_danger_signal_ctrl(struct drm_plane *plane, bool enable)
+#ifdef CONFIG_DEBUG_FS
+static int sde_plane_danger_signal_ctrl(struct drm_plane *plane, bool enable)
 {
 	struct sde_plane *psde;
 	int rc;
@@ -415,6 +417,7 @@ int sde_plane_danger_signal_ctrl(struct drm_plane *plane, bool enable)
 
 	rc = pm_runtime_get_sync(plane->dev->dev);
 	if (rc < 0) {
+		pm_runtime_put_noidle(plane->dev->dev);
 		SDE_ERROR("failed to enable power resource %d\n", rc);
 		SDE_EVT32(rc, SDE_EVTLOG_ERROR);
 		return rc;
@@ -427,6 +430,8 @@ int sde_plane_danger_signal_ctrl(struct drm_plane *plane, bool enable)
 end:
 	return 0;
 }
+#endif
+
 
 /**
  * _sde_plane_set_ot_limit - set OT limit for the given plane
@@ -541,7 +546,6 @@ static void _sde_plane_set_ts_prefill(struct drm_plane *plane,
 	struct sde_plane *psde;
 	struct sde_hw_pipe_ts_cfg cfg;
 	struct msm_drm_private *priv;
-	struct sde_kms *sde_kms;
 
 	if (!plane || !plane->dev) {
 		SDE_ERROR("invalid arguments");
@@ -553,8 +557,6 @@ static void _sde_plane_set_ts_prefill(struct drm_plane *plane,
 		SDE_ERROR("invalid KMS reference\n");
 		return;
 	}
-
-	sde_kms = to_sde_kms(priv->kms);
 	psde = to_sde_plane(plane);
 	if (!psde->pipe_hw) {
 		SDE_ERROR("invalid pipe reference\n");
@@ -626,7 +628,7 @@ int sde_plane_wait_input_fence(struct drm_plane *plane, uint32_t wait_ms)
 
 			switch (rc) {
 			case 0:
-				SDE_ERROR_PLANE(psde, "%ums timeout on %08X fd %d\n",
+				SDE_ERROR_PLANE(psde, "%ums timeout on %08X fd %llu\n",
 						wait_ms, prefix, sde_plane_get_property(pstate,
 						PLANE_PROP_INPUT_FENCE));
 				psde->is_error = true;
@@ -663,6 +665,9 @@ int sde_plane_wait_input_fence(struct drm_plane *plane, uint32_t wait_ms)
 
 /**
  * _sde_plane_get_aspace: gets the address space based on the
+ * @psde: SDE plane state
+ * @pstate: Atomic state of the plane
+ * @aspace: Output address space selected for the plane
  *            fb_translation mode property
  */
 static int _sde_plane_get_aspace(
@@ -1455,7 +1460,7 @@ static int sde_plane_rot_atomic_check(struct drm_plane *plane,
 	struct drm_plane_state *state)
 {
 	struct sde_plane *psde;
-	struct sde_plane_state *pstate, *old_pstate;
+	struct sde_plane_state *pstate;
 	int ret = 0;
 	u32 rotation;
 
@@ -1466,7 +1471,6 @@ static int sde_plane_rot_atomic_check(struct drm_plane *plane,
 
 	psde = to_sde_plane(plane);
 	pstate = to_sde_plane_state(state);
-	old_pstate = to_sde_plane_state(plane->state);
 
 	/* check inline rotation and simplify the transform */
 	rotation = drm_rotation_simplify(
@@ -1666,7 +1670,8 @@ void sde_plane_clear_multirect(const struct drm_plane_state *drm_state)
 }
 
 /**
- * multi_rect validate API allows to validate only R0 and R1 RECT
+ * sde_plane_validate_multirect_v2 - Validate a pair of multirect planes
+ * @plane: DRM plane to configure or validate
  * passing for each plane. Client of this API must not pass multiple
  * plane which are not sharing same XIN client. Such calls will fail
  * even though kernel client is passing valid multirect configuration.
@@ -1984,6 +1989,7 @@ static void sde_plane_cleanup_fb(struct drm_plane *plane,
 		/* halt this plane now */
 		ret = pm_runtime_get_sync(plane->dev->dev);
 		if (ret < 0) {
+			pm_runtime_put_noidle(plane->dev->dev);
 			SDE_ERROR("power resource enable failed with %d", ret);
 			SDE_EVT32(ret, SDE_EVTLOG_ERROR);
 			return;
@@ -2586,7 +2592,7 @@ static int _sde_plane_validate_fb(struct sde_plane *psde,
 		if (!ret && ((fb_ns && (mode != SDE_DRM_FB_NON_SEC)) ||
 			(fb_sec && (mode != SDE_DRM_FB_SEC)) ||
 			(fb_sec_dir && (mode != SDE_DRM_FB_SEC_DIR_TRANS)))) {
-			SDE_ERROR_PLANE(psde, "mode:%d fb:%d flag:0x%x rc:%d\n",
+			SDE_ERROR_PLANE(psde, "mode:%d fb:%d flag:0x%lx rc:%d\n",
 			mode, fb->base.id, flags, ret);
 			SDE_EVT32(psde->base.base.id, fb->base.id, flags,
 			fb_ns, fb_sec, fb_sec_dir, ret, SDE_EVTLOG_ERROR);
@@ -2640,7 +2646,7 @@ static int sde_plane_sspp_atomic_check(struct drm_plane *plane,
 			plane->base.id,
 			pstate->rotation,
 			width, height,
-			fb ? (char *) &state->fb->format->format : 0x0,
+			fb ? (char *) &state->fb->format->format : NULL,
 			fb ? state->fb->modifier : 0x0);
 	SDE_DEBUG("src:%dx%d %d,%d crtc:%dx%d+%d+%d\n",
 			state->src_w >> 16, state->src_h >> 16,
@@ -2732,7 +2738,6 @@ static int sde_plane_atomic_check(struct drm_plane *plane,
 {
 	int ret = 0;
 	struct sde_plane *psde;
-	struct sde_plane_state *pstate;
 
 	if (!plane || !state) {
 		SDE_ERROR("invalid arg(s), plane %d state %d\n",
@@ -2742,7 +2747,6 @@ static int sde_plane_atomic_check(struct drm_plane *plane,
 	}
 
 	psde = to_sde_plane(plane);
-	pstate = to_sde_plane_state(state);
 
 	SDE_DEBUG_PLANE(psde, "\n");
 
@@ -2789,6 +2793,7 @@ void sde_plane_flush(struct drm_plane *plane)
 
 /**
  * sde_plane_set_error: enable/disable error condition
+ * @error: Whether the plane is in an error condition
  * @plane: pointer to drm_plane structure
  */
 void sde_plane_set_error(struct drm_plane *plane, bool error)
@@ -3108,7 +3113,7 @@ static void _sde_plane_update_format_and_rects(struct sde_plane *psde,
 	if (SDE_FORMAT_IS_YUV(fmt))
 		_sde_plane_setup_csc(psde);
 	else
-		psde->csc_ptr = 0;
+		psde->csc_ptr = NULL;
 
 	if (psde->pipe_hw->ops.setup_inverse_pma) {
 		uint32_t pma_mode = 0;
@@ -3139,7 +3144,6 @@ static void _sde_plane_update_sharpening(struct sde_plane *psde)
 static void _sde_plane_update_properties(struct drm_plane *plane,
 	struct drm_crtc *crtc, struct drm_framebuffer *fb)
 {
-	uint32_t nplanes;
 	const struct msm_format *msm_fmt;
 	const struct sde_format *fmt;
 	struct sde_plane *psde;
@@ -3163,7 +3167,6 @@ static void _sde_plane_update_properties(struct drm_plane *plane,
 	}
 
 	fmt = to_sde_format(msm_fmt);
-	nplanes = fmt->num_planes;
 
 	/* update secure session flag */
 	if (pstate->dirty & SDE_PLANE_DIRTY_FB_TRANSLATION_MODE)
@@ -3224,7 +3227,6 @@ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
 	struct sde_plane *psde;
 	struct drm_plane_state *state;
 	struct sde_plane_state *pstate;
-	struct sde_plane_state *old_pstate;
 	struct drm_crtc *crtc;
 	struct drm_framebuffer *fb;
 	int idx;
@@ -3245,8 +3247,6 @@ static int sde_plane_sspp_atomic_update(struct drm_plane *plane,
 	state = plane->state;
 
 	pstate = to_sde_plane_state(state);
-
-	old_pstate = to_sde_plane_state(old_state);
 
 	crtc = state->crtc;
 	fb = state->fb;
@@ -4052,15 +4052,15 @@ static int sde_plane_atomic_set_property(struct drm_plane *plane,
 				break;
 			case PLANE_PROP_SCALER_V1:
 				_sde_plane_set_scaler_v1(psde, pstate,
-						(void *)(uintptr_t)val);
+						(void __user *)(uintptr_t)val);
 				break;
 			case PLANE_PROP_SCALER_V2:
 				_sde_plane_set_scaler_v2(psde, pstate,
-						(void *)(uintptr_t)val);
+						(void __user *)(uintptr_t)val);
 				break;
 			case PLANE_PROP_EXCL_RECT_V1:
 				_sde_plane_set_excl_rect_v1(psde, pstate,
-						(void *)(uintptr_t)val);
+						(void __user *)(uintptr_t)val);
 				break;
 			default:
 				/* nothing to do */
@@ -4219,7 +4219,7 @@ static void sde_plane_destroy_state(struct drm_plane *plane,
 	/* remove ref count for fence */
 	if (pstate->input_fence)
 		sde_sync_put(pstate->input_fence);
-	pstate->input_fence = 0;
+	pstate->input_fence = NULL;
 
 	/* destroy value helper */
 	msm_property_destroy_state(&psde->property_info, pstate,
@@ -4258,7 +4258,7 @@ sde_plane_duplicate_state(struct drm_plane *plane)
 			&pstate->property_state, pstate->property_values);
 
 	/* clear out any input fence */
-	pstate->input_fence = 0;
+	pstate->input_fence = NULL;
 	input_fence_default = msm_property_get_default(
 			&psde->property_info, PLANE_PROP_INPUT_FENCE);
 	drm_prop = msm_property_index_to_drm_property(
@@ -4298,7 +4298,7 @@ static void sde_plane_reset(struct drm_plane *plane)
 	/* remove previous state, if present */
 	if (plane->state) {
 		sde_plane_destroy_state(plane, plane->state);
-		plane->state = 0;
+		plane->state = NULL;
 	}
 
 	pstate = msm_property_alloc_state(&psde->property_info);
@@ -4675,7 +4675,7 @@ struct drm_plane *sde_plane_init(struct drm_device *dev,
 
 	psde->nformats = sde_populate_formats(format_list,
 				psde->formats,
-				0,
+				NULL,
 				ARRAY_SIZE(psde->formats));
 
 	if (!psde->nformats) {

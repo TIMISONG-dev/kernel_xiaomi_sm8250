@@ -36,6 +36,7 @@ static DEFINE_MUTEX(sde_core_perf_lock);
  * @SDE_PERF_MODE_NORMAL: performance controlled by user mode client
  * @SDE_PERF_MODE_MINIMUM: performance bounded by minimum setting
  * @SDE_PERF_MODE_FIXED: performance bounded by fixed setting
+ * @SDE_PERF_MODE_MAX: Number of supported performance modes
  */
 enum sde_perf_mode {
 	SDE_PERF_MODE_NORMAL,
@@ -137,7 +138,7 @@ static void _sde_core_perf_calc_doze_suspend(struct drm_crtc *crtc,
 		}
 
 		if (!is_doze_suspend && conn && c_conn)
-			SDE_ERROR("No BW, planes:%x dpms_mode:%d lpmode:%d\n",
+			SDE_ERROR("No BW, planes:%x dpms_mode:%d lpmode:%llu\n",
 				state->plane_mask, c_conn->dpms_mode,
 				sde_connector_get_lp(conn));
 		if (conn && c_conn)
@@ -356,10 +357,10 @@ static inline enum sde_crtc_client_type _get_sde_client_type(
 }
 
 /**
- * @_sde_core_perf_activate_llcc() - Activates/deactivates the system llcc
- * @kms - pointer to the kms
- * @uid - ID for which the llcc would be activated
- * @activate - boolean to indicate if activate/deactivate the LLCC
+ * _sde_core_perf_activate_llcc() - Activates/deactivates the system llcc
+ * @kms: pointer to the kms
+ * @uid: ID for which the llcc would be activated
+ * @activate: boolean to indicate if activate/deactivate the LLCC
  *
  * Function assumes that caller has already acquired the "sde_core_perf_lock",
  * which would protect from any race condition between CRTC's
@@ -368,9 +369,6 @@ static int _sde_core_perf_activate_llcc(struct sde_kms *kms,
 	u32 uid, bool activate)
 {
 	struct llcc_slice_desc *slice;
-	struct drm_device *drm_dev;
-	struct device *dev;
-	struct platform_device *pdev;
 	int rc = 0;
 
 	if (!kms || !kms->dev || !kms->dev->dev) {
@@ -379,9 +377,6 @@ static int _sde_core_perf_activate_llcc(struct sde_kms *kms,
 		goto exit;
 	}
 
-	drm_dev = kms->dev;
-	dev = drm_dev->dev;
-	pdev = to_platform_device(dev);
 
 	/* If LLCC is already in the requested state, skip */
 	SDE_EVT32(activate, kms->perf.llcc_active);
@@ -733,8 +728,8 @@ static void _sde_core_perf_crtc_update_bus(struct sde_kms *kms,
 }
 
 /**
- * @sde_core_perf_crtc_release_bw() - request zero bandwidth
- * @crtc - pointer to a crtc
+ * sde_core_perf_crtc_release_bw() - request zero bandwidth
+ * @crtc: pointer to a crtc
  *
  * Function checks a state variable for the crtc, if all pending commit
  * requests are done, meaning no more bandwidth is needed, release
@@ -744,7 +739,6 @@ void sde_core_perf_crtc_release_bw(struct drm_crtc *crtc)
 {
 	struct drm_crtc *tmp_crtc;
 	struct sde_crtc *sde_crtc;
-	struct sde_crtc_state *sde_cstate;
 	struct sde_kms *kms;
 	int i;
 
@@ -760,7 +754,6 @@ void sde_core_perf_crtc_release_bw(struct drm_crtc *crtc)
 	}
 
 	sde_crtc = to_sde_crtc(crtc);
-	sde_cstate = to_sde_crtc_state(crtc->state);
 
 	/* only do this for command mode rt client (non-rsc client) */
 	if ((sde_crtc_get_intf_mode(crtc, crtc->state) != INTF_MODE_CMD) &&

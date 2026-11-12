@@ -104,7 +104,7 @@ static void msm_fb_output_poll_changed(struct drm_device *dev)
  * RETURNS
  * Zero for success or -errorno.
  */
-int msm_atomic_check(struct drm_device *dev,
+static int msm_atomic_check(struct drm_device *dev,
 			    struct drm_atomic_state *state)
 {
 	struct msm_drm_private *priv;
@@ -149,7 +149,7 @@ static char *vram = "16m";
 MODULE_PARM_DESC(vram, "Configure VRAM size (for devices without IOMMU/GPUMMU)");
 module_param(vram, charp, 0);
 
-bool dumpstate = false;
+static bool dumpstate;
 MODULE_PARM_DESC(dumpstate, "Dump KMS state on errors");
 module_param(dumpstate, bool, 0600);
 
@@ -252,7 +252,7 @@ void __iomem *msm_ioremap(struct platform_device *pdev, const char *name,
 	if (!res) {
 		dev_dbg(&pdev->dev, "failed to get memory resource: %s\n",
 									name);
-		return ERR_PTR(-EINVAL);
+		return (__force void __iomem *)ERR_PTR(-EINVAL);
 	}
 
 	size = resource_size(res);
@@ -260,7 +260,7 @@ void __iomem *msm_ioremap(struct platform_device *pdev, const char *name,
 	ptr = devm_ioremap_nocache(&pdev->dev, res->start, size);
 	if (!ptr) {
 		dev_err(&pdev->dev, "failed to ioremap: %s\n", name);
-		return ERR_PTR(-ENOMEM);
+		return (__force void __iomem *)ERR_PTR(-ENOMEM);
 	}
 
 	if (reglog)
@@ -335,7 +335,6 @@ static int vblank_ctrl_queue_work(struct msm_drm_private *priv,
 					int crtc_id, bool enable)
 {
 	struct vblank_work *cur_work;
-	struct drm_crtc *crtc;
 	struct kthread_worker *worker;
 
 	if (!priv || crtc_id >= priv->num_crtcs)
@@ -344,8 +343,6 @@ static int vblank_ctrl_queue_work(struct msm_drm_private *priv,
 	cur_work = kzalloc(sizeof(*cur_work), GFP_ATOMIC);
 	if (!cur_work)
 		return -ENOMEM;
-
-	crtc = priv->crtcs[crtc_id];
 
 	kthread_init_work(&cur_work->work, vblank_ctrl_worker);
 	cur_work->crtc_id = crtc_id;
@@ -1089,10 +1086,7 @@ static int msm_disable_all_modes_commit(
 {
 	struct drm_plane *plane;
 	struct drm_crtc *crtc;
-	unsigned int plane_mask;
 	int ret;
-
-	plane_mask = 0;
 	drm_for_each_plane(plane, dev) {
 		struct drm_plane_state *plane_state;
 
@@ -1105,7 +1099,6 @@ static int msm_disable_all_modes_commit(
 		plane_state->rotation = 0;
 
 		plane->old_fb = plane->fb;
-		plane_mask |= 1 << drm_plane_index(plane);
 
 		/* disable non-primary: */
 		if (plane->type == DRM_PLANE_TYPE_PRIMARY)
@@ -1142,17 +1135,18 @@ fail:
 }
 
 /**
- * msm_clear_all_modes - disables all planes and crtcs via an atomic commit
+ * msm_disable_all_modes - disables all planes and crtcs via an atomic commit
  *	based on restore_fbdev_mode_atomic in drm_fb_helper.c
+ * @ctx: Modeset acquisition context for the atomic commit
  * @dev: device pointer
- * @Return: 0 on success, otherwise -error
+ * Return: 0 on success, otherwise -error
  */
 static int msm_disable_all_modes(
 		struct drm_device *dev,
 		struct drm_modeset_acquire_ctx *ctx)
 {
 	struct drm_atomic_state *state;
-	int ret, i;
+	int ret = -EDEADLK, i;
 
 	state = drm_atomic_state_alloc(dev);
 	if (!state)
@@ -1162,10 +1156,13 @@ static int msm_disable_all_modes(
 
 	for (i = 0; i < TEARDOWN_DEADLOCK_RETRY_MAX; i++) {
 		ret = msm_disable_all_modes_commit(dev, state);
-		if (ret != -EDEADLK || ret != -ERESTARTSYS)
+		if (ret != -EDEADLK)
 			break;
 		drm_atomic_state_clear(state);
-		drm_modeset_backoff(ctx);
+		ret = drm_modeset_backoff(ctx);
+		if (ret)
+			break;
+		ret = -EDEADLK;
 	}
 
 	drm_atomic_state_put(state);
@@ -1434,24 +1431,34 @@ static int msm_register_event(struct drm_device *dev,
 	return ret;
 }
 
-static int msm_event_client_count(struct drm_device *dev,
-		struct drm_msm_event_req *req_event, bool locked)
+static int msm_event_client_count_locked(struct drm_device *dev,
+		struct drm_msm_event_req *req_event)
 {
 	struct msm_drm_private *priv = dev->dev_private;
-	unsigned long flag = 0;
 	struct msm_drm_event *node;
 	int count = 0;
 
-	if (!locked)
-		spin_lock_irqsave(&dev->event_lock, flag);
 	list_for_each_entry(node, &priv->client_event_list, base.link) {
 		if (node->event.base.type == req_event->event &&
 			node->event.info.object_id == req_event->object_id)
 			count++;
 	}
-	if (!locked)
-		spin_unlock_irqrestore(&dev->event_lock, flag);
 
+	return count;
+}
+
+static int msm_event_client_count(struct drm_device *dev,
+		struct drm_msm_event_req *req_event, bool locked)
+{
+	unsigned long flags;
+	int count;
+
+	if (locked)
+		return msm_event_client_count_locked(dev, req_event);
+
+	spin_lock_irqsave(&dev->event_lock, flags);
+	count = msm_event_client_count_locked(dev, req_event);
+	spin_unlock_irqrestore(&dev->event_lock, flags);
 	return count;
 }
 
@@ -1749,7 +1756,7 @@ EXPORT_SYMBOL(msm_ioctl_rmfb2);
  * @file_priv: drm file for the ioctl call
  *
  */
-int msm_ioctl_power_ctrl(struct drm_device *dev, void *data,
+static int msm_ioctl_power_ctrl(struct drm_device *dev, void *data,
 			struct drm_file *file_priv)
 {
 	struct msm_file_private *ctx = file_priv->driver_priv;
@@ -1786,7 +1793,10 @@ int msm_ioctl_power_ctrl(struct drm_device *dev, void *data,
 	if (vote_req) {
 		if (power_ctrl->enable) {
 			rc = pm_runtime_get_sync(dev->dev);
-			priv->phandle.is_ext_vote_en = true;
+			if (rc < 0)
+				pm_runtime_put_noidle(dev->dev);
+			else
+				priv->phandle.is_ext_vote_en = true;
 		} else {
 			pm_runtime_put_sync(dev->dev);
 			 priv->phandle.is_ext_vote_en = false;
