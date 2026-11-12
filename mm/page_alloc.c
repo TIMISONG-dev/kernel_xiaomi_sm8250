@@ -8000,7 +8000,7 @@ int min_free_kbytes_sysctl_handler(struct ctl_table *table, int write,
 }
 
 int watermark_boost_factor_sysctl_handler(struct ctl_table *table, int write,
-	void __user *buffer, size_t *length, loff_t *ppos)
+	void *buffer, size_t *length, loff_t *ppos)
 {
 	int rc;
 
@@ -8012,7 +8012,7 @@ int watermark_boost_factor_sysctl_handler(struct ctl_table *table, int write,
 }
 
 int kswapd_threads_sysctl_handler(struct ctl_table *table, int write,
-	void __user *buffer, size_t *length, loff_t *ppos)
+	void *buffer, size_t *length, loff_t *ppos)
 {
 	int rc;
 

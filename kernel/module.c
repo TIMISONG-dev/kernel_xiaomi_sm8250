@@ -4548,6 +4548,12 @@ void module_layout(struct module *mod,
 		   struct modversion_info *ver,
 		   struct kernel_param *kp,
 		   struct kernel_symbol *ks,
+		   struct tracepoint * const *tp);
+
+void module_layout(struct module *mod,
+		   struct modversion_info *ver,
+		   struct kernel_param *kp,
+		   struct kernel_symbol *ks,
 		   struct tracepoint * const *tp)
 {
 }

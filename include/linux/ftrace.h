@@ -322,6 +322,7 @@ extern unsigned long stack_trace_max_size;
 extern arch_spinlock_t stack_trace_max_lock;
 
 extern int stack_tracer_enabled;
+void check_stack(unsigned long ip, unsigned long *stack);
 int
 stack_trace_sysctl(struct ctl_table *table, int write,
 		   void __user *buffer, size_t *lenp,
@@ -511,6 +512,12 @@ unsigned long ftrace_location(unsigned long ip);
 unsigned long ftrace_location_range(unsigned long start, unsigned long end);
 unsigned long ftrace_get_addr_new(struct dyn_ftrace *rec);
 unsigned long ftrace_get_addr_curr(struct dyn_ftrace *rec);
+
+/* Architecture overrides and their weak generic fallbacks. */
+void arch_ftrace_trampoline_free(struct ftrace_ops *ops);
+void *arch_ftrace_trampoline_func(struct ftrace_ops *ops, struct dyn_ftrace *rec);
+char *arch_ftrace_match_adjust(char *str, const char *search);
+void arch_ftrace_update_trampoline(struct ftrace_ops *ops);
 
 extern ftrace_func_t ftrace_trace_function;
 

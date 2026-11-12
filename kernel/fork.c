@@ -981,15 +981,15 @@ static __always_inline void mm_clear_owner(struct mm_struct *mm,
 					   struct task_struct *p)
 {
 #ifdef CONFIG_MEMCG
-	if (mm->owner == p)
-		WRITE_ONCE(mm->owner, NULL);
+	if (rcu_access_pointer(mm->owner) == p)
+		RCU_INIT_POINTER(mm->owner, NULL);
 #endif
 }
 
 static void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
 {
 #ifdef CONFIG_MEMCG
-	mm->owner = p;
+	RCU_INIT_POINTER(mm->owner, p);
 #endif
 }
 
@@ -1497,7 +1497,7 @@ static int copy_sighand(unsigned long clone_flags, struct task_struct *tsk)
 		return 0;
 	}
 	sig = kmem_cache_alloc(sighand_cachep, GFP_KERNEL);
-	rcu_assign_pointer(tsk->sighand, sig);
+	WRITE_ONCE(tsk->sighand, sig);
 	if (!sig)
 		return -ENOMEM;
 
@@ -1678,9 +1678,9 @@ static inline void
 init_task_pid(struct task_struct *task, enum pid_type type, struct pid *pid)
 {
 	if (type == PIDTYPE_PID)
-		task->thread_pid = pid;
+		WRITE_ONCE(task->thread_pid, pid);
 	else
-		task->signal->pids[type] = pid;
+		WRITE_ONCE(task->signal->pids[type], pid);
 }
 
 static inline void rcu_copy_process(struct task_struct *p)
@@ -3001,7 +3001,7 @@ int unshare_files(struct files_struct **displaced)
 }
 
 int sysctl_max_threads(struct ctl_table *table, int write,
-		       void __user *buffer, size_t *lenp, loff_t *ppos)
+		       void *buffer, size_t *lenp, loff_t *ppos)
 {
 	struct ctl_table t;
 	int ret;

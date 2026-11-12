@@ -96,8 +96,8 @@ static inline unsigned long shadow_to_page(const struct cfi_shadow *s,
 	return (s->r.min_page + index) << PAGE_SHIFT;
 }
 
-static void prepare_next_shadow(const struct cfi_shadow __rcu *prev,
-		struct cfi_shadow *next)
+static void prepare_next_shadow(const struct cfi_shadow *prev,
+				struct cfi_shadow *next)
 {
 	int i, index, check;
 
@@ -206,7 +206,7 @@ static void update_shadow(struct module *mod, unsigned long min_addr,
 	rcu_assign_pointer(cfi_shadow, next);
 
 	mutex_unlock(&shadow_update_lock);
-	synchronize_rcu();
+	synchronize_sched();
 
 	if (prev) {
 		set_memory_rw((unsigned long)prev, SHADOW_PAGES);
@@ -228,7 +228,7 @@ void cfi_module_remove(struct module *mod, unsigned long min_addr,
 }
 EXPORT_SYMBOL_GPL(cfi_module_remove);
 
-static inline cfi_check_fn ptr_to_check_fn(const struct cfi_shadow __rcu *s,
+static inline cfi_check_fn ptr_to_check_fn(const struct cfi_shadow *s,
 	unsigned long ptr)
 {
 	int index;
@@ -295,6 +295,8 @@ out:
 	return f;
 }
 
+void cfi_slowpath_handler(uint64_t id, void *ptr, void *diag);
+
 void cfi_slowpath_handler(uint64_t id, void *ptr, void *diag)
 {
 	cfi_check_fn check = find_cfi_check(ptr);
@@ -306,6 +308,9 @@ void cfi_slowpath_handler(uint64_t id, void *ptr, void *diag)
 }
 EXPORT_SYMBOL_GPL(cfi_slowpath_handler);
 #endif /* CONFIG_MODULES */
+
+void cfi_failure_handler(void *data, void *ptr, void *vtable);
+void __cfi_check_fail(void *data, void *ptr);
 
 void cfi_failure_handler(void *data, void *ptr, void *vtable)
 {
