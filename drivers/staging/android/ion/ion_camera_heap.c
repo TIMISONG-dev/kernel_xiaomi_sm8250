@@ -605,6 +605,7 @@ static void ion_camera_heap_destroy_pools(struct ion_page_pool **pools)
 
 	for (i = 0; i < NUM_ORDERS; i++)
 		if (pools[i]) {
+			ion_page_pool_shrink(pools[i], GFP_HIGHUSER, INT_MAX);
 			ion_page_pool_destroy(pools[i]);
 			pools[i] = NULL;
 		}
