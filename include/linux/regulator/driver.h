@@ -25,6 +25,9 @@
 struct gpio_desc;
 struct regmap;
 struct regulator_dev;
+
+int regulator_suspend_enable(struct regulator_dev *rdev, suspend_state_t state);
+int regulator_suspend_disable(struct regulator_dev *rdev, suspend_state_t state);
 struct regulator_config;
 struct regulator_init_data;
 struct regulator_enable_gpio;

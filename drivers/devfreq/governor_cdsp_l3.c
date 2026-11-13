@@ -80,7 +80,7 @@ static int gov_start(struct devfreq *df)
 
 static int gov_stop(struct devfreq *df)
 {
-	p_me.df = 0;
+	p_me.df = NULL;
 	p_me.l3_freq_hz = 0;
 	/*
 	 * Send governor stop message to CDSP RM driver

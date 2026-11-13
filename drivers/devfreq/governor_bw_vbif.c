@@ -11,10 +11,10 @@
 
 static getbw_func extern_get_bw;
 static void *extern_get_bw_data;
-unsigned long *dev_ab;
+static unsigned long *dev_ab;
 static unsigned long dev_ib;
 
-DEFINE_MUTEX(df_lock);
+static DEFINE_MUTEX(df_lock);
 static struct devfreq *df;
 
 /*
