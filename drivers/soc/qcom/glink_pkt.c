@@ -249,7 +249,7 @@ static void glink_pkt_rpdev_remove(struct rpmsg_device *rpdev)
  * userspace client do a open() system call. All input arguments are
  * validated by the virtual file system before calling this function.
  */
-int glink_pkt_open(struct inode *inode, struct file *file)
+static int glink_pkt_open(struct inode *inode, struct file *file)
 {
 	struct glink_pkt_device *gpdev = cdev_to_gpdev(inode->i_cdev);
 	int tout = msecs_to_jiffies(gpdev->open_tout * 1000);
@@ -289,7 +289,7 @@ int glink_pkt_open(struct inode *inode, struct file *file)
  * userspace client do a close() system call. All input arguments are
  * validated by the virtual file system before calling this function.
  */
-int glink_pkt_release(struct inode *inode, struct file *file)
+static int glink_pkt_release(struct inode *inode, struct file *file)
 {
 	struct glink_pkt_device *gpdev = cdev_to_gpdev(inode->i_cdev);
 	struct device *dev = &gpdev->dev;
@@ -330,7 +330,7 @@ int glink_pkt_release(struct inode *inode, struct file *file)
  * userspace client do a read() system call. All input arguments are
  * validated by the virtual file system before calling this function.
  */
-ssize_t glink_pkt_read(struct file *file, char __user *buf,
+static ssize_t glink_pkt_read(struct file *file, char __user *buf,
 		       size_t count, loff_t *ppos)
 {
 	struct glink_pkt_device *gpdev = file->private_data;
@@ -401,7 +401,7 @@ ssize_t glink_pkt_read(struct file *file, char __user *buf,
  * userspace client do a write() system call. All input arguments are
  * validated by the virtual file system before calling this function.
  */
-ssize_t glink_pkt_write(struct file *file, const char __user *buf,
+static ssize_t glink_pkt_write(struct file *file, const char __user *buf,
 			size_t count, loff_t *ppos)
 {
 	struct glink_pkt_device *gpdev = file->private_data;

@@ -21,8 +21,8 @@
 
 #define MAX_STR_LEN 256
 #define MAX_TIME_LEN 20
-const char *lpm_stats_reset = "reset";
-const char *lpm_stats_suspend = "suspend";
+static const char *lpm_stats_reset = "reset";
+static const char *lpm_stats_suspend = "suspend";
 
 struct lpm_sleep_time {
 	struct kobj_attribute ts_attr;
@@ -46,7 +46,7 @@ static struct level_stats suspend_time_stats;
 
 static DEFINE_PER_CPU_SHARED_ALIGNED(struct lpm_stats, cpu_stats);
 
-bool str_is_reset(const char __user *in, size_t count)
+static bool str_is_reset(const char __user *in, size_t count)
 {
 	loff_t ppos = 0;
 	char buffer[64] = { 0 };
@@ -254,7 +254,7 @@ static ssize_t lpm_stats_file_write(struct file *file,
 	return count;
 }
 
-int lifo_stats_file_show(struct seq_file *m, void *v)
+static int lifo_stats_file_show(struct seq_file *m, void *v)
 {
 	struct lpm_stats *stats = (struct lpm_stats *)m->private;
 	struct list_head *centry = NULL;
@@ -751,6 +751,7 @@ EXPORT_SYMBOL(lpm_stats_cluster_exit);
  * is prepared to enter.
  *
  * @index:	cpu's lpm level index.
+ * @time:	Timestamp for this transition, in the caller's time base.
  *
  * Function to communicate the low power mode level that the cpu is
  * prepared to enter.
@@ -771,6 +772,7 @@ EXPORT_SYMBOL(lpm_stats_cpu_enter);
  * lpm_stats_cpu_exit() - API to communicate the lpm level that the cpu exited.
  *
  * @index:	cpu's lpm level index.
+ * @time:	Timestamp for this transition, in the caller's time base.
  * @success:	Success/Failure of the low power mode execution.
  *
  * Function to communicate the low power mode level that the cpu exited.

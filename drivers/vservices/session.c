@@ -104,7 +104,7 @@ struct vs_session_for_each_data {
 	void *data;
 };
 
-int vs_session_for_each_from_idr(int id, void *session, void *_data)
+static int vs_session_for_each_from_idr(int id, void *session, void *_data)
 {
 	struct vs_session_for_each_data *data =
 		(struct vs_session_for_each_data *)_data;
@@ -1904,10 +1904,8 @@ int vs_session_handle_message(struct vs_session_device *session,
 		struct vs_mbuf *mbuf, vs_service_id_t service_id)
 {
 	struct vs_service_device *service;
-	struct vs_transport *transport;
 	unsigned long flags;
 
-	transport = session->transport;
 
 	service = vs_session_get_service(session, service_id);
 	if (!service) {

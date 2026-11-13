@@ -37,7 +37,48 @@ static LIST_HEAD(commit_list);
 static LIST_HEAD(late_init_clist);
 static LIST_HEAD(query_list);
 
-DEFINE_RT_MUTEX(msm_bus_adhoc_lock);
+static DEFINE_RT_MUTEX(msm_bus_adhoc_lock);
+
+/* Serialize node and client-label reads with path updates and reallocation. */
+ssize_t msm_bus_format_node_bw(struct msm_bus_node_device_type *bus_node,
+			       char *buf)
+{
+	int i;
+	int off = 0;
+
+	rt_mutex_lock(&msm_bus_adhoc_lock);
+	if (!bus_node) {
+		off = -EINVAL;
+		goto out;
+	}
+
+	for (i = 0; i < bus_node->num_lnodes; i++) {
+		if (!bus_node->lnode_list[i].in_use)
+			continue;
+		off += scnprintf((buf + off), PAGE_SIZE - off,
+		"[%d]:%s:Act_IB %llu Act_AB %llu Slp_IB %llu Slp_AB %llu\n",
+			i, bus_node->lnode_list[i].cl_name,
+			bus_node->lnode_list[i].lnode_ib[ACTIVE_CTX],
+			bus_node->lnode_list[i].lnode_ab[ACTIVE_CTX],
+			bus_node->lnode_list[i].lnode_ib[DUAL_CTX],
+			bus_node->lnode_list[i].lnode_ab[DUAL_CTX]);
+	}
+	off += scnprintf((buf + off), PAGE_SIZE - off,
+	"Max_Act_IB %llu Sum_Act_AB %llu Act_Util_fact %d Act_Vrail_comp %d\n",
+		bus_node->node_bw[ACTIVE_CTX].max_ib,
+		bus_node->node_bw[ACTIVE_CTX].sum_ab,
+		bus_node->node_bw[ACTIVE_CTX].util_used,
+		bus_node->node_bw[ACTIVE_CTX].vrail_used);
+	off += scnprintf((buf + off), PAGE_SIZE - off,
+	"Max_Slp_IB %llu Sum_Slp_AB %llu Slp_Util_fact %d Slp_Vrail_comp %d\n",
+		bus_node->node_bw[DUAL_CTX].max_ib,
+		bus_node->node_bw[DUAL_CTX].sum_ab,
+		bus_node->node_bw[DUAL_CTX].util_used,
+		bus_node->node_bw[DUAL_CTX].vrail_used);
+out:
+	rt_mutex_unlock(&msm_bus_adhoc_lock);
+	return off;
+}
 
 static bool chk_bl_list(struct list_head *black_list, unsigned int id)
 {
@@ -388,7 +429,6 @@ static int getpath(struct device *src_dev, int dest, const char *cl_name)
 	struct msm_bus_node_device_type *src_node;
 	struct bus_search_type *search_node;
 	int found = 0;
-	int depth_index = 0;
 	int first_hop = -1;
 	int src;
 
@@ -459,8 +499,6 @@ static int getpath(struct device *src_dev, int dest, const char *cl_name)
 				 &search_node->node_list);
 		/* Add the previous search list to a route list */
 		list_add_tail(&search_node->link, &route_list);
-		/* Advancing the list depth */
-		depth_index++;
 		list_splice_init(&edge_list, &traverse_list);
 	}
 reset_traversed:
@@ -881,8 +919,7 @@ exit_update_path:
 
 static int update_alc_vote(struct device *alc_dev, uint64_t act_req_fa_lat,
 			uint64_t act_req_idle_time, uint64_t slp_req_fa_lat,
-			uint64_t slp_req_idle_time, uint64_t cur_fa_lat,
-			uint64_t cur_idle_time, int idx, int ctx)
+			uint64_t slp_req_idle_time, int idx, int ctx)
 {
 	struct link_node *lnode = NULL;
 	struct msm_bus_node_device_type *dev_info = NULL;
@@ -1098,7 +1135,7 @@ static void unregister_client_adhoc(uint32_t cl)
 {
 	int i;
 	struct msm_bus_scale_pdata *pdata;
-	int lnode, src, curr, dest;
+	int lnode, curr, dest;
 	uint64_t  cur_clk, cur_bw;
 	struct msm_bus_client *client;
 	struct device *src_dev;
@@ -1124,7 +1161,6 @@ static void unregister_client_adhoc(uint32_t cl)
 	}
 
 	for (i = 0; i < pdata->usecase->num_paths; i++) {
-		src = client->pdata->usecase[curr].vectors[i].src;
 		dest = client->pdata->usecase[curr].vectors[i].dst;
 
 		lnode = client->src_pnode[i];
@@ -1396,9 +1432,8 @@ exit_update_client_paths:
 static int update_client_alc(struct msm_bus_client *client, bool log_trns,
 							unsigned int idx)
 {
-	int lnode, cur_idx;
-	uint64_t req_idle_time, req_fal, dual_idle_time, dual_fal,
-	cur_idle_time, cur_fal;
+	int lnode;
+	uint64_t req_idle_time, req_fal, dual_idle_time, dual_fal;
 	int ret = 0;
 	struct msm_bus_scale_pdata *pdata;
 	struct device *src_dev;
@@ -1416,7 +1451,6 @@ static int update_client_alc(struct msm_bus_client *client, bool log_trns,
 		goto exit_update_client_alc;
 	}
 
-	cur_idx = client->curr;
 	client->curr = idx;
 	req_fal = pdata->usecase_lat[idx].fal_ns;
 	req_idle_time = pdata->usecase_lat[idx].idle_t_ns;
@@ -1432,7 +1466,7 @@ static int update_client_alc(struct msm_bus_client *client, bool log_trns,
 	}
 
 	ret = update_alc_vote(src_dev, req_fal, req_idle_time, dual_fal,
-		dual_idle_time, cur_fal, cur_idle_time, lnode,
+		dual_idle_time, lnode,
 		pdata->active_only);
 
 	if (ret) {
@@ -1449,7 +1483,7 @@ static int query_usecase(struct msm_bus_client *client, bool log_trns,
 					unsigned int idx,
 					struct msm_bus_tcs_usecase *tcs_usecase)
 {
-	int lnode, src, dest, cur_idx;
+	int lnode, dest, cur_idx;
 	uint64_t req_clk, req_bw, curr_clk, curr_bw;
 	int i, ret = 0;
 	struct msm_bus_scale_pdata *pdata;
@@ -1473,7 +1507,6 @@ static int query_usecase(struct msm_bus_client *client, bool log_trns,
 	cur_idx = client->curr;
 	client->curr = idx;
 	for (i = 0; i < pdata->usecase->num_paths; i++) {
-		src = pdata->usecase[idx].vectors[i].src;
 		dest = pdata->usecase[idx].vectors[i].dst;
 
 		lnode = client->src_pnode[i];
@@ -1504,7 +1537,6 @@ static int query_usecase(struct msm_bus_client *client, bool log_trns,
 	INIT_LIST_HEAD(&query_list);
 
 	for (i = 0; i < pdata->usecase->num_paths; i++) {
-		src = pdata->usecase[idx].vectors[i].src;
 		dest = pdata->usecase[idx].vectors[i].dst;
 
 		lnode = client->src_pnode[i];

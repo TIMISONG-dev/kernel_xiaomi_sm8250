@@ -156,7 +156,7 @@ static void get_qos_params(
 		struct platform_device * const pdev,
 		struct msm_bus_node_info_type *node_info)
 {
-	const uint32_t *vec_arr;
+	const __be32 *vec_arr;
 	int len;
 
 	of_property_read_u32(dev_node, "qcom,prio",

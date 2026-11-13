@@ -663,7 +663,7 @@ EXPORT_SYMBOL(scm_is_secure_device);
 #ifdef CONFIG_ARM64
 
 #define TZ_HLOS_NOTIFY_CORE_KERNEL_BOOTUP 0x7
-int  scm_mem_protection_init_do_qrks(void)
+static int scm_mem_protection_init_do_qrks(void)
 {
 	uint32_t pid_offset = 0;
 	uint32_t task_name_offset = 0;
@@ -672,7 +672,7 @@ int  scm_mem_protection_init_do_qrks(void)
 
 	pid_offset = offsetof(struct task_struct, pid);
 	task_name_offset = offsetof(struct task_struct, comm);
-	pr_debug("offset of pid is %zu, offset of comm is %zu\n",
+	pr_debug("offset of pid is %u, offset of comm is %u\n",
 		pid_offset, task_name_offset);
 	desc.args[0] = pid_offset;
 	desc.args[1] = task_name_offset;

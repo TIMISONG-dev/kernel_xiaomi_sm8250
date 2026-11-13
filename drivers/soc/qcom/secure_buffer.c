@@ -17,7 +17,7 @@
 #define CREATE_TRACE_POINTS
 #include "trace_secure_buffer.h"
 
-DEFINE_MUTEX(secure_buffer_mutex);
+static DEFINE_MUTEX(secure_buffer_mutex);
 
 struct cp2_mem_chunks {
 	u32 chunk_list;
@@ -46,7 +46,6 @@ static int secure_buffer_change_chunk(u32 chunks,
 				int lock)
 {
 	struct cp2_lock_req request;
-	u32 resp;
 	int ret;
 	struct scm_desc desc = {0};
 
@@ -65,7 +64,6 @@ static int secure_buffer_change_chunk(u32 chunks,
 
 	ret = scm_call2(SCM_SIP_FNID(SCM_SVC_MP,
 			MEM_PROTECT_LOCK_ID2_FLAT), &desc);
-	resp = desc.ret[0];
 
 	return ret;
 }

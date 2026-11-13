@@ -125,7 +125,7 @@ err:
 	return -ENOMEM;
 }
 
-struct qdss_buf_tbl_lst *qdss_get_buf_tbl_entry(
+static struct qdss_buf_tbl_lst *qdss_get_buf_tbl_entry(
 					struct qdss_bridge_drvdata *drvdata,
 					void *buf)
 {
@@ -179,7 +179,7 @@ static void qdss_del_buf_tbl_entry(struct qdss_bridge_drvdata *drvdata,
 	spin_unlock_bh(&drvdata->lock);
 }
 
-struct qdss_buf_tbl_lst *qdss_get_entry(struct qdss_bridge_drvdata *drvdata)
+static struct qdss_buf_tbl_lst *qdss_get_entry(struct qdss_bridge_drvdata *drvdata)
 {
 	struct qdss_buf_tbl_lst *item;
 
@@ -853,7 +853,7 @@ static void qdss_mhi_remove(struct mhi_device *mhi_dev)
 	cdev_del(drvdata->cdev);
 }
 
-int qdss_mhi_init(struct qdss_bridge_drvdata *drvdata)
+static int qdss_mhi_init(struct qdss_bridge_drvdata *drvdata)
 {
 	drvdata->mhi_wq = create_singlethread_workqueue(MODULE_NAME);
 	if (!drvdata->mhi_wq)

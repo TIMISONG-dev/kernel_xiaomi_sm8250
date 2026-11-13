@@ -50,7 +50,7 @@ struct msm_bus_rsc_client {
 	struct device *client;
 };
 
-struct msm_bus_rsc_client rsc_clients[MSM_BUS_RSC_COUNT];
+static struct msm_bus_rsc_client rsc_clients[MSM_BUS_RSC_COUNT];
 
 struct bcm_db {
 	uint32_t unit_size;
@@ -59,53 +59,19 @@ struct bcm_db {
 	uint8_t reserved;
 };
 
-ssize_t bw_show(struct device *dev, struct device_attribute *attr,
+static ssize_t bw_show(struct device *dev, struct device_attribute *attr,
 			  char *buf)
 {
-	struct msm_bus_node_info_type *node_info = NULL;
-	struct msm_bus_node_device_type *bus_node = NULL;
-	int i;
-	int off = 0;
-
-	bus_node = to_msm_bus_node(dev);
-	if (!bus_node)
-		return -EINVAL;
-
-	node_info = bus_node->node_info;
-
-	for (i = 0; i < bus_node->num_lnodes; i++) {
-		if (!bus_node->lnode_list[i].in_use)
-			continue;
-		off += scnprintf((buf + off), PAGE_SIZE,
-		"[%d]:%s:Act_IB %llu Act_AB %llu Slp_IB %llu Slp_AB %llu\n",
-			i, bus_node->lnode_list[i].cl_name,
-			bus_node->lnode_list[i].lnode_ib[ACTIVE_CTX],
-			bus_node->lnode_list[i].lnode_ab[ACTIVE_CTX],
-			bus_node->lnode_list[i].lnode_ib[DUAL_CTX],
-			bus_node->lnode_list[i].lnode_ab[DUAL_CTX]);
-	}
-	off += scnprintf((buf + off), PAGE_SIZE,
-	"Max_Act_IB %llu Sum_Act_AB %llu Act_Util_fact %d Act_Vrail_comp %d\n",
-		bus_node->node_bw[ACTIVE_CTX].max_ib,
-		bus_node->node_bw[ACTIVE_CTX].sum_ab,
-		bus_node->node_bw[ACTIVE_CTX].util_used,
-		bus_node->node_bw[ACTIVE_CTX].vrail_used);
-	off += scnprintf((buf + off), PAGE_SIZE,
-	"Max_Slp_IB %llu Sum_Slp_AB %llu Slp_Util_fact %d Slp_Vrail_comp %d\n",
-		bus_node->node_bw[DUAL_CTX].max_ib,
-		bus_node->node_bw[DUAL_CTX].sum_ab,
-		bus_node->node_bw[DUAL_CTX].util_used,
-		bus_node->node_bw[DUAL_CTX].vrail_used);
-	return off;
+	return msm_bus_format_node_bw(to_msm_bus_node(dev), buf);
 }
 
-ssize_t bw_store(struct device *dev, struct device_attribute *attr,
+static ssize_t bw_store(struct device *dev, struct device_attribute *attr,
 			   const char *buf, size_t count)
 {
 	return count;
 }
 
-DEVICE_ATTR_RW(bw);
+static DEVICE_ATTR_RW(bw);
 
 struct static_rules_type {
 	int num_rules;
@@ -554,7 +520,6 @@ exit_bcm_clist_add:
 int msm_bus_commit_data(struct list_head *clist)
 {
 	int ret = 0;
-	int bcm_cnt;
 	struct msm_bus_node_device_type *node = NULL;
 	struct msm_bus_node_device_type *node_tmp = NULL;
 	struct msm_bus_node_device_type *cur_bcm = NULL;
@@ -566,7 +531,6 @@ int msm_bus_commit_data(struct list_head *clist)
 	int n_active[VCD_MAX_CNT];
 	int n_wake[VCD_MAX_CNT];
 	int n_sleep[VCD_MAX_CNT];
-	int cnt_vcd = 0;
 	int cnt_active = 0;
 	int cnt_wake = 0;
 	int cnt_sleep = 0;
@@ -616,13 +580,12 @@ int msm_bus_commit_data(struct list_head *clist)
 				continue;
 			cnt_active++;
 		}
-		cnt_vcd++;
 	}
 
 	if (!cnt_active)
 		goto exit_msm_bus_commit_data;
 
-	bcm_cnt = tcs_cmd_list_gen(n_active, n_wake, n_sleep, cmdlist_active,
+	tcs_cmd_list_gen(n_active, n_wake, n_sleep, cmdlist_active,
 				cmdlist_wake, cmdlist_sleep, cur_bcm_clist);
 
 	tcs_cmd_n_shrink(n_active);
@@ -693,7 +656,6 @@ int msm_bus_query_gen(struct list_head *query_list,
 	struct msm_bus_node_device_type *node_tmp = NULL;
 	struct msm_bus_node_device_type *cur_bcm = NULL;
 	int *n_active = NULL;
-	int cnt_vcd = 0;
 	int cnt_active = 0;
 	int i = 0;
 
@@ -707,7 +669,6 @@ int msm_bus_query_gen(struct list_head *query_list,
 							query_link) {
 			cnt_active++;
 		}
-		cnt_vcd++;
 	}
 
 	tcs_usecase->num_cmds = cnt_active;
@@ -1791,7 +1752,7 @@ static int msm_bus_free_dev(struct device *dev, void *data)
 	return 0;
 }
 
-int msm_bus_device_remove(struct platform_device *pdev)
+static int msm_bus_device_remove(struct platform_device *pdev)
 {
 	bus_for_each_dev(&msm_bus_type, NULL, NULL, msm_bus_free_dev);
 	return 0;
@@ -1916,7 +1877,7 @@ exit_rules_probe:
 	return 0;
 }
 
-int msm_bus_device_rules_remove(struct platform_device *pdev)
+static int msm_bus_device_rules_remove(struct platform_device *pdev)
 {
 	struct static_rules_type *static_rules = NULL;
 
@@ -1954,7 +1915,7 @@ static int msm_bus_rsc_probe(struct platform_device *pdev)
 	return 0;
 }
 
-int msm_bus_rsc_remove(struct platform_device *pdev)
+static int msm_bus_rsc_remove(struct platform_device *pdev)
 {
 	int i;
 
@@ -2007,7 +1968,7 @@ static struct platform_driver msm_bus_rsc_driver = {
 	},
 };
 
-int __init msm_bus_rsc_init_driver(void)
+static int __init msm_bus_rsc_init_driver(void)
 {
 	int rc;
 
@@ -2019,7 +1980,7 @@ int __init msm_bus_rsc_init_driver(void)
 }
 
 
-int __init msm_bus_device_init_driver(void)
+static int __init msm_bus_device_init_driver(void)
 {
 	int rc;
 
@@ -2033,7 +1994,7 @@ int __init msm_bus_device_init_driver(void)
 	return platform_driver_register(&msm_bus_rules_driver);
 }
 
-int __init msm_bus_device_late_init(void)
+static int __init msm_bus_device_late_init(void)
 {
 	commit_late_init_data(true);
 	MSM_BUS_ERR("msm_bus_late_init: Remove handoff bw requests\n");
