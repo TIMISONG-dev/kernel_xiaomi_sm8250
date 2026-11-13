@@ -9,6 +9,7 @@
 #include <linux/init.h>
 #include <linux/cpufreq.h>
 #include <linux/cpu.h>
+#include <linux/ctype.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/input.h>
@@ -48,6 +49,7 @@ static struct workqueue_struct *cpu_boost_wq;
 static struct work_struct input_boost_work;
 
 static bool input_boost_enabled;
+static DEFINE_MUTEX(input_boost_lock);
 
 static unsigned int input_boost_ms = 40;
 show_one(input_boost_ms);
@@ -65,44 +67,98 @@ static struct delayed_work input_boost_rem;
 static u64 last_input_time;
 #define MIN_INPUT_INTERVAL (150 * USEC_PER_MSEC)
 
+static int parse_cpu_freq_uint(const char **cursor, unsigned int *value)
+{
+	const char *cp = *cursor;
+	char number[11];
+	int len = 0, ret;
+
+	if (!isdigit(*cp))
+		return -EINVAL;
+
+	/* Preserve decimal leading zeroes without growing the stack buffer. */
+	while (*cp == '0')
+		cp++;
+	while (isdigit(*cp)) {
+		if (len == sizeof(number) - 1)
+			return -ERANGE;
+		number[len++] = *cp++;
+	}
+	if (!len)
+		number[len++] = '0';
+	number[len] = '\0';
+	ret = kstrtouint(number, 10, value);
+	if (!ret)
+		*cursor = cp;
+	return ret;
+}
+
+static int parse_cpu_freq_pair(const char **cursor, unsigned int *cpu,
+			       unsigned int *value)
+{
+	const char *cp = skip_spaces(*cursor);
+	int ret;
+
+	if (!*cp)
+		return 0;
+	ret = parse_cpu_freq_uint(&cp, cpu);
+	if (ret)
+		return ret;
+	if (*cp != ':')
+		return -EINVAL;
+	cp = skip_spaces(cp + 1);
+	ret = parse_cpu_freq_uint(&cp, value);
+	if (ret)
+		return ret;
+	if ((*cp && !isspace(*cp)) || *cpu >= nr_cpu_ids)
+		return -EINVAL;
+	*cursor = cp;
+	return 1;
+}
+
 static ssize_t store_input_boost_freq(struct kobject *kobj,
 				      struct kobj_attribute *attr,
 				      const char *buf, size_t count)
 {
-	int i, ntokens = 0;
-	unsigned int val, cpu;
-	const char *cp = buf;
-	bool enabled = false;
+	const char *cp;
+	unsigned int cpu, val;
+	bool scalar, found = false, enabled = false;
+	int i, ret;
 
-	while ((cp = strpbrk(cp + 1, " :")))
-		ntokens++;
-
-	/* single number: apply to all CPUs */
-	if (!ntokens) {
-		if (sscanf(buf, "%u\n", &val) != 1)
-			return -EINVAL;
-		for_each_possible_cpu(i)
-			per_cpu(sync_info, i).input_boost_freq = val;
-		goto check_enable;
-	}
-
-	/* CPU:value pair */
-	if (!(ntokens % 2))
+	if (!count || memchr(buf, '\0', count))
 		return -EINVAL;
 
-	cp = buf;
-	for (i = 0; i < ntokens; i += 2) {
-		if (sscanf(cp, "%u:%u", &cpu, &val) != 2)
+	scalar = !strchr(buf, ':');
+	cp = skip_spaces(buf);
+	if (scalar) {
+		ret = parse_cpu_freq_uint(&cp, &val);
+		if (ret)
+			return ret;
+		if (*skip_spaces(cp))
 			return -EINVAL;
-		if (cpu >= num_possible_cpus())
+	} else {
+		while ((ret = parse_cpu_freq_pair(&cp, &cpu, &val)) > 0) {
+			if (!cpu_possible(cpu))
+				return -EINVAL;
+			found = true;
+		}
+		if (ret)
+			return ret;
+		if (!found)
 			return -EINVAL;
-
-		per_cpu(sync_info, cpu).input_boost_freq = val;
-		cp = strnchr(cp, PAGE_SIZE - (cp - buf), ' ');
-		cp++;
 	}
 
-check_enable:
+	/* Serialize complete validated maps with the enabled-state update. */
+	mutex_lock(&input_boost_lock);
+	if (scalar) {
+		for_each_possible_cpu(i)
+			per_cpu(sync_info, i).input_boost_freq = val;
+	} else {
+		cp = buf;
+		while (parse_cpu_freq_pair(&cp, &cpu, &val) > 0)
+			per_cpu(sync_info, cpu).input_boost_freq = val;
+	}
+
 	for_each_possible_cpu(i) {
 		if (per_cpu(sync_info, i).input_boost_freq) {
 			enabled = true;
@@ -110,7 +166,7 @@ check_enable:
 		}
 	}
 	input_boost_enabled = enabled;
-
+	mutex_unlock(&input_boost_lock);
 	return count;
 }
 
@@ -120,12 +176,14 @@ static ssize_t show_input_boost_freq(struct kobject *kobj,
 	int cnt = 0, cpu;
 	struct cpu_sync *s;
 
+	mutex_lock(&input_boost_lock);
 	for_each_possible_cpu(cpu) {
 		s = &per_cpu(sync_info, cpu);
 		cnt += snprintf(buf + cnt, PAGE_SIZE - cnt,
 				"%d:%u ", cpu, s->input_boost_freq);
 	}
 	cnt += snprintf(buf + cnt, PAGE_SIZE - cnt, "\n");
+	mutex_unlock(&input_boost_lock);
 	return cnt;
 }
 
