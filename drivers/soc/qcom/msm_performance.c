@@ -503,7 +503,7 @@ static int __init msm_performance_init(void)
 	for_each_present_cpu(cpu)
 		per_cpu(msm_perf_cpu_stats, cpu).max = UINT_MAX;
 
-	rc = cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE,
+	rc = cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN,
 		"msm_performance_cpu_hotplug",
 		hotplug_notify,
 		NULL);
