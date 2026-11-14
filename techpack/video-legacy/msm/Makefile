@@ -27,5 +27,5 @@ msm-vidc-objs := vidc/msm_v4l2_vidc.o \
                 vidc/msm_vidc_bus_iris2.o \
                 vidc/msm_vidc_buffer_calculations.o
 
-obj-$(CONFIG_MSM_VIDC_V4L2) := msm-vidc.o
+obj-$(CONFIG_MSM_VIDC_V4L2_LEGACY) := msm-vidc.o
 
