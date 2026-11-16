@@ -4747,6 +4747,7 @@ static void status_change_work(struct work_struct *work)
 	}
 
 	input_present = is_input_present(fg);
+	fg->input_present = input_present;
 	qnovo_en = is_qnovo_en(fg);
 	cycle_count_update(chip->counter, (u32)batt_soc >> 24,
 		fg->charge_status, fg->charge_done, input_present);
