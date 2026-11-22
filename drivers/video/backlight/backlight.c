@@ -174,17 +174,24 @@ int backlight_device_set_brightness(struct backlight_device *bd,
 				    unsigned long brightness)
 {
 	int rc = -ENXIO;
+	bool silent = false;
 
 	mutex_lock(&bd->ops_lock);
 	if (bd->ops) {
 		if (brightness > bd->props.max_brightness)
 			rc = -EINVAL;
 		else {
-			if ((!bd->use_count && brightness) ||
-			    (bd->use_count && !brightness)) {
+			pr_debug("set brightness to %lu\n", brightness);
+			bd->props.brightness = brightness;
+			rc = backlight_update_status(bd);
+			silent = !!(bd->props.state & BL_CORE_SILENT_UPDATE);
+			bd->props.state &= ~BL_CORE_SILENT_UPDATE;
+			if (silent) {
+				bd->usr_brightness_req = bd->props.brightness;
+			} else if ((!bd->use_count && brightness) ||
+				   (bd->use_count && !brightness)) {
 				pr_info("%s: set brightness to %lu\n",
 					__func__, brightness);
-
 				if (!bd->use_count)
 					bd->use_count++;
 				else
@@ -196,6 +203,9 @@ int backlight_device_set_brightness(struct backlight_device *bd,
 		}
 	}
 	mutex_unlock(&bd->ops_lock);
+
+	if (silent)
+		return rc;
 
 	backlight_generate_event(bd, BACKLIGHT_UPDATE_SYSFS);
 

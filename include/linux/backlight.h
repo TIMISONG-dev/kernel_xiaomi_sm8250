@@ -86,6 +86,9 @@ struct backlight_properties {
 
 #define BL_CORE_SUSPENDED	(1 << 0)	/* backlight is suspended */
 #define BL_CORE_FBBLANK		(1 << 1)	/* backlight is under an fb blank event */
+#ifdef CONFIG_MACH_XIAOMI
+#define BL_CORE_SILENT_UPDATE	(1 << 2)	/* suppress sysfs/uevent notification */
+#endif
 
 };
 

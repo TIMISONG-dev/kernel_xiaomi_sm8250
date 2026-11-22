@@ -13,6 +13,14 @@
 #include "sde_connector.h"
 #include "sde_encoder.h"
 #include <linux/backlight.h>
+#ifdef CONFIG_MACH_XIAOMI
+#include <linux/dcache.h>
+#include <linux/fs.h>
+#include <linux/mm.h>
+#include <linux/pid.h>
+#include <linux/pid_namespace.h>
+#include <linux/sched.h>
+#endif
 #include <linux/string.h>
 #include "dsi_drm.h"
 #include "dsi_defs.h"
@@ -75,6 +83,151 @@ static const struct drm_prop_enum_list e_frame_trigger_mode[] = {
 	{FRAME_DONE_WAIT_POSTED_START, "posted_start"},
 };
 
+#ifdef CONFIG_MACH_XIAOMI
+static bool sde_panel_is_sw_dc(struct dsi_panel *panel)
+{
+	return panel->bl_config.type == DSI_BACKLIGHT_DCS &&
+	       panel->mi_cfg.dc_type != 0;
+}
+
+static bool sde_panel_is_half_max_df(struct dsi_panel *panel)
+{
+	struct dsi_panel_mi_cfg *mi_cfg = &panel->mi_cfg;
+	struct dsi_backlight_config *bl_cfg = &panel->bl_config;
+
+	return bl_cfg->type == DSI_BACKLIGHT_DCS &&
+	       !mi_cfg->dc_type &&
+	       !mi_cfg->local_hbm_enabled &&
+	       bl_cfg->bl_max_level > 2047 &&
+	       bl_cfg->brightness_max_level > 2047;
+}
+
+static u32 sde_compute_clone_brightness(struct dsi_panel *panel,
+					u32 brightness)
+{
+	u32 max_clone = panel->mi_cfg.max_brightness_clone;
+	u32 max_bright = panel->bl_config.brightness_max_level;
+	bool half_max = sde_panel_is_half_max_df(panel);
+	bool half_scale = half_max ||
+			  (sde_panel_is_sw_dc(panel) &&
+			   max_bright > 2047 && max_clone <= max_bright);
+	u32 scale_max = half_scale ? (max_bright / 2) : max_bright;
+	u32 sdr_clone_max = (half_max && max_clone > max_bright) ?
+			    max_bright : max_clone;
+	u32 clone_val;
+
+	if (!brightness)
+		return 0;
+
+	if (panel->bl_config.type != DSI_BACKLIGHT_DCS)
+		return brightness;
+
+	if (brightness > scale_max) {
+		if (half_max && max_clone > max_bright &&
+		    max_bright > scale_max) {
+			u32 hbm_span = max_bright - scale_max;
+			u32 hbm_off = min_t(u32, brightness - scale_max,
+					    hbm_span);
+
+			return max_bright + (u32)DIV_ROUND_CLOSEST(
+				(u64)hbm_off * (max_clone - max_bright),
+				hbm_span);
+		}
+		return max_clone ? : brightness;
+	}
+
+	if (sdr_clone_max && scale_max) {
+		clone_val = (u32)DIV_ROUND_CLOSEST(
+			(u64)brightness * sdr_clone_max, scale_max);
+		return clone_val ? : 1;
+	}
+
+	return brightness;
+}
+
+static bool sde_is_displayfeature_alive(struct sde_connector *c_conn)
+{
+	pid_t tgid = READ_ONCE(c_conn->df_tgid);
+	u64 start_time = READ_ONCE(c_conn->df_start_time);
+	struct task_struct *task;
+	bool alive = false;
+
+	if (!tgid)
+		return false;
+
+	rcu_read_lock();
+	task = pid_task(find_pid_ns(tgid, &init_pid_ns), PIDTYPE_PID);
+	if (task && !(task->flags & PF_EXITING) &&
+	    task->exit_state == 0 &&
+	    task->start_time == start_time)
+		alive = true;
+	rcu_read_unlock();
+
+	return alive;
+}
+
+static bool sde_is_displayfeature_writer(struct sde_connector *c_conn)
+{
+	struct task_struct *leader;
+	struct file *exe_file;
+	struct name_snapshot name;
+	pid_t tgid;
+	u64 start_time;
+	bool match = false;
+
+	if (current->flags & PF_KTHREAD)
+		return false;
+
+	leader = current->group_leader;
+	tgid = task_tgid_nr(current);
+	start_time = leader->start_time;
+
+	if (tgid && tgid == READ_ONCE(c_conn->df_tgid) &&
+	    start_time == READ_ONCE(c_conn->df_start_time))
+		return true;
+
+	if (tgid && tgid == READ_ONCE(c_conn->non_df_tgid) &&
+	    start_time == READ_ONCE(c_conn->non_df_start_time))
+		return false;
+
+	if (!strcmp(current->comm, "displayeffect")) {
+		match = true;
+	} else {
+		/*
+		 * HidlServiceManagement strips the package prefix from the
+		 * process comm ("vendor.xiaomi.h" -> "displayfeature@") after
+		 * registerAsService(), and DisplayEffect::timerCallback() runs
+		 * on detached threads inheriting that comm. Match the
+		 * executable basename directly once per process lifetime
+		 * instead of gating on a truncated comm prefix.
+		 */
+		exe_file = get_task_exe_file(leader);
+		if (exe_file) {
+			take_dentry_name_snapshot(&name,
+						  exe_file->f_path.dentry);
+			if (strstr((const char *)name.name, "displayfeature"))
+				match = true;
+			release_dentry_name_snapshot(&name);
+			fput(exe_file);
+		}
+	}
+
+	if (match) {
+		if (tgid) {
+			WRITE_ONCE(c_conn->df_start_time, start_time);
+			WRITE_ONCE(c_conn->df_tgid, tgid);
+		}
+		return true;
+	}
+
+	if (tgid) {
+		WRITE_ONCE(c_conn->non_df_start_time, start_time);
+		WRITE_ONCE(c_conn->non_df_tgid, tgid);
+	}
+	return false;
+}
+#endif
+
 static int sde_backlight_device_update_status(struct backlight_device *bd)
 {
 	int brightness;
@@ -83,6 +236,12 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 	int bl_lvl;
 	struct drm_event event;
 	int rc = 0;
+#ifdef CONFIG_MACH_XIAOMI
+	bool blanked;
+	bool is_df = false;
+	bool half_max = false;
+	bool clone_changed = false;
+#endif
 
 	brightness = bd->props.brightness;
 
@@ -105,6 +264,83 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 		brightness = (brightness <= bd->thermal_brightness_clone_limit) ? brightness : bd->thermal_brightness_clone_limit;
 		bd->props.brightness = brightness;
 	}
+#ifdef CONFIG_MACH_XIAOMI
+	blanked = (bd->props.power != FB_BLANK_UNBLANK) ||
+		  (bd->props.state & (BL_CORE_FBBLANK | BL_CORE_SUSPENDED));
+	half_max = sde_panel_is_half_max_df(display->panel);
+	is_df = sde_is_displayfeature_writer(c_conn);
+	if (!is_df) {
+		u32 max_bright = display->panel->bl_config.brightness_max_level;
+		u32 prev_canonical = c_conn->canonical_brightness;
+		u32 clone_val;
+
+		if (brightness > max_bright)
+			brightness = max_bright;
+
+		c_conn->canonical_brightness = brightness;
+
+		if (blanked)
+			brightness = 0;
+
+		clone_val = sde_compute_clone_brightness(display->panel,
+							 brightness);
+
+		if (bd->thermal_brightness_clone_limit) {
+			clone_val = min_t(u32, clone_val,
+					  (u32)bd->thermal_brightness_clone_limit);
+		}
+
+		if (bd->props.brightness_clone != clone_val) {
+			bd->props.brightness_clone = clone_val;
+			if (clone_val != 0)
+				bd->props.brightness_clone_backup = clone_val;
+			clone_changed = true;
+			sysfs_notify(&bd->dev.kobj, NULL,
+				     "brightness_clone");
+		}
+
+		if (c_conn->df_active && !sde_is_displayfeature_alive(c_conn))
+			c_conn->df_active = false;
+
+		/*
+		 * While DisplayFeature actively drives this panel/tier, avoid
+		 * writing AOSP's intermediate DBV right before DF wakes from
+		 * brightness_clone and writes its compensated DBV + PCC.
+		 */
+		if (c_conn->df_active && brightness && c_conn->allow_bl_update &&
+		    (clone_changed ||
+		     c_conn->mi_dimlayer_state.current_backlight > 0)) {
+			u32 sdr_max = max_bright / 2;
+			u32 cur_bl = c_conn->mi_dimlayer_state.current_backlight;
+			bool df_controls_tier =
+				sde_panel_is_sw_dc(display->panel) ||
+				(half_max && brightness <= sdr_max &&
+				 prev_canonical <= sdr_max &&
+				 (!cur_bl || cur_bl <= sdr_max));
+
+			if (df_controls_tier)
+				return 0;
+		}
+	} else {
+		u32 sdr_max = display->panel->bl_config.brightness_max_level / 2;
+
+		bd->props.brightness = c_conn->canonical_brightness;
+		bd->props.state |= BL_CORE_SILENT_UPDATE;
+		if (blanked || !c_conn->canonical_brightness)
+			return 0;
+
+		/*
+		 * Only DCS software-DC panels (dc_type != 0) and half-max manual
+		 * panels (while within the SDR range) delegate physical DBV
+		 * writes to DisplayFeature; ignore stale/HBM write-backs.
+		 */
+		if (!sde_panel_is_sw_dc(display->panel) &&
+		    (!half_max || c_conn->canonical_brightness > sdr_max))
+			return 0;
+
+		c_conn->df_active = true;
+	}
+#else
 	if ((bd->props.power != FB_BLANK_UNBLANK) ||
 			(bd->props.state & BL_CORE_FBBLANK) ||
 			(bd->props.state & BL_CORE_SUSPENDED))
@@ -112,7 +348,36 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 
 	if (brightness > display->panel->bl_config.brightness_max_level)
 		brightness = display->panel->bl_config.brightness_max_level;
+#endif
 
+#ifdef CONFIG_MACH_XIAOMI
+	if (is_df) {
+		int bl_min = display->panel->bl_config.bl_min_level ? : 1;
+		int bl_max = display->panel->bl_config.bl_max_level;
+
+		/*
+		 * DisplayFeature writes hardware DBV directly; bypass
+		 * brightness_max_level -> bl_max_level scaling and guard zero
+		 * bottom-step write-backs so panel/DC state stays active.
+		 */
+		bl_lvl = clamp_t(int, brightness, bl_min, bl_max);
+	} else if (brightness && c_conn->df_active && c_conn->unset_bl_level &&
+		   !clone_changed) {
+		bl_lvl = c_conn->unset_bl_level;
+	} else if (brightness && sde_panel_is_sw_dc(display->panel) &&
+		   display->panel->bl_config.brightness_max_level >
+		   display->panel->bl_config.bl_max_level) {
+		int bl_min = display->panel->bl_config.bl_min_level ? : 1;
+		int bl_max = display->panel->bl_config.bl_max_level;
+
+		/*
+		 * On software-DC panels where brightness_max_level is 4095 for
+		 * AOSP's 50/50 SDR/HBM split while physical bl_max_level is
+		 * 2047, SDR brightness 1..2047 maps 1:1 to physical DBV.
+		 */
+		bl_lvl = clamp_t(int, brightness, bl_min, bl_max);
+	} else
+#endif
 	if (brightness) {
 		int bl_min = display->panel->bl_config.bl_min_level ? : 1;
 		int bl_range = display->panel->bl_config.bl_max_level - bl_min;
@@ -181,7 +446,18 @@ static int sde_backlight_setup(struct sde_connector *c_conn,
 	bl_config = &display->panel->bl_config;
 	props.max_brightness = bl_config->brightness_max_level;
 	props.brightness = bl_config->brightness_init_level;
+#ifdef CONFIG_MACH_XIAOMI
+	{
+		u32 init_clone = sde_compute_clone_brightness(
+			display->panel, bl_config->brightness_init_level);
+
+		props.brightness_clone = init_clone;
+		props.brightness_clone_backup = init_clone ? : 307;
+		c_conn->canonical_brightness = bl_config->brightness_init_level;
+	}
+#else
 	props.brightness_clone_backup = 307;
+#endif
 	snprintf(bl_node_name, BL_NODE_NAME_SIZE, "panel%u-backlight",
 							display_count);
 	c_conn->bl_device = backlight_device_register(bl_node_name, dev->dev,
@@ -3526,6 +3802,13 @@ void sde_connector_mi_get_current_backlight(struct drm_connector *connector, uin
 		*brightness = display->panel->mi_cfg.aod_backlight;
 		return;
 	}
+
+#ifdef CONFIG_MACH_XIAOMI
+	if (c_conn->df_active) {
+		*brightness = c_conn->canonical_brightness;
+		return;
+	}
+#endif
 
 	*brightness = c_conn->mi_dimlayer_state.current_backlight;
 }
