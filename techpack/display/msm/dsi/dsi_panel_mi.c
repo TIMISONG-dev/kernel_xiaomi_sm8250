@@ -871,6 +871,7 @@ skip_dimlayer_parse:
 	mi_cfg->dither_enabled = false;
 	mi_cfg->local_hbm_cur_status = false;
 	mi_cfg->fod_lhbm_low_brightness_enabled = false;
+	mi_cfg->fod_lhbm_low_brightness_allow = true;
 	mi_cfg->fp_status = 0;
 	mi_cfg->dim_fp_dbv_max_in_hbm_flag = false;
 

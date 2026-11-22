@@ -1033,6 +1033,8 @@ void sde_connector_mi_get_current_backlight(struct drm_connector *connector, uin
 
 void sde_connector_mi_get_current_alpha(struct drm_connector *connector, uint32_t brightness, uint32_t *alpha);
 
+bool sde_connector_mi_is_local_hbm(struct drm_connector *connector);
+
 void sde_connector_fod_notify(struct drm_connector *connector);
 
 struct dsi_display;

@@ -5488,6 +5488,10 @@ int dsi_panel_disable(struct dsi_panel *panel)
 		display = container_of(host, struct dsi_display, host);
 		sde_crtc_fod_ui_ready(display, 1, 0);
 	}
+	if (host && mi_cfg->local_hbm_cur_status) {
+		display = container_of(host, struct dsi_display, host);
+		sde_crtc_fod_ui_ready(display, 2, 0);
+	}
 
 	mi_cfg->hbm_enabled = false;
 	mi_cfg->fod_hbm_enabled = false;
@@ -5502,6 +5506,8 @@ int dsi_panel_disable(struct dsi_panel *panel)
 	mi_cfg->gir_enabled = false;
 	mi_cfg->request_gir_status = false;
 	mi_cfg->local_hbm_cur_status = false;
+	mi_cfg->pending_lhbm_state = 0;
+	mi_cfg->fod_anim_layer_enabled = false;
 	mi_cfg->bl_enable = true;
 	mi_cfg->dc_enable = false;
 	mutex_unlock(&panel->panel_lock);

@@ -5705,6 +5705,33 @@ static int _sde_crtc_get_output_fence(struct drm_crtc *crtc,
 	return sde_fence_create(sde_crtc->output_fence, val, offset);
 }
 
+static bool _sde_crtc_is_local_hbm(struct drm_crtc *crtc,
+		struct sde_crtc_state *cstate)
+{
+	struct drm_connector *conn;
+	struct drm_connector_list_iter conn_iter;
+	int i;
+
+	for (i = 0; i < cstate->num_connectors; i++) {
+		if (sde_connector_mi_is_local_hbm(cstate->connectors[i]))
+			return true;
+	}
+
+	if (!cstate->num_connectors && crtc && crtc->dev) {
+		drm_connector_list_iter_begin(crtc->dev, &conn_iter);
+		drm_for_each_connector_iter(conn, &conn_iter) {
+			if (conn->state && conn->state->crtc == crtc &&
+			    sde_connector_mi_is_local_hbm(conn)) {
+				drm_connector_list_iter_end(&conn_iter);
+				return true;
+			}
+		}
+		drm_connector_list_iter_end(&conn_iter);
+	}
+
+	return false;
+}
+
 /**
  * sde_crtc_atomic_set_property - atomically set a crtc drm property
  * @crtc: Pointer to drm crtc structure
@@ -5733,6 +5760,15 @@ static int sde_crtc_atomic_set_property(struct drm_crtc *crtc,
 	cstate = to_sde_crtc_state(state);
 
 	SDE_ATRACE_BEGIN("sde_crtc_atomic_set_property");
+	idx = msm_property_index(&sde_crtc->property_info, property);
+	if (idx == CRCT_PROP_MI_FOD_SYNC_INFO &&
+	    (val & (MI_DIMLAYER_FOD_HBM_OVERLAY | MI_DIMLAYER_FOD_ICON)) &&
+	    _sde_crtc_is_local_hbm(crtc, cstate)) {
+		val &= ~(uint64_t)(MI_DIMLAYER_FOD_HBM_OVERLAY |
+				MI_DIMLAYER_FOD_ICON);
+		val |= MI_LAYER_FOD_ANIM;
+	}
+
 	/* check with cp property system first */
 	ret = sde_cp_crtc_set_property(crtc, property, val);
 	if (ret != -ENOENT)
@@ -5744,7 +5780,6 @@ static int sde_crtc_atomic_set_property(struct drm_crtc *crtc,
 	if (ret)
 		goto exit;
 
-	idx = msm_property_index(&sde_crtc->property_info, property);
 	switch (idx) {
 	case CRTC_PROP_INPUT_FENCE_TIMEOUT:
 		_sde_crtc_set_input_fence_timeout(cstate);

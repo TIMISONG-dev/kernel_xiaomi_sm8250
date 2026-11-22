@@ -1134,8 +1134,12 @@ struct sde_connector_dyn_hdr_metadata *sde_connector_get_dyn_hdr_meta(
 
 void sde_crtc_fod_ui_ready(struct dsi_display *display, int type, int value)
 {
-	if (!display)
+	u32 old_ready;
+
+	if (!display || !display->panel)
 		return;
+
+	old_ready = display->panel->mi_cfg.fod_ui_ready;
 
 	if (type == 1) /* HBM */
 	{
@@ -1167,8 +1171,10 @@ void sde_crtc_fod_ui_ready(struct dsi_display *display, int type, int value)
 
 	}
 
-	SDE_INFO("fod_ui_ready notify=%d", display->panel->mi_cfg.fod_ui_ready);
-	sysfs_notify(&display->drm_conn->kdev->kobj, NULL, "fod_ui_ready");
+	if (old_ready != display->panel->mi_cfg.fod_ui_ready) {
+		SDE_INFO("fod_ui_ready notify=%d", display->panel->mi_cfg.fod_ui_ready);
+		sysfs_notify(&display->drm_conn->kdev->kobj, NULL, "fod_ui_ready");
+	}
 }
 
 static int mi_sde_connector_gir_fence(struct drm_connector *connector)
@@ -1233,7 +1239,6 @@ static int _sde_connector_mi_dimlayer_hbm_fence(struct drm_connector *connector)
 	bool crc_off_after_delay_of_hbm_on = false;
 	struct dsi_panel_mi_cfg *mi_cfg;
 	bool anim;
-	static bool last_anim = false;
 
 	if (!connector) {
 		SDE_ERROR("invalid argument\n");
@@ -1405,15 +1410,18 @@ static int _sde_connector_mi_dimlayer_hbm_fence(struct drm_connector *connector)
 		}
 	}
 
-	anim = c_conn->mi_dimlayer_state.mi_dimlayer_type & MI_LAYER_FOD_ANIM;
-	if (last_anim != anim) {
-		if (anim) {
-			mi_cfg->fod_anim_layer_enabled = true;
-		} else {
-			mi_cfg->fod_anim_layer_enabled = false;
+	anim = !!(c_conn->mi_dimlayer_state.mi_dimlayer_type & MI_LAYER_FOD_ANIM);
+	if (mi_cfg->fod_anim_layer_enabled != anim) {
+		mi_cfg->fod_anim_layer_enabled = anim;
+		if (mi_cfg->local_hbm_enabled) {
+			if (anim) {
+				mi_cfg->pending_lhbm_state = 1;
+				mi_disp_set_fod_queue_work(1, false);
+			} else {
+				mi_disp_set_fod_queue_work(0, false);
+			}
 		}
 	}
-	last_anim = anim;
 
 	return rc;
 }
@@ -3818,4 +3826,20 @@ void sde_connector_mi_update_dimlayer_state(struct drm_connector *connector,
 {
 	struct sde_connector *c_conn = to_sde_connector(connector);
 	c_conn->mi_dimlayer_state.mi_dimlayer_type = mi_dimlayer_type;
+}
+
+bool sde_connector_mi_is_local_hbm(struct drm_connector *connector)
+{
+	struct sde_connector *c_conn;
+	struct dsi_display *display;
+
+	if (!connector || connector->connector_type != DRM_MODE_CONNECTOR_DSI)
+		return false;
+
+	c_conn = to_sde_connector(connector);
+	display = (struct dsi_display *)c_conn->display;
+	if (!display || !display->panel)
+		return false;
+
+	return display->panel->mi_cfg.local_hbm_enabled;
 }
