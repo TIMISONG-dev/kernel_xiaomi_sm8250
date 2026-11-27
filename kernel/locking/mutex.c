@@ -36,12 +36,6 @@
 # include "mutex.h"
 #endif
 
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
-extern void mi_mutex_list_add_hook(struct mutex *lock,struct mutex_waiter *waiter,
-					struct list_head *list, bool * already_on_list);
-extern void mi_mutex_wait_start_hook(struct mutex *lock);
-#endif
-
 void
 __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
 {
@@ -190,10 +184,6 @@ __mutex_add_waiter(struct mutex *lock, struct mutex_waiter *waiter,
 {
 	bool already_on_list = false;
 	debug_mutex_add_waiter(lock, waiter, current);
-
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
-	mi_mutex_list_add_hook(lock, waiter, list, &already_on_list);
-#endif
 
 	if (!already_on_list)
 		list_add_tail(&waiter->list, list);
@@ -1007,9 +997,6 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
 	}
 
 	waiter.task = current;
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
-	mi_mutex_wait_start_hook(lock);
-#endif
 
 	set_current_state(state);
 	for (;;) {
