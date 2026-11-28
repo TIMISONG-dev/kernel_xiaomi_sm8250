@@ -6185,7 +6185,11 @@ static int binder_open(struct inode *nodp, struct file *filp)
 
 #ifdef CONFIG_PERF_CRITICAL_RT_TASK
 	if ((strncmp(proc->tsk->comm, "com.miui.home", strlen("com.miui.home")) == 0) ||
-		(strncmp(proc->tsk->comm, "ndroid.systemui", strlen("ndroid.systemui")) == 0)) {
+		(strncmp(proc->tsk->comm, "ndroid.systemui", strlen("ndroid.systemui")) == 0) ||
+		(strncmp(proc->tsk->comm, "s.nexuslauncher", strlen("s.nexuslauncher")) == 0) ||
+		(strncmp(proc->tsk->comm, "d.launcher3", strlen("d.launcher3")) == 0) ||
+		(strncmp(proc->tsk->comm, "launcher3", strlen("launcher3")) == 0))
+	{
 		proc->tsk->critical_rt_task = 1;
 	}
 #endif
