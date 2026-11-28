@@ -2,7 +2,7 @@ menu "Xiaomi MIUI additions"
 
 config XIAOMI_MIUI
 	bool "Enable Xiaomi MIUI modifications"
-	depends on MACH_XIAOMI
+	depends on BOARD_XIAOMI
 	help
 	  Enables compilation of Xiaomi MIUI specific vendor additions
 
