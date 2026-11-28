@@ -1150,7 +1150,6 @@ endif # CGROUPS
 
 config PERF_CRITICAL_RT_TASK
 	bool "enable set rt binder thread" if EXPERT
-	default y
 	help
 	  speedui feature set BlastBufferQueue binder thread FIFO.
 
@@ -1616,7 +1615,6 @@ config ELF_CORE
 	  Enable support for generating core dumps. Disabling saves about 4k.
 
 config SF_BINDER
-	default y
 	bool "surfaceflinger binder thread" if EXPERT
 	help
 	  Xiaomi restore surfaceflinger binder prio FIFO
