@@ -2194,8 +2194,10 @@ static void cpuset_fork(struct task_struct *task)
 	if (current->pkg.migt.flag & MINOR_TASK)
 		set_cpus_allowed_ptr(task, &current->pkg.migt.cpus_allowed);
 	else
-#endif
+		set_cpus_allowed_ptr(task, &current->cpus_allowed);
+#else
 	set_cpus_allowed_ptr(task, &current->cpus_allowed);
+#endif
 
 	task->mems_allowed = current->mems_allowed;
 }
